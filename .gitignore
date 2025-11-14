@@ -1,0 +1,68 @@
+# ---------------------
+# Python
+# ---------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.sqlite3
+*.db
+*.egg-info/
+*.eggs/
+dist/
+build/
+
+# virtual environments
+venv/
+.env/        
+
+# ---------------------
+# Rust
+# ---------------------
+target/
+**/*.rs.bk
+
+# ---------------------
+# Erm
+# ---------------------
+*.log
+*.env         
+*.pid
+*.sock
+*.log
+**/tmp/
+**/data/
+
+# ---------------------
+# IDE / Editor
+# ---------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ---------------------
+# cache
+# ---------------------
+/bot/src/*.json
+
+/bot/src/cards/*
+/bot/src/cache/*
+/bot/src/challenges/*
+/bot/src/cooldowns/*
+/bot/src/scores/*
+/bot/src/images/*
+/bot/src/logs/*
+/bot/src/settings/*
+/bot/src/stats/*
+/bot/src/gifs/*
+
+/bot/src/beatmaps.db
+
+/web/src/static/data/*
+
+/unsorted/osu-archive/*.json
+/unsorted/osu-archive/*.txt
+/unsorted/osu-archive/*.http
+
+!*.gitkeep
