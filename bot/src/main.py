@@ -1,4 +1,5 @@
-from cfg import *
+from config import *
+import localapi
              
 def load_words(file_path):
     try:
@@ -1506,34 +1507,6 @@ async def process_score(score, additional_data):
 
 
 
-async def get_pp_from_api(payload: dict) -> dict:
-    """
-    Делает POST-запрос к Rust API /pp с таймаутом.
-    В случае ошибки выбрасывает исключение, чтобы использовать fallback.
-    """
-    REQUEST_TIMEOUT = 5  
-    URL = f"{LOCAL_API_URL}pp"
-    
-    headers = {
-        "Content-Type": "application/json",
-        "X-API-Key": LOCAL_API_KEY
-    }
-
-    timeout = aiohttp.ClientTimeout(total=REQUEST_TIMEOUT)
-    
-    async with aiohttp.ClientSession(timeout=timeout) as session:
-        try:
-            async with session.post(URL, json=payload, headers=headers) as resp:
-                if resp.status == 200:
-                    return await resp.json()
-                else:
-                    # пробрасываем исключение для обработки в вызывающей функции
-                    raise RuntimeError(f"Rust API returned HTTP {resp.status}")
-        except asyncio.TimeoutError:
-            raise RuntimeError(f"Rust API request timed out after {REQUEST_TIMEOUT}s")
-        except aiohttp.ClientError as e:
-            raise RuntimeError(f"Rust API request failed: {e}")
-
 async def process_score_and_image(score, image_todo_flag = False, is_recent=True):       
     mods_str = score.get("mods", "")
     speed_multiplier, hr_active, ez_active = get_mods_info(mods_str)
@@ -1589,7 +1562,7 @@ async def process_score_and_image(score, image_todo_flag = False, is_recent=True
 
     # --- Rust API ---
     try:
-        pp_data = await get_pp_from_api(payload)
+        pp_data = await localapi.get_pp_neko_api(payload)
         pp = pp_data.get("pp", pp)
         max_pp = pp_data.get("no_choke_pp", max_pp)
         perfect_pp = pp_data.get("perfect_pp", perfect_pp)

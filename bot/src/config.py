@@ -9,7 +9,6 @@ from io import BytesIO
 import traceback
 import io, time, html, json, lxml.html, glob, random, logging, tempfile, asyncio, aiohttp, aiofiles, colorsys, atexit, requests
 import rosu_pp_py as rosu
-from translations import TRANSLATIONS as TR
 import os, re, tempfile
 from telegram import MessageEntity, InputTextMessageContent
 from telegram.helpers import escape_markdown
@@ -37,6 +36,11 @@ load_dotenv()
 dev_flag = "1"
 
 from pathlib import Path
+
+
+from translations import TRANSLATIONS as TR
+from longtext import *
+
 
 BOT_DIR = Path(__file__).parent
 
@@ -106,8 +110,6 @@ CHALLENGE_TOPIC_ID = 85927
 TARGET_FORWARD_TOPIC_ID = None
 CACHE_TTL = 24 * 60 * 60 * 365 * 100 # 100 лет 
 CACHE_TTL_AUDIO = 24 * 60 * 60 * 30
-UNLUCKY_MESSAGES = [ "Не повезло", "Ничего", "Пусто"]
-CHALLENGE_COMMANDS = ["/challenge", "/next_challenge", "/finish", "/skip", "/name", "/info", "/force_finish", "/leaderboard"]
 
 ADMINS = {1803166423}
 
@@ -140,58 +142,7 @@ OSU_USER_REGEX = re.compile(r"osu\.ppy\.sh/users/(\d+)")
 OSU_SCORE_REGEX = re.compile(r"osu\.ppy\.sh/scores/(\d+)")
 COOLDOWN_LINKS_IN_CHAT = 5
 
-PARAMS_TEMPLATE = {
-    "Моды": {
-        "type": "mods",
-        "msg": "моды, например HR или dtHD...",
-        "default": "NM"
-    },
-    # "Комбо": {
-    #     "type": "combo",
-    #     "msg": "максимальное комбо при игре, например 100",
-    #     "min": "1",
-    #     "default": "1"
-    # },
-    "Точность": {
-        "type": "accuracy",
-        "msg": "точность, например 80 или 96,5",
-        "default": "100"
-    },
-    "Скорость": {
-        "type": "rate",
-        "msg": "рейт чендж лазера, например 1 или 1.35",
-        "default": "1"
-    },
-    "Лазер": {
-        "type": "lazer",
-        "msg": "лазер? да/нет",
-        "default": "True"
-    },
-    "300": {
-        "type": "300k",
-        "msg": "количество 300 (good)",
-        "min": "0",
-        "default": "1"
-    },
-    "100": {
-        "type": "100k",
-        "msg": "количество 100 (ok)",
-        "min": "0",
-        "default": "0"
-    },    
-    "50": {
-        "type": "50k",
-        "msg": "количество 50 (meh)",
-        "min": "0",
-        "default": "0"
-    },
-    "мисс": {
-        "type": "miss",
-        "msg": "количество миссов",
-        "min": "0",
-        "default": "0"
-    }
-}
+
 VALID_MODS = {"DT", "NC", "HT", "DC", "HD", "FL", "HR", "EZ", "SD", "PF", "NF", "DA", "NM"}  # пример
 INVALID_MODS_COMBINATIONS = [
     {"DT", "HT"},
@@ -205,129 +156,6 @@ sessions_simulate = {}
 
 semaphore = asyncio.Semaphore(MAX_CONCURRENT_REQUESTS)  
 
-help_text = """Darkness
-├─ osu! команды
-│  ├─ Последние игры
-│  │  ├─  /r | /rs | /recent  💾🔧➕
-│  │  │    показывает последние 
-│  │  │    игры в виде карточек
-│  │  │ 
-│  │  ├─   /fix | /recent_fix  💾 ➕
-│  │  │    последняя игра, но без
-│  │  │    миссов, показавыет
-│  │  │    возможный + к общим РР
-│  │  │  
-│  │  └─   ссылка на скор
-│  │         карточка как в /r 
-│  │         по ссылке с сайта
-│  │ 
-│  ├─ Статистика
-│  │   ├─  /p | /profile  💾 ➕
-│  │   │    компактная статистика 
-│  │   │    профиля игрока
-│  │   │    
-│  │   ├─  /pc  ➕➕
-│  │   │    сравнение профилей 
-│  │   │    
-│  │   ├─  /c | /card  💾 ➕
-│  │   │    карточка профился 
-│  │   │    со скиллами по рр
-│  │   │
-│  │   ├─  /n | /nochoke  💾🔧➕📖
-│  │   │    если бы топ 100 
-│  │   │    был без миссов
-│  │   │
-│  │   ├─  /mods  💾 ➕
-│  │   │    % модов в топ100 игрока
-│  │   │   
-│  │   ├─  /mappers  💾 ➕
-│  │   │    как часто мапперы 
-│  │   │    встречаются в топ100 
-│  │   │   
-│  │   ├─  /a | /average  💾 ➕
-│  │   │    min-avg-max для топ100
-│  │   │
-│  │   └─  /b | /beatmaps  💾 🔧
-│  │          узнать свои теги,
-│  │          юзертеги, жанр и
-│  │          любимый язык 
-│  │   
-│  ├─ Дейли челлендж
-│  │   ├─  /challenge 💾 🔧 
-│  │   │    главное меню дейли 
-│  │   │    
-│  │   └─  /leaderboard  
-│  │          топ для дейли
-│  │ 
-│  ├─ Карты
-│  │   ├─  /simulate 🔧 ➕ 
-│  │   │    принимает ссылку на 
-│  │   │    карту и выдумывает
-│  │   │    возможные рр
-│  │   │    
-│  │   ├─  /music ➕ 
-│  │   │    аудио из карты
-│  │   │
-│  │   └─  /maps_skill 💾🔧 
-│  │          подбор карт   
-│  │          по скилам
-│  │   
-│  └─ Настройки для осу
-│        ├─  /settings 🔧
-│        │    разные настройки 
-│        │
-│        ├─  /name ➕
-│        │    сохраняет никнейм
-│        │    
-│        └─  /reset
-│               забывает никнейм
-│
-└─  Другое
-     ├─  /reminders 
-     │    
-     │    
-     ├─  /doubt | /blacks 
-     │    отправляет гифки
-     │    
-     ├─  /gn
-     │    гемблинг картинок
-     │
-     └─  /ping | /uptime 
-     """
-help_hint = """
-💾 - Использует сохранённый ник
-🔧 - Есть настройки внутри команды
-➕ - Можно ввести что-то (например ник)
-📖 - Доп. помощь /help *команда*"""
-
-
-HELP_TEXTS = {
-    "nochoke": """
-📖
-    /n | /nochoke  💾🔧➕
-    <b>если бы топ 100 
-    был без миссов</b>
-
-    💾
-    <code>/n</code> — с сохраненным ником
-    <code>/nochoke</code> — то же самое
-    
-    💾➕
-    <code>%</code> <b>— лимит миссов</b>
-    <code>/nochoke %5</code> — например, 5шт
-
-    ➕
-    <code>/nochoke vaxei</code> — другой ник
-    <code>/n vaxei %11</code>
-
-    🔧
-    страницы листаются кнопками
-
-    
-""",
-    "default":"""ничего не выбрано, а иначе здесь бы появился какой-то полезный текст.
-    """
-}
 
 getcontext().prec = 28
 
