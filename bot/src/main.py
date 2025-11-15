@@ -1526,49 +1526,45 @@ async def process_score_and_image(score, image_todo_flag = False, is_recent=True
     mods_text = normalize_no_plus(mods_str)
 
     mods_str = score.get("mods", "")
-    
-    pp, max_pp, stars, perfect_pp, perfect_combo, rosu_bpm = calculate_pp(
-        path, 
-        accuracy = score['accuracy'], 
-        mods = mods_str,
-        misses = misses,
-        rate = score['speed_multiplier'],
-        lazer = score['lazer'],
-        base_ar = base_ar,
-        base_cs = base_cs,
-        base_od = base_od,
-        base_hp = base_ar,
-        score_stats = score_stats,
-        combo=score['max_combo'],
-        )
-    
-
+        
     #temp pp fix
-    pp = pp if not isinstance(score.get("pp"), (int, float)) or score.get("pp") <= 0 else score.get("pp")
+    # pp = pp if not isinstance(score.get("pp"), (int, float)) or score.get("pp") <= 0 else score.get("pp")
 
-    # --- Rust API ---
+    #neko API 
     payload = {
         "map_path": str(score['beatmap']['id']), 
+        
         "n300": score_stats.get("count_300", None),
         "n100": score_stats.get("count_100", None),
         "n50": score_stats.get("count_50", None),
         "misses": int(misses),                   
+        
         "mods": str(score.get("mods", 0)), 
         "combo": int(score['max_combo']),      
         "accuracy": float(score['accuracy']*100),    
+        
         "lazer": bool(score.get('lazer', False)),          
         "clock_rate": float(score.get('speed_multiplier') or 1.0),  
+
+        "custom_ar": float(base_ar),
+        "custom_cs": float(base_cs),
+        "custom_hp": float(base_hp),
+        "custom_od": float(base_od),
     }
 
-    # --- Rust API ---
     try:
         pp_data = await localapi.get_pp_neko_api(payload)
-        pp = pp_data.get("pp", pp)
-        max_pp = pp_data.get("no_choke_pp", max_pp)
-        perfect_pp = pp_data.get("perfect_pp", perfect_pp)
-        stars = pp_data.get("star_rating", stars)
+
+        pp = pp_data.get("pp")
+        max_pp = pp_data.get("no_choke_pp")
+        perfect_pp = pp_data.get("perfect_pp")
+
+        stars = pp_data.get("star_rating")
+        perfect_combo = pp_data.get("perfect_combo")
+        rosu_bpm = pp_data.get("expected_bpm")
+
     except Exception as e:
-        print(f"Rust API failed, using local calculate_pp: {e}")
+        print(f"neko API failed: {e}")
 
 
     accuracy = round(score['accuracy'] * 100, 2)

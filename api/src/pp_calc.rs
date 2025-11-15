@@ -6,15 +6,23 @@ use crate::mods_parser;
 #[derive(Deserialize)]
 pub struct PpRequest {
     pub map_path: String, 
+
     pub n300: Option<u32>, 
     pub n100: Option<u32>,
     pub n50: Option<u32>,
     pub misses: Option<u32>,
+
     pub mods: Option<String>, 
     pub combo: Option<u32>,
     pub accuracy: Option<f64>,
+
     pub lazer: Option<bool>,
     pub clock_rate: Option<f64>, 
+
+    pub custom_ar: Option<f32>,
+    pub custom_cs: Option<f32>,
+    pub custom_hp: Option<f32>,
+    pub custom_od: Option<f32>,
 }
 
 #[derive(Serialize)]
@@ -22,7 +30,10 @@ pub struct PpResponse {
     pub pp: f64,
     pub no_choke_pp: f64,
     pub perfect_pp: f64,
+
     pub star_rating: f64,
+    pub perfect_combo: u32,
+    pub expected_bpm: f64,
 }
 
 pub async fn calculate_pp_handler(
@@ -32,7 +43,7 @@ pub async fn calculate_pp_handler(
 
     let mut map_path = PathBuf::from(base_folder);
     map_path.push(format!("{}.osu", payload.map_path));
-   
+
     let map = match rosu_pp::Beatmap::from_path(&map_path) {
         Ok(m) => m,
         Err(e) => {
@@ -41,8 +52,11 @@ pub async fn calculate_pp_handler(
             return Json(PpResponse {
                 pp: 0.0,
                 no_choke_pp: 0.0,
-                star_rating: 0.0,
                 perfect_pp: 0.0,
+                
+                star_rating: 0.0,
+                perfect_combo: 0,
+                expected_bpm: 0.0,
             });
         }
     };
@@ -52,8 +66,11 @@ pub async fn calculate_pp_handler(
         return Json(PpResponse {
             pp: 0.0,
             no_choke_pp: 0.0,
-            star_rating: 0.0,
             perfect_pp: 0.0,
+            
+            star_rating: 0.0,
+            perfect_combo: 0,
+            expected_bpm: 0.0,
         });
     }
 
@@ -63,10 +80,19 @@ pub async fn calculate_pp_handler(
     let clock_rate = payload.clock_rate.unwrap_or(1.0);
     let lazer = payload.lazer.unwrap_or(true);
 
+    let ar = payload.custom_ar.unwrap_or(0.0);
+    let cs = payload.custom_cs.unwrap_or(0.0);
+    let hp = payload.custom_hp.unwrap_or(0.0);
+    let od = payload.custom_od.unwrap_or(0.0);
+
     // Calculate difficulty attributes
     let mut difficulty = rosu_pp::Difficulty::new()
-    .mods(mods)
-    .lazer(lazer);
+    .lazer(lazer)
+    .cs(cs, false)
+    .ar(ar, false)
+    .od(od, false)
+    .hp(hp, false)
+    .mods(mods);
 
     if clock_rate != 1.0 {
         difficulty = difficulty.clock_rate(clock_rate);
@@ -119,6 +145,8 @@ pub async fn calculate_pp_handler(
 
     let no_choke_pp = no_choke_performance.calculate().pp();
 
+    let perfect_combo = max_combo;
+    let expected_bpm = map.bpm() as f64;
 
     // println!("Lazer: {:?}", lazer);
 
@@ -126,6 +154,9 @@ pub async fn calculate_pp_handler(
         pp: pp,
         no_choke_pp: no_choke_pp, 
         perfect_pp: perfect_pp,
+
         star_rating: stars,
+        perfect_combo: perfect_combo,
+        expected_bpm: expected_bpm,
     })
 }
