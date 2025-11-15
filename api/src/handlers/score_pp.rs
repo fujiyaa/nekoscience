@@ -1,7 +1,7 @@
 use axum::{Json, extract::Json as AxumJson};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use crate::mods_parser;
+use crate::utils::mods_parser;
 
 #[derive(Deserialize)]
 pub struct PpRequest {
@@ -36,7 +36,7 @@ pub struct PpResponse {
     pub expected_bpm: f64,
 }
 
-pub async fn calculate_pp_handler(
+pub async fn calculate_score_pp(
     AxumJson(payload): AxumJson<PpRequest>
 ) -> Json<PpResponse> {
     let base_folder = r"E:\fa\nekoscience\bot\src\cache\beatmaps";

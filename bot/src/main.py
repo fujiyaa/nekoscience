@@ -487,91 +487,7 @@ def insert_pp(data, new_pp, new_mods=None, new_mapper=''):
         data[i]['weight_percent'] = weight
 
     return position, data
-def calculate_pp(path: str,
-                 accuracy: float,
-                 misses: int,
-                 combo: int,
-                 mods: str,
-                 rate: float,
-                 base_ar: float,
-                 base_cs: float,
-                 base_od: float,
-                 base_hp: float,
-                 score_stats: dict,
-                 lazer: bool = True) -> tuple[float, float]:
-    """
-    Рассчитывает PP и сложность карты по .osu файлу.
 
-    Args:
-        path (str): путь к карте .osu
-        accuracy (float): точность в %
-        misses (int): количество миссов
-        mods (int): моды в битовой маске (пример: 8 + 64 для HDDT)
-        lazer (bool): учитывать ли lazer
-
-    Returns:
-        tuple[float, float]: (pp, звезды)
-    """
-
-    with open(path, encoding="utf-8") as f:
-        beatmap = rosu.Beatmap(content=f.read())
-
-    # Проверка на подозрительные карты
-    if beatmap.is_suspicious():
-        raise ValueError("Карта подозрительная, расчет прерван.")
-
-    n300 = score_stats.get("count_300", score_stats.get("great"))
-    n100 = score_stats.get("count_100", score_stats.get("ok"))
-    n50 = score_stats.get("count_50", score_stats.get("meh"))
-
-    perf = rosu.Performance(
-        accuracy = accuracy,
-        misses = misses,
-        lazer = lazer,
-        combo = combo,
-        n300 = n300,
-        n100 = n100, 
-        n50  = n50,
-        hitresult_priority=rosu.HitResultPriority.Fastest,
-    )
-
-    if isinstance(mods, list):
-        mods = "".join(mods) 
-    mods = re.sub(r"\s*\+\s*", "", mods)
-    print(f'{mods} (calculate_pp)' )
-    perf.set_mods(mods)
-    perf.set_clock_rate(rate)
-    perf.set_ar(base_ar, False)
-    perf.set_od(base_od, False)
-    perf.set_hp(base_hp, False)
-    perf.set_cs(base_cs, False)
-    
-    replay = perf.calculate(beatmap)
-
-    perf = rosu.Performance(
-        accuracy = None,
-        misses = None,
-        combo = None,
-        lazer = lazer,
-        n300 = n300,
-        n100 = n100, 
-        n50 = n50,
-        hitresult_priority=rosu.HitResultPriority.Fastest,
-    )   
-
-    no_miss = perf.calculate(replay)
-    
-    perf = rosu.Performance(
-        accuracy = 100,
-        misses = None,
-        combo = None,
-        lazer = lazer,
-        hitresult_priority=rosu.HitResultPriority.Fastest,
-    )
-
-    perfect = perf.calculate(replay)
-    
-    return replay.pp, no_miss.pp, perfect.difficulty.stars, perfect.pp, perfect.state.max_combo, beatmap.bpm
 async def beatmap(map_id: int) -> tuple[str | None, dict]:
     """
     Скачивает карту (если нет или устарела) и возвращает:
@@ -1553,7 +1469,7 @@ async def process_score_and_image(score, image_todo_flag = False, is_recent=True
     }
 
     try:
-        pp_data = await localapi.get_pp_neko_api(payload)
+        pp_data = await localapi.get_score_pp_neko_api(payload)
 
         pp = pp_data.get("pp")
         max_pp = pp_data.get("no_choke_pp")
@@ -1561,7 +1477,7 @@ async def process_score_and_image(score, image_todo_flag = False, is_recent=True
 
         stars = pp_data.get("star_rating")
         perfect_combo = pp_data.get("perfect_combo")
-        rosu_bpm = pp_data.get("expected_bpm")
+        expected_bpm = pp_data.get("expected_bpm")
 
     except Exception as e:
         print(f"neko API failed: {e}")
@@ -1614,7 +1530,7 @@ async def process_score_and_image(score, image_todo_flag = False, is_recent=True
         spacer = '\n'
 
     bpm, ar, od, cs, hp = apply_mods_to_stats(
-        rosu_bpm, base_ar, base_od, base_cs, base_hp,
+        expected_bpm, base_ar, base_od, base_cs, base_hp,
         speed_multiplier=speed_multiplier, hr=hr_active, ez=ez_active
     )
     length = int(round(float(score['hit_length']) / speed_multiplier))
@@ -3574,36 +3490,66 @@ async def card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request)
                         lazer=lazer
                     ))
 
-                skills = Skills.calculate(mode="osu", scores=[s.__dict__ for s in scores])
-                
-                vals = skills.values
+                #neko api 
+                scores_payload = []
+                for score in best_scores:
+                    stats = score["statistics"]
+                    scores_payload.append({
+                        "map_id": score["beatmap"]["id"],
+                        "n320": stats.get("count_geki", 0),
+                        "n300": stats.get("count_300", 0),
+                        "n200": stats.get("count_katu", 0),
+                        "n100": stats.get("count_100", 0),
+                        "n50":  stats.get("count_50", 0),
+                        "misses": stats.get("count_miss", 0),
+                        "combo": score.get("max_combo"),
+                        "mods": str(score.get("mods", "")),
+                        "accuracy": float(score["accuracy"] * 100.0),
+                        "set_on_lazer": bool(score.get("lazer", True)),
+                        "large_tick_hit": stats.get("count_large_tick_hit", 0),
+                        "small_tick_hit": stats.get("count_small_tick_hit", 0),
+                        "small_tick_miss": stats.get("count_small_tick_miss", 0),
+                        "slider_tail_hit": stats.get("count_slider_tail_hit", 0),
+                    })
 
+                payload = {
+                    "mode": "Osu",
+                    "scores": scores_payload
+                }
 
-                # Загружаем старые данные, если файл существует
+                try:
+                    skills = await localapi.get_pp_parts_neko_api(payload)
+
+                except Exception as e:
+                    print(f"error calling Rust API: {e}")
+
+                acc, aim, speed = skills["acc"], skills["aim"], skills["speed"]
+                acc_total = skills["acc_total"]
+                aim_total = skills["aim_total"]
+                speed_total = skills["speed_total"]
+               
+
                 if os.path.exists(USERS_SKILLS_FILE):
                     with open(USERS_SKILLS_FILE, "r", encoding="utf-8") as f:
                         users_skills = json.load(f)
                 else:
                     users_skills = {}
 
-                # username — уникальный ключ для каждого пользователя
-                # skills.values содержит словарь с aim, speed, acc и т.д.
-                # total можно считать как сумму, либо если у Skills уже есть total
-                total = sum(skills.values.values())  # пример суммы всех параметров
+
+                total = acc + aim + speed 
 
                 users_skills[username] = {
-                    "kind": skills.kind,
-                    "values": {k: round(v, 2) for k, v in skills.values.items()},
-                    "total": round(total, 2)
+                    "kind": skills.get("kind", "Osu"),
+                    "values": {k: round(v, 2) for k, v in skills.items()},
+                    "total": round(acc_total + aim_total + speed_total, 2)
                 }
 
-                # сохраняем обратно
                 with open(USERS_SKILLS_FILE, "w", encoding="utf-8") as f:
                     json.dump(users_skills, f, indent=4, ensure_ascii=False)
 
                 print(f"skills of {username} saved to {USERS_SKILLS_FILE}")
 
-                bg, title = (get_title(vals["aim"], vals["speed"], vals["acc"], scores)) 
+                bg, title = (get_title(aim, speed, acc, scores)) 
 
                 username = user_data["username"]
                 stats = user_data["statistics"]
@@ -3685,18 +3631,18 @@ async def card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request)
                     username=username,
                     country_code=country_code, 
                     avatar_path=avatar_path,
-                    accuracy=vals["acc"],
-                    aim=vals["aim"],
-                    speed=vals["speed"],
+                    accuracy=acc,
+                    aim=aim,
+                    speed=speed,
                     global_rank=global_rank,
                     country_rank=country_rank,
                     level=level,
                     medals=medals,
                     mode="Standard",########################################
                     output=f"{CARDS_DIR}/{user_data['id']}.png",
-                    aim_total=vals["aim_total"],
-                    speed_total=vals["speed_total"],
-                    acc_total=vals["acc_total"],
+                    aim_total=aim_total,
+                    speed_total=speed_total,
+                    acc_total=acc_total,
                 )
 
                         
@@ -3854,56 +3800,6 @@ def calculate_beatmap_skills(score) -> tuple[float, float, float]:
 
     return acc, aim, speed
 
-class Skills:
-    def __init__(self, kind, **kwargs):
-        self.kind = kind
-        self.values = kwargs
-
-    @staticmethod
-    def calculate(mode, scores):
-        # https://www.desmos.com/calculator/gqnhbpa0d3
-        def mapping(val: float):
-            factor = pow(8.0 / (val / 72.0 + 8.0), 10)
-            return -101.0 * factor + 101.0
-
-        if mode == "osu":
-            acc = aim = speed = weight_sum = 0.0
-            ACC_NERF = 1.1
-            AIM_NERF = 3.7
-            SPEED_NERF = 2.5
-
-            for i, score in enumerate(scores):
-                acc_raw, aim_raw, speed_raw = calculate_beatmap_skills(score)
-                
-                acc_val = acc_raw / ACC_NERF
-                aim_val = aim_raw / AIM_NERF
-                speed_val = speed_raw / SPEED_NERF
-                weight = pow(0.95, i)
-
-                acc += acc_val * weight
-                aim += aim_val * weight
-                speed += speed_val * weight
-                weight_sum += weight
-
-            acc_total = acc * weight
-            aim_total = aim * weight
-            speed_total = speed * weight
-
-            acc = mapping(acc / weight_sum)
-            aim = mapping(aim / weight_sum)
-            speed = mapping(speed / weight_sum)
-            return Skills("osu", acc=acc, aim=aim, speed=speed, acc_total=acc_total, aim_total=aim_total, speed_total=speed_total)
-
-        #TODO: taiko, catch, mania
-    def mode(self):
-        if self.kind == "osu":
-            return "osu"
-        if self.kind == "taiko":
-            return "taiko"
-        if self.kind == "catch":
-            return "catch"
-        if self.kind == "mania":
-            return "mania"
 class Score:
     def __init__(self, map_id, count_300, count_100, count_50, count_miss, path, mods, acc, max_combo, lazer):
         self.map_id = map_id
@@ -3916,6 +3812,7 @@ class Score:
         self.acc = acc
         self.max_combo = max_combo
         self.lazer = lazer
+
 def get_prefix(value: float) -> str:
     if value < 10: return "Newbie"
     if value < 20: return "Novice"
@@ -3931,8 +3828,7 @@ def get_prefix(value: float) -> str:
     return "God"
 
 
-def get_suffix(aim: float, speed: float, acc: float, tol: float = 3.0) -> str:
-    # osu! логика
+def get_suffix(aim: float, speed: float, acc: float, tol: float = 3.0) -> str:   
     if abs(aim - speed) < tol and abs(speed - acc) < tol:
         return "All-Rounder"
     if acc > aim and acc > speed and abs(aim - speed) < tol:
@@ -4985,24 +4881,52 @@ async def recent_fix(update: Update, context: ContextTypes.DEFAULT_TYPE, user_re
         traceback.print_exc()
 async def send_score_fix(update, score, user_id, token:str = None):    
     
-    mods_str = score.get("mods", "")
-    path, base_values = await beatmap(score['beatmap']['id'])
+    path, base_values = await beatmap(score['beatmap']['id'])    
+    score_stats = score.get("score_stats", score.get("statistics")) 
 
-    pp, max_pp, stars, perfect_pp, perfect_combo, rosu_bpm = calculate_pp(
-        path, 
-        accuracy = score['accuracy'], 
-        mods = mods_str,
-        misses = score['count_miss'],
-        rate = score['speed_multiplier'],
-        lazer = score['lazer'],
-        base_ar = score.get("DA_values", {}).get("approach_rate", base_values["ar"]),
-        base_cs = score.get("DA_values", {}).get("circle_size", base_values["cs"]),
-        base_od = score.get("DA_values", {}).get("overall_difficulty",base_values["od"]),
-        base_hp = score.get("DA_values", {}).get("drain_rate", base_values["hp"]),
-        score_stats = score["score_stats"],
-        combo=score['max_combo'],
-        )
+    base_ar = score.get("DA_values", {}).get("approach_rate", base_values["ar"])
+    base_cs = score.get("DA_values", {}).get("circle_size", base_values["cs"])
+    base_od = score.get("DA_values", {}).get("overall_difficulty",base_values["od"])
+    base_hp = score.get("DA_values", {}).get("drain_rate", base_values["hp"])          
     
+    #neko API 
+    payload = {
+        "map_path": str(score['beatmap']['id']), 
+        
+        "n300": score_stats.get("count_300", None),
+        "n100": score_stats.get("count_100", None),
+        "n50": score_stats.get("count_50", None),
+        "misses": int(score['count_miss']),                   
+        
+        "mods": str(score.get("mods", 0)), 
+        "combo": int(score['max_combo']),      
+        "accuracy": float(score['accuracy']*100),    
+        
+        "lazer": bool(score.get('lazer', False)),          
+        "clock_rate": float(score.get('speed_multiplier') or 1.0),  
+
+        "custom_ar": float(base_ar),
+        "custom_cs": float(base_cs),
+        "custom_hp": float(base_hp),
+        "custom_od": float(base_od),
+    }
+
+    try:
+        pp_data = await localapi.get_score_pp_neko_api(payload)
+
+        pp = pp_data.get("pp")
+        max_pp = pp_data.get("no_choke_pp")
+        perfect_pp = pp_data.get("perfect_pp")
+
+        stars = pp_data.get("star_rating")
+        perfect_combo = pp_data.get("perfect_combo")
+        expected_bpm = pp_data.get("expected_bpm")
+
+    except Exception as e:
+        print(f"neko API failed: {e}")
+    
+    
+    mods_str = score.get("mods", "")
     mods_text = normalize_no_plus(mods_str)
     try:
         best_pp = await asyncio.wait_for(get_top_100_scores(score['user']['username'], token, score['user']['id']), timeout=10, )        
@@ -5609,7 +5533,7 @@ async def simulate(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "n100": None,
         "n50": None,
     }
-    pp, max_pp, stars, max_combo, rosu_bpm, n300, n100, n50, rosu_miss = calculate_beatmap(
+    pp, max_pp, stars, max_combo, expected_bpm, n300, n100, n50, expected_miss = calculate_beatmap(
         path, 
         accuracy = 100, 
         mods = "NM",
@@ -5655,13 +5579,13 @@ async def simulate(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "50_changed": False,
         "miss_changed": False,
         "max_hits": n300,
-        "grade": str(calculate_rank(n300, n100, n50, rosu_miss, True)),
+        "grade": str(calculate_rank(n300, n100, n50, expected_miss, True)),
         "aim":aim,
         "acc":acc,
         "speed":speed,
     }
 
-    msg = await update.message.reply_text(format_text(user_id, pp, max_pp, stars, max_combo, rosu_bpm, n300, n100, n50, rosu_miss), 
+    msg = await update.message.reply_text(format_text(user_id, pp, max_pp, stars, max_combo, expected_bpm, n300, n100, n50, expected_miss), 
                                           reply_markup=get_simulate_keyboard(user_id),
                                           parse_mode="Markdown" )
     sessions_simulate[user_id]["message_id"] = msg.message_id
@@ -5681,7 +5605,7 @@ def get_simulate_keyboard(user_id):
     buttons.append([InlineKeyboardButton("☑️", callback_data="simulate_close")])
 
     return InlineKeyboardMarkup(buttons)
-def format_text(user_id, pp, max_pp, stars, max_combo, rosu_bpm, n300, n100, n50, rosu_miss):
+def format_text(user_id, pp, max_pp, stars, max_combo, expected_bpm, n300, n100, n50, expected_miss):
     sess = sessions_simulate[user_id]
     schema = sess["schema"]
 
@@ -5703,7 +5627,7 @@ def format_text(user_id, pp, max_pp, stars, max_combo, rosu_bpm, n300, n100, n50
     pp =  f"{pp:.1f}" if pp is not None else '?'
     pp_text = f"{pp}/{max_pp:.1f}PP"
     hits_text = "{"
-    hits_text += f"{n300}/{n100}/{n50}/{rosu_miss}"
+    hits_text += f"{n300}/{n100}/{n50}/{expected_miss}"
     hits_text += "}"
     
     text += f"{pp_text:<18}{hits_text:<12}\n\n"
@@ -5983,7 +5907,7 @@ async def simulate_text_handler(update: Update, context: ContextTypes.DEFAULT_TY
             acc = None
 
 
-        pp, max_pp, stars, max_combo, rosu_bpm, n300, n100, n50, rosu_miss = calculate_beatmap(
+        pp, max_pp, stars, max_combo, expected_bpm, n300, n100, n50, expected_miss = calculate_beatmap(
             sess['path'], 
             accuracy = acc, 
             mods = sess["params"].get("Моды"),
@@ -6020,12 +5944,12 @@ async def simulate_text_handler(update: Update, context: ContextTypes.DEFAULT_TY
         sess["params"]["300"] = n300
         sess["params"]["100"] = n100
         sess["params"]["50"] = n50
-        sess["params"]["мисс"] = rosu_miss
-        sess["params"]["Точность"] = calc_accuracy(n300, n100, n50, rosu_miss)
+        sess["params"]["мисс"] = expected_miss
+        sess["params"]["Точность"] = calc_accuracy(n300, n100, n50, expected_miss)
         sess["grade"] = calculate_rank(n300, n100, n50, miss, sess["params"]["Лазер"])
 
         await context.bot.edit_message_text(            
-            text=format_text(user_id, pp, max_pp, stars, sess["map_combo"], rosu_bpm, n300, n100, n50, rosu_miss),
+            text=format_text(user_id, pp, max_pp, stars, sess["map_combo"], expected_bpm, n300, n100, n50, expected_miss),
             chat_id=sess["chat_id"],
             message_id=sess["message_id"],
             reply_markup=get_simulate_keyboard(user_id),
@@ -8061,7 +7985,7 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
             base_cs = values.get("cs")
             base_od = values.get("od")
             base_hp = values.get("hp")
-            pp, max_pp, stars, max_combo, rosu_bpm, n300, n100, n50, rosu_miss = calculate_beatmap(
+            pp, max_pp, stars, max_combo, expected_bpm, n300, n100, n50, expected_miss = calculate_beatmap(
                 path, 
                 accuracy = 100, 
                 mods = "NM",
@@ -8087,7 +8011,7 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
                 speed_multiplier, hr_active, ez_active = get_mods_info(mods_str)
 
                 bpm, ar, od, cs, hp = apply_mods_to_stats(
-                    rosu_bpm, base_ar, base_od, base_cs, base_hp,
+                    expected_bpm, base_ar, base_od, base_cs, base_hp,
                     speed_multiplier=speed_multiplier, hr=hr_active, ez=ez_active
                 )
 
@@ -8103,7 +8027,45 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
                 "path":results[beatmap_id],
                 "accuracy":100.0
             }
+
             acc_raw, aim_raw, speed_raw = calculate_beatmap_skills(score)
+
+            #neko api 
+            scores_payload = []            
+            scores_payload.append({
+                "map_id": int(beatmap_id),
+
+                "n320": int(0),
+                "n300": int(0),
+                "n200": int(0),
+                "n100": int(0),
+                "n50":  int(0),
+                "misses": int(0),
+
+                "combo": int(0),
+                "mods": str(0),
+                "accuracy": float(100),
+
+                "set_on_lazer": bool(1),
+
+                "large_tick_hit": int(0),
+                "small_tick_hit": int(0),
+                "small_tick_miss": int(0),
+                "slider_tail_hit": int(0),
+            })
+
+            payload = {
+                "mode": "Osu",
+                "scores": scores_payload
+            }
+
+            try:
+                skills = await localapi.get_pp_parts_neko_api(payload)
+
+            except Exception as e:
+                print(f"error calling Rust API: {e}")
+
+            acc_raw, aim_raw, speed_raw = skills["acc"], skills["aim"], skills["speed"]
            
             values = {
                 "speed": speed_raw,
@@ -8126,7 +8088,7 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
             img = Image.open(f"{BOT_DIR}/cards/assets/beatmaps/bg.png").convert("RGBA")
             draw = ImageDraw.Draw(img)
 
-            asset = Image.open("{BOT_DIR}/cards/assets/beatmaps/mapcard.png").convert("RGBA")
+            asset = Image.open(f"{BOT_DIR}/cards/assets/beatmaps/mapcard.png").convert("RGBA")
             img.paste(asset, (0, 0), mask=asset.split()[3])
 
 
@@ -8137,7 +8099,7 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
             font_regular_nano = ImageFont.truetype(f"{BOT_DIR}/cards/assets/fonts/Roboto-Regular.ttf", 26)
             font_bold_med_3 = ImageFont.truetype(f"{BOT_DIR}/cards/assets/fonts/Roboto-Bold.ttf", 28)
             font_bold_med_4 = ImageFont.truetype(f"{BOT_DIR}/cards/assets/fonts/Roboto-Bold.ttf", 34)
-            font_black_small_2 = ImageFont.truetype("{BOT_DIR}/cards/assets/fonts/Roboto-Black.ttf", 28)
+            font_black_small_2 = ImageFont.truetype(f"{BOT_DIR}/cards/assets/fonts/Roboto-Black.ttf", 28)
             font_thin_small = ImageFont.truetype(f"{BOT_DIR}/cards/assets/fonts/Roboto-Thin.ttf", 28)
             font_light_italic_big = ImageFont.truetype(f"{BOT_DIR}/cards/assets/fonts/Roboto-LightItalic.ttf", 30)
             font_black_big = ImageFont.truetype(f"{BOT_DIR}/cards/assets/fonts/Roboto-Black.ttf", 44)
@@ -8523,7 +8485,7 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
             bg = Image.open(bg_path).convert("RGBA").resize((380, 106))
             img.paste(bg, (67, 148), bg)
 
-            img_path = f'cache/{beatmap_id}.png'
+            img_path = f'{BOT_DIR}/cache/{beatmap_id}.png'
             img.convert("RGB").save(img_path) 
 
             with open(img_path, "rb") as f:

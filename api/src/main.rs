@@ -4,12 +4,13 @@ use dotenv::dotenv;
 use std::env;
 
 mod api_keys; 
-mod pp_calc;
-mod mods_parser;
+mod models;
+mod handlers;
+mod utils;
 
 use api_keys::{AppState, check_api_key_with_state, handler};
-use pp_calc::calculate_pp_handler;
-
+use handlers::score_pp::calculate_score_pp;
+use handlers::pp_parts::calculate_pp_parts;
 
 #[tokio::main]
 async fn main() {
@@ -27,15 +28,14 @@ async fn main() {
         log_path: "access.log".to_string(),
     };
 
-    // строим роутер и добавляем middleware
     let app = Router::new()
         .route("/", get(handler))
-        .route("/pp", axum::routing::post(calculate_pp_handler))  // <- новый маршрут
+        .route("/score-pp", axum::routing::post(calculate_score_pp))
+        .route("/pp-parts", axum::routing::post(calculate_pp_parts))  
         .layer(axum::middleware::from_fn_with_state(
             state.clone(),
             check_api_key_with_state,
-        ));
-
+        ));   
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 5727));
     println!("Listening on http://{}", addr);
