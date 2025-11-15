@@ -4064,33 +4064,28 @@ def make_card(title, bg, username, country_code, avatar_path, accuracy, aim, spe
     draw.text((x0 + 6 + width_int, y0 + 52 + 2 * line_spacing+ block_spacing * 2), frac_part, font=font_regular_big, fill="white")
     draw.text((x0 + 6 + width_int + total_ox, y0 + 52 + 2 * line_spacing+ block_spacing * 2 + total_oy), f" ~ {speed_total:.2f}" , font=font_bold_nano_2, fill=(200, 200, 200))
 
-
-    # Блок 
     x0, y0 = 73, 770
     x_block = x0 + 300
     block_width = 122
-    # Глобал и страна
+
     draw.text((x0, y0), "Global", font=font_medium_italic_med, fill="white")
     draw.text((x0, y0 + 33), f"#{global_rank}", font=font_bold_small, fill="white")
     
     country_text = f"#{country_rank}"
-    # Получаем ширину текста
+
     bbox = draw.textbbox((0, 0), country_text, font=font_bold_small)
     text_width = bbox[2] - bbox[0]
 
-    # Вычисляем X так, чтобы текст "приклеился" к правому краю блока
     x_text = x_block + block_width - text_width
 
     draw.text((x_block, y0), "Country", font=font_light_italic_small, fill="white")
     draw.text((x_text, y0 + 34), country_text, font=font_bold_small_2, fill="white")
 
-    # Блок 
     x0, y0 = 87, 915
     level_value = level
     level_int = int(level_value)           
     level_frac = level_value - level_int   
 
-    # Текст "Level <число>"
     draw.text((x0, y0), "Level", font=font_light_italic_small_2, fill="white")
     bbox = draw.textbbox((x0, y0), "Level", font=font_light_italic_small_2)
     width_text = bbox[2] - bbox[0]
@@ -4100,9 +4095,8 @@ def make_card(title, bg, username, country_code, avatar_path, accuracy, aim, spe
     bbox_num = draw.textbbox((x0 + width_text + 12, y0), f"{level_int}", font=font_bold_italic_small)
     width_num = bbox_num[2] - bbox_num[0]
 
-    # Левая и правая границы бара
-    bar_left = x0 + width_text + width_num + 30   # сразу после текста "Level <число>"
-    bar_right = x0 + 806                          # фиксированная правая граница
+    bar_left = x0 + width_text + width_num + 30   
+    bar_right = x0 + 806                         
     bar_width = bar_right - bar_left
 
     bar_y0 = y0 + 15
@@ -4110,13 +4104,11 @@ def make_card(title, bg, username, country_code, avatar_path, accuracy, aim, spe
     bar_y1 = bar_y0 + bar_height
     radius = bar_height // 1
 
-    # Фон бара (тонкая линия)
     draw.line(
         (bar_left, bar_y0 + bar_height // 2, bar_right, bar_y0 + bar_height // 2),
         fill="white", width=2
     )
 
-    # Длина заполнения слева направо
     fill_len = int(bar_width * level_frac)
 
     if fill_len > 0:
@@ -4126,7 +4118,6 @@ def make_card(title, bg, username, country_code, avatar_path, accuracy, aim, spe
             fill="white"
         )
 
-   # --- Медали ---
     x0, y0 = 87, 894
     medals_max = 339
     medals_value = medals
@@ -4154,19 +4145,14 @@ def make_card(title, bg, username, country_code, avatar_path, accuracy, aim, spe
         progress_color = color_90
     else: progress_color = color_95
 
+    block_right = x0 + 808  
 
-
-    # Правая граница блока (фиксируем)
-    block_right = x0 + 808   # ширина блока, подбери под дизайн
-
-    # --- Текст "Medals XX%" (слева) ---
     text_label = "Medals"
     draw.text((x0, y0 + 60), text_label, font=font_light_italic_small_2, fill="white")
 
     bbox_label = draw.textbbox((x0, y0 + 60), text_label, font=font_light_italic_small_2)
     width_label = bbox_label[2] - bbox_label[0]
 
-    # --- Текст "XX%" слева этим же цветом ---
     draw.text((x0 + width_label + 12, y0 + 60), f"{medals_progress}%", 
             font=font_bold_italic_small, fill=progress_color)
 
@@ -4175,31 +4161,25 @@ def make_card(title, bg, username, country_code, avatar_path, accuracy, aim, spe
                             font=font_bold_italic_small)
     width_num = bbox_num[2] - bbox_num[0]
 
-    bar_left = x0 + width_label + width_num + 30   # как у Level
+    bar_left = x0 + width_label + width_num + 30 
 
-    # --- Текст справа "69/339" ---
     current_text = str(medals_value)
     max_text = str(medals_max)
     right_text = f"{current_text}/{max_text}"
 
-    # Считаем ширину текста
     bbox_right = draw.textbbox((0, 0), right_text, font=font_regular_nano)
     width_right = bbox_right[2] - bbox_right[0]
 
-    # Начальная позиция текста, чтобы он ровно "прилипал" к правому краю блока
     text_x = block_right - width_right
     text_y = y0 + 65
 
-    # Рисуем "69" жирным
     draw.text((text_x, text_y), current_text, font=font_bold_nano, fill="white")
     bbox_cur = draw.textbbox((text_x, text_y), current_text, font=font_bold_nano)
     cur_width = bbox_cur[2] - bbox_cur[0]
 
-    # Рисуем "/339" обычным
     draw.text((text_x + cur_width, text_y), f"/{max_text}", 
             font=font_regular_nano, fill="white")
 
-    # --- Теперь бар справа должен заканчиваться у начала текста ---
     bar_right = text_x - 15
     bar_width = bar_right - bar_left
 
@@ -4210,7 +4190,6 @@ def make_card(title, bg, username, country_code, avatar_path, accuracy, aim, spe
     
     line_y = bar_y0 + bar_height // 2
 
-    # зоны
     zone1_end = bar_left + round(bar_width * 0.39)
     zone2_end = bar_left + round(bar_width * 0.59)
     zone3_end = bar_left + round(bar_width * 0.79)
@@ -4218,7 +4197,6 @@ def make_card(title, bg, username, country_code, avatar_path, accuracy, aim, spe
     zone5_end = bar_left + round(bar_width * 0.94)
     zone6_end = bar_right
 
-    # фон делаем подряд, чтобы не было разрывов
     draw.line((bar_left, line_y, zone1_end, line_y),    fill=color_0, width=2)
     draw.line((zone1_end, line_y, zone2_end, line_y), fill=color_40, width=2)
     draw.line((zone2_end, line_y, zone3_end, line_y), fill=color_60, width=2)
@@ -4226,7 +4204,6 @@ def make_card(title, bg, username, country_code, avatar_path, accuracy, aim, spe
     draw.line((zone4_end, line_y, zone5_end, line_y), fill=color_90, width=2)
     draw.line((zone5_end, line_y, zone6_end, line_y), fill=color_95, width=2)
 
-    # --- Заливка прогресса ---
     fill_len = int(bar_width * medals_percent)
     if fill_len > 0:
         draw.rounded_rectangle(
@@ -4235,7 +4212,6 @@ def make_card(title, bg, username, country_code, avatar_path, accuracy, aim, spe
             fill=progress_color
         )
 
-    # Подвал
     bot_first, bot_second = "Fujiyaosu", "Bot"
     today = date.today().isoformat()
     draw.text((220, 1140), bot_first, font=font_black_small, fill="white")
@@ -4253,7 +4229,6 @@ async def button_handler_profile(update: Update, context: ContextTypes.DEFAULT_T
     query = update.callback_query
     data = query.data
 
-    # Проверка авторства кнопки
     author_id = message_authors.get(query.message.message_id)
     if author_id != query.from_user.id:
         await query.answer("❌ Только автор команды может нажимать эти кнопки", show_alert=True)
@@ -4299,7 +4274,6 @@ async def create_profile_image(user_data: dict, best_pp: str) -> str | None:
 
     draw = ImageDraw.Draw(banner)
 
-    # --- Шрифты ---
     try:
         font_name = ImageFont.truetype(f"{BOT_DIR}/cards/Jua.ttf", 60)
         font_stats = ImageFont.truetype(f"{BOT_DIR}/cards/Jua.ttf", 28)
@@ -4311,10 +4285,10 @@ async def create_profile_image(user_data: dict, best_pp: str) -> str | None:
 
     def draw_text_with_shadow_3(draw, pos, text, font, fill, shadowcolor):
         x, y = pos
-        # Рисуем тень в 4 направления сдвига для "густоты"
+
         for dx, dy in [(-2,0), (2,0), (0,-2), (0,2)]:
             draw.text((x+dx, y+dy), text, font=font, fill=shadowcolor)
-        # Сам текст поверх
+
         draw.text((x, y), text, font=font, fill=fill)
 
     def draw_text_with_shadow(draw_obj, position, text, font, fill=(255, 255, 255, 255),
@@ -4338,19 +4312,16 @@ async def create_profile_image(user_data: dict, best_pp: str) -> str | None:
                     avatar_img = avatar_img.resize((200, 200))
                     mask = Image.new("L", avatar_img.size, 0)
                     mask_draw = ImageDraw.Draw(mask)
-                    corner_radius = 20  # радиус скругления углов, уменьшай это число для менее закругленных углов
+                    corner_radius = 20 
                     mask_draw.rounded_rectangle((0, 0, 200, 200), radius=corner_radius, fill=255)
                     avatar_img.putalpha(mask)
                     shadow = Image.new("RGBA", avatar_img.size, (0, 0, 0, 180))
                     banner.paste(shadow, (50 + 5, avatar_top + 5), mask)
                     banner.paste(avatar_img, (50, avatar_top), avatar_img)
-                    # ... остальной код обработки аватара
         except (asyncio.TimeoutError, aiohttp.ClientError) as e:
             print(f"Failed to load avatar_url: {e}")
-            # можно пропустить вставку аватара или использовать заглушку
 
     try:
-        # --- Team Flag (под аватар, оригинальные пропорции) ---
         short_name = ""
         team_flag_url = user_data.get("team", {}).get("flag_url")
         if team_flag_url:
@@ -4360,24 +4331,23 @@ async def create_profile_image(user_data: dict, best_pp: str) -> str | None:
                         flag_bytes = await resp.read()
                         flag_img = Image.open(io.BytesIO(flag_bytes)).convert("RGBA")
                         fw, fh = flag_img.size
-                        scale_factor = 200 / fw  # подгоняем ширину под аватар
+                        scale_factor = 200 / fw  
                         new_w = int(fw * scale_factor)
                         new_h = int(fh * scale_factor)
                         flag_img = flag_img.resize((new_w, new_h), Image.LANCZOS)
-                        # Создаем тень для флага
+                        
                         shadow = Image.new("RGBA", flag_img.size, (0, 0, 0, 180))
-                        # Используем альфа-канал флага как маску для тени
+                        
                         flag_alpha = flag_img.split()[3]
 
                         flag_y = avatar_top + 200 + 10
-                        shadow_offset = (5, 5)  # смещение тени
+                        shadow_offset = (5, 5) 
 
-                        # Вставляем тень с небольшим сдвигом
+                        
                         banner.paste(shadow, (50 + shadow_offset[0], flag_y + shadow_offset[1]), flag_alpha)
-                        # Вставляем сам флаг поверх тени
+                        
                         banner.paste(flag_img, (50, flag_y), flag_img)
 
-        # --- Short name под флаг ---
         short_name = "team tag:  " + user_data.get("team", {}).get("short_name", "")
         if short_name:
             flag_y_bottom = avatar_top + 200 + 15 + (new_h if team_flag_url else 0)
@@ -4385,52 +4355,43 @@ async def create_profile_image(user_data: dict, best_pp: str) -> str | None:
     except Exception as e: 
         print(e)
         
-    # --- Ник ---
     username = user_data["username"]
     draw_text_with_shadow(draw, (280, 40), username, font_name)
 
-
-    # --- Статистика ---
     stats = user_data["statistics"]
     country_rank = stats.get("rank", {}).get("country", None)
 
-    # --- Функция конвертации hue в rgba ---
     def hue_to_rgba(hue, saturation=1.0, lightness=0.5, alpha=255):
         if hue is None:
-            hue = 349  # значение по умолчанию
+            hue = 349
         h = (hue % 360) / 360.0
         r, g, b = colorsys.hls_to_rgb(h, lightness, saturation)
         return (int(r * 255), int(g * 255), int(b * 255), alpha)
 
-    # --- Функция отрисовки текста с тенью (твой код) ---
     def draw_text_with_shadow_2(draw, pos, text, font, fill, shadowcolor):
         x, y = pos
-        # Рисуем тень в 4 направления сдвига для "густоты"
+
         for dx, dy in [(-2,0), (2,0), (0,-2), (0,2)]:
             draw.text((x+dx, y+dy), text, font=font, fill=shadowcolor)
-        # Сам текст поверх
+
         draw.text((x, y), text, font=font, fill=fill)
 
     def draw_text_with_shadow(draw, pos, text, font, fill, shadowcolor):
         x, y = pos
-        # Тень (смещение 1,1 пиксель)
+
         draw.text((x + 1, y + 1), text, font=font, fill=shadowcolor)
-        # Основной текст
         draw.text((x, y), text, font=font, fill=fill)
 
-    # --- Функция отрисовки строки статистики с двумя цветами ---
     def draw_stat_line(draw, pos, key_text, value_text, font_key, font_value,
                     key_fill, key_shadow, value_fill, value_shadow, gap=8):
         x, y = pos
-        # Рисуем ключ с тенью
+
         draw_text_with_shadow(draw, (x, y), key_text, font_key, fill=key_fill, shadowcolor=key_shadow)
-        # Получаем ширину ключа через textbbox
+
         bbox = draw.textbbox((x, y), key_text, font=font_key)
         key_w = bbox[2] - bbox[0]
-        # Рисуем значение с тенью, с отступом gap
+
         draw_text_with_shadow(draw, (x + key_w + gap, y), value_text, font_value, fill=value_fill, shadowcolor=value_shadow)
-
-
 
     stat_lines = [
         f"PP: {round(stats.get('pp', 0), 2)}",
@@ -4450,13 +4411,11 @@ async def create_profile_image(user_data: dict, best_pp: str) -> str | None:
     profile_hue = user_data.get("profile_hue", 211)
     glow_color = hue_to_rgba(profile_hue, saturation=1, lightness=0.5, alpha=180)
 
-    # Подложка для текста
     overlay_x, overlay_y = 270, 106
     overlay_w, overlay_h = 680, 240
     overlay = Image.new("RGBA", (overlay_w, overlay_h), (0, 0, 0, 190))
     banner.paste(overlay, (overlay_x, overlay_y), overlay)
 
-    # Рисуем статистику в 2 колонки
     col_gap = 340
     left_x, right_x = 280, 280 + col_gap
     y_start = 120
@@ -4482,36 +4441,28 @@ async def create_profile_image(user_data: dict, best_pp: str) -> str | None:
             gap=8
         )
 
-
-    # --- Прогресс-бар уровня ---
     lvl_current = stats.get("level", {}).get("current", 0)
     lvl_progress = stats.get("level", {}).get("progress", 0)
     bar_x, bar_y = 280, final_h - 35
     bar_width, bar_height = 480, 15
     
-    # Параметры тени
-    shadow_offset = (10, 10)  # смещение тени вправо и вниз
-    shadow_color = (0, 0, 0, 200)  # почти черная с прозрачностью
-    shadow_radius = 35  # радиус размытия тени
+    shadow_offset = (10, 10)
+    shadow_color = (0, 0, 0, 200)
+    shadow_radius = 35  
 
-    # Создаем слой для тени
     shadow_layer = Image.new("RGBA", banner.size, (0, 0, 0, 0))
     shadow_draw = ImageDraw.Draw(shadow_layer)
 
-    # Рисуем тень — тот же прямоугольник, что и прогресс-бар, но смещенный
     shadow_draw.rounded_rectangle(
         [bar_x + shadow_offset[0], bar_y + shadow_offset[1], bar_x + bar_width + shadow_offset[0], bar_y + bar_height + shadow_offset[1]],
         radius=12,
         fill=shadow_color
     )
 
-    # Размываем тень
     shadow_layer = shadow_layer.filter(ImageFilter.GaussianBlur(radius=shadow_radius))
 
-    # Вставляем тень под баннер
     banner = Image.alpha_composite(banner, shadow_layer)
 
-    # Теперь рисуем сам прогресс-бар поверх тени (как было у тебя)
     draw = ImageDraw.Draw(banner)
     draw.rounded_rectangle([bar_x, bar_y, bar_x + bar_width, bar_y + bar_height],
                         radius=12, fill=(60, 60, 60, 200))
@@ -4524,37 +4475,24 @@ async def create_profile_image(user_data: dict, best_pp: str) -> str | None:
     text_w = bbox[2] - bbox[0]
     text_h = bbox[3] - bbox[1]
 
-    # x — справа от прогресс-бара с небольшим отступом
-    text_x = bar_x + bar_width + 10  # 10 пикселей отступ справа от бара
-    # y — вертикально выровнять по центру бара
+    text_x = bar_x + bar_width + 10 
     text_y = bar_y + (bar_height - text_h) // 2
 
     draw_text_with_shadow_2(draw, (text_x, text_y), text, font_small, fill=(255, 255, 255, 230), shadowcolor=(0,0,0,150))
 
-
-
-    
-
     def draw_neon_glow(base_img, points, glow_color, glow_width=15, blur_radius=10):
-        # Создаем прозрачный слой по размеру base_img
         glow_layer = Image.new("RGBA", base_img.size, (0, 0, 0, 0))
         glow_draw = ImageDraw.Draw(glow_layer)
 
-        # Рисуем толстую линию яркого цвета (glow_color)
         glow_draw.line(points, fill=glow_color, width=glow_width, joint="curve")
 
-        # Размываем слой, чтобы получить свечения
         glow_layer = glow_layer.filter(ImageFilter.GaussianBlur(blur_radius))
 
-        # Накладываем слой свечения поверх base_img
         base_img.alpha_composite(glow_layer)
 
     def draw_gradient_line(draw, points, start_color, end_color, width=3):
-        # Рисует линию с градиентом цвета от start_color к end_color
-        # По точкам последовательно соединяем сегменты
         n = len(points)
         for i in range(n - 1):
-            # Интерполяция цвета
             t = i / (n - 2) if n > 2 else 0
             r = int(start_color[0] + (end_color[0] - start_color[0]) * t)
             g = int(start_color[1] + (end_color[1] - start_color[1]) * t)
@@ -4564,22 +4502,15 @@ async def create_profile_image(user_data: dict, best_pp: str) -> str | None:
             color = (r, g, b, a)
             draw.line([points[i], points[i+1]], fill=color, width=width, joint="curve")
 
-    # --- Основной код с добавлением места под график ---
-
     extra_height = 200
     new_banner = Image.new("RGBA", (banner.width, banner.height + extra_height), (30, 30, 30, 255))
     new_banner.paste(banner, (0, 0))
     banner = new_banner
     draw = ImageDraw.Draw(banner)
 
-    # Загрузка картинки для фона графика
     background_img = Image.open(GRAPH_PNG).convert("RGBA")
 
-    # Масштабируем фон по ширине графика и высоте области
-    # background_img = background_img.resize((graph_width, graph_height))
-
-    # Вставляем картинку на баннер в область графика
-    banner.paste(background_img, (0, 400), background_img)  # третий аргумент — маска альфа
+    banner.paste(background_img, (0, 400), background_img) 
 
 
     rank_history = user_data.get("rank_history", {}).get("data")
@@ -4593,31 +4524,20 @@ async def create_profile_image(user_data: dict, best_pp: str) -> str | None:
         max_rank = max(rank_history)
         rank_range = max_rank - min_rank if max_rank != min_rank else 1
 
-        # Нормализация значений в диапазон [0, graph_height], инвертируем Y для графика (чтобы ниже = хуже)
         points = []
         for i, rank in enumerate(rank_history):
             x = graph_x + (i / (len(rank_history) - 1)) * graph_width
             y = graph_y + ((rank - min_rank) / rank_range) * graph_height
 
             points.append((x, y))
-
-        # Серый фон графика
-        # draw.rectangle([graph_x, graph_y, graph_x + graph_width, graph_y + graph_height], fill=(50, 50, 50, 255))
-
-       
-
-        # Рисуем неоновое свечение
         draw_neon_glow(banner, points, glow_color, glow_width=15, blur_radius=15)
 
-        # Рисуем основную градиентную линию поверх свечения
         start_color = (255, 255, 255, 255)
         end_color = glow_color
         draw_gradient_line(draw, points, start_color, end_color, width=3)
 
-        # Рамка графика
         draw.rectangle([graph_x, graph_y, graph_x + graph_width, graph_y + graph_height], outline=(150, 150, 150, 255), width=1)
 
-    # Нормализация значений с инверсией Y
     points = []
     for i, rank in enumerate(rank_history):
         x = graph_x + (i / (len(rank_history) - 1)) * graph_width
@@ -4635,13 +4555,11 @@ async def create_profile_image(user_data: dict, best_pp: str) -> str | None:
     mid_y = graph_y + graph_height / 2
     padding = 5
 
-    text_x = graph_x + graph_width - text_w  # Правый край текста по правому краю графика
+    text_x = graph_x + graph_width - text_w 
 
     if last_point_y > mid_y:
-        # Линия снизу -> текст внутри графика, выше линии (меньше Y)
         text_y = max(last_point_y - text_h - padding, graph_y)
     else:
-        # Линия сверху -> текст внутри графика, ниже линии (больше Y)
         text_y = min(last_point_y + padding, graph_y + graph_height - text_h)
 
     draw_text_with_shadow(
@@ -4693,8 +4611,7 @@ async def compare_profile(update: Update, context: ContextTypes.DEFAULT_TYPE, us
                     text=f"`Загрузочка... {attempt}/{MAX_ATTEMPTS}`", 
                     parse_mode="Markdown")
 
-            # args = context.args
-            args_text = " ".join(context.args)  # объединяем все аргументы в одну строку
+            args_text = " ".join(context.args)
 
             if args_text.count("#") == 1:
                 await context.bot.edit_message_text(
@@ -4705,12 +4622,10 @@ async def compare_profile(update: Update, context: ContextTypes.DEFAULT_TYPE, us
                 )
                 return
             elif args_text.count("#") == 2:
-                # парсим ники между #
                 parts = args_text.split("#")
                 username1 = parts[1].strip()
                 username2 = parts[2].strip()
             else:
-                # обычный вариант без #
                 parts = args_text.split()
                 if len(parts) != 2:
                     await context.bot.edit_message_text(
@@ -4996,8 +4911,7 @@ async def beatmaps(update: Update, context: ContextTypes.DEFAULT_TYPE):
             warn_text=f"⏳ Подождите {COOLDOWN_STATS_COMMANDS} секунд"
         )
     if not can_run:
-        return
-      
+        return      
 
     caller_id = update.effective_user.id
     msg, reply_markup = build_beatmaps_text(caller_id)
@@ -5007,24 +4921,10 @@ async def beatmaps(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode="Markdown",
         reply_markup=reply_markup
     )
-async def fetch_beatmap_data(beatmap_url, cache_expire_sec=3600, retries=3, timeout_sec=10):
-    """
-    Получаем теги related_tags, tags, genre и language для одной карты по URL с кэшированием.
-    Повторяет запрос при ошибках `retries` раз.
-    timeout_sec — таймаут для сетевого запроса.
-    Возвращает словарь вида:
-    {
-        "related_tags": [...],
-        "tags": [...],
-        "genre": "Metal",
-        "language": "Japanese"
-    }
-    """
-    
+async def fetch_beatmap_data(beatmap_url, cache_expire_sec=3600, retries=3, timeout_sec=10):    
     beatmap_id = beatmap_url.rstrip("/").split("/")[-1]
     cache_path = get_stats_cache_path(beatmap_id)
 
-    # Проверяем кэш
     if os.path.exists(cache_path):
         mtime = os.path.getmtime(cache_path)
         if time.time() - mtime < cache_expire_sec:
@@ -5032,7 +4932,7 @@ async def fetch_beatmap_data(beatmap_url, cache_expire_sec=3600, retries=3, time
                 with open(cache_path, "r", encoding="utf-8") as f:
                     return json.load(f)
             except json.JSONDecodeError:
-                pass  # битый кэш, будем загружать заново
+                pass
 
     for attempt in range(1, retries + 1):
         try:
@@ -5086,9 +4986,7 @@ async def fetch_beatmap_data(beatmap_url, cache_expire_sec=3600, retries=3, time
                         print(f"Attempt {attempt}: Status {resp.status} for beatmap {beatmap_id}")
         except Exception as e:
             print(f"Attempt {attempt}: Error fetching beatmap {beatmap_id}: {e}")
-            await asyncio.sleep(1)  # небольшая пауза перед повтором
-
-    # Если все попытки не удались
+            await asyncio.sleep(1)
     return None
 async def beatmaps_button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -5096,9 +4994,6 @@ async def beatmaps_button_handler(update: Update, context: ContextTypes.DEFAULT_
     user_name = query.from_user.username
     action, owner_id = query.data.split(":")
     owner_id = int(owner_id)
-
-
-    # await query.answer()
 
     if action == "beatmaps_refresh":
         if not os.path.exists(FLAG_FILE):
@@ -5203,7 +5098,7 @@ async def beatmaps_button_handler(update: Update, context: ContextTypes.DEFAULT_
 
             if str(e) != "group_state == in_progress":
                 try:
-                    count_me_times = load_count_me_times()  # заново читаем файл
+                    count_me_times = load_count_me_times()
                     if str(user_id) in count_me_times:
                         del count_me_times[str(user_id)]
                         save_count_me_times(count_me_times)
@@ -5231,17 +5126,14 @@ async def beatmaps_button_handler(update: Update, context: ContextTypes.DEFAULT_
         try:            
             
             def filter_tags(tags, blacklist):
-                """Фильтрует список тегов по стоп-словам"""
                 return [t for t in tags if t.lower() not in blacklist]
 
             def format_top(counter, title, top_n=9, max_bar_width=5):
                 most_common = counter.most_common(top_n)
                 other_count = sum(count for _, count in counter.items()) - sum(count for _, count in most_common)
 
-                # разбиваем теги на категории
                 split_tags = [t[0].split("/", 1) + [t[1]] if "/" in t[0] else [t[0], "", t[1]] for t in most_common]
 
-                # максимальная длина первой и второй колонки
                 max_first_len = max(len(first) for first, _, _ in split_tags + [("other", "", 0)])
                 max_second_len = max(len(second) for _, second, _ in split_tags + [("","",0)])
 
@@ -5254,13 +5146,9 @@ async def beatmaps_button_handler(update: Update, context: ContextTypes.DEFAULT_
                     bar = "▇" * bar_len
                     lines.append(f"{first.ljust(max_first_len)}  {second.ljust(max_second_len)} {bar} {count}")
 
-                # добавим "other"
                 lines.append(f"{'other'.ljust(max_first_len)}  {'':{max_second_len}} {other_count}")
                 return lines
 
-
-            
-            # Чтение путей к картам
             with open(done_file, "r", encoding="utf-8") as f:
                 beatmap_paths = [line.strip() for line in f if line.strip()]
 
@@ -5287,14 +5175,12 @@ async def beatmaps_button_handler(update: Update, context: ContextTypes.DEFAULT_
                         try:
                             data = json.load(bf)
                         except json.JSONDecodeError:
-                            continue  # игнорируем пустые или некорректные JSON
+                            continue 
 
                         if isinstance(data, dict):
-                            # related_tags
                             related_tags = data.get("related_tags", [])
                             related_tag_counter.update(related_tags)
 
-                            # обычные tags (строка → список)
                             TAGS_FILTER = {
                                 "the","of", "to","a","no", "wa","tv",                               
                                 "english", "japanese", "russian", "korean",                               
@@ -5306,7 +5192,7 @@ async def beatmaps_button_handler(update: Update, context: ContextTypes.DEFAULT_
                                 tags = tags.split()
                             tags = filter_tags(tags, TAGS_FILTER)
                             tags_counter.update(tags)
-                            # genre и language
+
                             genre = data.get("genre")
                             if genre:
                                 genre_counter.update([genre])
@@ -5320,29 +5206,20 @@ async def beatmaps_button_handler(update: Update, context: ContextTypes.DEFAULT_
                                 artist_counter.update([artist])
 
                         elif isinstance(data, list):
-                            # на случай старого формата JSON
                             tags_counter.update(data)
 
             if not related_tag_counter and not tags_counter:
                 await safe_query_answer(query, "⚠️ Нет тегов в картах.")
                 return
 
-
-
-
-            # --- Формирование текста ---
             user_data = load_user_data()
             saved_name = user_data.get(str(user_id), {}).get("name", "")
             saved_name = html.escape(saved_name)
-
-            
 
             related_lines = format_top(related_tag_counter, "related_tags")
             tags_lines = format_top(tags_counter, "обычные tags")
             artist_lines = format_top(artist_counter, "исполнители")
 
-
-            # собираем в одну таблицу
             all_lines = []
             all_lines.append(f"{title_text} 🏷 Юзертеги: {saved_name}") 
             all_lines.append("────────────────────────────")
@@ -5355,17 +5232,13 @@ async def beatmaps_button_handler(update: Update, context: ContextTypes.DEFAULT_
             all_lines.extend(artist_lines)
             all_lines.append("────────────────────────────")
 
-
-            # жанр и язык
             top_genre = html.escape(genre_counter.most_common(1)[0][0]) if genre_counter else "—"
             top_language = html.escape(language_counter.most_common(1)[0][0]) if language_counter else "—"
             all_lines.append(f"✳️ Любимый жанр: {top_genre}")
             all_lines.append(f"🌐 Любимый язык: {top_language}")
 
-            # экранируем и оборачиваем в <pre>
             table_text = "<pre>" + html.escape("\n".join(all_lines)) + "</pre>"
 
-            # --- Отправка ---
             if update and context:
                 try:
                     await context.bot.edit_message_text(
@@ -5400,7 +5273,7 @@ async def worker():
             parts = task_line.split(" ")
             url, task, group_id = parts[0], parts[1], parts[2]
 
-            skip_timeout = False  # флаг для пропуска задержки
+            skip_timeout = False 
 
             if task == "beatmap_data":
                 file_id = url.split("/")[-1]
@@ -5416,17 +5289,14 @@ async def worker():
                         json.dump(data, f, ensure_ascii=False, indent=4)
                     print(f"✅ Saved {out_file}")
 
-            # удаляем выполненную задачу
             with open(QUEUE_FILE, "w", encoding="utf-8") as f:
                 f.writelines(line + "\n" for line in lines[1:])
 
             processed += 1
 
-            # каждые 25 задач или при пустой очереди проверяем группы
             if processed % 25 == 0 or not lines[1:]:
                 mark_group_progress()
 
-            # задержка только если есть следующая задача
             if os.path.exists(QUEUE_FILE) and lines[1:]:
                 if skip_timeout:
                     print("⚡ Skipped timeout (cached file)")
@@ -5442,15 +5312,12 @@ async def worker():
             os.remove(FLAG_FILE)
         print("worker job done")
 async def addtask(url, task, group_id):
-    # вычисляем имя выходного файла
     file_id = url.split("/")[-1]
     out_file = os.path.join(STATS_BEATMAPS, f"{file_id}.json")
 
-    # добавляем задачу в очередь
     with open(QUEUE_FILE, "a", encoding="utf-8") as f:
         f.write(f"{url} {task} {group_id}\n")
 
-    # фиксируем её в контрольном файле группы
     with open(os.path.join(GROUPS_DIR, f"{group_id}.todo"), "a", encoding="utf-8") as f:
         f.write(out_file + "\n")
 
@@ -5511,11 +5378,8 @@ async def simulate(update: Update, context: ContextTypes.DEFAULT_TYPE):
         asyncio.create_task(delete_user_message(update, context, delay=4))
         return
 
-    # match.group(1) — ID конкретной карты после #osu/...
-    # match.group(2) — если без хэша, берем ID сета
     beatmap_id = match.group(1) if match.group(1) else match.group(2)
 
-    # Сбрасываем старую сессию
     if user_id in sessions_simulate:
         try:
             await context.bot.delete_message(chat_id=sessions_simulate[user_id]["chat_id"],
@@ -5524,7 +5388,6 @@ async def simulate(update: Update, context: ContextTypes.DEFAULT_TYPE):
             pass
         del sessions_simulate[user_id]
 
-    # ---- Делаем копию шаблона ----
     user_params = {k: v.copy() for k, v in PARAMS_TEMPLATE.items()}
 
     path, values = await beatmap(beatmap_id)
@@ -5601,7 +5464,6 @@ def get_simulate_keyboard(user_id):
                 row.append(InlineKeyboardButton(keys[i + j], callback_data=f"simulate_{keys[i + j]}"))
         buttons.append(row)
 
-    # Кнопка Закрыть в отдельный ряд
     buttons.append([InlineKeyboardButton("☑️", callback_data="simulate_close")])
 
     return InlineKeyboardMarkup(buttons)
@@ -5656,10 +5518,8 @@ async def simulate_button_handler(update: Update, context: ContextTypes.DEFAULT_
     if not sess or sess["message_id"] != query.message.message_id:
         return await safe_query_answer(query, "❌ Это меню не для вас")
 
-    # --- Закрыть меню ---
     if query.data == "simulate_close":
         try:
-            # Убираем клавиатуру
             await context.bot.edit_message_reply_markup(
                 chat_id=sess["chat_id"],
                 message_id=sess["message_id"],
@@ -5668,19 +5528,15 @@ async def simulate_button_handler(update: Update, context: ContextTypes.DEFAULT_
         except:
             pass
 
-        # Удаляем сообщение-подсказку, если оно есть
         if sess.get("hint_id"):
             try:
                 await context.bot.delete_message(chat_id=sess["chat_id"], message_id=sess["hint_id"])
             except:
                 pass
 
-        # Удаляем сессию
         del sessions_simulate[user_id]
         return await safe_query_answer(query, "✅ Меню закрыто")
 
-
-    # --- Работа с параметрами ---
     schema = sess["schema"]
     param_name = query.data.replace("simulate_", "", 1)
     if param_name not in schema:
@@ -5882,7 +5738,7 @@ async def simulate_text_handler(update: Update, context: ContextTypes.DEFAULT_TY
             await context.bot.delete_message(chat_id=sess["chat_id"], message_id=sess["hint_id"])
         except:
             pass
-        sess["hint_id"] = None  # сброс, чтобы не пытаться удалить снова
+        sess["hint_id"] = None
     
     asyncio.create_task(delete_user_message(update, context, delay=0))
     try:        
@@ -5966,13 +5822,13 @@ def calc_accuracy(n300, n100, n50, miss):
     if total_hits == 0:
         return 0.0
     acc = (300 * n300 + 100 * n100 + 50 * n50) / (300 * total_hits)
-    return acc * 100  # в процентах
+    return acc * 100 
 def update_hits(sess, param_name, new_value):
     priority = ["300", "100", "50", "мисс"]
     key_map = {"300k": "300", "100k": "100", "50k": "50", "miss": "мисс"}
     real_name = key_map.get(param_name, param_name)
     print("update_hits called with:", param_name, "->", key_map.get(param_name))
-    # текущее состояние
+    
     changed_flags = {
         "300": sess["300_changed"],
         "100": sess["100_changed"],
@@ -5981,15 +5837,12 @@ def update_hits(sess, param_name, new_value):
     }
     values = {k: int(sess["params"][k]) for k in priority}
 
-    # считаем уже зафиксированные
     fixed = {k: v for k, v in values.items() if changed_flags[k] and v > 0}
     free = [k for k in priority if not changed_flags[k] or values[k] == 0]
 
-    # если ≥3 фиксированных и поле, которое пытаемся менять, ещё не фиксировано → отказываем
     if len(fixed) >= 3 and not changed_flags[real_name]:
-        return  # ничего не меняем
+        return
 
-    # обновляем значение и флаг
     values[real_name] = int(new_value)
     if real_name == "300":
         sess["300_changed"] = new_value != 0
@@ -6000,7 +5853,6 @@ def update_hits(sess, param_name, new_value):
     elif real_name == "мисс":
         sess["miss_changed"] = new_value != 0
 
-    # пересчёт заново после апдейта
     changed_flags = {
         "300": sess["300_changed"],
         "100": sess["100_changed"],
@@ -6019,15 +5871,9 @@ def update_hits(sess, param_name, new_value):
             values[k] = remaining
             break
 
-    # сохраняем обратно
     for k in priority:
         sess["params"][k] = str(values[k])
 def calculate_rank(n300: int, n100: int, n50: int, miss: int, lazer: bool = True) -> str:
-    """
-    Возвращает ранк (SS, S, A, B, C, D) по хитам.
-    n300, n100, n50, miss — количество хитов
-    lazer — флаг режима Lazer
-    """
     n300 = int(n300 or 0)
     n100 = int(n100 or 0)
     n50 = int(n50 or 0)
@@ -6037,13 +5883,10 @@ def calculate_rank(n300: int, n100: int, n50: int, miss: int, lazer: bool = True
         return "D"
 
     if lazer:
-        # osu!Lazer точность
         accuracy = (300*n300 + 100*n100 + 50*n50) / (300*total_hits) * 100
     else:
-        # Классическая osu! формула
         accuracy = (n300 + n100*2/3 + n50*1/3) / total_hits * 100
 
-    # Ранки по accuracy + миссы
     if miss == 0 and n300 == total_hits:
         rank = "SS"
     elif accuracy > 95:
@@ -6092,7 +5935,7 @@ def calculate_beatmap(path: str,
         beatmap = rosu.Beatmap(content=f.read())
 
     if beatmap.is_suspicious():
-        raise ValueError("Карта подозрительная, расчет прерван.")
+        raise ValueError("sus map")
 
     n300 = score_stats.get("count_300", score_stats.get("great", score_stats.get("n300")))
     n100 = score_stats.get("count_100", score_stats.get("ok", score_stats.get("n100")))
@@ -6172,7 +6015,7 @@ def calculate_beatmap_pp(path: str,
         beatmap = rosu.Beatmap(content=f.read())
 
     if beatmap.is_suspicious():
-        raise ValueError("Карта подозрительная, расчет прерван.")
+        raise ValueError("sus mapwe")
     
     
     n300 = score_stats.get("count_300", score_stats.get("great", score_stats.get("n300")))
@@ -6371,7 +6214,6 @@ async def reset_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     user_id = str(update.message.from_user.username)
 
-    # Загружаем актуальные данные
     data = load_user_data()
 
     if user_id in data:
@@ -6383,7 +6225,7 @@ async def reset_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 #all moderation
 async def check_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await log_all_update(update)  # Логируем все апдейты
+    await log_all_update(update)
     
     print(f"Сообщение получено в чате {update.effective_chat.id} в топике {getattr(update.effective_message, 'message_thread_id', None)}")
 
@@ -6462,7 +6304,6 @@ async def check_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 except Exception as e:
                     print(e)                     
 
-        # Проверка на кубик в LUCKY_TOPIC_ID
         if thread_id == LUCKY_TOPIC_ID:
             if update.effective_message.dice and update.effective_message.dice.emoji == LUCKY_DICE_EMOJI:
                 if random.random() < CHANCE_DICE:
@@ -6494,13 +6335,10 @@ async def check_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             message = update.effective_message
             if not (message.document or message.photo):
                 try:
-                    # Пересылаем сообщение в другой топик
                     await message.forward(
                         chat_id=TARGET_CHAT_ID,
                         message_thread_id=TARGET_FORWARD_TOPIC_ID
                     )
-
-                    # Удаляем оригинал
                     await message.delete()
 
                     user_str = f"{message.from_user.full_name} (id: {message.from_user.id})" if message.from_user else "Неизвестный пользователь"
@@ -6526,10 +6364,8 @@ async def check_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if user_id not in ratings:
             ratings[user_id] = {"name": username, "rating": 0}
         else:
-            # Обновляем имя, если вдруг изменилось
             ratings[user_id]["name"] = username
 
-        # Подсчет рейтинга
         if any(word in text for word in positive_words):
             ratings[user_id]["rating"] += 1
         if any(word in text for word in negative_words):
@@ -6560,10 +6396,8 @@ async def check_reminders(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for i, reminder in enumerate(reminders, start=1):
         message_lower = reminder["message"].lower()
 
-        # проверка username
         if f"@{username_lower}" in message_lower:
 
-            # проверяем дату и время
             reminder_datetime_str = f"{reminder['date']} {reminder['time']}"
             reminder_datetime = datetime.strptime(reminder_datetime_str, "%Y-%m-%d %H:%M")
             now = datetime.now()
@@ -6571,18 +6405,14 @@ async def check_reminders(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if now >= reminder_datetime:
                 await update.effective_chat.send_message(reminder["message"])
 
-                # уменьшаем repeatCount
                 reminder["repeatCount"] -= 1
-                print(f"[DEBUG] Новый repeatCount: {reminder['repeatCount']}")
 
                 if reminder["repeatCount"] > 0:
-                    # переносим дату на день вперёд
                     new_date = (now + timedelta(days=1)).strftime("%Y-%m-%d")
                     new_time = now.strftime("%H:%M")
                     reminder["date"] = new_date
                     reminder["time"] = new_time
                     new_reminders.append(reminder)
-                    print(f"[DEBUG] Повтор напоминания запланирован на {new_date} {new_time}")
               
                 updated = True
             else:
@@ -6596,7 +6426,6 @@ async def check_reminders(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 import string
 def generate_unique_code(existing_codes, length=8):
-    """Генерация уникального кода, не повторяющегося в existing_codes"""
     chars = string.ascii_letters + string.digits
     while True:
         code = ''.join(random.choices(chars, k=length))
@@ -6612,7 +6441,6 @@ async def reminders_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     user_id = str(update.effective_user.id)
 
-    # Загружаем существующие пароли
     try:
         with open(REMINDERS_PW_FILE, "r", encoding="utf-8") as f:
             passwords = json.load(f)
@@ -6626,16 +6454,13 @@ async def reminders_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         print(f"[DEBUG] Пользователь {user_id} запросил существующий код: {code}")
         return
 
-    # Если кода нет, генерируем новый
     existing_codes = set(passwords.values())
     code = generate_unique_code(existing_codes)
 
-    # Сохраняем код за пользователем
     passwords[user_id] = code
     with open(REMINDERS_PW_FILE, "w", encoding="utf-8") as f:
         json.dump(passwords, f, ensure_ascii=False, indent=2)
 
-    # Отправляем новый код
     await update.effective_message.reply_text(f"Твой пароль: `{code}`", parse_mode="Markdown")
     print(f"[DEBUG] Создан новый код для пользователя {user_id}: {code}")
 
@@ -6654,7 +6479,7 @@ async def start_osu_link_handler(update, context):
     except Exception as e: print(e)
 async def osu_link_profile_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text or update.message.caption
-    if not text:  # если вообще нет текста/подписи
+    if not text:
         return False
 
     match = OSU_USER_REGEX.search(text)
@@ -6667,7 +6492,7 @@ async def osu_link_profile_handler(update: Update, context: ContextTypes.DEFAULT
     return True
 async def osu_link_score_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text or update.message.caption
-    if not text:  # если вообще нет текста/подписи
+    if not text: 
         return False
 
     match = OSU_SCORE_REGEX.search(text)
@@ -6682,7 +6507,7 @@ async def score(update: Update, context: ContextTypes.DEFAULT_TYPE, requested_by
     """Функция /score для показа одного конкретного скора по его ID"""
     user_id = str(update.effective_user.id)
     print('async def score')
-    # Проверка кулдауна
+
     if requested_by_user:
         can_run = await check_user_cooldown(
             command_name="score",
@@ -6695,7 +6520,6 @@ async def score(update: Update, context: ContextTypes.DEFAULT_TYPE, requested_by
         if not can_run:
             return
 
-    # Получаем score_id
     if context.args:
         score_id = context.args[0]
     else:
@@ -6705,10 +6529,8 @@ async def score(update: Update, context: ContextTypes.DEFAULT_TYPE, requested_by
     try:
         token = await get_osu_token()
 
-        # Получаем и кешируем скор (включая enrich)
         await get_score_by_id(score_id, token)
 
-        # Загружаем готовый скор из файла
         cached_score = load_score_file(score_id)
         if not cached_score:
             await safe_send_message(update, "❌ Не удалось загрузить скор после кеша", parse_mode="Markdown")
@@ -6716,7 +6538,6 @@ async def score(update: Update, context: ContextTypes.DEFAULT_TYPE, requested_by
 
         final_score = cached_score["raw"]
 
-        # Отправляем скор пользователю
         await send_score(update, final_score, user_id, user_id, user_id, is_recent=False)
 
     except Exception:
@@ -6734,27 +6555,22 @@ async def get_score_by_id(score_id: str, token: str, timeout_sec: int = 10):
             data = await get_score_page(session, score_id, score_id, no_check=True)
 
         if not data:
-            return None   # защита от пустых данных
+            return None  
 
         user_id = str(data["user"]["id"])
         additional_data = await get_osu_user_additional_data(user_id, "osu", token)
 
-        # сначала кладём сырые данные в кеш
         cached_entry = {"raw": data, "processed": {}, "ready": False}
         save_score_file(score_id, cached_entry)
 
-        # enrich
         async with aiohttp.ClientSession() as session:
             await enrich_score_lazer(session, user_id, score_id)
 
-        # достаём обновлённые данные (после enrich)
         cached_entry = load_score_file(score_id)
         raw = cached_entry["raw"]
 
-        # process_score вызываем уже с настоящими данными
         final_score = await process_score(raw, additional_data)
 
-        # можно сохранить результат обратно
         cached_entry["raw"] = final_score
         cached_entry["ready"] = True
         save_score_file(score_id, cached_entry)
@@ -6785,7 +6601,7 @@ async def ping(update: Update, context: ContextTypes.DEFAULT_TYPE):
             message_thread_id=update.message.message_thread_id
         )
         end = time.time()
-        latency = (end - start) * 1000  # миллисекунды
+        latency = (end - start) * 1000 
         await msg.edit_text(f"🏓   {latency:.2f} ms")
 
     except Exception as e:
@@ -6833,9 +6649,8 @@ async def nochoke(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
         )
     if not can_run:
         return
-    MAX_ATTEMPTS = 1  # Количество попыток
+    MAX_ATTEMPTS = 1  
 
-    # --- Логика сохранённого ника ---
     user_id = str(update.message.from_user.id)
     user_data = load_user_data()
     saved_name = user_data.get(str(update.effective_user.username), {}).get("name")
@@ -6844,7 +6659,7 @@ async def nochoke(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
     args = context.args
 
     if args:
-        # ищем %N
+        # %N
         for arg in args:
             if arg.startswith("%") and arg[1:].isdigit():
                 miss_limit = int(arg[1:])
@@ -6866,7 +6681,6 @@ async def nochoke(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
     if saved_name is None:
         saved_name = 'нет'
 
-    # Временное сообщение создаём ОДИН РАЗ до попыток
     temp_message = await update.message.reply_text(
         text=f"`Загрузочка... (20 сек макс.)`\n\n"
                         f"Сохраненный ник: *{saved_name}*\n\n"
@@ -6876,7 +6690,6 @@ async def nochoke(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
 
     for attempt in range(1, MAX_ATTEMPTS + 1):
         try:
-            # --- Получение профиля с таймаутом 10 секунд ---
             token = await get_osu_token()
             user_data = await asyncio.wait_for(get_user_profile(username, token=token), timeout=10)
             if not user_data:
@@ -6928,15 +6741,12 @@ async def nochoke(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
                     score_stats = score.get("score_stats")
                     lazer = score.get("lazer")   
 
-                    # проверка лимита миссов
                     misses = score.get("misses", 0)
                     if miss_limit is not None and misses > miss_limit:
-                        # такие скора НЕ лечим
                         new_pp = pp
                         max_combo = combo
-                        stars = score.get("stars", 0.0)  # или пересчёт звёзд можно оставить
+                        stars = score.get("stars", 0.0)  
                     else:
-                        # лечим как раньше
                         new_pp, stars, max_combo = calculate_beatmap_pp(
                             path, acc, mods_str, score_stats, lazer
                         )
@@ -6953,7 +6763,7 @@ async def nochoke(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
                 best_scores = sorted(
                     best_scores, 
                     key=lambda s: s.get("pp_new", 0), 
-                    reverse=True  # убери reverse, если хочешь по возрастанию
+                    reverse=True
                 )
                 for i, score in enumerate(best_scores):
                     score["weight_percent"] = 0.95 ** i
@@ -7042,7 +6852,6 @@ async def nochoke(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
                     parse_mode="Markdown"
                 )
 
-# функция для генерации текста страницы
 def get_page_text_choke(user_data, best_scores, page=0, page_size=5):
     start = page * page_size
     end = start + page_size
@@ -7097,18 +6906,14 @@ def get_pagination_keyboard_choke(page, total_pages, user_id):
         buttons.append(InlineKeyboardButton("След. страница ➡️", callback_data=f"page_{page+1}_{user_id}"))
     return InlineKeyboardMarkup([buttons]) if buttons else None
 
-
-# callback для кнопок
 async def page_callback_choke(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    await query.answer()  # обязательно
+    await query.answer() 
 
     best_scores = context.user_data.get("best_scores", [])
     user_data = context.user_data.get("user_data")
     total_pages = context.user_data.get("total_pages", 1)
 
-
-    # проверяем, что нажал владелец
     _, page_str, owner_id_str = query.data.split("_")
     owner_id = int(owner_id_str)
     if query.from_user.id != owner_id:
@@ -7126,7 +6931,6 @@ async def page_callback_choke(update: Update, context: ContextTypes.DEFAULT_TYPE
         reply_markup=keyboard
     )
 
-# команда, которая отправляет первую страницу
 async def show_scores_choke(update: Update, context: ContextTypes.DEFAULT_TYPE):
     best_scores = context.user_data.get("best_scores", [])
     user_data = context.user_data.get("user_data")
@@ -7159,9 +6963,8 @@ async def average_stats(update: Update, context: ContextTypes.DEFAULT_TYPE, user
         )
     if not can_run:
         return
-    MAX_ATTEMPTS = 3  # Количество попыток
+    MAX_ATTEMPTS = 3 
 
-    # --- Логика сохранённого ника ---
     user_id = str(update.message.from_user.id)
     user_data = load_user_data()
     saved_name = user_data.get(str(update.effective_user.username), {}).get("name")
@@ -7185,7 +6988,6 @@ async def average_stats(update: Update, context: ContextTypes.DEFAULT_TYPE, user
     if saved_name is None:
         saved_name = 'нет'
 
-    # Временное сообщение создаём ОДИН РАЗ до попыток
     temp_message = await update.message.reply_text(
         "`Загрузка...`\n\n\n"
         "⚙ *Дополнительно*\n\n"
@@ -7196,7 +6998,6 @@ async def average_stats(update: Update, context: ContextTypes.DEFAULT_TYPE, user
 
     for attempt in range(1, MAX_ATTEMPTS + 1):
         try:
-            # --- Получение профиля с таймаутом 10 секунд ---
             token = await get_osu_token()
             user_data = await asyncio.wait_for(get_user_profile(username, token=token), timeout=10)
             if not user_data:
@@ -7223,7 +7024,6 @@ async def average_stats(update: Update, context: ContextTypes.DEFAULT_TYPE, user
             if isinstance(best_scores, list) and best_scores:
                 def format_value(val, is_time=False):
                     if is_time:
-                        # Переводим секунды в формат M:SS
                         minutes = int(val // 60)
                         seconds = int(val % 60)
                         return f"{minutes}:{seconds:02d}"
@@ -7231,7 +7031,6 @@ async def average_stats(update: Update, context: ContextTypes.DEFAULT_TYPE, user
                         return f"{val:.2f}"
                     return str(val)
 
-                # Списки для сбора данных
                 accs, combos, misses, pps = [], [], [], []
                 stars, ars, css, hps, ods, bpms, lengths = [], [], [], [], [], [], []
 
@@ -7243,7 +7042,6 @@ async def average_stats(update: Update, context: ContextTypes.DEFAULT_TYPE, user
                 #         "ruleset_id": 0  # стандартный osu! ruleset
                 #     })
 
-                # # Вызываем пакетно (параллельно 5, задержка 0.2 с)
                 # attributes_list = await get_beatmap_attributes_batch(beatmap_requests, token=token, parallel_limit=5, delay_between_batches=0.1)
 
                 maps_ids = []
@@ -7431,7 +7229,7 @@ def calculate_beatmap_stars(path: str,
         beatmap = rosu.Beatmap(content=f.read())
 
     if beatmap.is_suspicious():
-        raise ValueError("Карта подозрительная, расчет прерван.")
+        raise ValueError("sus map")
 
 
     perf = rosu.Performance(       
@@ -7454,7 +7252,7 @@ async def post_with_timeout(session: aiohttp.ClientSession, url: str, headers: d
 async def fetch_attributes_single(beatmap_id: int, mods: List[str], ruleset_id: int, token: str, session: aiohttp.ClientSession, semaphore: asyncio.Semaphore) -> Dict | None:
     url = f"https://osu.ppy.sh/api/v2/beatmaps/{beatmap_id}/attributes"
     body = {"mods": mods, "ruleset_id": ruleset_id}
-    async with semaphore:  # Ограничиваем параллельные запросы
+    async with semaphore:  
         data = await try_request(post_with_timeout, retries=3, session=session, url=url, headers={
             "Authorization": f"Bearer {token}",
             "Accept": "application/json",
@@ -7476,7 +7274,6 @@ async def get_beatmap_attributes_batch(beatmap_requests: List[Dict], token: str 
     results = []
 
     async with aiohttp.ClientSession() as session:
-        # Разбиваем на батчи
         for i in range(0, len(beatmap_requests), parallel_limit):
             batch = beatmap_requests[i:i+parallel_limit]
             tasks = [
@@ -7485,86 +7282,10 @@ async def get_beatmap_attributes_batch(beatmap_requests: List[Dict], token: str 
             ]
             batch_results = await asyncio.gather(*tasks)
             results.extend(batch_results)
-            await asyncio.sleep(delay_between_batches)  # Задержка между батчами
+            await asyncio.sleep(delay_between_batches)
 
     return results
 
-#delayed
-async def render(update: Update, context: ContextTypes.DEFAULT_TYPE):    
-    return
-    if not update.message.document:
-        # await update.message.reply_text("Отправь мне .osr файл.")
-        return
-    
-    doc = update.message.document
-    if not doc.file_name.endswith(".osr"):
-        # await update.message.reply_text("Нужен именно .osr файл.")
-        return
-    
-    can_run = await check_user_cooldown(
-        command_name="render",
-        user_id=str(update.effective_user.id),
-        cooldown_seconds=COOLDOWN_RENDER_COMMANDS,           
-        update=update,
-        context=context,
-        warn_text=f"⏳ Подождите {COOLDOWN_RENDER_COMMANDS} секунд"
-    )
-    if not can_run:
-        return
-
-    max_attempts = 3
-    for _ in range(max_attempts):
-        try:
-            # путь куда сохранить .osr
-            replay_file = os.path.join(DANSER_REPLAYS_DIR, doc.file_name)
-            file = await doc.get_file()
-            await file.download_to_drive(replay_file)
-            
-            beatmapset_id = await get_beatmapset_id(replay_file, token=None)
-            download_osz(beatmapset_id, OSU_SESSION, DANSER_MAPS_DIR)
-            break
-        except Exception as e: print(e)   
-
-    # имя для выходного видео (без расширения .osr → ставим .mp4)
-    base_name = os.path.splitext(doc.file_name)[0]
-    output_file = os.path.join(DANSER_RENDERS_DIR, f"{base_name}.mp4").replace("\\", "/")
-
-    command = [
-        danser_path,
-        "-replay", replay_file,
-        "-record",
-        "-out", base_name,
-        "-skin", "000001",
-        "-preciseprogress"
-    ]
-
-    max_attempts = 3
-    for _ in range(max_attempts):
-        try:
-            status_msg = await update.message.reply_text("🎬 Загрузочка...")
-            break
-        except Exception as e: print(e)
-            
-   
-    process = await asyncio.create_subprocess_exec(
-        *command,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.STDOUT
-    )
-
-    next_update = 0 
-
-    async for line in process.stdout:
-        text = line.decode().strip()
-        match = re.search(r"Progress: (\d+)%", text)
-        if match:
-            percent = int(match.group(1))
-            if percent >= next_update:
-                await status_msg.edit_text(f"🎬 Рендер: {next_update}%")
-                next_update += 15
-
-    await process.wait()
-    await send_render(update, context, base_name, status_msg)
 async def get_beatmapset_md5(replay_path: str) -> str:
     replay = Replay.from_path(replay_path)
     return replay.beatmap_hash
@@ -7581,10 +7302,6 @@ async def get_beatmapset_id(replay_path: str, token: str) -> int:
     return await get_beatmapset_id_from_md5(md5_hash, token)
 async def download_osz_async(mapset_id: int, osu_session: str, save_dir: str,
                              connect_timeout: int = 5, read_timeout: int = 60, chunk_size: int = 8192):
-    """
-    Асинхронная версия скачивания .osz
-    Использует aiohttp + aiofiles, не блокирует event loop.
-    """
     extract_dir = os.path.join(save_dir, str(mapset_id))
     if os.path.exists(extract_dir):
         print(f"using cache {extract_dir}")
@@ -7610,11 +7327,11 @@ async def download_osz_async(mapset_id: int, osu_session: str, save_dir: str,
     async with aiohttp.ClientSession(timeout=timeout, cookies=cookies, headers=headers) as session:
         async with session.get(url) as resp:
             if resp.status != 200:
-                raise ValueError(f"Не удалось скачать карту {mapset_id}, код {resp.status}")
+                raise ValueError(f"{mapset_id}{resp.status}")
 
             content_type = resp.headers.get("Content-Type", "")
             if "text/html" in content_type:
-                raise ValueError("Получен HTML вместо OSZ. Проверь куки и mapset_id.")
+                raise ValueError("HTML, not OSZ")
 
             async with aiofiles.open(osz_path, "wb") as f:
                 async for chunk in resp.content.iter_chunked(chunk_size):
@@ -7625,8 +7342,6 @@ async def download_osz_async(mapset_id: int, osu_session: str, save_dir: str,
 
     os.makedirs(extract_dir, exist_ok=True)
 
-    # zipfile остаётся синхронным, но чтобы не блокировать loop,
-    # выносим распаковку в отдельный поток
     def _extract():
         with zipfile.ZipFile(osz_path, 'r') as zip_ref:
             zip_ref.extractall(extract_dir)
@@ -7636,11 +7351,6 @@ async def download_osz_async(mapset_id: int, osu_session: str, save_dir: str,
 
     return extract_dir
 def download_osr(score_id: int, osu_session: str, save_dir: str) -> str:
-    """
-    Скачивает .osr реплей по score_id с учётом куки osu_session,
-    сохраняет в save_dir и возвращает путь к файлу.
-    """
-
     url = f"https://osu.ppy.sh/scores/{score_id}/download"
     cookies = {"osu_session": osu_session}
     headers = {
@@ -7651,7 +7361,6 @@ def download_osr(score_id: int, osu_session: str, save_dir: str) -> str:
 
     replay_path = os.path.join(save_dir, f"{score_id}.osr")
 
-    # Скачивание с проверкой content-type
     with requests.get(url, cookies=cookies, headers=headers, stream=True) as r:
         r.raise_for_status()
         content_type = r.headers.get("Content-Type", "")
@@ -7663,152 +7372,23 @@ def download_osr(score_id: int, osu_session: str, save_dir: str) -> str:
                 f.write(chunk)
 
     print(f"Скачан реплей: {replay_path}")
-    return replay_path  # возвращаем путь к .osr файлу
-async def render_score(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    return
-    user_id = update.effective_user.id
-    chat_id = update.effective_chat.id
+    return replay_path  
 
-    message_text = update.message.text.strip()
-    match = OSU_SCORE_REGEX.search(message_text)
-
-    if not match:        
-        msg = await update.message.reply_text(
-            "❌ Нужна ссылка на скор"
-        )
-        asyncio.create_task(delete_message_after_delay(context, msg.chat.id, msg.message_id, 5))
-        asyncio.create_task(delete_user_message(update, context, delay=4))
-        return
-    
-    score_id = match.group(1)
-    score_url = f"https://osu.ppy.sh/scores/{score_id}"
-
-
-    can_run = await check_user_cooldown(
-        command_name="render_score",
-        user_id=str(update.effective_user.id),
-        cooldown_seconds=COOLDOWN_RENDER_COMMANDS,           
-        update=update,
-        context=context,
-        warn_text=f"⏳ Подождите {COOLDOWN_RENDER_COMMANDS} секунд"
-    )
-    if not can_run:
-        return
-
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(score_url) as resp:
-                page_content = await resp.text()
-    except Exception as e:
-        await update.message.reply_text(f"❌ Не удалось загрузить страницу: {e}")
-        return
-
-    tree = lxml.html.fromstring(page_content)
-    script = tree.xpath('//script[@id="json-raw"]/text()')
-    if not script:
-        await update.message.reply_text("❌ Реплей не найден на странице.")
-        return
-
-    score_data = json.loads(script[0])
-    if not score_data.get("has_replay"):
-        await update.message.reply_text("❌ У этого скора нет реплея.")
-        return
-
-    score_id = score_data["id"]
-
-    try:
-        # скачиваем реплей с кукой и сохраняем в DANSER_REPLAYS_DIR
-        replay_file = download_osr(score_id, OSU_SESSION, DANSER_REPLAYS_DIR).replace("\\", "/")
-    except Exception as e:
-        await update.message.reply_text(f"❌ Не удалось скачать реплей: {e}")
-        return
-    
-    max_attempts = 3
-    for _ in range(max_attempts):
-        try:     
-            beatmapset_id = await get_beatmapset_id(replay_file, token=None)
-            download_osz(beatmapset_id, OSU_SESSION, DANSER_MAPS_DIR)
-            break
-        except Exception as e: print(e)   
-
-
-    base_name = os.path.splitext(os.path.basename(replay_file))[0]
-    output_file = os.path.join(DANSER_RENDERS_DIR, f"{base_name}.mp4").replace("\\", "/")
-
-    command = [
-        danser_path,
-        "-replay", replay_file,
-        "-record",
-        "-out", base_name,
-        "-skin", "000001",
-        "-preciseprogress"
-    ]
-
-    try:
-        status_msg = await update.message.reply_text("🎬 Загрузка и рендер реплея...")
-    except Exception as e:
-        print(e)
-        return
-
-    process = await asyncio.create_subprocess_exec(
-        *command,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.STDOUT
-    )
-
-    next_update = 0
-    async for line in process.stdout:
-        text = line.decode().strip()
-        match = re.search(r"Progress: (\d+)%", text)
-        if match:
-            percent = int(match.group(1))
-            if percent >= next_update:
-                await status_msg.edit_text(f"🎬 Рендер: {next_update}%")
-                next_update += 15
-
-    await process.wait()
-    await send_render(update, context, base_name, status_msg)
-async def send_render(update: Update, context: ContextTypes.DEFAULT_TYPE, base_name, status_msg):    
-    return
-    asyncio.create_task(delete_message_after_delay(context, status_msg.chat_id, status_msg.message_id, 1)) 
-    
-    max_attempts = 3
-    for _ in range(max_attempts):
-        try:
-            output_file = os.path.join(DANSER_RENDERS_DIR, f"{base_name}.mp4").replace("\\", "/")
-
-            output_file = compress_video_if_needed(output_file, max_size_mb=45)
-
-            try:
-                with open(output_file, "rb") as f:
-                    await update.message.reply_video(video=InputFile(f), caption=f"@{str(update.effective_user.username)}")
-            finally:
-                original_file = output_file.replace("_compressed", "") if "_compressed" in output_file else output_file
-                compressed_file = output_file if "_compressed" in output_file else None
-                cleanup_files(original_file, compressed_file)                               
-        except Exception as e: print(e)
-def compress_video_if_needed(input_path: str, max_size_mb: int = 45) -> str:
-    """
-    Проверяет размер видео и, если он больше max_size_mb, сжимает его через ffmpeg.
-    Возвращает путь к файлу, который можно отправлять (исходный или сжатый).
-    """
-    # Проверяем размер файла
+def compress_video_if_needed(input_path: str, max_size_mb: int = 45) -> str:   
     file_size_mb = os.path.getsize(input_path) / (1024 * 1024)
-    if file_size_mb <= max_size_mb:
-        # Файл в пределах лимита, возвращаем оригинал
+    if file_size_mb <= max_size_mb:        
         return input_path
 
-    # Создаем путь для сжатого файла
     base, ext = os.path.splitext(input_path)
     compressed_path = f"{base}_compressed{ext}"
 
     ffmpeg_command = [
         "ffmpeg",
-        "-y",  # перезаписываем, если файл существует
+        "-y",  
         "-i", input_path,
         "-vcodec", "libx264",
-        "-crf", "28",       # регулирует степень сжатия
-        "-preset", "fast",  # ускорение кодирования
+        "-crf", "28",      
+        "-preset", "fast",  
         "-acodec", "aac",
         compressed_path
     ]
@@ -7817,26 +7397,17 @@ def compress_video_if_needed(input_path: str, max_size_mb: int = 45) -> str:
 
     return compressed_path
 def cleanup_files(*file_paths: str):
-    """
-    Удаляет указанные файлы, если они существуют.
-    При ошибках выводит сообщение в консоль.
-    """
     for file_path in file_paths:
         if file_path and os.path.exists(file_path):
             try:
                 os.remove(file_path)
-                print(f"✅ Удалён файл: {file_path}")
+                print(f"✅ Deleted: {file_path}")
             except Exception as e:
-                print(f"❌ Не удалось удалить файл {file_path}: {e}")
-async def start_render(update, context):
-    asyncio.create_task(render(update, context))
-async def start_render_score(update, context):
-    asyncio.create_task(render_score(update, context))
-
-
-
+                print(f"❌ Error removing {file_path}: {e}")
 
 #new features zone
+
+
 
 #new card cmd
 async def start_beatmap_card(update, context, user_request=True):
