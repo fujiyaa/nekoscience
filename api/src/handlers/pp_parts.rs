@@ -15,13 +15,11 @@ pub async fn calculate_pp_parts(
     Json(payload): Json<SkillsRequest>
 ) -> Json<serde_json::Value> {
 
-    // 1️⃣ Определяем игровой режим
     let mode = match GameMode::from_str(&payload.mode) {
         Some(m) => m,
         None => return Json(json!({"error": "Invalid mode"})),
     };
 
-    // 2️⃣ Загружаем карты из кэша
     let mut maps: HashMap<u32, Beatmap> = HashMap::new();
     for score in &payload.scores {
         let path = format!(r"E:\fa\nekoscience\bot\src\cache\beatmaps\{}.osu", score.map_id);
@@ -32,13 +30,10 @@ pub async fn calculate_pp_parts(
         }
     }
 
-    // 3️⃣ Преобразуем ScoreInput в Score
     let scores: Vec<_> = payload.scores.iter().map(to_score).collect();
 
-    // 4️⃣ Вычисляем навыки
     let skills = Skills::calculate(mode, &scores, maps);
 
-    // 5️⃣ Формируем JSON для ответа
     let result = match skills {
         Skills::Osu { acc, aim, speed, acc_total, aim_total, speed_total } => json!({
             "acc": acc,

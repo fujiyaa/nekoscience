@@ -5396,20 +5396,47 @@ async def simulate(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "n100": None,
         "n50": None,
     }
-    pp, max_pp, stars, max_combo, expected_bpm, n300, n100, n50, expected_miss = calculate_beatmap(
-        path, 
-        accuracy = 100, 
-        mods = "NM",
-        misses = 0,
-        rate = None,
-        lazer = True,
-        base_ar = values.get("ar"),
-        base_cs = values.get("cs"),
-        base_od = values.get("od"),
-        base_hp = values.get("hp"),
-        score_stats = stats,
-        combo= None,
-        )
+
+    #neko API 
+    payload = {
+        "map_path": str(beatmap_id), 
+        
+        "n300": 0,
+        "n100": 0,
+        "n50": 0,
+        "misses": 0,                   
+        
+        "mods": str(""), 
+        "combo": int(0),      
+        "accuracy": float(100),    
+        
+        "lazer": bool(True),          
+        "clock_rate": float(1.0),  
+
+        "custom_ar": values.get("ar"),
+        "custom_cs": values.get("cs"),
+        "custom_hp": values.get("hp"),
+        "custom_od": values.get("od"),
+    }
+
+    try:
+        pp_data = await localapi.get_map_stats_neko_api(payload)
+
+        pp = pp_data.get("pp")
+        choke = pp_data.get("no_choke_pp")
+        max_pp = pp_data.get("perfect_pp")
+
+        stars = pp_data.get("star_rating")
+        max_combo = pp_data.get("perfect_combo")
+        expected_bpm = pp_data.get("expected_bpm")
+
+        n300 = pp_data.get("n300")
+        n100 = pp_data.get("n100") 
+        n50 = pp_data.get("n50")
+        expected_miss = pp_data.get("misses")
+
+    except Exception as e:
+        print(f"neko API failed: {e}")
     
     score = {
                 "path":path,
@@ -5435,6 +5462,7 @@ async def simulate(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "hint_id": None,
         "schema": user_params,
         "path": path,
+        "beatmap": beatmap_id,
         "values": values,
         "map_combo": max_combo,
         "300_changed": False,
@@ -5762,26 +5790,51 @@ async def simulate_text_handler(update: Update, context: ContextTypes.DEFAULT_TY
         if info["type"] == "miss" or info["type"] == "100k" or info["type"] == "50k" or info["type"] == "300k":
             acc = None
 
+        #neko API 
+        payload = {
+            "map_path": str(sess["beatmap"]), 
+            
+            "n300": int(v) if (v := stats["n300"]) is not None else 0,
+            "n100": int(v) if (v := stats["n100"]) is not None else 0,
+            "n50": int(v) if (v := stats["n50"]) is not None else 0,
+            "misses": int(miss or 0),                   
+            
+            "mods": str(sess["params"].get("Моды")), 
+            "combo": int(sess["params"].get("Комбо") or 0),      
+            "accuracy": float(acc or 0),    
+            
+            "lazer": bool(sess["params"].get("Лазер")),          
+            "clock_rate": float(sess["params"].get("Скорость") or 1.0),  
 
-        pp, max_pp, stars, max_combo, expected_bpm, n300, n100, n50, expected_miss = calculate_beatmap(
-            sess['path'], 
-            accuracy = acc, 
-            mods = sess["params"].get("Моды"),
-            misses = miss,
-            rate = sess["params"].get("Скорость"),
-            lazer = sess["params"].get("Лазер"),
-            base_ar = sess['values'].get("ar"),
-            base_cs = sess['values'].get("cs"),
-            base_od = sess['values'].get("od"),
-            base_hp = sess['values'].get("hp"),
-            score_stats = stats,
-            combo = sess["params"].get("Комбо"),
-            )
+            "custom_ar": float(sess['values'].get("hp") or 0.0),
+            "custom_cs": float(sess['values'].get("hp") or 0.0),
+            "custom_hp": float(sess['values'].get("hp") or 0.0),
+            "custom_od": float(sess['values'].get("hp") or 0.0),
+        }
+
+        try:
+            pp_data = await localapi.get_map_stats_neko_api(payload)
+
+            pp = pp_data.get("pp")
+            choke = pp_data.get("no_choke_pp")
+            max_pp = pp_data.get("perfect_pp")
+
+            stars = pp_data.get("star_rating")
+            max_combo = pp_data.get("perfect_combo")
+            expected_bpm = pp_data.get("expected_bpm")
+
+            n300 = pp_data.get("n300")
+            n100 = pp_data.get("n100") 
+            n50 = pp_data.get("n50")
+            expected_miss = pp_data.get("misses")
+
+        except Exception as e:
+            print(f"neko API failed: {e}")    
         
         score = {
                 "path":sess['path'],
                 "mods":sess["params"].get("Моды"),
-                "acc":float(acc),
+                "acc":float(acc or 0),
                 "count_300": int(v) if (v:= stats["n300"]) is not None else None,
                 "count_100": int(v) if (v:= stats["n100"]) is not None else None,
                 "count_50": int(v) if (v:= stats["n50"]) is not None else None,
@@ -5901,102 +5954,7 @@ def calculate_rank(n300: int, n100: int, n50: int, miss: int, lazer: bool = True
         rank = "D"
 
     return rank
-def calculate_beatmap(path: str,
-                 accuracy: float,
-                 misses: int,
-                 combo: int,
-                 mods: str,
-                 rate: float,
-                 base_ar: float,
-                 base_cs: float,
-                 base_od: float,
-                 base_hp: float,
-                 score_stats: dict,
-                 lazer: bool = True) -> tuple[float, float]:
-    
-    try:
-        accuracy = float(accuracy)
-    except:
-        accuracy = None
-    
-    try:
-        misses = int(misses)
-    except:
-        misses = None
 
-    if rate is not None:
-        rate = float(rate)
-    else:
-        rate = 1.0 
-    if lazer == "True": lazer = True
-    if lazer == "False": lazer = False
-
-    with open(path, encoding="utf-8") as f:
-        beatmap = rosu.Beatmap(content=f.read())
-
-    if beatmap.is_suspicious():
-        raise ValueError("sus map")
-
-    n300 = score_stats.get("count_300", score_stats.get("great", score_stats.get("n300")))
-    n100 = score_stats.get("count_100", score_stats.get("ok", score_stats.get("n100")))
-    n50 = score_stats.get("count_50", score_stats.get("meh", score_stats.get("n50")))
-
-    if n300 is not None: n300 = int(n300)
-    if n100 is not None: n100 = int(n100)
-    if n50 is not None: n50 = int(n50)
-
-    perf = rosu.Performance(
-        accuracy = accuracy,
-        misses = misses,
-        lazer = lazer,
-        combo = combo,
-        n300 = n300,
-        n100 = n100, 
-        n50 = n50,
-        hitresult_priority=rosu.HitResultPriority.Fastest,
-    )
-    if float(str(rate).replace(",", ".")) == 1.0:
-        rate = None
-    perf.set_clock_rate(rate)
-    if isinstance(mods, list):
-        mods = "".join(mods) 
-    mods = re.sub(r"\s*\+\s*", "", mods)
-    print(f'{mods} (calculate_pp)' )
-    perf.set_mods(mods)
-    
-    perf.set_ar(base_ar, False)
-    perf.set_od(base_od, False)
-    perf.set_hp(base_hp, False)
-    perf.set_cs(base_cs, False)
-    
-  
-    result = perf.calculate(beatmap)
-
-    perf = rosu.Performance(
-        accuracy = 100,
-        clock_rate = rate,
-        misses = None,
-        mods = mods,
-        lazer = lazer,
-        combo = None,
-        n300 = None,
-        n100 = None, 
-        n50 = None,
-        hitresult_priority=rosu.HitResultPriority.Fastest,
-    )
-
-    perfect = perf.calculate(beatmap)
-    
-    return (result.pp, 
-            perfect.pp,
-            result.difficulty.stars, 
-            result.state.max_combo, 
-            beatmap.bpm,
-            result.state.n300,
-            result.state.n100,
-            result.state.n50,
-            result.state.misses
-            )
 def calculate_beatmap_pp(path: str,
                  accuracy: float,
                  mods: str,
@@ -7547,29 +7505,47 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
                     except Exception as e:
                         print(f"Ошибка при скачивании аватарки: {e}")
             path, values = await beatmap(beatmap_id)
-            stats = {
-                "n300": None,
-                "n100": None,
-                "n50": None,
+           
+            #neko API 
+            payload = {
+                "map_path": str(beatmap_id), 
+                
+                "n300": 0,
+                "n100": 0,
+                "n50": 0,
+                "misses": 0,                   
+                
+                "mods": str(""), 
+                "combo": int(0),      
+                "accuracy": float(100),    
+                
+                "lazer": bool(True),          
+                "clock_rate": float(1.0),  
+
+                "custom_ar": values.get("ar"),
+                "custom_cs": values.get("cs"),
+                "custom_hp": values.get("hp"),
+                "custom_od": values.get("od"),
             }
-            base_ar = values.get("ar")
-            base_cs = values.get("cs")
-            base_od = values.get("od")
-            base_hp = values.get("hp")
-            pp, max_pp, stars, max_combo, expected_bpm, n300, n100, n50, expected_miss = calculate_beatmap(
-                path, 
-                accuracy = 100, 
-                mods = "NM",
-                misses = 0,
-                rate = None,
-                lazer = True,
-                base_ar = base_ar,
-                base_cs = base_cs,
-                base_od = base_od,
-                base_hp = base_hp,
-                score_stats = stats,
-                combo= None,
-                )
+
+            try:
+                pp_data = await localapi.get_map_stats_neko_api(payload)
+
+                pp = pp_data.get("pp")
+                choke = pp_data.get("no_choke_pp")
+                max_pp = pp_data.get("perfect_pp")
+
+                stars = pp_data.get("star_rating")
+                max_combo = pp_data.get("perfect_combo")
+                expected_bpm = pp_data.get("expected_bpm")
+
+                n300 = pp_data.get("n300")
+                n100 = pp_data.get("n100") 
+                n50 = pp_data.get("n50")
+                expected_miss = pp_data.get("misses")
+            
+            except Exception as e:
+                print(f"neko API failed: {e}")
             
             mods_list = ["NM", "EZ", "HR", "DT", "HR+DT"]
 
@@ -7582,7 +7558,7 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
                 speed_multiplier, hr_active, ez_active = get_mods_info(mods_str)
 
                 bpm, ar, od, cs, hp = apply_mods_to_stats(
-                    expected_bpm, base_ar, base_od, base_cs, base_hp,
+                    expected_bpm, values.get("ar"), values.get("od"), values.get("cs"), values.get("cs"),
                     speed_multiplier=speed_multiplier, hr=hr_active, ez=ez_active
                 )
 

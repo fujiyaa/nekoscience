@@ -34,9 +34,14 @@ pub struct PpResponse {
     pub star_rating: f64,
     pub perfect_combo: u32,
     pub expected_bpm: f64,
+
+    pub n300: u32,
+    pub n100: u32,
+    pub n50: u32,
+    pub misses: u32,
 }
 
-pub async fn calculate_score_pp(
+pub async fn calculate_map_stats(
     AxumJson(payload): AxumJson<PpRequest>
 ) -> Json<PpResponse> {
     let base_folder = r"E:\fa\nekoscience\bot\src\cache\beatmaps";
@@ -56,7 +61,6 @@ pub async fn calculate_score_pp(
         eprintln!("Beatmap suspicion check failed for {}: {:?}", map_path.display(), e);
         return Json(PpResponse::default());
     }
-
 
     let mods_str = payload.mods.unwrap_or("NM".to_string());
     let mods = mods_parser::mods_from_str(&mods_str);
@@ -84,7 +88,7 @@ pub async fn calculate_score_pp(
     let diff_attrs = difficulty.calculate(&map);
 
 
-    let stars = diff_attrs.stars();
+    let star_rating = diff_attrs.stars();
     let max_combo = diff_attrs.max_combo();
 
     // Calculate performance attributes
@@ -99,9 +103,19 @@ pub async fn calculate_score_pp(
         performance = performance.clock_rate(clock_rate);
     }
 
-    let perf_attrs = performance.calculate();
+    let perf_attrs = performance.clone().calculate();
 
     let pp = perf_attrs.pp();
+
+    let state = performance.generate_state();
+
+    let perf_attrs = performance.calculate();
+
+    let n300 = state.n300;
+    let n100 = state.n100;
+    let n50 = state.n50;
+    let misses = state.misses;
+    let max_combo = state.max_combo;
 
     let mut perfect_performance = perf_attrs.clone().performance()
         .lazer(lazer);
@@ -134,12 +148,17 @@ pub async fn calculate_score_pp(
     // println!("Lazer: {:?}", lazer);
 
     Json(PpResponse {
-        pp: pp,
-        no_choke_pp: no_choke_pp, 
-        perfect_pp: perfect_pp,
+        pp,
+        no_choke_pp,
+        perfect_pp,
 
-        star_rating: stars,
-        perfect_combo: perfect_combo,
-        expected_bpm: expected_bpm,
+        star_rating,      
+        perfect_combo,
+        expected_bpm,
+
+        n300,
+        n100,
+        n50,
+        misses,
     })
 }

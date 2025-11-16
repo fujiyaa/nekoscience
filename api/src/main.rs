@@ -11,6 +11,7 @@ mod utils;
 use api_keys::{AppState, check_api_key_with_state, handler};
 use handlers::score_pp::calculate_score_pp;
 use handlers::pp_parts::calculate_pp_parts;
+use handlers::map_stats::calculate_map_stats;
 
 #[tokio::main]
 async fn main() {
@@ -31,7 +32,8 @@ async fn main() {
     let app = Router::new()
         .route("/", get(handler))
         .route("/score-pp", axum::routing::post(calculate_score_pp))
-        .route("/pp-parts", axum::routing::post(calculate_pp_parts))  
+        .route("/pp-parts", axum::routing::post(calculate_pp_parts))
+        .route("/map-stats", axum::routing::post(calculate_map_stats))  
         .layer(axum::middleware::from_fn_with_state(
             state.clone(),
             check_api_key_with_state,
