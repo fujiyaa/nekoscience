@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Напоминания</title>
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      background: #1e1e2f;
+      color: #f0f0f0;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    }
+
+    h2, h3 {
+      text-align: center;
+      color: #f0f0f0;
+    }
+
+    label {
+      font-weight: bold;
+      margin-top: 10px;
+      display: block;
+      color: #f0f0f0;
+    }
+
+    input[type="date"],
+    input[type="time"] {
+      color: #ffffff;
+      background-color: #2b2b3b;
+      border: 1px solid #555;
+      border-radius: 6px;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+
+    input[type="date"]::-webkit-calendar-picker-indicator,
+    input[type="time"]::-webkit-calendar-picker-indicator {
+      filter: invert(1);
+      cursor: pointer;
+    }
+
+    textarea::placeholder {
+      color: #cccccc;
+      opacity: 1;
+    }
+
+    input, textarea, button {
+      width: 100%;
+      margin: 8px 0 15px 0;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #555;
+      font-size: 14px;
+      box-sizing: border-box;
+      background: #2b2b3b;
+      color: #f0f0f0;
+    }
+
+    textarea { resize: vertical; }
+
+    button {
+      background: #4b7bec;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover { background: #3867d6; }
+
+    #reminderList {
+      padding-left: 0;
+      margin: 0;
+      list-style: none;
+    }
+
+    #reminderList li {
+      background: linear-gradient(135deg, #2b2b3b, #3a3a4e);
+      margin-bottom: 10px;
+      padding: 12px;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+      color: #f0f0f0;
+      opacity: 0;
+      transform: translateY(10px);
+      animation: fadeIn 0.3s forwards;
+    }
+
+    @keyframes fadeIn {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .deleteBtn {
+      width: auto; 
+      background: #ff6b6b;
+      border: none;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+      padding: 4px 8px;
+      font-weight: bold;
+      transition: background 0.2s;
+    }
+    .deleteBtn:hover { background: #ee4c4c; }
+  </style>
+</head>
+<body>
+  <h2>Напоминания Darkness</h2>
+
+  <div id="loginSection">
+    <label>Введите пароль:</label>
+    <input type="password" id="password" placeholder="Его можно получить в личном чате с ботом, /reminders">
+    <button onclick="login()">Войти</button>
+  </div>
+
+  <div id="formSection" style="display: none;">
+    <label>Сообщение:</label>
+    <textarea id="message" rows="4" placeholder="Текст напоминания, необходимо отметить пользователя тегом @..."></textarea>
+
+    <label>Дата:</label>
+    <input type="date" id="date">
+
+    <label>Время:</label>
+    <input type="time" id="time">
+
+    <label>Количество повторений:</label>
+    <input type="number" id="repeatCount" min="1" value="1">
+
+    <button onclick="saveReminder()">Сохранить</button>
+    <button onclick="loadReminders()">Показать мои</button>
+  </div>
+
+  <div id="listSection" style="display: none;">
+    <h3>Мои напоминания:</h3>
+    <ul id="reminderList"></ul>
+    <label>Серым цветом обозначены будущие напоминания.</label>
+    <label>Красные — скоро будут отправлены, после этого исчезнут.</label>
+  </div>
+
+  <script>
+    let user = "";
+    const MAX_REMINDERS = 10;
+
+    async function login() {
+      const password = document.getElementById("password").value.trim();
+      if (!password) { alert("Введите пароль"); return; }
+
+      const res = await fetch("/darkness/password", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({password})
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        user = data.user; // здесь user = пароль для идентификации
+        document.getElementById("loginSection").style.display = "none";
+        document.getElementById("formSection").style.display = "block";
+      } else {
+        const err = await res.json();
+        alert(err.detail || "Ошибка входа");
+      }
+    }
+
+    async function saveReminder() {
+      const message = document.getElementById('message').value.trim();
+      const date = document.getElementById('date').value;
+      const time = document.getElementById('time').value;
+      const repeatCount = document.getElementById('repeatCount').value;
+
+      if (!message || !date || !time) { 
+          alert('Заполните все поля'); 
+          return; 
+      }
+
+      const resList = await fetch(`/darkness/list?user=${encodeURIComponent(user)}`);
+      const currentReminders = await resList.json();
+
+      if (currentReminders.length >= MAX_REMINDERS) {
+          alert(`Превышено максимальное количество ${MAX_REMINDERS} напоминаний для одного пользователя`);
+          return;
+      }
+
+      const reminder = { user, message, date, time, repeatCount: Number(repeatCount) };
+
+      const res = await fetch('/darkness/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(reminder)
+      });
+
+      const result = await res.json();
+      if (res.ok) {
+          alert(result.message);
+          loadReminders();
+      } else {
+          alert(result.detail || "Ошибка при сохранении");
+      }
+    }
+
+    async function loadReminders() {
+      const res = await fetch(`/darkness/list?user=${encodeURIComponent(user)}`);
+      const reminders = await res.json();
+      const list = document.getElementById('reminderList');
+      list.innerHTML = "";
+
+      reminders.forEach(r => {
+        const li = document.createElement('li');
+        const reminderDate = new Date(`${r.date}T${r.time}`);
+        const now = new Date();
+        if (reminderDate < now) {
+          li.style.background = 'linear-gradient(135deg, #442222, #663333)';
+        }
+
+        li.textContent = `"${r.message}" — ${r.date} ${r.time} (${r.repeatCount} раз)`;
+
+        const delBtn = document.createElement('button');
+        delBtn.textContent = '❌';
+        delBtn.className = 'deleteBtn';
+        delBtn.onclick = async () => {
+          if (!confirm("Удалить это напоминание?")) return;
+          const delRes = await fetch(`/darkness/delete?user=${encodeURIComponent(r.user)}&message=${encodeURIComponent(r.message)}&date=${r.date}&time=${r.time}`, {
+            method: 'DELETE'
+          });
+          if (delRes.ok) loadReminders();
+          else {
+            const err = await delRes.json();
+            alert(err.detail || "Ошибка при удалении");
+          }
+        };
+
+        li.appendChild(delBtn);
+        list.appendChild(li);
+      });
+
+      document.getElementById('listSection').style.display = reminders.length ? 'block' : 'none';
+    }
+  </script>
+</body>
+</html>

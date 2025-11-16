@@ -65,4 +65,8 @@ target/
 /unsorted/osu-archive/*.txt
 /unsorted/osu-archive/*.http
 
+/unsorted/myangelfujiya/*.json
+/unsorted/myangelfujiya/*.txt
+*passwords.json
+
 !*.gitkeep

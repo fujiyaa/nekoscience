@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>osu! redirect</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+      color: #111;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      background: #1c1719;
+    }
+    .box {
+      background: #2a2226;
+      padding: 24px 28px;
+      border-radius: 12px;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.08);
+      text-align: center;
+      max-width: 420px;
+    }
+    h1 {
+      margin: 0 0 12px;
+      font-size: 28px;
+      color: rgb(255, 255, 255);
+    }
+    p {
+      margin: 0 0 16px;
+    }
+    .buttons {
+      display: flex;          /* горизонтально */
+      justify-content: center; /* по центру контейнера */
+      gap: 12px;               /* расстояние между кнопками */
+      margin-top: 12px;        /* отступ сверху */
+    }
+
+    a.button {
+      display: inline-block;
+      padding: 10px 16px;
+      border-radius: 8px;
+      text-decoration: none;
+      border: 1px solid #8a8a8a;
+      color: #ffffff;
+    }
+    p {
+      color: #ffffff;
+      display: block;
+      margin-top: 12px;
+    }
+
+    small {
+      color: #b8cbe0;
+      display: block;
+      margin-top: 12px;
+    }
+    .footer {
+      position: absolute;   /* фиксируем у низа окна */
+      bottom: 12px;
+      width: 100%;
+      text-align: center;
+      font-size: 14px;
+      color: #888;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="box" id="content"></div>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const id = params.get("id");
+    const set_id = params.get("set_id"); // новый параметр
+    const box = document.getElementById("content");
+
+    if (!id) {
+      const title = "400";
+      document.title = title;
+      box.innerHTML = `
+        <h1>${title}</h1>
+        <p>Отсутствует ID карты.</p>
+        <small>Пример правильного URL: <code>index.html?id=727727&set_id=12345</code></small>
+      `;
+    } else if (!/^\d+$/.test(id)) {
+      const title = "422";
+      document.title = title;
+      box.innerHTML = `
+        <h1>${title}</h1>
+        <p>Неправильный ID карты.</p>
+        <small>Пример правильного URL: <code>index.html?id=727727&set_id=12345</code></small>
+      `;
+    } else {
+      const title = "Переадресация...";
+      document.title = title;
+
+      // формируем URL для кнопки страницы
+      const pageUrl = set_id 
+        ? `https://osu.ppy.sh/beatmapsets/${set_id}` 
+        : `https://osu.ppy.sh/beatmapsets/${id}`; // если set_id не задан, используем id
+
+      box.innerHTML = `
+        <h1>${title}</h1>
+        <div class="buttons">
+          <a class="button" href="osu://b/${id}">Открыть ещё раз</a>
+          <a class="button" href="${pageUrl}">Страница на сайте</a>
+        </div>
+        <small>Если ничего не происходит, osu!direct не настроен.</small>
+      `;
+
+      setTimeout(() => {
+        try {
+          location.replace("osu://b/" + id);
+        } catch (e) {}
+      }, 50);
+    }
+
+
+  </script> 
+  <div class="footer">Darkness</div>
+</body>
+</html>
