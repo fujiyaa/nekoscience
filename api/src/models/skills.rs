@@ -75,6 +75,10 @@ impl Skills {
                         score.accuracy,
                     );
 
+                    // let slider_end_hits = score.statistics.slider_tail_hit;
+                    // let large_tick_hits= score.statistics.large_tick_hit;
+                    // let small_tick_hits = score.statistics.small_tick_hit;
+
                     let state = OsuScoreState {
                         max_combo: score.max_combo,
                         n300: score.statistics.great,
@@ -281,38 +285,16 @@ mod tests {
     use std::collections::HashMap;
 
     use crate::models::score::{Score, ScoreStatistics};
-
-    fn dummy_score(id: u32) -> Score {
-        Score {
-            map_id: id,
-            max_combo: 100,
-            accuracy: 100.0,
-            mods: String::new(),
-            set_on_lazer: false,
-            statistics: ScoreStatistics {
-                great: 100,
-                ok: 0,
-                meh: 0,
-                miss: 0,
-                large_tick_hit: 0,
-                small_tick_hit: 0,
-                small_tick_miss: 0,
-                slider_tail_hit: 0,
-                good: 0,
-                perfect: 0,
-            },
-        }
-    }
-
+    
     fn dummy_score_map_id_9910(id: u32) -> Score {
         Score {
             map_id: id,
-            max_combo: 100,
+            max_combo: 189,
             accuracy: 100.0,
             mods: String::new(),
             set_on_lazer: false,
             statistics: ScoreStatistics {
-                great: 100,
+                great: 139,
                 ok: 0,
                 meh: 0,
                 miss: 0,
@@ -325,26 +307,9 @@ mod tests {
             },
         }
     }
-
-     #[test]
-    fn test_skills_calculate_osu_basic() {
-        let scores = vec![dummy_score(1)];
-
-        let mut maps = HashMap::new();
-        maps.insert(1, Beatmap::default());
-
-        let skills = Skills::calculate(GameMode::Osu, &scores, maps);
-
-        println!("Calculated skills: {:?}", skills);
-
-        match skills {
-            Skills::Osu { .. } => {}
-            _ => panic!("Wrong variant for osu mode"),
-        }
-    }
-
+    
     #[test]
-    fn test_skills_calculate_osu_with_real_map() {
+    fn test_skills_real_map() {
         let score = dummy_score_map_id_9910(9910);
         
         let mut maps = HashMap::new();
@@ -356,7 +321,21 @@ mod tests {
 
         let skills = Skills::calculate(GameMode::Osu, &[score], maps);
 
-        println!("Skills from real map: {:?}", skills);
+        match skills {
+            Skills::Osu { acc, aim, speed, acc_total, aim_total, speed_total } => {
+                println!(
+                "{:<10} {:<10} {:<10} {:<10} {:<10} {:<10}",
+                "acc", "aim", "speed", "acc_total", "aim_total", "speed_total"
+            );
+            println!("{}", "-".repeat(60)); 
+
+            println!(
+                "{:<10.2} {:<10.2} {:<10.2} {:<10.2} {:<10.2} {:<10.2}",
+                acc, aim, speed, acc_total, aim_total, speed_total
+            );
+        }
+            _ => println!("Skills is not Osu variant"),        }
+
 
         match skills {
             Skills::Osu { acc, aim, speed, acc_total, aim_total, speed_total } => {

@@ -1,5 +1,6 @@
 use rosu_pp::{Beatmap, Difficulty, Performance};
 
+#[allow(unused)]
 pub struct PerfectHits {
     pub n300: u32,
     pub n100: u32,
@@ -8,6 +9,7 @@ pub struct PerfectHits {
     pub max_combo: u32,
 }
 
+#[allow(unused)]
 pub fn calculate_perfect_hits(map: &Beatmap) -> PerfectHits {
     let difficulty = Difficulty::new().calculate(map);
 

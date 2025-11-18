@@ -3751,55 +3751,6 @@ async def fetch_txt_beatmaps(map_ids, retries: int = 3, batch_size: int = 5, del
 
     return results, failed
 
-def calculate_beatmap_skills(score) -> tuple[float, float, float]:
-    """
-    Возвращает (aim, speed, acc)
-    """
-    path = score.get("path", None)
-    mods = score.get("mods", [])
-    count_300 = score.get("count_300", 0)
-    count_100 = score.get("count_100", 0)
-    count_50 = score.get("count_50", 0)
-    count_miss = score.get("count_miss", 0)
-    scoreacc = score.get("acc", 1.0)
-    max_combo = score.get("max_combo", 0)
-    lazer=score.get("lazer", True)
-
-    with open(path, encoding="utf-8") as f:
-        beatmap = rosu.Beatmap(content=f.read())
-
-    if beatmap.is_suspicious():
-        raise ValueError("Карта подозрительная, расчет прерван.")
-
-    perf = rosu.Performance(
-        accuracy=scoreacc,
-        combo=max_combo,
-        n300=count_300,
-        n100=count_100,
-        n50=count_50,
-        misses=count_miss,
-        lazer=lazer,
-        hitresult_priority=rosu.HitResultPriority.Fastest
-    )
-
-    mods_str = "".join(mods) if isinstance(mods, list) else str(mods)
-    mods_str = re.sub(r"\s*\+\s*", "", mods_str)
-    perf.set_mods(mods_str)
-
-    rate =  score.get("rate", False)
-
-    if rate:
-        if rate != '1':
-            perf.set_clock_rate(float(rate))
-
-    result = perf.calculate(beatmap)
-
-    aim = result.pp_aim
-    speed = result.pp_speed
-    acc = result.pp_accuracy
-
-    return acc, aim, speed
-
 class Score:
     def __init__(self, map_id, count_300, count_100, count_50, count_miss, path, mods, acc, max_combo, lazer):
         self.map_id = map_id
@@ -5435,16 +5386,12 @@ async def simulate(update: Update, context: ContextTypes.DEFAULT_TYPE):
         n50 = pp_data.get("n50")
         expected_miss = pp_data.get("misses")
 
+        aim = pp_data.get("aim")
+        acc = pp_data.get("acc")
+        speed = pp_data.get("speed")
+
     except Exception as e:
         print(f"neko API failed: {e}")
-    
-    score = {
-                "path":path,
-                "mods":path,
-                "accuracy":100.0
-            }
-    
-    acc, aim, speed = calculate_beatmap_skills(score)
 
 
     user_params["300"]["max"] = n300 
@@ -5806,10 +5753,10 @@ async def simulate_text_handler(update: Update, context: ContextTypes.DEFAULT_TY
             "lazer": bool(sess["params"].get("Лазер")),          
             "clock_rate": float(sess["params"].get("Скорость") or 1.0),  
 
-            "custom_ar": float(sess['values'].get("hp") or 0.0),
-            "custom_cs": float(sess['values'].get("hp") or 0.0),
+            "custom_ar": float(sess['values'].get("ar") or 0.0),
+            "custom_cs": float(sess['values'].get("cs") or 0.0),
             "custom_hp": float(sess['values'].get("hp") or 0.0),
-            "custom_od": float(sess['values'].get("hp") or 0.0),
+            "custom_od": float(sess['values'].get("od") or 0.0),
         }
 
         try:
@@ -5828,23 +5775,15 @@ async def simulate_text_handler(update: Update, context: ContextTypes.DEFAULT_TY
             n50 = pp_data.get("n50")
             expected_miss = pp_data.get("misses")
 
+            skill_aim = pp_data.get("aim")
+            skill_acc = pp_data.get("acc")
+            skill_speed = pp_data.get("speed")
+
         except Exception as e:
             print(f"neko API failed: {e}")    
         
-        score = {
-                "path":sess['path'],
-                "mods":sess["params"].get("Моды"),
-                "acc":float(acc or 0),
-                "count_300": int(v) if (v:= stats["n300"]) is not None else None,
-                "count_100": int(v) if (v:= stats["n100"]) is not None else None,
-                "count_50": int(v) if (v:= stats["n50"]) is not None else None,
-                "count_miss":int(miss or 0),
-                "lazer":bool(sess["params"].get("Лазер")),
-                "max_combo":int(v) if (v := sess["params"].get("Комбо")) is not None else None,
-                "rate":sess["params"].get("Скорость"),
-            }
-        
-        skill_acc, skill_aim, skill_speed = calculate_beatmap_skills(score)
+              
+
 
         sess["acc"] = skill_acc
         sess["aim"] = skill_aim
@@ -7543,6 +7482,10 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
                 n100 = pp_data.get("n100") 
                 n50 = pp_data.get("n50")
                 expected_miss = pp_data.get("misses")
+
+                aim_raw = pp_data.get("aim")
+                acc_raw = pp_data.get("acc")
+                speed_raw = pp_data.get("speed")
             
             except Exception as e:
                 print(f"neko API failed: {e}")
@@ -7568,52 +7511,8 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
                 hp_values.append(round(hp, 2))
 
             fill_colors = [(255,255,255), (98, 240, 124), (240, 223, 98), (240,128,98), (200,200,200)]
+          
 
-
-            score = {
-                "path":results[beatmap_id],
-                "accuracy":100.0
-            }
-
-            acc_raw, aim_raw, speed_raw = calculate_beatmap_skills(score) 
-
-            #neko api 
-            scores_payload = []            
-            scores_payload.append({
-                "map_id": int(beatmap_id),
-
-                "n320": int(0),
-                "n300": int(0),
-                "n200": int(0),
-                "n100": int(0),
-                "n50":  int(0),
-                "misses": int(0),
-
-                "combo": int(0),
-                "mods": str(0),
-                "accuracy": float(100),
-
-                "set_on_lazer": bool(1),
-
-                "large_tick_hit": int(0),
-                "small_tick_hit": int(0),
-                "small_tick_miss": int(0),
-                "slider_tail_hit": int(0),
-            })
-
-            payload = {
-                "mode": "Osu",
-                "scores": scores_payload
-            }
-
-            try:
-                skills = await localapi.get_pp_parts_neko_api(payload)
-
-            except Exception as e:
-                print(f"error calling Rust API: {e}")
-
-            acc_raw, aim_raw, speed_raw = skills["acc"], skills["aim"], skills["speed"]
-           
             values = {
                 "speed": speed_raw,
                 "acc": acc_raw,

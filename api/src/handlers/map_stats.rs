@@ -1,7 +1,11 @@
 use axum::{Json, extract::Json as AxumJson};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
+use crate::utils::get_sliders_osu::calculate_perfect_sliders;
 use crate::utils::mods_parser;
+use rosu_pp::{
+    osu::{OsuPerformance, OsuScoreState},
+};
 
 #[derive(Deserialize)]
 pub struct PpRequest {
@@ -25,7 +29,7 @@ pub struct PpRequest {
     pub custom_od: Option<f32>,
 }
 
-#[derive(Serialize, Default)]
+#[derive(Serialize, Default, Debug)]
 pub struct PpResponse {
     pub pp: f64,
     pub no_choke_pp: f64,
@@ -39,6 +43,10 @@ pub struct PpResponse {
     pub n100: u32,
     pub n50: u32,
     pub misses: u32,
+
+    pub aim: f64,
+    pub acc: f64,
+    pub speed: f64,
 }
 
 pub async fn calculate_map_stats(
@@ -67,6 +75,7 @@ pub async fn calculate_map_stats(
     let clock_rate = payload.clock_rate.unwrap_or(1.0);
     let lazer = payload.lazer.unwrap_or(true);
 
+    // in case of DA mod, but always needed
     let ar = payload.custom_ar.unwrap_or(0.0);
     let cs = payload.custom_cs.unwrap_or(0.0);
     let hp = payload.custom_hp.unwrap_or(0.0);
@@ -147,6 +156,39 @@ pub async fn calculate_map_stats(
 
     // println!("Lazer: {:?}", lazer);
 
+    let state = calculate_perfect_sliders(&map);
+
+    let score_state = OsuScoreState {
+                        max_combo: max_combo,
+                        n300: n300,
+                        n100: n100,
+                        n50: n50,
+                        misses: misses,
+                        slider_end_hits: state.slider_end_hits,
+                        large_tick_hits: state.osu_large_tick_hits,
+                        small_tick_hits: state.osu_small_tick_hits,
+                    };
+    
+    
+    // maybe overdoing here by amount of calcs (OsuPerformance, Performance...)
+
+    let attrs = OsuPerformance::try_new(&map)
+        .unwrap()
+        .mods(mods)
+        .state(score_state)
+        .lazer(lazer)
+        .calculate()
+        .unwrap();
+      
+    let acc = attrs.pp_acc;
+    let aim = attrs.pp_aim;
+    let speed = attrs.pp_speed;
+    
+    // mania/ctb/taiko live reaction:
+    
+
+
+
     Json(PpResponse {
         pp,
         no_choke_pp,
@@ -160,5 +202,44 @@ pub async fn calculate_map_stats(
         n100,
         n50,
         misses,
+
+        aim,
+        acc,
+        speed,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::Json as AxumJson;
+
+    #[tokio::test]
+    async fn test_calculate_map_stats_basic() {
+        let payload = PpRequest {
+            map_path: "1580334".to_string(),
+            n300: Some(0),
+            n100: Some(0),
+            n50: Some(0),
+            misses: Some(0),
+            mods: Some("NM".to_string()),
+            combo: Some(0),
+            accuracy: Some(100.0),
+            lazer: Some(true),
+            clock_rate: Some(1.0),
+            custom_ar: Some(9.4),
+            custom_cs: Some(4.2),
+            custom_hp: Some(6.0),
+            custom_od: Some(8.0),
+        };
+
+        let response = calculate_map_stats(AxumJson(payload)).await;
+
+        assert!(response.pp > 0.0, "pp");
+        assert!(response.no_choke_pp > 0.0, "no_choke_pp");
+        assert!(response.perfect_pp > 0.0, "perfect_pp");
+        assert!(response.star_rating > 0.0, "star_rating");
+
+        println!("Response: {:?}", response);
+    }
 }

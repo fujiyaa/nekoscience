@@ -76,7 +76,7 @@ mod tests {
 
     #[test]
     fn test_custom_score_sliders() {
-        let map_path = r"E:\fa\nekoscience\bot\src\cache\beatmaps\9910.osu";
+        let map_path = r"E:\fa\nekoscience\bot\src\cache\beatmaps\1580334.osu";
         let map = Beatmap::from_path(map_path).unwrap();
 
         let custom_state = calculate_sliders_with_score(&map, 120, 0, 0, 0, 90.5);
