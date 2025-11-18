@@ -28,7 +28,7 @@ impl GameMode {
         }
     }
 }
-
+#[derive(Debug)]
 pub enum Skills {
     Osu { acc: f64, aim: f64, speed: f64, acc_total: f64, aim_total: f64, speed_total: f64 },
     Taiko { acc: f64, strain: f64 },
@@ -36,7 +36,6 @@ pub enum Skills {
     Mania { acc: f64, strain: f64 },
 }
 
-/// Функция для оценки хитов слайдеров (для osu!)
 fn estimate_slider_hits(n300: u32, n100: u32, n50: u32, misses: u32, accuracy: f64) -> (u32, u32, u32) {
     let total_hits = n300 + n100 + n50 + misses;
     let acc_ratio = (accuracy / 100.0).clamp(0.0, 1.0);
@@ -48,7 +47,7 @@ fn estimate_slider_hits(n300: u32, n100: u32, n50: u32, misses: u32, accuracy: f
 
 impl Skills {
     pub fn calculate(mode: GameMode, scores: &[Score], mut maps: HashMap<u32, Beatmap>) -> Self {
-        // финальная нормализация
+        
         let map_val = |val: f64| {
             let factor = (8.0 / (val / 72.0 + 8.0)).powi(10);
             -101.0 * factor + 101.0
@@ -275,3 +274,103 @@ impl Skills {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashMap;
+
+    use crate::models::score::{Score, ScoreStatistics};
+
+    fn dummy_score(id: u32) -> Score {
+        Score {
+            map_id: id,
+            max_combo: 100,
+            accuracy: 100.0,
+            mods: String::new(),
+            set_on_lazer: false,
+            statistics: ScoreStatistics {
+                great: 100,
+                ok: 0,
+                meh: 0,
+                miss: 0,
+                large_tick_hit: 0,
+                small_tick_hit: 0,
+                small_tick_miss: 0,
+                slider_tail_hit: 0,
+                good: 0,
+                perfect: 0,
+            },
+        }
+    }
+
+    fn dummy_score_map_id_9910(id: u32) -> Score {
+        Score {
+            map_id: id,
+            max_combo: 100,
+            accuracy: 100.0,
+            mods: String::new(),
+            set_on_lazer: false,
+            statistics: ScoreStatistics {
+                great: 100,
+                ok: 0,
+                meh: 0,
+                miss: 0,
+                large_tick_hit: 0,
+                small_tick_hit: 0,
+                small_tick_miss: 0,
+                slider_tail_hit: 0,
+                good: 0,
+                perfect: 0,
+            },
+        }
+    }
+
+     #[test]
+    fn test_skills_calculate_osu_basic() {
+        let scores = vec![dummy_score(1)];
+
+        let mut maps = HashMap::new();
+        maps.insert(1, Beatmap::default());
+
+        let skills = Skills::calculate(GameMode::Osu, &scores, maps);
+
+        println!("Calculated skills: {:?}", skills);
+
+        match skills {
+            Skills::Osu { .. } => {}
+            _ => panic!("Wrong variant for osu mode"),
+        }
+    }
+
+    #[test]
+    fn test_skills_calculate_osu_with_real_map() {
+        let score = dummy_score_map_id_9910(9910);
+        
+        let mut maps = HashMap::new();
+        
+        let map_path = r"E:\fa\nekoscience\bot\src\cache\beatmaps\9910.osu";
+        let map = Beatmap::from_path(map_path).unwrap();
+
+        maps.insert(9910, map);
+
+        let skills = Skills::calculate(GameMode::Osu, &[score], maps);
+
+        println!("Skills from real map: {:?}", skills);
+
+        match skills {
+            Skills::Osu { acc, aim, speed, acc_total, aim_total, speed_total } => {
+                
+                assert!(acc > 0.0, "damn");
+                assert!(aim > 0.0, "damn");
+                assert!(speed > 0.0, "damn");
+
+                assert!(acc_total > 0.0);
+                assert!(aim_total > 0.0);
+                assert!(speed_total > 0.0);
+            }
+            _ => panic!("Skills::calculate err"),
+        }
+    }
+}
+

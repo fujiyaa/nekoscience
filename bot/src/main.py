@@ -7575,7 +7575,7 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
                 "accuracy":100.0
             }
 
-            acc_raw, aim_raw, speed_raw = calculate_beatmap_skills(score)
+            acc_raw, aim_raw, speed_raw = calculate_beatmap_skills(score) 
 
             #neko api 
             scores_payload = []            
