@@ -8,7 +8,6 @@ from collections import Counter, defaultdict
 from io import BytesIO
 import traceback
 import io, time, html, json, lxml.html, glob, random, logging, tempfile, asyncio, aiohttp, aiofiles, colorsys, atexit, requests
-import rosu_pp_py as rosu
 import os, re, tempfile
 from telegram import MessageEntity, InputTextMessageContent
 from telegram.helpers import escape_markdown

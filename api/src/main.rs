@@ -5,13 +5,13 @@ use std::env;
 
 mod api_keys; 
 mod models;
-mod handlers;
+mod calculators;
 mod utils;
 
 use api_keys::{AppState, check_api_key_with_state, handler};
-use handlers::score_pp::calculate_score_pp;
-use handlers::pp_parts::calculate_pp_parts;
-use handlers::map_stats::calculate_map_stats;
+use calculators::score_pp::calculate_score_pp;
+use calculators::pp_parts::calculate_pp_parts;
+use calculators::map_stats::calculate_map_stats;
 
 #[tokio::main]
 async fn main() {

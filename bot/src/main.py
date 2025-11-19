@@ -5894,55 +5894,6 @@ def calculate_rank(n300: int, n100: int, n50: int, miss: int, lazer: bool = True
 
     return rank
 
-def calculate_beatmap_pp(path: str,
-                 accuracy: float,
-                 mods: str,
-                 score_stats,
-                 lazer: bool = True) -> tuple[float, float]:
-    
-    try:
-        accuracy = float(accuracy)
-    except:
-        accuracy = None
-        
-    if lazer == "True": lazer = True
-    if lazer == "False": lazer = False
-
-    with open(path, encoding="utf-8") as f:
-        beatmap = rosu.Beatmap(content=f.read())
-
-    if beatmap.is_suspicious():
-        raise ValueError("sus mapwe")
-    
-    
-    n300 = score_stats.get("count_300", score_stats.get("great", score_stats.get("n300")))
-    n100 = score_stats.get("count_100", score_stats.get("ok", score_stats.get("n100")))
-    n50 = score_stats.get("count_50", score_stats.get("meh", score_stats.get("n50")))
-
-    if n300 is not None: n300 = int(n300)
-    if n100 is not None: n100 = int(n100)
-    if n50 is not None: n50 = int(n50)
-
-    perf = rosu.Performance(
-        lazer = lazer,
-        n300 = n300,
-        n100 = n100, 
-        n50 = n50,
-        misses = 0,
-        hitresult_priority=rosu.HitResultPriority.Fastest,
-    )
-    if isinstance(mods, list):
-        mods = "".join(mods) 
-    mods = re.sub(r"\s*\+\s*", "", mods)
-    # print(f'{mods} (calculate_pp)' )
-    perf.set_mods(mods)    
-  
-    result = perf.calculate(beatmap)
-    
-    return (result.pp, 
-            result.difficulty.stars, 
-            result.state.max_combo,
-            )
 #settings cmd
 async def settings_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await log_all_update(update)
@@ -6644,13 +6595,46 @@ async def nochoke(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
                         max_combo = combo
                         stars = score.get("stars", 0.0)  
                     else:
-                        new_pp, stars, max_combo = calculate_beatmap_pp(
-                            path, acc, mods_str, score_stats, lazer
-                        )
+                        #neko API 
+                        payload = {
+                            "map_path": str(score.get('beatmap_id', "0")), 
+                            
+                            "n300": int(score_stats.get("count_300", 0)),
+                            "n100": int(score_stats.get("count_100", 0)),
+                            "n50": int(score_stats.get("count_50", 0)),
+                            "misses": int(misses),                   
+                            
+                            "mods": str(score.get("mods", 0)), 
+                            "combo": int(score.get("combo", 0.0)),      
+                            "accuracy": float(score.get("accuracy", 1.0) * 100),    
+                            
+                            "lazer": bool(score.get('lazer', False)),          
+                            "clock_rate": float(score.get('speed_multiplier') or 1.0),  
+
+                            "custom_ar": float(score.get('AR', 0.0)),
+                            "custom_cs": float(score.get('CS', 0.0)),
+                            "custom_hp": float(score.get('HP', 0.0)),
+                            "custom_od": float(score.get('OD', 0.0)),
+                        }
+
+                        try:
+                            pp_data = await localapi.get_score_pp_neko_api(payload)
+
+                            _pp = pp_data.get("pp")
+                            max_pp = pp_data.get("no_choke_pp")
+                            perfect_pp = pp_data.get("perfect_pp")
+
+                            stars = pp_data.get("star_rating")
+                            max_combo = pp_data.get("perfect_combo")
+                            expected_bpm = pp_data.get("expected_bpm")
+
+                        except Exception as e:
+                            print(f"neko API failed: {e}") 
+                                                
 
                     score["index"] = i + 1
                     score["pp_old"] = pp
-                    score["pp_new"] = new_pp
+                    score["pp_new"] = max_pp
                     score["stars"] = stars
                     score["combo_old"] = combo
                     score["combo_max"] = max_combo
@@ -6966,6 +6950,55 @@ async def average_stats(update: Update, context: ContextTypes.DEFAULT_TYPE, user
                     
                     mods_str = score.get("mods", "")
                     speed_multiplier, hr_active, ez_active = get_mods_info(mods_str)
+                   
+                    #neko API 
+                    payload = {
+                        "map_path": str(score.get('beatmap_id', "0")), 
+                        
+                        "n300": 0,
+                        "n100": 0,
+                        "n50": 0,
+                        "misses": 0,                   
+                        
+                        "mods": str(mods_str), 
+                        "combo": int(0),      
+                        "accuracy": float(0.0),    
+                        
+                        "lazer": bool(True),          
+                        "clock_rate": float(1.0),  
+
+                        "custom_ar": float(ar),
+                        "custom_cs": float(cs),
+                        "custom_hp": float(hp),
+                        "custom_od": float(od),
+                    }
+
+                    try:
+                        pp_data = await localapi.get_map_stats_neko_api(payload)
+
+                        # pp = pp_data.get("pp")
+                        # choke = pp_data.get("no_choke_pp")
+                        # max_pp = pp_data.get("perfect_pp")
+
+                        map_stars = pp_data.get("star_rating")
+                        # max_combo = pp_data.get("perfect_combo")
+                        # expected_bpm = pp_data.get("expected_bpm")
+
+                        # n300 = pp_data.get("n300")
+                        # n100 = pp_data.get("n100") 
+                        # n50 = pp_data.get("n50")
+                        # expected_miss = pp_data.get("misses")
+
+                        # aim_raw = pp_data.get("aim")
+                        # acc_raw = pp_data.get("acc")
+                        # speed_raw = pp_data.get("speed")                        
+                        
+                        if map_stars > 8.0: 
+                            print(score['beatmap_id'])
+                    except Exception as e:
+                        print(f"neko API failed: {e}")
+
+                    stars.append(map_stars)
 
                     bpm, ar, od, cs, hp = apply_mods_to_stats(
                         bpm, ar, od, cs, hp,
@@ -6979,15 +7012,6 @@ async def average_stats(update: Update, context: ContextTypes.DEFAULT_TYPE, user
                     ods.append(od)
                     bpms.append(bpm)
                     lengths.append(length)
-                    
-                    path = results.get(score['beatmap_id'], None)
-                    
-                    lazer = True
-                    stable = is_legacy_score(score)
-                    if stable: lazer = False
-
-                    map_stars = calculate_beatmap_stars(path, mods_str, lazer)
-                    stars.append(map_stars)
 
                                     
                 def calc_stats(values):
@@ -6998,7 +7022,7 @@ async def average_stats(update: Update, context: ContextTypes.DEFAULT_TYPE, user
 
                 def format_time(seconds):
                     if isinstance(seconds, str):
-                        return seconds  # оставляем прочерк
+                        return seconds
                     m, s = divmod(int(round(seconds)), 60)
                     h, m = divmod(m, 60)
                     if h > 0:
@@ -7118,30 +7142,6 @@ async def average_stats(update: Update, context: ContextTypes.DEFAULT_TYPE, user
                         f"Сохраненный ник: *{saved_name}*",
                     parse_mode="Markdown"
                 )
-def calculate_beatmap_stars(path: str,
-                 mods: str,
-                 lazer: bool = True) -> tuple[float, float]:
-        
-    with open(path, encoding="utf-8") as f:
-        beatmap = rosu.Beatmap(content=f.read())
-
-    if beatmap.is_suspicious():
-        raise ValueError("sus map")
-
-
-    perf = rosu.Performance(       
-        lazer = lazer,
-        hitresult_priority=rosu.HitResultPriority.Fastest,
-    )
-    if isinstance(mods, list):
-        mods = "".join(mods) 
-    mods = re.sub(r"\s*\+\s*", "", mods)
-    print(f'{mods} (calculate_pp)' )
-    perf.set_mods(mods)   
-  
-    result = perf.calculate(beatmap)
-   
-    return result.difficulty.stars
 async def post_with_timeout(session: aiohttp.ClientSession, url: str, headers: dict, json_body: dict, timeout: int = 10):
     async with session.post(url, headers=headers, json=json_body, timeout=timeout) as response:
         response.raise_for_status()
