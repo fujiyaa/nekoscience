@@ -1,7 +1,7 @@
 ## В основном осу-related и собранный в одно место проект
 
 Общая схема организации (на момент следующего релиза)
-![https://i.ibb.co/Gwc6jfR/nekosciencereposchematransparent.png](https://i.ibb.co/Gwc6jfR/nekosciencereposchematransparent.png)
+![https://i.ibb.co/M5sZbmLT/nekosciencereposchematransparent-1.png](https://i.ibb.co/M5sZbmLT/nekosciencereposchematransparent-1.png)
 
 1. rust local api (далее просто api)
 - должно заниматься всем что изменяет файлы на сервере
@@ -9,16 +9,20 @@
 - на момент релиза должно по возможности заменить пункты (3) и (4)
 - на момент релиза должно заменить авторизацию в боте (2)
 
+
 2. осу телеграм бот
 - самый слабый (в мире) бот для осу в телеграме: https://t.me/FujiyaosuBot
 
+
 3. веб страницы
 - сайт
+
 
 4. сервер для tampermonkey
 - подробнее о расширении: https://github.com/fujiyaa/osu-expansion-neko-science
 - изначально был отдельным сервером на питоне
 - теперь должен перейти в api 
+
 
 5. "другие функции"
 - любые функции (которые сложно переписать) могут быть написаны не на расте и добавлены через api в общую схему
