@@ -1,7 +1,7 @@
 ## В основном осу-related и собранный в одно место проект
 
 Общая схема организации (на момент следующего релиза)
-![https://i.ibb.co/M5sZbmLT/nekosciencereposchematransparent-1.png](https://i.ibb.co/M5sZbmLT/nekosciencereposchematransparent-1.png)
+![https://i.ibb.co/M5sZbmLT/nekosciencereposchematransparent-1.png](./unsorted/readme.png)
 
 1. rust local api (далее просто api)
 - должно заниматься всем что изменяет файлы на сервере
