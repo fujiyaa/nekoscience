@@ -15,12 +15,12 @@ def load_blacklist():
         return set()
 blacklist = load_blacklist()
 def load_user_data():
-    if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, "r", encoding="utf-8") as f:
+    if os.path.exists(VERIFIED_USERS_FILE):
+        with open(VERIFIED_USERS_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
     return {}
 def save_user_data(data):
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
+    with open(VERIFIED_USERS_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 def load_ratings():
     try:
@@ -559,7 +559,7 @@ def build_beatmaps_text(caller_id: int) -> tuple[str, InlineKeyboardMarkup]:
         for fname in os.listdir(GROUPS_DIR):
             if "." in fname:
                 uid, status = fname.split(".", 1)
-                saved_name = user_data.get(uid, {}).get("name", uid)
+                saved_name = user_data.get(uid, {}).get("osu_username", uid)
                 if status == "todo":
                     users_states.append((saved_name, "не готово"))
                 elif status == "done":
@@ -1234,7 +1234,7 @@ async def rs(update: Update, context: ContextTypes.DEFAULT_TYPE, is_button_press
         try:
             if not is_button_press:            
                 user_data = load_user_data()
-                saved_name = user_data.get(str(update.effective_user.username), {}).get("name")
+                saved_name = user_data.get(str(update.effective_user.id), {}).get("osu_username")
                 username = context.args[0] if context.args else saved_name
                 if not username:
                     await safe_send_message(update, "⚠ Не указан ник", parse_mode="Markdown")
@@ -2240,7 +2240,7 @@ async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
         sorted_lb = sorted(points_data.items(), key=lambda x: x[1], reverse=True)
         text = "🏆 <b>Лидерборд челленджей:</b>\n"
         for i, (uid, pts) in enumerate(sorted_lb[:10], start=1):
-            saved_name = user_data.get(uid, {}).get("name")  # пытаемся получить сохранённый ник
+            saved_name = user_data.get(uid, {}).get("osu_username")  # пытаемся получить сохранённый ник
             display_name = saved_name if saved_name else uid  # если нет ника — показываем ID
             text += f"{i}. {display_name} — <b><u>{pts}</u></b>pt\n"
 
@@ -2323,7 +2323,7 @@ async def mappers(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
 
     user_id = str(update.message.from_user.id)
     user_data = load_user_data()
-    saved_name = user_data.get(str(update.effective_user.username), {}).get("name")
+    saved_name = user_data.get(str(update.effective_user.username), {}).get("osu_username")
 
     if not context.args:
         if saved_name:
@@ -2506,7 +2506,7 @@ async def mods(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request)
     # --- Логика сохранённого ника ---
     user_id = str(update.message.from_user.id)
     user_data = load_user_data()
-    saved_name = user_data.get(str(update.effective_user.username), {}).get("name")
+    saved_name = user_data.get(str(update.effective_user.id), {}).get("osu_username")
 
     if not context.args:
         if saved_name:
@@ -2692,7 +2692,7 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
 
     user_id = str(update.effective_user.id)
     user_data = load_user_data()
-    saved_name = user_data.get(str(update.effective_user.username), {}).get("name")
+    saved_name = user_data.get(str(update.effective_user.id), {}).get("osu_username")
 
     if not context.args:
         if saved_name:
@@ -3360,7 +3360,7 @@ async def card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request)
     # --- Логика сохранённого ника ---
     user_id = str(update.effective_user.id)
     user_data = load_user_data()
-    saved_name = user_data.get(str(update.effective_user.username), {}).get("name")
+    saved_name = user_data.get(str(update.effective_user.id), {}).get("osu_username")
 
     if update.message:
         temp_message = await update.message.reply_text(
@@ -4702,7 +4702,7 @@ async def recent_fix(update: Update, context: ContextTypes.DEFAULT_TYPE, user_re
         user_id = str(update.effective_user.id)
         
         user_data = load_user_data()
-        saved_name = user_data.get(str(update.effective_user.username), {}).get("name")
+        saved_name = user_data.get(str(update.effective_user.id), {}).get("osu_username")
 
         if context.args:
             username = " ".join(context.args)  # <-- собираем ник целиком, даже если есть пробелы
@@ -4984,7 +4984,7 @@ async def beatmaps_button_handler(update: Update, context: ContextTypes.DEFAULT_
             return        
         
         user_data = load_user_data()
-        saved_name = user_data.get(str(user_name), {}).get("name")
+        saved_name = user_data.get(str(update.effective_user.id), {}).get("osu_username")
                 
         if saved_name is None:
             await safe_query_answer(query, "🚷 Сначала нужно сохранить имя /name...")     
@@ -5164,7 +5164,7 @@ async def beatmaps_button_handler(update: Update, context: ContextTypes.DEFAULT_
                 return
 
             user_data = load_user_data()
-            saved_name = user_data.get(str(user_id), {}).get("name", "")
+            saved_name = user_data.get(str(update.effective_user.id), {}).get("osu_username")
             saved_name = html.escape(saved_name)
 
             related_lines = format_top(related_tag_counter, "related_tags")
@@ -6053,29 +6053,44 @@ async def get_settings_kb(user_id, user_data):
     return keyboard, text
 async def set_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await log_all_update(update)
-
-    await safe_send_message(update, "https://myangelfujiya.ru/tryauth")
-
-
-async def reset_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await log_all_update(update)
-
-    user_id = str(update.message.from_user.username)
-
-    data = load_user_data()
-
-    if user_id in data:
-        del data[user_id]
-        save_user_data(data)
-        await safe_send_message(update, "✅ Имя удалено.")
-    else:
-        await safe_send_message(update, "ℹ У тебя не было сохранённого имени.")
+    await safe_send_message(update, "https://myangelfujiya.ru/darkness/auth")
 
 #all moderation
 async def check_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await log_all_update(update)
     
-    print(f"Сообщение получено в чате {update.effective_chat.id} в топике {getattr(update.effective_message, 'message_thread_id', None)}")
+    print(f"chat {update.effective_chat.id}, topic {getattr(update.effective_message, 'message_thread_id', None)}")
+
+    text = update.message.text.strip()
+    telegram_id = str(update.message.from_user.id)
+
+    codes = load_json(VERIFY_PENDING_FILE, {})
+    users = load_json(VERIFIED_USERS_FILE, {})
+
+    try:
+        if text in codes:
+            code_data = codes[text]
+            osu_id = code_data["osu_id"]
+            username = code_data["username"]
+            created_at = code_data["created_at"]            
+            now = datetime.utcnow()
+
+            users[telegram_id] = {
+                "osu_id": osu_id, 
+                "osu_username": username,
+                "code_created": created_at,
+                "verified": now.isoformat()
+            }
+            save_json(VERIFIED_USERS_FILE, users)
+
+            del codes[text]
+            save_json(VERIFY_PENDING_FILE, codes)
+
+            await update.message.reply_text(
+                f"{username} теперь привязан"
+            )
+    except:
+        pass
 
     try:
         await start_check_reminders(update, context)
@@ -6501,7 +6516,7 @@ async def nochoke(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
 
     user_id = str(update.message.from_user.id)
     user_data = load_user_data()
-    saved_name = user_data.get(str(update.effective_user.username), {}).get("name")
+    saved_name = user_data.get(str(update.effective_user.id), {}).get("osu_username")
 
     miss_limit = None
     args = context.args
@@ -6848,7 +6863,7 @@ async def average_stats(update: Update, context: ContextTypes.DEFAULT_TYPE, user
 
     user_id = str(update.message.from_user.id)
     user_data = load_user_data()
-    saved_name = user_data.get(str(update.effective_user.username), {}).get("name")
+    saved_name = user_data.get(str(update.effective_user.id), {}).get("osu_username")
 
     if not context.args:
         if saved_name:
@@ -8192,7 +8207,7 @@ async def farm(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request)
     # --- Логика сохранённого ника ---
     # user_id = str(update.effective_user.id)
     user_data = load_user_data()
-    saved_name = user_data.get(str(update.effective_user.username), {}).get("name")
+    saved_name = user_data.get(str(update.effective_user.id), {}).get("osu_username")
 
     if update.message:
         temp_message = await update.message.reply_text(
@@ -8312,7 +8327,7 @@ async def farm_pagination_callback(update: Update, context: ContextTypes.DEFAULT
 
     # --- Загружаем навыки пользователя ---
     user_data = load_user_data()
-    saved_name = user_data.get(str(update.effective_user.username), {}).get("name")
+    saved_name = user_data.get(str(update.effective_user.id), {}).get("osu_username")
 
     if os.path.exists(USERS_SKILLS_FILE):
         with open(USERS_SKILLS_FILE, "r", encoding="utf-8") as f:
@@ -8500,7 +8515,7 @@ async def generate_farm_results(update: Update, context: ContextTypes.DEFAULT_TY
 
     # --- Загружаем навыки пользователя ---
     user_data = load_user_data()
-    saved_name = user_data.get(str(update.effective_user.username), {}).get("name")
+    saved_name = user_data.get(str(update.effective_user.id), {}).get("osu_username")
 
     if os.path.exists(USERS_SKILLS_FILE):
         with open(USERS_SKILLS_FILE, "r", encoding="utf-8") as f:
@@ -8747,7 +8762,9 @@ def main():
     app.add_handler(CommandHandler("b", beatmaps))
 
     app.add_handler(CommandHandler("name", set_name))
-    app.add_handler(CommandHandler("reset", reset_name))
+    app.add_handler(CommandHandler("link", set_name))
+    app.add_handler(CommandHandler("nick", set_name))
+    app.add_handler(CommandHandler("osu", set_name))
 
     app.add_handler(CommandHandler("gn", random_image))    
 

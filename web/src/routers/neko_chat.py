@@ -1,35 +1,16 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
-from fastapi.middleware.cors import CORSMiddleware
-import uvicorn
-import json
-import datetime
-import os
-from fastapi.responses import RedirectResponse, HTMLResponse
-import httpx
-import os
-import json
-import secrets
-import re
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
+import json, datetime, secrets, os, re, httpx
+
+router = APIRouter()
 
 LATEST_CLIENT_VERSION = "0.3.4-beta"
-
-app = FastAPI()
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["https://myangelfujiya.ru"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-active_connections = []
 MAX_HISTORY = 100
 
-CHAT_HISTORY_FILE = "chat_history.json"
-CHAT_LOG_FILE = "chat_log.txt"
-SERVER_LOG_FILE = "server_full_log.txt"
-VERIFIED_CODES_FILE = "verified_codes.json"
+CHAT_HISTORY_FILE = "chat/cache/chat_history.json"
+CHAT_LOG_FILE = "chat/cache/chat_log.txt"
+SERVER_LOG_FILE = "chat/cache/server_full_log.txt"
+VERIFIED_CODES_FILE = "chat/data/verified_codes.json"
 
 DEFAULT_TOOLTIP = "Неподтвержденный неконейм"
 
@@ -37,40 +18,31 @@ AVATAR_URL_OSU = "https://raw.githubusercontent.com/fujiyaa/osu-expansion-neko-s
 AVATAR_URL_TG = "https://raw.githubusercontent.com/fujiyaa/osu-expansion-neko-science/refs/heads/main/chat_icons/telegram-avatar.png"
 AVATAR_URL_QUESTION = "https://raw.githubusercontent.com/fujiyaa/osu-expansion-neko-science/refs/heads/main/chat_icons/guest-avatar.png"
 
+active_connections = []
+
+files_to_create = {
+    CHAT_HISTORY_FILE: None,
+    CHAT_LOG_FILE: None,
+    SERVER_LOG_FILE: None
+}
+
+for filename, initial_content in files_to_create.items():
+    if not os.path.exists(filename):
+        with open(filename, "w", encoding="utf-8") as f:
+            if initial_content is not None:
+                json.dump(initial_content, f, ensure_ascii=False, indent=2)
+
 def sanitize_message(raw_text: str) -> str:
-    # 1. Удаляем HTML-теги
     clean_text = re.sub(r"<.*?>", "", raw_text)
-
-    # 2. Экранируем только опасные символы, но не заменяем "&" на "&amp;"
-    # Вместо html.escape используем выборочную замену
-    clean_text = (clean_text
-        .replace("<", "")
-        .replace(">", "")
-        .replace('"', "'")
-    )
-
-    # 3. Удаляем управляющие символы (чтобы не сломать JSON)
+    clean_text = clean_text.replace("<", "").replace(">", "").replace('"', "'")
     clean_text = re.sub(r"[\x00-\x1f\x7f]", "", clean_text)
+    return clean_text.strip()[:300]
 
-    # 4. Ограничиваем длину (чтобы никто не заспамил мегатекстом)
-    clean_text = clean_text.strip()[:300]
-
-    return clean_text
 def sanitize_username(raw_name: str) -> str:
-    # Убираем HTML-теги
     clean_name = re.sub(r"<.*?>", "", raw_name)
-
-    # Удаляем управляющие символы
     clean_name = re.sub(r"[\x00-\x1f\x7f]", "", clean_name)
-
-    # Удаляем < и > (защита от разметки)
     clean_name = clean_name.replace("<", "").replace(">", "")
-
-    # Обрезаем длину
-    clean_name = clean_name.strip()[:32]
-
-    return clean_name
-
+    return clean_name.strip()[:32]
 
 def log_server_event(msg: str):
     timestamp = datetime.datetime.utcnow().isoformat()
@@ -78,7 +50,6 @@ def log_server_event(msg: str):
     with open(SERVER_LOG_FILE, "a", encoding="utf-8") as f:
         f.write(line)
     print(line.strip())
-
 
 def append_to_chat_history(msg: dict):
     try:
@@ -98,26 +69,37 @@ def append_to_chat_history(msg: dict):
     with open(CHAT_LOG_FILE, "a", encoding="utf-8") as f:
         f.write(line)
 
+def load_verified_codes():
+    try:
+        with open(VERIFIED_CODES_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except:
+        return {}
 
-@app.websocket("/neko-science/ws/chat")
+def save_verified_codes(data):
+    with open(VERIFIED_CODES_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+async def broadcast(msg: dict):
+    text = json.dumps(msg)
+    for ws, _ in active_connections:
+        try:
+            await ws.send_text(text)
+        except:
+            log_server_event(f"Failed to send message to {ws}")
+
+@router.websocket("/neko-science/ws/chat")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     username = None
     try:
         auth_text = await websocket.receive_text()
         auth = json.loads(auth_text)
-
         input_nick_or_code = auth.get("username", "Unknown")
         client_version = auth.get("version", "0.0.0")
 
-        # читаем коды подтверждения при каждом подключении
-        try:
-            with open(VERIFIED_CODES_FILE, "r", encoding="utf-8") as f:
-                verified_codes = json.load(f)
-        except:
-            verified_codes = {}
+        verified_codes = load_verified_codes()
 
-        # определяем ник и тултип
         if input_nick_or_code in verified_codes:
             user_data = verified_codes[input_nick_or_code]
             username = user_data.get("username", "Unknown")
@@ -130,7 +112,7 @@ async def websocket_endpoint(websocket: WebSocket):
             await websocket.send_text(json.dumps({
                 "type": "update_available",
                 "latest_version": LATEST_CLIENT_VERSION,
-                "message": f"Новая версия {LATEST_CLIENT_VERSION} доступна, список изменений https://github.com/fujiyaa/osu-expansion-neko-science !"
+                "message": f"Новая версия {LATEST_CLIENT_VERSION} доступна!"
             }))
 
         active_connections.append((websocket, username))
@@ -142,23 +124,14 @@ async def websocket_endpoint(websocket: WebSocket):
             history = []
 
         for msg in history:
-            try:
-                with open(VERIFIED_CODES_FILE, "r", encoding="utf-8") as f:
-                    verified_codes = json.load(f)
-            except:
-                verified_codes = {}
-
-            code = msg.get("username")  # в истории теперь хранится код
+            code = msg.get("username")
             user_info = verified_codes.get(code)
-
             if user_info:
                 msg["username"] = user_info.get("username", code)
                 msg["tooltip"] = user_info.get("tooltip", DEFAULT_TOOLTIP)
             else:
                 msg["tooltip"] = DEFAULT_TOOLTIP
-
             await websocket.send_text(json.dumps(msg))
-
 
         while True:
             data = await websocket.receive_text()
@@ -166,72 +139,54 @@ async def websocket_endpoint(websocket: WebSocket):
             if msg.get("type") in ("heartbeat", "auth"):
                 continue
 
-            try:
-                with open(VERIFIED_CODES_FILE, "r", encoding="utf-8") as f:
-                    verified_codes = json.load(f)
-            except:
-                verified_codes = {}
-
             input_name = msg.get("username")
             if input_name in verified_codes:
-                user_info = verified_codes[input_name] 
+                user_info = verified_codes[input_name]
                 msg["tooltip"] = user_info.get("tooltip", DEFAULT_TOOLTIP)
+                msg["username"] = user_info["username"]
             else:
                 msg["tooltip"] = DEFAULT_TOOLTIP
 
             # аватар
             if msg["tooltip"] == "Настоящий неконейм (osu!)":
-                msg["tooltip"] = "Настоящий неконейм (osu!)"
                 msg["avatar"] = AVATAR_URL_OSU
             elif msg["tooltip"] == "Настоящий неконейм (тг)":
-                msg["tooltip"] = "Настоящий неконейм (тг)"
                 msg["avatar"] = AVATAR_URL_TG
             else:
                 msg["avatar"] = AVATAR_URL_QUESTION
 
             msg["message"] = sanitize_message(msg.get("message", ""))
             msg["username"] = sanitize_username(msg.get("username", "Unknown"))
-            
-            append_to_chat_history(msg)        
 
-            if input_name in verified_codes:
-                user_info = verified_codes[input_name] 
-                msg["username"] = user_info["username"]
-
+            append_to_chat_history(msg)
             await broadcast(msg)
-
 
     except WebSocketDisconnect:
         if (websocket, username) in active_connections:
             active_connections.remove((websocket, username))
             log_server_event(f"{username} left the chat")
 
-
-async def broadcast(msg: dict):
-    text = json.dumps(msg)
-    for ws, _ in active_connections:
-        try:
-            await ws.send_text(text)
-        except:
-            log_server_event(f"Failed to send message to {ws}")
-
 OSU_CLIENT_ID = 45317
 OSU_CLIENT_SECRET = "pEop0AZ6t7IpNTtx3t5v74ik9WvIivazH7ZgcZPS"
 OSU_REDIRECT_URI = "https://myangelfujiya.ru/neko-science/callback"
 
+@router.get("/neko-science/auth-start")
+async def auth_start():
+    html = """<html>...твой HTML тут...</html>"""
+    return HTMLResponse(html)
 
-def load_verified_codes():
-    try:
-        with open(VERIFIED_CODES_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except:
-        return {}
+@router.get("/neko-science/login")
+async def login():
+    url = (
+        f"https://osu.ppy.sh/oauth/authorize"
+        f"?client_id={OSU_CLIENT_ID}"
+        f"&redirect_uri={OSU_REDIRECT_URI}"
+        f"&response_type=code"
+        f"&scope=identify"
+    )
+    return RedirectResponse(url)
 
-def save_verified_codes(data):
-    with open(VERIFIED_CODES_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-
-@app.get("/neko-science/auth-start")
+@router.get("/neko-science/auth-start")
 async def auth_start():
     html = """
     <html>
@@ -293,7 +248,7 @@ async def auth_start():
     return HTMLResponse(html)
 
 
-@app.get("/neko-science/login")
+@router.get("/neko-science/login")
 async def login():
     url = (
         f"https://osu.ppy.sh/oauth/authorize"
@@ -304,7 +259,7 @@ async def login():
     )
     return RedirectResponse(url)
 
-@app.get("/neko-science/callback")
+@router.get("/neko-science/callback")
 async def callback(code: str):
     async with httpx.AsyncClient() as client:
         token_resp = await client.post(
@@ -344,7 +299,7 @@ async def callback(code: str):
     # Перенаправляем на страницу завершения авторизации с кодом
     return RedirectResponse(f"/neko-science/auth-finish?username={username}&code={code_value}")
 
-@app.get("/neko-science/auth-finish")
+@router.get("/neko-science/auth-finish")
 async def auth_finish(username: str, code: str):
     html = f"""
     <html>
@@ -419,11 +374,6 @@ async def auth_finish(username: str, code: str):
 
 
 
-if __name__ == "__main__":
-    for f in [CHAT_HISTORY_FILE, CHAT_LOG_FILE, SERVER_LOG_FILE]:
-        if not os.path.exists(f):
-            with open(f, "w", encoding="utf-8") as _:
-                pass
+   
 
-    uvicorn.run(app, host="0.0.0.0", port=8010)
 

@@ -62,7 +62,7 @@ BLACKLIST_FILE = BOT_DIR / "settings/blacklist.txt"
 POSITIVE_FILE = BOT_DIR / "settings/positive_words.txt"
 NEGATIVE_FILE = BOT_DIR / "settings/negative_words.txt"           
 RATINGS_FILE = BOT_DIR / "settings/ratings.json"
-DATA_FILE = "/var/www/myangelfujiya/users.json"
+USERS_SKILLS_FILE = BOT_DIR / "stats/skills/skills.json"
 COOLDOWN_FILE = BOT_DIR / "cooldowns/cooldowns.json"
 QUEUE_FILE = BOT_DIR / "stats/queue.txt"
 FLAG_FILE = BOT_DIR / "stats/flags/worker_running.flag"
@@ -123,6 +123,8 @@ message_authors = {}
 os.makedirs(SCORES_DIR, exist_ok=True)
 os.makedirs(BOT_DIR / "stats", exist_ok=True)
 os.makedirs(BOT_DIR / "stats/flags", exist_ok=True)
+os.makedirs(BOT_DIR / "stats/skills", exist_ok=True)
+os.makedirs(BOT_DIR / "stats/data", exist_ok=True)
 os.makedirs(STATS_BEATMAPS, exist_ok=True)
 os.makedirs(GROUPS_DIR, exist_ok=True)
 os.makedirs(BOT_DIR / "cooldowns", exist_ok=True)
@@ -162,12 +164,11 @@ OSU_MAP_REGEX = re.compile(
     r"https?://osu\.ppy\.sh/beatmapsets/\d+#\w+/(\d+)"
 )
 
-if sys.platform.startswith("win"): 
-    USERS_SKILLS_FILE = BOT_DIR / "user_skills.json"
-    DATA_FILE = BOT_DIR / "settings/users.json"
+# if sys.platform.startswith("win"): 
+   
 
-else:  # Linux
-    USERS_SKILLS_FILE = BOT_DIR / "user_skills.json"
+# else:  # Linux
+    
 
 dev_flag = os.getenv("DEV_FLAG", "0")  # default "0"
 TOKEN = os.getenv("DTOKEN") if dev_flag == "1" else os.getenv("TOKEN")
@@ -177,5 +178,11 @@ LOCAL_API_URL = os.getenv("LOCAL_API_URL", None)
 
 COOLDOWN_FARM_COMMAND = 5
 
-REMINDERS_DATA_FILE = '/var/www/myangelfujiya/darkness/reminder/reminders.json'
-REMINDERS_PW_FILE = '/var/www/myangelfujiya/darkness/reminder/passwords.json'
+
+
+# временно
+BASE_DIR = Path(__file__).resolve().parents[2]  # nekoscience/
+REMINDERS_DATA_FILE = BASE_DIR / "web" / "src" / "reminders" / "data" / "reminders.json"
+REMINDERS_PW_FILE = BASE_DIR / "web" / "src" / "reminders" / "data" / "passwords.json"
+VERIFIED_USERS_FILE = BASE_DIR / "web" / "src" / "auth" / "verified.json"
+VERIFY_PENDING_FILE = BASE_DIR / "web" / "src" / "auth" / "pending.json"

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Нереальный успех</title>    
+    <link rel="stylesheet" href="/static/css/darkness_auth_code.css">
+    <script src="/static/js/winter-snow.js" defer></script>    
+    <script src="/static/js/footer-default.js" defer></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Почти готово</h1>
+        <p>Отправь этот код в любой чат с darkness</p>
+        <div id="code-box" class="code-box">{{ code }}</div>
+        <button class="copy-button" onclick="copyCode()">Копировать</button>
+    </div>
+
+    <script>
+      function copyCode() {
+        const code = document.getElementById("code-box").innerText;
+        navigator.clipboard.writeText(code).then(() => {
+          const btn = document.querySelector('.copy-button');
+          const originalText = btn.innerText;
+          btn.innerText = 'Скопировано';
+          setTimeout(() => {
+            btn.innerText = originalText;
+          }, 2000);
+        }).catch(() => {
+          alert("Ошибка копирования");
+        });
+      }
+    </script>
+</body>
+</html>

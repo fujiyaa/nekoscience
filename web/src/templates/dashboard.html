@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"> defer</script>
+    <script src="/static/js/dashboard-data.js"> defer </script>
+    <script src="/static/js/winter-snow.js" defer></script>
+    <script src="/static/js/footer-default.js" defer></script>
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+</head>
+<body>
+    <div id="neko-science">
+        <h1>neko-science status</h1>
+
+        <div class="controls">
+            <label>Период:
+                <select id="range">
+                    <option value="1h">1 час</option>
+                    <option value="12h">12 часов</option>
+                    <option value="day">День</option>
+                    <option value="week">Неделя</option>
+                    <option value="month" selected>Месяц</option>
+                    <option value="3months">3 месяца</option>
+                    <option value="year">Год</option>
+                    <option value="all">Общий</option>
+                </select>
+            </label>
+        </div>
+
+        <div class="cards" id="cards"></div>
+
+        <div class="section-card project-usage">
+            <h2>neko-science API usage by project</h2>
+            <div class="card-stats">
+                <div class="small-card">
+                    <h3>Darkness</h3>
+                    <p id="api-requests-bot">6969</p>            
+                </div>
+                <div class="small-card">
+                    <h3>osu-expansion-neko-science</h3>
+                    <p id="api-requests-osu-archive">420</p>            
+                </div>
+                <div class="small-card">
+                    <h3>Неизвестно</h3>
+                    <p id="api-requests-unknown">-</p>            
+                </div>      
+            </div>
+        </div>
+        
+        <div class="section-card">
+            <h2>Darkness (телеграм осу бот)</h2>
+            <div class="card-stats">
+                <div class="small-card">
+                    <h3>Статус</h3>
+                    <p id="bot-stasus">-</p>
+                </div>             
+                <div class="small-card">
+                    <h3>Сообщения</h3>
+                    <p id="total-requests">0</p>
+                </div>
+                <div class="small-card">
+                    <h3>Команды</h3>
+                    <p id="commands">0</p>
+                </div>
+                <div class="small-card">
+                    <h3>Пользователи</h3>
+                    <p id="users">0</p>
+                </div>   
+                <div class="small-card">
+                    <h3>Чаты</h3>
+                    <p id="chats">0</p>
+                </div>        
+            </div>
+
+            <div class="section-grid">             
+                <canvas id="bar_messages"></canvas> 
+                <canvas id="line_commands"></canvas>   
+                
+                <canvas id="pie_commands"></canvas>   
+                <canvas id="bar_users"></canvas>
+                
+                <canvas id="line_commands_err"></canvas>
+                
+                <canvas id="pie_cache"></canvas> 
+            </div>
+        
+            <div class="card-stats">             
+                <div class="small-card">
+                    <h3>osu-api-requests</h3>
+                    <p id="bot-osu-api-requests">-</p>
+                </div>
+                <div class="small-card">
+                    <h3>web-page-requests</h3>
+                    <p id="bot-web-page-requests">-</p>
+                </div>
+                <div class="small-card">
+                    <h3>pp-calc</h3>
+                    <p id="bot-pp-calc">-</p>
+                </div>   
+                <div class="small-card">
+                    <h3>image-generation</h3>
+                    <p id="bot-image-generation">-</p>
+                </div>                            
+                <div class="small-card">
+                    <h3>total-cache</h3>
+                    <p id="bot-total-cache">-</p>            
+                </div>    
+                <div class="small-card">
+                    <h3>scores-cache</h3>
+                    <p id="bot-scores-cache">-</p>
+                </div>               
+                <div class="small-card">
+                    <h3>beatmaps-cache</h3>
+                    <p id="bot-beatmaps-cache">-</p>            
+                </div>  
+            </div>    
+        </div>        
+    </div>
+</body>
+</html>

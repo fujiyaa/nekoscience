@@ -60,6 +60,9 @@ target/
 /bot/src/beatmaps.db
 
 /web/src/static/data/*
+/web/src/chat/cache/*
+/web/src/chat/data/*
+/web/src/auth/*
 
 /unsorted/osu-archive/*.json
 /unsorted/osu-archive/*.txt

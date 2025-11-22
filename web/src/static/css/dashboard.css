@@ -1,0 +1,180 @@
+body {
+        font-family: 'Poppins', sans-serif;
+        background: #1e1e2f;
+        color: #e0e0e0;
+        padding: 1rem;
+        margin: 0;
+    }
+
+h1 {
+    text-align: center;
+    color: #a8caff;
+    font-size: 2.5rem;
+    margin-bottom: 1.5rem;
+    text-shadow: 0 0 8px #a8caff;
+}
+
+.controls {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+select {
+    background: #2a2a3c;
+    color: #a8caff;
+    border: none;
+    padding: 0.6rem 1rem;
+    border-radius: 10px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+select:hover {
+    background: #3b3b56;
+}
+
+.cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.card {
+    background:rgba(42, 42, 60, 0.85);
+    border-radius: 15px;
+    padding: 1.2rem;
+    text-align: center;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+    transition: transform 0.3s, box-shadow 0.3s, background 0.3s;
+}
+
+.card:hover {
+    transform: translateY(-5px) scale(1.03);
+    box-shadow: 0 10px 25px rgba(168, 202, 255, 0.5);
+    background: linear-gradient(145deg, #2e2e4a, #3b3b56);
+}
+
+.card h3 {
+    margin: 0;
+    color: #c0c0d0;
+    font-weight: 500;
+}
+
+.card p {
+    margin: 0.5rem 0 0;
+    font-size: 1.6rem;
+    font-weight: bold;
+    color: #a8caff;
+    transition: all 0.3s;
+}
+
+.card:hover p {
+    text-shadow: 0 0 8px #a8caff, 0 0 12px #a8caff, 0 0 18px #a8caff;
+    transform: scale(1.1);
+}
+
+.card-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 1rem 0;
+    justify-content: center;
+}
+
+.small-card {
+    background: rgba(53, 53, 82, 0.85);
+    border-radius: 12px;
+    padding: 0.8rem;
+    flex: 1 1 150px; 
+    max-width: 217px;  
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    transition: transform 0.3s, background 0.3s, box-shadow 0.3s;
+}
+
+.small-card:hover {
+    transform: translateY(-3px) scale(1.02);
+    background: linear-gradient(145deg, #404060, #4a4a72);
+    box-shadow: 0 6px 18px rgba(168, 202, 255, 0.4);
+}
+
+.small-card h3 {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #c0c0d0;
+}
+
+.small-card p {
+    margin: 0.5rem 0 0;
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #a8caff;
+    transition: all 0.3s;
+}
+
+.small-card:hover p {
+    text-shadow: 0 0 6px #a8caff, 0 0 10px #a8caff;
+    transform: scale(1.05);
+}
+
+.section-card {
+    background: rgba(42, 42, 60, 0.85);
+    border-radius: 15px;
+    padding: 1rem 1rem 0.2rem 1rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+    transition: transform 0.3s, box-shadow 0.3s, background 0.3s;
+}    
+
+.section-card h2 {
+    margin: 0 0 1rem 0;
+    font-size: 1.3rem;
+    color: #a8caff;
+}
+
+.section-grid {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 1.0rem;
+    justify-content: center;
+}
+
+.section-grid canvas {
+    flex: 1 1 auto;       
+    width: 100%;         
+    max-width: 500px;    
+    min-width: 300px;     
+    max-height: 300px;    
+    background: rgba(53, 53, 82, 0.6);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    transition: transform 0.3s, box-shadow 0.3s;
+    padding: 0.6rem;
+}
+
+.section-grid canvas:hover {
+    transform: scale(1.02);
+    box-shadow: 0 8px 20px rgba(168, 202, 255, 0.4);
+}
+
+.section-card.project-usage .card-stats {
+    justify-content: flex-start; 
+}    
+
+@media (max-width: 600px) {
+    .section-grid canvas {
+        flex: 1 1 100%;
+        max-width: 100%;
+    }
+}
+
+#neko-science {
+    min-width: 400px;
+    max-width: 1564px;
+    margin: 0 auto;   
+    padding: 1rem;     
+    position: relative; 
+    z-index: 1; 
+}

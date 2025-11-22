@@ -1,34 +1,42 @@
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import APIRouter, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 import json
 import os
 
-app = FastAPI()
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+from pathlib import Path
 
-DATA_FILE = "/var/www/myangelfujiya/darkness/reminder/reminders.json"
+templates = Jinja2Templates(directory="templates")
+
+router = APIRouter(prefix="/darkness/reminders")
+
+BASE_DIR = Path(__file__).resolve().parents[3]  # nekoscience/
+DATA_FILE = BASE_DIR / "web" / "src" / "reminders" / "data" / "reminders.json"
+PASSWORD_FILE = BASE_DIR / "web" / "src" / "reminders" / "data" / "passwords.json"
+
 MAX_REMINDERS_PER_USER = 10
 
-if not os.path.exists(DATA_FILE):
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump([], f, ensure_ascii=False, indent=2)
+files_to_create = {
+    DATA_FILE: [],
+    PASSWORD_FILE: {}
+}
 
-@app.get("/darkness/")
-def root():
-    return FileResponse("/var/www/myangelfujiya/darkness/reminder/static/index.html")
+for filename, initial_content in files_to_create.items():
+    if not os.path.exists(filename):
+        with open(filename, "w", encoding="utf-8") as f:
+            if initial_content is not None:
+                json.dump(initial_content, f, ensure_ascii=False, indent=2)
+
+@router.get("/")
+async def reminders(request: Request):
+    return templates.TemplateResponse("darkness_reminders.html", {"request": request})
 
 
-PASSWORD_FILE = "/var/www/myangelfujiya/darkness/reminder/passwords.json"
 
-@app.post("/darkness/password")
+@router.post("/password")
 async def login(request: Request):
     data = await request.json()
     password = data.get("password")
@@ -49,7 +57,7 @@ async def login(request: Request):
         raise HTTPException(status_code=401, detail="Неверный пароль")
 
 
-@app.post("/darkness/save")
+@router.post("/save")
 async def save_reminder(request: Request):
     data = await request.json()
     print("[DEBUG] /save получены данные:", data)
@@ -75,7 +83,7 @@ async def save_reminder(request: Request):
     return {"status": "ok", "message": "Напоминание сохранено"}
 
 
-@app.get("/darkness/list")
+@router.get("/list")
 def list_reminders(user: str = None):
     with open(DATA_FILE, "r", encoding="utf-8") as f:
         reminders = json.load(f)
@@ -86,7 +94,7 @@ def list_reminders(user: str = None):
     return JSONResponse(content=reminders)
 
 
-@app.delete("/darkness/delete")
+@router.delete("/delete")
 def delete_reminder(user: str, message: str, date: str, time: str):
     with open(DATA_FILE, "r", encoding="utf-8") as f:
         reminders = json.load(f)
