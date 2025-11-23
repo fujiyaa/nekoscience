@@ -72,4 +72,7 @@ target/
 /unsorted/myangelfujiya/*.txt
 *passwords.json
 
+/storage/osu_users/*.json
+/storage/chat_users/*.json
+
 !*.gitkeep

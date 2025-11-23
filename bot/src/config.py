@@ -186,3 +186,6 @@ REMINDERS_DATA_FILE = BASE_DIR / "web" / "src" / "reminders" / "data" / "reminde
 REMINDERS_PW_FILE = BASE_DIR / "web" / "src" / "reminders" / "data" / "passwords.json"
 VERIFIED_USERS_FILE = BASE_DIR / "web" / "src" / "auth" / "verified.json"
 VERIFY_PENDING_FILE = BASE_DIR / "web" / "src" / "auth" / "pending.json"
+
+GIF_BLACKS_PATH = BOT_DIR / "gifs" / "blacks" / "sticker.webm"
+GIF_DOUBT_PATH = BOT_DIR / "gifs" / "doubt" / "blue-archive-otogi.mp4"

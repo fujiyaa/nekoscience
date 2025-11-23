@@ -1,103 +1,13 @@
 from config import *
-import localapi
-             
-def load_words(file_path):
-    try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            return [line.strip().lower() for line in f if line.strip()]
-    except FileNotFoundError:
-        return []
-def load_blacklist():
-    try:
-        with open(BLACKLIST_FILE, "r", encoding="utf-8") as f:
-            return set(line.strip().lower() for line in f if line.strip())
-    except FileNotFoundError:
-        return set()
-blacklist = load_blacklist()
-def load_user_data():
-    if os.path.exists(VERIFIED_USERS_FILE):
-        with open(VERIFIED_USERS_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return {}
-def save_user_data(data):
-    with open(VERIFIED_USERS_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=4)
-def load_ratings():
-    try:
-        with open(RATINGS_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {}
-def save_ratings(ratings):
-    with open(RATINGS_FILE, "w", encoding="utf-8") as f:
-        json.dump(ratings, f, ensure_ascii=False, indent=2)
-def load_images_data():
-    try:
-        if os.path.exists(IMAGES_JSON):
-            if os.path.getsize(IMAGES_JSON) > 0:  # Файл не пустой
-                with open(IMAGES_JSON, "r", encoding="utf-8") as f:
-                    return json.load(f)
-            else:
-                logging.error("Файл JSON пуст, пересоздаю...")
-        else:
-            logging.info("Файл JSON не найден, создаю новый...")
+import localapi, auth
 
-        # Если файла нет или он пуст/битый -> пересоздаём
-        all_images = [f for f in os.listdir(IMAGES_DIR) if f.lower().endswith((".png", ".jpg", ".jpeg", ".gif"))]
-        data = {"all": all_images, "used": []}
-        save_images_data(data)
-        return data
+import temp            
 
-    except json.JSONDecodeError:
-        logging.error("Файл JSON повреждён, пересоздаю...")
-        all_images = [f for f in os.listdir(IMAGES_DIR) if f.lower().endswith((".png", ".jpg", ".jpeg", ".gif"))]
-        data = {"all": all_images, "used": []}
-        save_images_data(data)
-        return data
-
-    except Exception as e:
-        logging.error(f"Ошибка при загрузке JSON: {e}")
-        return {"all": [], "used": []}
-def save_images_data(data):
-    try:
-        with open(IMAGES_JSON, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=4)
-    except Exception as e:
-        logging.error(f"Ошибка при сохранении JSON: {e}")
-def load_json(path, default):
-    if not os.path.exists(path):
-        return default
-    with open(path, "r", encoding="utf-8") as f:
-        try:
-            return json.load(f)
-        except:
-            return default
-def save_json(path, data):
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-def load_count_me_times():
-    try:
-        with open(COUNT_ME_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except FileNotFoundError:
-        return {}
-def save_count_me_times(data):
-    with open(COUNT_ME_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
-def load_settings():
-    if os.path.exists(USER_SETTINGS_FILE):
-        with open(USER_SETTINGS_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return {}
-def save_settings(settings):
-    with open(USER_SETTINGS_FILE, "w", encoding="utf-8") as f:
-        json.dump(settings, f, ensure_ascii=False, indent=2)
-
+blacklist = temp.load_text_list(BLACKLIST_FILE, as_set=True)
 
 log_queue = asyncio.Queue()
 logger_task = None
-logger_lock = asyncio.Lock()  # чтобы два одновременных вызова не стартанули два воркера
-
+logger_lock = asyncio.Lock()
 
 async def logger_worker():
     while True:
@@ -114,23 +24,17 @@ async def logger_worker():
 
         log_queue.task_done()
 
-
 async def ensure_logger_started():
     global logger_task
-
-    # защищаемся от гонки, если два события одновременно вызывают log_all_update
     async with logger_lock:
         if logger_task is None:
             logger_task = asyncio.create_task(logger_worker())
-
 
 async def log_all_update(update):
     await ensure_logger_started()
     await log_queue.put(update)
 
-
 async def stop_logger():
-    # Останавливать можно когда захочешь
     await log_queue.put(None)
     await logger_task
 
@@ -138,41 +42,6 @@ def log_deleted_message(user, message_text):
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with open(DELETED_MESSAGES_LOG, "a", encoding="utf-8") as f:
         f.write(f"[{now}] Удалено сообщение от пользователя {user}:\n{message_text}\n\n")
-def get_current_tier(user_id):
-    users_data = load_json(USERS_FILE, {})
-    now = time.time()
-    user_id_str = str(user_id)
-
-    if user_id_str not in users_data:
-        # Нет данных — сразу tier 1 и сохраняем время
-        users_data[user_id_str] = {"last_tier": 1, "last_time": now}
-        save_json(USERS_FILE, users_data)
-        return 1
-
-    last_tier = users_data[user_id_str]["last_tier"]
-    last_time = users_data[user_id_str]["last_time"]
-
-    # Проверяем, прошло ли 24 часа с последнего апдейта
-    if now - last_time > 24 * 3600:
-        # Если прошло — сбрасываем tier на 1 и обновляем время
-        users_data[user_id_str] = {"last_tier": 1, "last_time": now}
-        save_json(USERS_FILE, users_data)
-        return 1
-
-    # Если еще не прошло 24 часа
-    if last_tier < 4:
-        # Увеличиваем tier на 1 и обновляем время
-        new_tier = last_tier + 1
-        users_data[user_id_str] = {"last_tier": new_tier, "last_time": now}
-        save_json(USERS_FILE, users_data)
-        return new_tier
-    else:
-        # last_tier == 4 и 24 часа еще не прошло — оставляем 4, время не меняем
-        return 4
-def set_last_tier(user_id, tier):
-    users_data = load_json(USERS_FILE, {})
-    users_data[str(user_id)] = {"last_tier": tier, "last_time": time.time()}
-    save_json(USERS_FILE, users_data)
 
 def format_osu_date(date_str: str, today: bool = True) -> str:
     dt = datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%SZ")
@@ -182,7 +51,7 @@ def format_osu_date(date_str: str, today: bool = True) -> str:
     else:
         return dt.strftime("%d.%m.%Y")
 def seconds_to_hhmmss(seconds: float) -> str:
-    total_seconds = int(round(seconds))  # округляем и приводим к int
+    total_seconds = int(round(seconds))
     hours = total_seconds // 3600
     minutes = (total_seconds % 3600) // 60
     secs = total_seconds % 60
@@ -190,8 +59,7 @@ def seconds_to_hhmmss(seconds: float) -> str:
         return f"{hours:02d}:{minutes:02d}:{secs:02d}"
     else:
         return f"{minutes:02d}:{secs:02d}"
-def reset_remove_timer(bot, chat_id, msg_id, delay=30, cleanup=None):
-    # отменяем старый таймер, если был
+def reset_remove_timer(bot, chat_id, msg_id, delay=30, cleanup=None):    
     if msg_id in remove_tasks:
         remove_tasks[msg_id].cancel()
 
@@ -220,23 +88,19 @@ def apply_mods_to_stats(bpm, ar, od, cs, hp, speed_multiplier=1.0, hr=False, ez=
     hp = Decimal(str(hp))
     speed_multiplier = Decimal(str(speed_multiplier))
 
-    # EZ
     if ez:
         ar *= Decimal('0.5')
         od *= Decimal('0.5')
         cs *= Decimal('0.5')
         hp *= Decimal('0.5')      
 
-    # HR
     if hr:
         ar = min(ar * Decimal('1.4'), Decimal('10'))
         od = min(od * Decimal('1.4'), Decimal('10'))
         cs = min(cs * Decimal('1.3'), Decimal('10'))
         hp = min(hp * Decimal('1.4'), Decimal('10'))
 
-    # Speed multiplier (DT/HT)
     if speed_multiplier != 1:
-        # AR пересчёт через ms
         if ar < 5:
             ar_ms = Decimal('1800') - Decimal('120') * ar
         else:
@@ -247,7 +111,6 @@ def apply_mods_to_stats(bpm, ar, od, cs, hp, speed_multiplier=1.0, hr=False, ez=
         else:
             ar = Decimal('5') + (Decimal('1200') - ar_ms) / Decimal('150')
 
-        # OD пересчёт через hit windows
         hit300 = Decimal('80') - Decimal('6') * od
         hit100 = Decimal('140') - Decimal('8') * od
         hit50  = Decimal('200') - Decimal('10') * od
@@ -256,12 +119,10 @@ def apply_mods_to_stats(bpm, ar, od, cs, hp, speed_multiplier=1.0, hr=False, ez=
         hit100  /= speed_multiplier
         hit50   /= speed_multiplier
 
-        # Конвертируем обратно OD по hit300
         od = (Decimal('80') - hit300) / Decimal('6')
 
         bpm *= speed_multiplier
 
-    # Округление как в osu!
     def osu_round(val):
         return float(val.quantize(Decimal('0.01'), rounding='ROUND_HALF_UP'))
 
@@ -283,15 +144,12 @@ def normalize_no_plus(text: str) -> str:
     clean_text = text.replace('+', '').strip()
     return f"{clean_text}" if clean_text else ""
 def format_mods(mod_list):
-    """Преобразует список ['DT','CL'] -> 'DTCL', пустой -> 'NM'."""
     return "".join(mod_list) if mod_list else "NM"
 def format_blocks_percent(counter, total, per_row):
-    """<code>мод:XX%</code> с выравниванием и • между блоками"""
     items_raw = [(k, f"{round(v / total * 100)}%") for k, v in counter.most_common()]
     max_key_len = max(len(k) for k, _ in items_raw)
     max_val_len = max(len(val) for _, val in items_raw)
 
-    # Автоуменьшение per_row, если мод слишком длинный
     if max_key_len > 4:
         per_row = max(1, per_row - 1)
 
@@ -302,12 +160,10 @@ def format_blocks_percent(counter, total, per_row):
     lines = [" • ".join(items[i:i+per_row]) for i in range(0, len(items), per_row)]
     return "\n".join(lines)
 def format_blocks_pp(data_dict, per_row):
-    """<code>мод:XXXX.X</code> с выравниванием и • между блоками"""
     items_raw = sorted(data_dict.items(), key=lambda x: x[1], reverse=True)
     max_key_len = max(len(k) for k, _ in items_raw)
     max_val_len = max(len(f"{round(v,1)}") for _, v in items_raw)
 
-    # Автоуменьшение per_row, если мод слишком длинный
     if max_key_len > 4:
         per_row = max(1, per_row - 1)
 
@@ -320,7 +176,7 @@ def format_blocks_pp(data_dict, per_row):
 def country_code_to_flag(country_code: str) -> str:
     if not country_code or len(country_code) != 2:
         return ""
-    # Превращаем каждую букву в символ флага
+    
     return "".join(
         chr(0x1F1E6 + ord(char.upper()) - ord('A'))
         for char in country_code
@@ -541,7 +397,7 @@ async def beatmap(map_id: int) -> tuple[str | None, dict]:
 
     parse_values(path_to_map)
     return path_to_map, base_values
-def build_beatmaps_text(caller_id: int) -> tuple[str, InlineKeyboardMarkup]:  
+async def build_beatmaps_text(caller_id: int) -> tuple[str, InlineKeyboardMarkup]:  
 
     # считаем количество строк в queue.txt
     queue_count = 0
@@ -549,17 +405,19 @@ def build_beatmaps_text(caller_id: int) -> tuple[str, InlineKeyboardMarkup]:
         with open(QUEUE_FILE, "r", encoding="utf-8") as f:
             queue_count = sum(1 for _ in f)
 
-    # грузим сохранённые ники
-    user_data = load_user_data()
-
     # собираем список пользователей и статусов
     users_states = []
     done_count = 0
+
     if os.path.exists(GROUPS_DIR):
+        verified_all = await auth.get_all_osu_verified()  
+
         for fname in os.listdir(GROUPS_DIR):
             if "." in fname:
                 uid, status = fname.split(".", 1)
-                saved_name = user_data.get(uid, {}).get("osu_username", uid)
+                saved_data = verified_all.get(uid)
+                saved_name = saved_data["osu_username"] if saved_data else "неизвестно"
+
                 if status == "todo":
                     users_states.append((saved_name, "не готово"))
                 elif status == "done":
@@ -728,10 +586,6 @@ async def write_cooldowns(data):
         await f.write(json.dumps(data, ensure_ascii=False, indent=4))
 async def check_user_cooldown(command_name: str, user_id: str, cooldown_seconds: int, 
                               update=None, context=None, warn_text=None):
-    """
-    Проверяет кулдаун для пользователя и команды через JSON.
-    Возвращает True, если команда доступна, False если в кулдауне.
-    """
     now = datetime.now(timezone.utc).isoformat()
     cooldown = timedelta(seconds=cooldown_seconds)
 
@@ -758,7 +612,6 @@ async def check_user_cooldown(command_name: str, user_id: str, cooldown_seconds:
                     asyncio.create_task(delete_message_after_delay(context, warn_msg.chat_id, warn_msg.message_id, 3))
             return False
 
-    # сохраняем текущее время
     user_cooldowns[user_id] = now
     data[command_name] = user_cooldowns
     await write_cooldowns(data)
@@ -1069,7 +922,7 @@ async def get_beatmap(beatmap_id: int, token: str, timeout_sec: int = 10):
         return None
 async def get_user_id(username: str, token: str = None, timeout_sec: int = 10):
     # Загружаем кэш при каждом вызове
-    user_cache = load_json(OSU_ID_CACHE_FILE, {})
+    user_cache = temp.load_json(OSU_ID_CACHE_FILE, {})
 
     # Проверяем кэш
     if username in user_cache:
@@ -1093,7 +946,7 @@ async def get_user_id(username: str, token: str = None, timeout_sec: int = 10):
                 if user_id:
                     # Сохраняем в кэш и файл
                     user_cache[username] = user_id
-                    save_json(OSU_ID_CACHE_FILE, user_cache)
+                    temp.save_json(OSU_ID_CACHE_FILE, user_cache)
                 return user_id
     except (asyncio.TimeoutError, aiohttp.ClientError) as e:
         print(f"Request for user_id '{username}' failed: {e}")
@@ -1232,9 +1085,8 @@ async def rs(update: Update, context: ContextTypes.DEFAULT_TYPE, is_button_press
     max_attempts = 3
     for _ in range(max_attempts):
         try:
-            if not is_button_press:            
-                user_data = load_user_data()
-                saved_name = user_data.get(str(update.effective_user.id), {}).get("osu_username")
+            if not is_button_press:          
+                saved_name = await auth.check_osu_verified(str(update.effective_user.id))
                 username = context.args[0] if context.args else saved_name
                 if not username:
                     await safe_send_message(update, "⚠ Не указан ник", parse_mode="Markdown")
@@ -1318,7 +1170,7 @@ async def rs(update: Update, context: ContextTypes.DEFAULT_TYPE, is_button_press
             traceback.print_exc()
 
 async def send_score( update: Update, score: dict, user_id: str,  session: dict,  message_id: int, query=None,  show_buttons=True, img_path=None, is_recent=True):
-    s = load_settings()
+    s =  temp.load_json(USER_SETTINGS_FILE, default={})
     user_settings = s.get(str(update.effective_user.id), {}) 
     rs_bg_render = user_settings.get("rs_bg_render", False)  
     img_path, caption = await process_score_and_image(score, image_todo_flag=rs_bg_render, is_recent=is_recent)
@@ -1561,7 +1413,7 @@ async def process_score_and_image(score, image_todo_flag = False, is_recent=True
     return img_path, caption
 async def rs_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    s = load_settings()
+    s = temp.load_json(USER_SETTINGS_FILE, default={})
     user_settings = s.get(str(update.effective_user.id), {}) 
     rs_bg_render = user_settings.get("rs_bg_render", False)   
     
@@ -2033,7 +1885,7 @@ async def doubt(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         message_thread_id = update.message.message_thread_id
 
-        with open("gifs/doubt/blue-archive-otogi.mp4", "rb") as animation_file:
+        with open(GIF_DOUBT_PATH, "rb") as animation_file:
             await context.bot.send_animation(
                 chat_id=update.effective_chat.id,
                 animation=animation_file,
@@ -2061,7 +1913,7 @@ async def blacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         message_thread_id = update.message.message_thread_id
 
-        with open("gifs/blacks/sticker.webm", "rb") as animation_file:
+        with open(GIF_BLACKS_PATH, "rb") as animation_file:
             await context.bot.send_sticker(
                 chat_id=update.effective_chat.id,
                 sticker=animation_file,
@@ -2167,7 +2019,7 @@ async def random_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 asyncio.create_task(delete_response([user_msg, bot_msg], delay=30))
             return
 
-        data = load_images_data()
+        data = temp.load_images_data()
         all_images = data.get("all", [])
         used_images = data.get("used", [])
 
@@ -2206,7 +2058,7 @@ async def random_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Сохраняем как использованную
         used_images.append(selected_image)
         data["used"] = used_images
-        save_images_data(data)
+        temp.save_images_data(data)
 
     except Exception as e:
         logging.error(f"Ошибка в random_image: {e}")
@@ -2230,18 +2082,16 @@ async def delete_response(resp, delay: int = 10):
 async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         topic_id = getattr(update.effective_message, "message_thread_id", None)        
-        points_data = load_json(POINTS_FILE, {})
+        points_data = temp.load_json(POINTS_FILE, {})
         if not points_data:
             await context.bot.send_message(chat_id=update.effective_chat.id, message_thread_id=topic_id, text="🏆 Лидерборд пуст", parse_mode="HTML")
             return
         
-        user_data = load_user_data()  # загрузка данных пользователей с никами
-
         sorted_lb = sorted(points_data.items(), key=lambda x: x[1], reverse=True)
         text = "🏆 <b>Лидерборд челленджей:</b>\n"
         for i, (uid, pts) in enumerate(sorted_lb[:10], start=1):
-            saved_name = user_data.get(uid, {}).get("osu_username")  # пытаемся получить сохранённый ник
-            display_name = saved_name if saved_name else uid  # если нет ника — показываем ID
+            saved_name = await auth.check_osu_verified(str(uid))
+            display_name = saved_name if saved_name else uid 
             text += f"{i}. {display_name} — <b><u>{pts}</u></b>pt\n"
 
         text += f"\n\n👑 <b>Сезонный:</b>\n n/a"
@@ -2322,8 +2172,7 @@ async def mappers(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
     MAX_ATTEMPTS = 3  # Количество попыток
 
     user_id = str(update.message.from_user.id)
-    user_data = load_user_data()
-    saved_name = user_data.get(str(update.effective_user.username), {}).get("osu_username")
+    saved_name = await auth.check_osu_verified(str(update.effective_user.id))
 
     if not context.args:
         if saved_name:
@@ -2505,8 +2354,7 @@ async def mods(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request)
 
     # --- Логика сохранённого ника ---
     user_id = str(update.message.from_user.id)
-    user_data = load_user_data()
-    saved_name = user_data.get(str(update.effective_user.id), {}).get("osu_username")
+    saved_name = await auth.check_osu_verified(str(update.effective_user.id))
 
     if not context.args:
         if saved_name:
@@ -2691,8 +2539,7 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
     MAX_ATTEMPTS = 3  # Количество попыток
 
     user_id = str(update.effective_user.id)
-    user_data = load_user_data()
-    saved_name = user_data.get(str(update.effective_user.id), {}).get("osu_username")
+    saved_name = await auth.check_osu_verified(str(update.effective_user.id))
 
     if not context.args:
         if saved_name:
@@ -3359,8 +3206,7 @@ async def card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request)
 
     # --- Логика сохранённого ника ---
     user_id = str(update.effective_user.id)
-    user_data = load_user_data()
-    saved_name = user_data.get(str(update.effective_user.id), {}).get("osu_username")
+    saved_name = await auth.check_osu_verified(str(update.effective_user.id))
 
     if update.message:
         temp_message = await update.message.reply_text(
@@ -3411,7 +3257,7 @@ async def card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request)
             token = await get_osu_token()
             user_data = await asyncio.wait_for(get_user_profile(username, token=token), timeout=10)
             
-            s = load_settings()
+            s = temp.load_json(USER_SETTINGS_FILE, default={})
             user_settings = s.get(str(user_id), {}) 
             new_card = user_settings.get("new_card", True)   
 
@@ -4699,10 +4545,8 @@ async def recent_fix(update: Update, context: ContextTypes.DEFAULT_TYPE, user_re
         return
 
     try:
-        user_id = str(update.effective_user.id)
-        
-        user_data = load_user_data()
-        saved_name = user_data.get(str(update.effective_user.id), {}).get("osu_username")
+        uid = update.effective_user.id
+        saved_name = await auth.check_osu_verified(str(uid))
 
         if context.args:
             username = " ".join(context.args)  # <-- собираем ник целиком, даже если есть пробелы
@@ -4738,7 +4582,7 @@ async def recent_fix(update: Update, context: ContextTypes.DEFAULT_TYPE, user_re
 
         score = scores[0]
         
-        msg = await try_send(send_score_fix, update, score, user_id, token)
+        msg = await try_send(send_score_fix, update, score, uid, token)
         await loading_msg.delete()
 
       
@@ -4820,7 +4664,7 @@ async def send_score_fix(update, score, user_id, token:str = None):
     pp_int, pp_frac = str(f"{pp:.2f}").split(".")
     max_pp_int, max_pp_frac = str(f"{max_pp:.2f}").split(".")
     
-    s = load_settings()
+    s = temp.load_json(USER_SETTINGS_FILE, default={})
     user_settings = s.get(str(user_id), {}) 
     lang_code = user_settings.get("lang", "ru")   
 
@@ -4865,7 +4709,7 @@ async def beatmaps(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return      
 
     caller_id = update.effective_user.id
-    msg, reply_markup = build_beatmaps_text(caller_id)
+    msg, reply_markup = await build_beatmaps_text(caller_id)
 
     await update.message.reply_text(
         msg,
@@ -4952,7 +4796,7 @@ async def beatmaps_button_handler(update: Update, context: ContextTypes.DEFAULT_
             asyncio.create_task(worker())
             print("worker startup from query")
 
-        msg, reply_markup = build_beatmaps_text(owner_id)
+        msg, reply_markup = await build_beatmaps_text(owner_id)
         
         try:
             await query.edit_message_text(
@@ -4972,7 +4816,7 @@ async def beatmaps_button_handler(update: Update, context: ContextTypes.DEFAULT_
         return
     
     if action == "beatmaps_count_me":
-        count_me_times = load_count_me_times()
+        count_me_times = temp.load_json(COUNT_ME_FILE, default={})
         now = time.time()
         last_click = count_me_times.get(str(user_id), 0)
 
@@ -4983,8 +4827,7 @@ async def beatmaps_button_handler(update: Update, context: ContextTypes.DEFAULT_
             await safe_query_answer(query, f"⏳ Подождите ещё {days} д {hours} ч, прежде чем нажимать снова.")
             return        
         
-        user_data = load_user_data()
-        saved_name = user_data.get(str(update.effective_user.id), {}).get("osu_username")
+        saved_name = await auth.check_osu_verified(str(update.effective_user.id))
                 
         if saved_name is None:
             await safe_query_answer(query, "🚷 Сначала нужно сохранить имя /name...")     
@@ -4993,7 +4836,7 @@ async def beatmaps_button_handler(update: Update, context: ContextTypes.DEFAULT_
             await safe_query_answer(query, "👍 Запуск... \nНажми кнопку ОБНОВИТЬ чтобы увидеть статус")
 
         count_me_times[str(user_id)] = now
-        save_count_me_times(count_me_times)
+        temp.save_json(COUNT_ME_FILE, count_me_times)
 
         try:            
             group_state = await check_group_status(user_id)
@@ -5049,10 +4892,10 @@ async def beatmaps_button_handler(update: Update, context: ContextTypes.DEFAULT_
 
             if str(e) != "group_state == in_progress":
                 try:
-                    count_me_times = load_count_me_times()
+                    count_me_times = temp.load_json(COUNT_ME_FILE, default={})
                     if str(user_id) in count_me_times:
                         del count_me_times[str(user_id)]
-                        save_count_me_times(count_me_times)
+                        temp.save_json(COUNT_ME_FILE, count_me_times)
                         print(f"Cooldown for user {user_id} removed due to error.")
                 except Exception as ex:
                     print(f"Error while removing cooldown: {ex}")
@@ -5163,8 +5006,7 @@ async def beatmaps_button_handler(update: Update, context: ContextTypes.DEFAULT_
                 await safe_query_answer(query, "⚠️ Нет тегов в картах.")
                 return
 
-            user_data = load_user_data()
-            saved_name = user_data.get(str(update.effective_user.id), {}).get("osu_username")
+            saved_name = await auth.check_osu_verified(str(update.effective_user.id))
             saved_name = html.escape(saved_name)
 
             related_lines = format_top(related_tag_counter, "related_tags")
@@ -5901,7 +5743,7 @@ async def settings_command_handler(update: Update, context: ContextTypes.DEFAULT
     user_id = str(update.effective_user.id)
     name = str(update.effective_user.name)
 
-    settings = load_settings()
+    settings = temp.load_json(USER_SETTINGS_FILE, default={})
   
     kb, text = await get_settings_kb(user_id, settings)
 
@@ -5919,7 +5761,7 @@ async def settings_button_handler(update: Update, context: ContextTypes.DEFAULT_
         await safe_query_answer(query, "Чужая кнопка") 
         return
 
-    settings = load_settings()
+    settings = temp.load_json(USER_SETTINGS_FILE, default={})
     user_settings = settings.get(str(user_id), {"lang": "ru", "notify": True, "rs_bg_render": False, "new_card": True})    
 
     if action == "settings_english":
@@ -5950,7 +5792,7 @@ async def settings_button_handler(update: Update, context: ContextTypes.DEFAULT_
         await safe_query_answer(query) 
 
     settings[user_id] = user_settings
-    save_settings(settings)
+    temp.save_json(USER_SETTINGS_FILE, settings)
 
     kb, text = await get_settings_kb(user_id, settings)
 
@@ -6057,183 +5899,167 @@ async def set_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 #all moderation
 async def check_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await log_all_update(update)
-    
-    print(f"chat {update.effective_chat.id}, topic {getattr(update.effective_message, 'message_thread_id', None)}")
-
-    text = update.message.text.strip()
-    telegram_id = str(update.message.from_user.id)
-
-    codes = load_json(VERIFY_PENDING_FILE, {})
-    users = load_json(VERIFIED_USERS_FILE, {})
-
     try:
-        if text in codes:
-            code_data = codes[text]
-            osu_id = code_data["osu_id"]
-            username = code_data["username"]
-            created_at = code_data["created_at"]            
-            now = datetime.utcnow()
-
-            users[telegram_id] = {
-                "osu_id": osu_id, 
-                "osu_username": username,
-                "code_created": created_at,
-                "verified": now.isoformat()
-            }
-            save_json(VERIFIED_USERS_FILE, users)
-
-            del codes[text]
-            save_json(VERIFY_PENDING_FILE, codes)
-
-            await update.message.reply_text(
-                f"{username} теперь привязан"
-            )
-    except:
-        pass
-
-    try:
-        await start_check_reminders(update, context)
-        await start_osu_link_handler(update, context)
-        await start_simulate_text_handler(update, context)
-        await start_beatmap_card(update, context, False)
-    except:
-        print(e)
+        await log_all_update(update)
         
-    text_to_check = (update.effective_message.text or update.effective_message.caption or "").lower()
-    if any(bad_word in text_to_check for bad_word in blacklist):
+        print(f"chat {update.effective_chat.id}, topic {getattr(update.effective_message, 'message_thread_id', None)}")
+
         try:
-            await update.effective_message.delete()
-            msg = await update.effective_chat.send_message(f"Сообщение удалено — содержит запрещённое слово.")
+            text = update.message.text.strip()
+            telegram_id = str(update.message.from_user.id)
 
-            async def delete_notice(message):
-                await asyncio.sleep(15)
-                try:
-                    await message.delete()
-                except Exception as e:
-                    print(f"Ошибка при удалении уведомления: {e}")
-
-            asyncio.create_task(delete_notice(msg))
-
-            user_str = f"{update.effective_message.from_user.full_name} (id: {update.effective_message.from_user.id})" if update.effective_message.from_user else "Неизвестный пользователь"
-            log_deleted_message(user_str, update.effective_message.text or update.effective_message.caption or "<нет текста>")
-            print("Удалено сообщение с запрещённым словом")
-        except Exception as e:
-            print(f"Ошибка при удалении: {e}")
-        return 
-    
-    if update.effective_chat.id == TARGET_CHAT_ID:
-        thread_id = getattr(update.effective_message, 'message_thread_id', None)
-
-        if thread_id == CLIPS_TOPIC_ID:
-            message = update.effective_message
-            text = message.text or message.caption or ""
-            urls = []
-
-            if message.entities:
-                for ent in message.entities:
-                    if ent.type == "url":
-                        urls.append(message.text[ent.offset: ent.offset + ent.length])
-                    elif ent.type == "text_link" and ent.url:
-                        urls.append(ent.url)
-
-            special_links = [u for u in urls if u and ("youtube.com" in u or "youtu.be" in u or "twitch.tv" in u or "issou.best" in u)]
-
-            if message.video or special_links:
-                pass
-            else:
-                try:
-                    await message.forward( chat_id=TARGET_CHAT_ID, message_thread_id=TARGET_FORWARD_TOPIC_ID )
-                    await message.delete()
-                except Exception as e:
-                    print(f"Ошибка при if thread_id == CLIPS_TOPIC_ID: {e}")
-
-                            
-        DICE_EMOJI = '🎲'
-        SLOT_EMOJI = '🎰'
-        BALL_EMOJI = '🏀'
-        DART_EMOJI = '🎯'
-
-        LUCKY_EMOJIS = {DICE_EMOJI, SLOT_EMOJI, BALL_EMOJI, DART_EMOJI}
-
-        if update.effective_message.dice and update.effective_message.dice.emoji in LUCKY_EMOJIS:
-            if random.random() < 0.03: 
-                try:
-                    chosen = update.effective_message.dice.emoji
-                    await update.effective_chat.send_dice(
-                                    emoji=chosen,
-                                    message_thread_id=update.effective_message.message_thread_id
-                                )
-                except Exception as e:
-                    print(e)                     
-
-        if thread_id == LUCKY_TOPIC_ID:
-            if update.effective_message.dice and update.effective_message.dice.emoji == LUCKY_DICE_EMOJI:
-                if random.random() < CHANCE_DICE:
-                    try:
-                        await update.effective_message.delete()
-
-                        response = await update.effective_chat.send_message(
-                            random.choice(UNLUCKY_MESSAGES),
-                            message_thread_id=LUCKY_TOPIC_ID
+            if re.fullmatch(r"[A-Z0-9]{6}", text):    
+                if await auth.verify_osu_user(text, telegram_id):
+                    await update.message.reply_text(
+                            f"{username} теперь привязан"
                         )
+        except:
+            pass
 
-                        async def delete_response(resp):
-                            await asyncio.sleep(10)
-                            try:
-                                await resp.delete()
-                            except Exception as e:
-                                print(f"Ошибка при удалении ответа: {e}")
-
-                        asyncio.create_task(delete_response(response))
-
-                        user_str = f"{update.effective_message.from_user.full_name} (id: {update.effective_message.from_user.id})" if update.effective_message.from_user else "Неизвестный пользователь"
-                        log_deleted_message(user_str, f"Dice emoji: {update.effective_message.dice.emoji}, value: {update.effective_message.dice.value}")
-                        print("Удалено сообщение с кубиком 🎰")
-                    except Exception as e:
-                        print(f"Ошибка при удалении кубика: {e}")
-
+        try:
+            await start_check_reminders(update, context)
+            await start_osu_link_handler(update, context)
+            await start_simulate_text_handler(update, context)
+            await start_beatmap_card(update, context, False)
+        except:
+            pass
             
-        if thread_id == SOURCE_TOPIC_ID:
-            message = update.effective_message
-            if not (message.document or message.photo):
-                try:
-                    await message.forward(
-                        chat_id=TARGET_CHAT_ID,
-                        message_thread_id=TARGET_FORWARD_TOPIC_ID
-                    )
-                    await message.delete()
+        text_to_check = (update.effective_message.text or update.effective_message.caption or "").lower()
+        if any(bad_word in text_to_check for bad_word in blacklist):
+            try:
+                await update.effective_message.delete()
+                msg = await update.effective_chat.send_message(f"Сообщение удалено — содержит запрещённое слово.")
 
-                    user_str = f"{message.from_user.full_name} (id: {message.from_user.id})" if message.from_user else "Неизвестный пользователь"
-                    text = message.text or message.caption or "<нет текста>"
-                    log_deleted_message(user_str, f"Перенесено сообщение: {text}")
-                    print("Сообщение без вложений перенесено и удалено")
-                except Exception as e:
-                    print(f"Ошибка при пересылке и удалении сообщения: {e}")
-            else:
-                print("Есть вложение (файл или картинка), не трогаем")
+                async def delete_notice(message):
+                    await asyncio.sleep(15)
+                    try:
+                        await message.delete()
+                    except Exception as e:
+                        print(f"Ошибка при удалении уведомления: {e}")
 
-        if not update.message or not update.message.text:
-            return
-    
-        user_id = str(update.message.from_user.id)
-        username = update.message.from_user.username or update.message.from_user.first_name
-        text = update.message.text.lower()
+                asyncio.create_task(delete_notice(msg))
 
-        positive_words = load_words(POSITIVE_FILE)
-        negative_words = load_words(NEGATIVE_FILE)
-        ratings = load_ratings()
+                user_str = f"{update.effective_message.from_user.full_name} (id: {update.effective_message.from_user.id})" if update.effective_message.from_user else "Неизвестный пользователь"
+                log_deleted_message(user_str, update.effective_message.text or update.effective_message.caption or "<нет текста>")
+                print("Удалено сообщение с запрещённым словом")
+            except Exception as e:
+                print(f"Ошибка при удалении: {e}")
+            return 
+        
+        if update.effective_chat.id == TARGET_CHAT_ID:
+            thread_id = getattr(update.effective_message, 'message_thread_id', None)
 
-        if user_id not in ratings:
-            ratings[user_id] = {"name": username, "rating": 0}
-        else:
-            ratings[user_id]["name"] = username
+            if thread_id == CLIPS_TOPIC_ID:
+                message = update.effective_message
+                text = message.text or message.caption or ""
+                urls = []
 
-        if any(word in text for word in positive_words):
-            ratings[user_id]["rating"] += 1
-        if any(word in text for word in negative_words):
-            ratings[user_id]["rating"] -= 1
-        save_ratings(ratings)
+                if message.entities:
+                    for ent in message.entities:
+                        if ent.type == "url":
+                            urls.append(message.text[ent.offset: ent.offset + ent.length])
+                        elif ent.type == "text_link" and ent.url:
+                            urls.append(ent.url)
+
+                special_links = [u for u in urls if u and ("youtube.com" in u or "youtu.be" in u or "twitch.tv" in u or "issou.best" in u)]
+
+                if message.video or special_links:
+                    pass
+                else:
+                    try:
+                        await message.forward( chat_id=TARGET_CHAT_ID, message_thread_id=TARGET_FORWARD_TOPIC_ID )
+                        await message.delete()
+                    except Exception as e:
+                        print(f"Ошибка при if thread_id == CLIPS_TOPIC_ID: {e}")
+
+                                
+            DICE_EMOJI = '🎲'
+            SLOT_EMOJI = '🎰'
+            BALL_EMOJI = '🏀'
+            DART_EMOJI = '🎯'
+
+            LUCKY_EMOJIS = {DICE_EMOJI, SLOT_EMOJI, BALL_EMOJI, DART_EMOJI}
+
+            if update.effective_message.dice and update.effective_message.dice.emoji in LUCKY_EMOJIS:
+                if random.random() < 0.03: 
+                    try:
+                        chosen = update.effective_message.dice.emoji
+                        await update.effective_chat.send_dice(
+                                        emoji=chosen,
+                                        message_thread_id=update.effective_message.message_thread_id
+                                    )
+                    except Exception as e:
+                        print(e)                     
+
+            if thread_id == LUCKY_TOPIC_ID:
+                if update.effective_message.dice and update.effective_message.dice.emoji == LUCKY_DICE_EMOJI:
+                    if random.random() < CHANCE_DICE:
+                        try:
+                            await update.effective_message.delete()
+
+                            response = await update.effective_chat.send_message(
+                                random.choice(UNLUCKY_MESSAGES),
+                                message_thread_id=LUCKY_TOPIC_ID
+                            )
+
+                            async def delete_response(resp):
+                                await asyncio.sleep(10)
+                                try:
+                                    await resp.delete()
+                                except Exception as e:
+                                    print(f"Ошибка при удалении ответа: {e}")
+
+                            asyncio.create_task(delete_response(response))
+
+                            user_str = f"{update.effective_message.from_user.full_name} (id: {update.effective_message.from_user.id})" if update.effective_message.from_user else "Неизвестный пользователь"
+                            log_deleted_message(user_str, f"Dice emoji: {update.effective_message.dice.emoji}, value: {update.effective_message.dice.value}")
+                            print("Удалено сообщение с кубиком 🎰")
+                        except Exception as e:
+                            print(f"Ошибка при удалении кубика: {e}")
+
+                
+            if thread_id == SOURCE_TOPIC_ID:
+                message = update.effective_message
+                if not (message.document or message.photo):
+                    try:
+                        await message.forward(
+                            chat_id=TARGET_CHAT_ID,
+                            message_thread_id=TARGET_FORWARD_TOPIC_ID
+                        )
+                        await message.delete()
+
+                        user_str = f"{message.from_user.full_name} (id: {message.from_user.id})" if message.from_user else "Неизвестный пользователь"
+                        text = message.text or message.caption or "<нет текста>"
+                        log_deleted_message(user_str, f"Перенесено сообщение: {text}")
+                        print("Сообщение без вложений перенесено и удалено")
+                    except Exception as e:
+                        print(f"Ошибка при пересылке и удалении сообщения: {e}")
+                else:
+                    print("Есть вложение (файл или картинка), не трогаем")
+
+            if not update.message or not update.message.text:
+                return
+        
+            user_id = str(update.message.from_user.id)
+            username = update.message.from_user.username or update.message.from_user.first_name
+            text = update.message.text.lower()
+            
+            # positive_words = temp.load_text_list(POSITIVE_FILE)
+            # negative_words = temp.load_text_list(NEGATIVE_FILE)
+            
+            # ratings = load_ratings()
+
+            # if user_id not in ratings:
+            #     ratings[user_id] = {"name": username, "rating": 0}
+            # else:
+            #     ratings[user_id]["name"] = username
+
+            # if any(word in text for word in positive_words):
+            #     ratings[user_id]["rating"] += 1
+            # if any(word in text for word in negative_words):
+            #     ratings[user_id]["rating"] -= 1
+            # save_ratings(ratings)
+    except: print(e)
 async def start_check_reminders(update, context):
     asyncio.create_task(check_reminders(update, context))
 
@@ -6515,8 +6341,7 @@ async def nochoke(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
     MAX_ATTEMPTS = 1  
 
     user_id = str(update.message.from_user.id)
-    user_data = load_user_data()
-    saved_name = user_data.get(str(update.effective_user.id), {}).get("osu_username")
+    saved_name = await auth.check_osu_verified(str(update.effective_user.id))
 
     miss_limit = None
     args = context.args
@@ -6862,8 +6687,7 @@ async def average_stats(update: Update, context: ContextTypes.DEFAULT_TYPE, user
     MAX_ATTEMPTS = 3 
 
     user_id = str(update.message.from_user.id)
-    user_data = load_user_data()
-    saved_name = user_data.get(str(update.effective_user.id), {}).get("osu_username")
+    saved_name = await auth.check_osu_verified(str(update.effective_user.id))
 
     if not context.args:
         if saved_name:
@@ -8204,10 +8028,7 @@ async def farm(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request)
         return
     MAX_ATTEMPTS = 3  # Количество попыток
 
-    # --- Логика сохранённого ника ---
-    # user_id = str(update.effective_user.id)
-    user_data = load_user_data()
-    saved_name = user_data.get(str(update.effective_user.id), {}).get("osu_username")
+    saved_name = await auth.check_osu_verified(str(update.effective_user.id))
 
     if update.message:
         temp_message = await update.message.reply_text(
@@ -8314,20 +8135,16 @@ async def farm_pagination_callback(update: Update, context: ContextTypes.DEFAULT
     user_id = int(user_id)
     page = int(page)
 
-    # Проверяем, что нажал именно тот пользователь
     if query.from_user.id != user_id:
         await query.answer("❌ Это не ваша команда", show_alert=True)
         return
 
-    # Берём результаты из хранилища (можно использовать context.user_data)
     pages = context.user_data.get("farm_pages", [])
     if not pages:
         await query.edit_message_text("❌ Ошибка: данные не найдены")
         return
 
-    # --- Загружаем навыки пользователя ---
-    user_data = load_user_data()
-    saved_name = user_data.get(str(update.effective_user.id), {}).get("osu_username")
+    saved_name = await auth.check_osu_verified(str(update.effective_user.id))
 
     if os.path.exists(USERS_SKILLS_FILE):
         with open(USERS_SKILLS_FILE, "r", encoding="utf-8") as f:
@@ -8344,7 +8161,6 @@ async def farm_pagination_callback(update: Update, context: ContextTypes.DEFAULT
     speed_base = skills.get("speed_total", 0)
     acc_base = skills.get("acc_total", 0)
 
-    # --- Отправляем первую страницу ---
     lines = []
     choices = context.user_data.get("farm_choices", {})
     skill_level = choices.get("skill", "1")
@@ -8362,7 +8178,6 @@ async def farm_pagination_callback(update: Update, context: ContextTypes.DEFAULT
         total = aim + speed + acc
         total_str = f"{total:.0f}"
 
-        # сравниваем с базовыми
         def cmp_symbol(val, base):
             if val > base + 15:
                 return "🔼"
@@ -8513,9 +8328,7 @@ async def generate_farm_results(update: Update, context: ContextTypes.DEFAULT_TY
         )
         return
 
-    # --- Загружаем навыки пользователя ---
-    user_data = load_user_data()
-    saved_name = user_data.get(str(update.effective_user.id), {}).get("osu_username")
+    saved_name = await auth.check_osu_verified(str(update.effective_user.id))
 
     if os.path.exists(USERS_SKILLS_FILE):
         with open(USERS_SKILLS_FILE, "r", encoding="utf-8") as f:

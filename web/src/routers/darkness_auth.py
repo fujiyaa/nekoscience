@@ -8,6 +8,11 @@ import os, random, string
 from pathlib import Path
 from datetime import datetime, timedelta
 
+import sys
+import pathlib
+sys.path.append(str(pathlib.Path(__file__).parent.parent))
+
+
 templates = Jinja2Templates(directory="templates")
 
 if not os.getenv("DEV_FLAG", "0"):
@@ -19,9 +24,7 @@ else:
     OSU_CLIENT_SECRET = os.getenv("DEV_OSU_CLIENT_SECRET_BOT_AUTH")
     OSU_REDIRECT_URI = os.getenv("DEV_OSU_REDIRECT_URI_BOT_AUTH")
 
-BASE_DIR = Path(__file__).resolve().parents[3]  # nekoscience/
-# USER_FILE = BASE_DIR / "bot" / "src" / "stats" / "data" / "users.json"
-VERIFY_PENDING_FILE = BASE_DIR / "web" / "src" / "auth" / "pending.json"
+file_id = "file_osu_pending" 
 
 err_url = (
         "https://osu.ppy.sh/oauth/authorize"
@@ -34,20 +37,48 @@ err_url = (
 router = APIRouter()
 
 
-def load_codes():
-    if not VERIFY_PENDING_FILE.exists():
-        VERIFY_PENDING_FILE.write_text("{}", encoding="utf-8")
-    try:
-        return json.loads(VERIFY_PENDING_FILE.read_text("utf-8"))
-    except:
-        return {}
+from utils.localapi import read_file_neko, insert_to_file_neko, remove_from_file_neko
 
+from datetime import datetime, timedelta
 
-def save_codes(data):
-    VERIFY_PENDING_FILE.write_text(
-        json.dumps(data, ensure_ascii=False, indent=4),
-        encoding="utf-8"
-    )
+async def update_codes(file_id: str, username: str, osu_id: int):    
+    response = await read_file_neko(file_id)
+    current = response.get("current", {})
+
+    if not isinstance(current, dict):
+        current = {}
+
+    now = datetime.utcnow()
+    keys_to_remove = []
+
+    for k, v in current.items():
+        if not isinstance(v, dict):
+            continue
+        created_at_str = v.get("created_at")
+        if not created_at_str:
+            keys_to_remove.append(k)
+            continue
+        created_at = datetime.fromisoformat(created_at_str)
+        if now - created_at > timedelta(days=7) or v.get("username") == username:
+            keys_to_remove.append(k)
+
+    if keys_to_remove:
+        await remove_from_file_neko(file_id, keys_to_remove)
+
+    new_code = generate_code()
+    while new_code in current:
+        new_code = generate_code()
+
+    await insert_to_file_neko(file_id, {
+        new_code: {
+            "osu_id": osu_id,
+            "username": username,
+            "created_at": now.isoformat()
+        }
+    })
+
+    return new_code
+
 
 
 def generate_code():
@@ -95,25 +126,10 @@ async def oauth_callback(request: Request, code: str = None):
     username = user_data.get("username")
     id = user_data.get("id")
 
-    codes = load_codes()
-
-    now = datetime.utcnow()
-    codes = {k: v for k, v in codes.items() 
-             if now - datetime.fromisoformat(v["created_at"]) < timedelta(days=7)}
-
-    codes = {k: v for k, v in codes.items() if v["username"] != username}
-
-    new_code = generate_code()
-    while new_code in codes:
-        new_code = generate_code()
-
-    codes[new_code] = {
-        "osu_id": id,
-        "username": username,
-        "created_at": now.isoformat()
-    }
-
-    save_codes(codes)
+    if os.getenv(file_id):
+        new_code = await update_codes(file_id, username, id)
+    else:
+        new_code = "error"
 
     return templates.TemplateResponse("darkness_auth_code.html", {
         "request": request,
