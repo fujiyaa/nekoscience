@@ -1,0 +1,76 @@
+body {
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #1f1c2c, #928dab);
+    color: #fff;
+    }
+
+.container {
+    position: relative;
+    background: rgba(230, 208, 255, 0.3);
+    padding: 40px 60px;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    max-width: 700px;
+    width: 90%;
+
+    -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(104,0,160,1) 35%, rgba(144,0,0,1) 65%, rgba(135,0,0,0) 100%);
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-size: cover;
+
+    mask-image: linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(104,0,160,1) 35%, rgba(144,0,0,1) 65%, rgba(135,0,0,0) 100%);
+    mask-repeat: no-repeat;
+    mask-size: cover;
+}
+
+
+h1 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 32px;
+    letter-spacing: 1px;
+}
+
+p {
+    margin: 10px 0;
+    font-size: 20px;
+}
+
+.code-box {
+    letter-spacing: 18px;
+    display: block;
+    background: rgba(255, 255, 255, 0);
+    padding: 20px;
+    margin: 20px 0;
+    font-family: 'Courier New', monospace;
+    font-size: 80px;
+    color: #ffffff;
+    word-break: break-all;
+    text-align: center;
+    user-select: all;
+}
+
+button.copy-button {
+    padding: 12px 30px;
+    font-size: 18px;
+    font-weight: bold;
+    color: #202020;
+    background: #e8e8e8;
+    border: none;
+    border-radius: 100px;
+    cursor: pointer;
+    transition: background 0.3s, transform 0.2s;
+}
+
+button.copy-button:hover {
+    background: #ffffff;
+    transform: translateY(-2px);
+}
+
+button.copy-button:active {
+    transform: translateY(0);
+}

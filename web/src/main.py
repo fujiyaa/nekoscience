@@ -14,7 +14,7 @@ app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 from routers.dashboard import router as dash_router
-from routers.neko_chat import router as chat_router
+from routers.chat_auth import router as chat_router
 from routers.darkness_auth import router as darkness_auth_router
 from routers.darkness_direct import router as darkness_direct_router
 from routers.darkness_reminders import router as darkness_reminders_router
