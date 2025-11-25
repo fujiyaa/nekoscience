@@ -73,8 +73,7 @@ target/
 *passwords.json
 
 /storage/osu_users/*.json
-/storage/chat_users/*.json
 /storage/chat_data/*.json
-/storage/chat_history/*.json
 
 !*.gitkeep
+!/storage/chat_data/chat_update.json

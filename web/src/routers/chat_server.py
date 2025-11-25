@@ -1,56 +1,27 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
-from fastapi.middleware.cors import CORSMiddleware
-import uvicorn
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 import json
 import datetime
 import os
 import re
 import sys
 import pathlib
-
 sys.path.append(str(pathlib.Path(__file__).parent.parent))
-
 from utils import localapi
 
-app = FastAPI()
-
-if not os.getenv("DEV_FLAG", "0"):
-    app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["https://myangelfujiya.ru"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"] 
-)
-else:
-    app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"] 
-)
-
+router = APIRouter()
 active_connections = []
-
-MAX_HISTORY = 3
-
-LATEST_CLIENT_VERSION = "0.3.8-beta"
-
-# CHAT_HISTORY_FILE = "chat_history.json"
-# CHAT_LOG_FILE = "chat_log.txt"
-# SERVER_LOG_FILE = "server_full_log.txt"
-# VERIFIED_CODES_FILE = "verified_codes.json"
-
-VERIFIED_TOOLTIP = "Настоящий неконейм"
-DEFAULT_TOOLTIP = "Неподтвержденный неконейм"
-
-AVATAR_URL_OSU = "https://raw.githubusercontent.com/fujiyaa/osu-expansion-neko-science/refs/heads/main/chat_icons/osu-avatar.png"
-AVATAR_URL_TG = "https://raw.githubusercontent.com/fujiyaa/osu-expansion-neko-science/refs/heads/main/chat_icons/telegram-avatar.png"
-AVATAR_URL_QUESTION = "https://raw.githubusercontent.com/fujiyaa/osu-expansion-neko-science/refs/heads/main/chat_icons/guest-avatar.png"
 
 file_v = "file_chat_verified"
 file_h = "file_chat_history"
+file_u = "file_chat_update"
+
+MAX_HISTORY = 50
+
+VERIFIED_TOOLTIP = "Настоящий неконейм"
+DEFAULT_TOOLTIP = "Неподтвержденный неконейм"
+AVATAR_URL_OSU = "https://raw.githubusercontent.com/fujiyaa/osu-expansion-neko-science/refs/heads/main/chat_icons/osu-avatar.png"
+AVATAR_URL_QUESTION = "https://raw.githubusercontent.com/fujiyaa/osu-expansion-neko-science/refs/heads/main/chat_icons/guest-avatar.png"
+
 
 async def _fetch(key: str):
         path = os.getenv(key)
@@ -63,11 +34,12 @@ async def _fetch(key: str):
 async def get_history():
     return await _fetch(file_h)
 
+async def get_update():
+    return await _fetch(file_u)
+
 async def check_user_verified(code: str):
     verified = await _fetch(file_v)    
-    return verified.get(code, {}).get("osu_username")
-
-
+    return verified.get(code, {}).get("username")
 
 async def append_to_history(username: str, message: str, timestamp: str):
     response = await localapi.read_file_neko(file_h)
@@ -79,24 +51,21 @@ async def append_to_history(username: str, message: str, timestamp: str):
 
     new_id = existing_ids[-1] + 1 if existing_ids else 1
 
-    current[str(new_id)] = {
-        "username": username,
-        "message": message,
-        "timestamp": timestamp
-    }
+    await localapi.insert_to_file_neko(file_h, {
+        str(new_id): {
+            "username": username,
+            "message": message,
+            "timestamp": timestamp
+        }
+    })
 
-    if len(current) > MAX_HISTORY:
-        last_messages = [current[str(k)] for k in existing_ids[-(MAX_HISTORY-1):]]
-        last_messages.append(current[str(new_id)]) 
-
-        await localapi.remove_from_file_neko(file_h, list(current.keys()))
-
-        for idx, msg in enumerate(last_messages, start=1):
-            await localapi.insert_to_file_neko(file_h, {str(idx): msg})
-    else:
-        await localapi.insert_to_file_neko(file_h, {str(new_id): current[str(new_id)]})
+    existing_ids.append(new_id)
+    if len(existing_ids) > MAX_HISTORY:
+        oldest_id = existing_ids[0]
+        await localapi.remove_from_file_neko(file_h, [str(oldest_id)])
 
     return True
+
 
 def sanitize_message(raw_text: str) -> str:
     clean_text = re.sub(r"<.*?>", "", raw_text)
@@ -109,6 +78,7 @@ def sanitize_message(raw_text: str) -> str:
     clean_text = clean_text.strip()[:300]
 
     return clean_text
+
 def sanitize_username(raw_name: str) -> str:
     clean_name = re.sub(r"<.*?>", "", raw_name)
     clean_name = re.sub(r"[\x00-\x1f\x7f]", "", clean_name)
@@ -117,14 +87,7 @@ def sanitize_username(raw_name: str) -> str:
 
     return clean_name
 
-def log_server_event(msg: str):
-    timestamp = datetime.datetime.utcnow().isoformat()
-    line = f"[{timestamp}] {msg}\n"
-    with open(SERVER_LOG_FILE, "a", encoding="utf-8") as f:
-        f.write(line)
-    print(line.strip())
-
-@app.websocket("/chat/ws")
+@router.websocket("/chat/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     username = None
@@ -139,29 +102,40 @@ async def websocket_endpoint(websocket: WebSocket):
         active_connections.append((websocket, real_name))
 
         history = await get_history()
+
+        sorted_history = sorted(
+            ((int(k), v) for k, v in history.items() if k.isdigit()),
+            key=lambda x: x[0]
+        )
         
-        for msg_id, msg in history.items():
+        for msg_id, msg in sorted_history:
             input_name = msg.get("username")
 
             real_name = await check_user_verified(input_name)
 
             if real_name:
-                msg["username"] = real_name 
+                msg["username"] = real_name
                 msg["tooltip"] = VERIFIED_TOOLTIP
                 msg["avatar"] = AVATAR_URL_OSU
             else:
-                msg["username"] = input_name      
-                msg["tooltip"] = DEFAULT_TOOLTIP  
+                msg["username"] = input_name
+                msg["tooltip"] = DEFAULT_TOOLTIP
                 msg["avatar"] = AVATAR_URL_QUESTION
+
             msg["type"] = "message"
 
             await websocket.send_text(json.dumps(msg))
 
-        if client_version != LATEST_CLIENT_VERSION:
+        update = await get_update()
+
+        s = update.get('server')
+        version, features = s.get('version'), s.get('features')
+
+        if client_version != version:
             await websocket.send_text(json.dumps({
                 "type": "update_available",
-                "latest_version": LATEST_CLIENT_VERSION,
-                "message": f"Новая версия {LATEST_CLIENT_VERSION} доступна, список изменений https://github.com/fujiyaa/osu-expansion-neko-science !"
+                "latest_version": version,
+                "message": f"Новая версия {version} доступна, список изменений: {features}"
             }))
 
         while True:
@@ -188,12 +162,9 @@ async def websocket_endpoint(websocket: WebSocket):
 
                 await broadcast(msg)
 
-
     except WebSocketDisconnect:
         if (websocket, username) in active_connections:
             active_connections.remove((websocket, username))
-            log_server_event(f"{username} left the chat")
-
 
 async def broadcast(msg: dict):
     text = json.dumps(msg)
@@ -201,14 +172,4 @@ async def broadcast(msg: dict):
         try:
             await ws.send_text(text)
         except:
-            log_server_event(f"Failed to send message to {ws}")
-
-
-if __name__ == "__main__":
-    for f in [CHAT_HISTORY_FILE, CHAT_LOG_FILE, SERVER_LOG_FILE]:
-        if not os.path.exists(f):
-            with open(f, "w", encoding="utf-8") as _:
-                pass
-
-    uvicorn.run(app, host="127.0.0.1", port=8010)
-
+            pass
