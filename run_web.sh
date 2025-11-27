@@ -2,7 +2,7 @@
 
 orig_dir=$(pwd)
 
-cd .var/www/myangelfujiya/nekoscience/web/src || { echo "./web/src <- No such file or directory"; exit 1; }
+cd /var/www/myangelfujiya/nekoscience/web/src || { echo "./web/src <- No such file or directory"; exit 1; }
 
 source venv/bin/activate
 
