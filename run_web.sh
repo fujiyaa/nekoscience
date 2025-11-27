@@ -8,7 +8,7 @@ source venv/bin/activate
 
 nohup python -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload > web_uvicorn.log 2>&1 &
 
-echo "logs -> web_uvicorn.log"
+echo "web logs -> web_uvicorn.log"
 
 deactivate
 
