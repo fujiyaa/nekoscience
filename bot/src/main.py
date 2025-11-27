@@ -5909,7 +5909,9 @@ async def check_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             telegram_id = str(update.message.from_user.id)
 
             if re.fullmatch(r"[A-Z0-9]{6}", text):    
-                if await auth.verify_osu_user(text, telegram_id):
+                username = await auth.verify_osu_user(text, telegram_id)
+
+                if username:
                     await update.message.reply_text(
                             f"{username} теперь привязан"
                         )

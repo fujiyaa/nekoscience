@@ -1,31 +1,19 @@
 const colors = ["#4bc0c0", "#ff9f40", "#9966ff"];
 let statsData = {};
-let charts = {}; // Храним все графики Chart.js
+let charts = {}; 
 
 async function fetchData(period = "day") {
     try {
         const res = await fetch(`/api/data?period=${period}`);
         if (!res.ok) throw new Error("Не удалось получить данные с сервера");
-        const json = await res.json();
-        return json;
+        const data = await res.json();
+        return data; 
     } catch (err) {
-        console.error(err);
+        console.error("Ошибка при fetchData:", err);
         return null;
     }
 }
 
-// Загружаем JSON
-async function loadStatsJSON() {
-    try {
-        const res = await fetch('/static/data/bot_stats.json');
-        if (!res.ok) throw new Error('Не удалось загрузить JSON');
-        statsData = await res.json();
-    } catch (err) {
-        console.error('Ошибка при загрузке JSON:', err);
-    }
-}
-
-// Создание datasets для Chart.js
 function makeDataset(type, dataObj, labels) {
     const datasets = [];
     for (const [key, values] of Object.entries(dataObj)) {
@@ -41,7 +29,6 @@ function makeDataset(type, dataObj, labels) {
     return { labels, datasets };
 }
 
-// Создание/обновление графика
 function createChart(ctxId, type, labels, dataObj) {
     if (charts[ctxId]) charts[ctxId].destroy();
     const ctx = document.getElementById(ctxId).getContext("2d");
@@ -99,7 +86,7 @@ function updatePieCacheRandom() {
         charts["pie_cache"] = new Chart(ctx, {
             type: "doughnut",
             data: {
-                labels: ["Кэш 1", "Кэш 2", "Кэш 3", "Кэш 4"],
+                labels: ["random1", "random2", "random3", "random4"],
                 datasets: [{
                     data: [random1, random2, random3, random4],
                     backgroundColor: ["#4bc0c0", "#ecff40ff", "#ffc340ff", "#40ff53ff"]
@@ -119,8 +106,7 @@ function updateLineCommandsRandom() {
     const ctx = document.getElementById("line_commands_err").getContext("2d");
     if (charts["line_commands_err"]) charts["line_commands_err"].destroy();
 
-    // Пусть будет 5 "команд" и 10 точек на графике
-    const commands = ["cmd1", "cmd2", "cmd3", "cmd4", "cmd5"];
+    const commands = ["random1", "random2"];
     const labels = Array.from({ length: 10 }, (_, i) => `T${i+1}`);
 
     const datasets = commands.map((cmd, i) => ({
@@ -148,9 +134,6 @@ function updateLineCommandsRandom() {
     });
 }
 
-
-
-
 function updateLineCommands(stats) {
     const ctx = document.getElementById("line_commands").getContext("2d");
     if (charts["line_commands"]) charts["line_commands"].destroy();
@@ -169,7 +152,11 @@ function updateLineCommands(stats) {
         data: { labels: stats.chart.labels, datasets },
         options: {
             responsive: true,
-            plugins: { legend: { labels: { color: "#a8caff" } } },
+            plugins: { 
+                legend: { 
+                    display: true, 
+                    labels: { color: "#a8caff" } } 
+                },
             scales: { x: { ticks: { color: "#a8caff" } }, y: { ticks: { color: "#a8caff" } } }
         }
     });
@@ -201,10 +188,6 @@ function updateBarUsers(stats) {
     });
 }
 
-
-
-
-// Обновляем карточки
 function renderCards(stats) {
     document.getElementById('total-requests').textContent = stats.total_requests;
     document.getElementById('commands').textContent = stats.commands;
@@ -235,32 +218,31 @@ async function renderMainCards(period) {
     `;
 }
 
-async function updateAllFromJSON(period) {
-    const d = statsData[period];
+async function updateAllFromAPI(period) {
+    const d = await fetchData(period);
+    if (!d) return;
 
-    await renderMainCards(period);
-    renderCards(d);
-    updatePieCommands(d);
-    updatePieCacheRandom();
-    updateLineCommands(d);
-    createChart("bar_messages", "bar", d.chart.labels, { "Сообщения": d.chart.data.data_total });
-    updateBarUsers(d);
-    updateLineCommandsRandom();
+    const stats = d.all_stats; 
+
+    // await renderMainCards(period);  
+    renderCards(stats);            
+    updatePieCommands(stats);
+    updatePieCacheRandom();         
+    updateLineCommands(stats);
+    createChart("bar_messages", "bar", stats.chart.labels, { "Сообщения": stats.chart.data.data_total });
+    updateBarUsers(stats);
+    updateLineCommandsRandom();    
 }
 
+document.addEventListener("DOMContentLoaded", async () => {
+    const rangeEl = document.getElementById('range');
+    const defaultPeriod = rangeEl ? rangeEl.value : "month"; 
 
+    await updateAllFromAPI(defaultPeriod);
 
-// Инициализация
-async function init() {
-    await loadStatsJSON();
-    const defaultPeriod = document.getElementById('range').value;
-    updateAllFromJSON(defaultPeriod);
-
-    // обновление при смене периода
-    document.getElementById('range').addEventListener('change', e => {
-        updateAllFromJSON(e.target.value);
-    });
-}
-
-// старт
-init();
+    if (rangeEl) {
+        rangeEl.addEventListener('change', async (e) => {
+            await updateAllFromAPI(e.target.value);
+        });
+    }
+});

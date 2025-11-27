@@ -28,7 +28,7 @@ async def verify_osu_user(text: str, telegram_id: str):
         osu_id = code_data["osu_id"]
         username = code_data["username"]
         created_at = code_data["created_at"]            
-        now = datetime.utcnow()
+        now = datetime.datetime.utcnow()
 
         new_verified = {
             telegram_id: {
@@ -57,7 +57,6 @@ async def verify_osu_user(text: str, telegram_id: str):
             await localapi.remove_from_file_neko(file_p, keys_to_remove)
 
         response = await localapi.insert_to_file_neko(file_v, new_verified)  
-        print(response)
 
-        return True
+        return username
     return False   
