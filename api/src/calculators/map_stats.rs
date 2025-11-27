@@ -52,7 +52,8 @@ pub struct PpResponse {
 pub async fn calculate_map_stats(
     AxumJson(payload): AxumJson<PpRequest>
 ) -> Json<PpResponse> {
-    let base_folder = r"E:\fa\nekoscience\bot\src\cache\beatmaps";
+    let base_folder = std::env::var("BEATMAP_CACHE_PATH")
+    .expect("BEATMAP_CACHE_PATH is not set");
 
     let mut map_path = PathBuf::from(base_folder);
     map_path.push(format!("{}.osu", payload.map_path));

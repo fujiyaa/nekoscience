@@ -14,6 +14,8 @@ pub struct SkillsRequest {
 pub async fn calculate_pp_parts(
     Json(payload): Json<SkillsRequest>
 ) -> Json<serde_json::Value> {
+    let base_folder = std::env::var("BEATMAP_CACHE_PATH")
+    .expect("BEATMAP_CACHE_PATH is not set");
 
     let mode = match GameMode::from_str(&payload.mode) {
         Some(m) => m,
@@ -21,8 +23,8 @@ pub async fn calculate_pp_parts(
     };
 
     let mut maps: HashMap<u32, Beatmap> = HashMap::new();
-    for score in &payload.scores {
-        let path = format!(r"E:\fa\nekoscience\bot\src\cache\beatmaps\{}.osu", score.map_id);
+    for score in &payload.scores {        
+        let path = format!("{}/{}.osu", base_folder, score.map_id);
         if let Ok(map) = Beatmap::from_path(&path) {
             maps.insert(score.map_id, map);
         } else {
