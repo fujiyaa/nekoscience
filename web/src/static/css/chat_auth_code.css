@@ -68,7 +68,7 @@ button.copy-button {
 
 button.copy-button:hover {
     background: #ffffff;
-    transform: translateY(-2px);
+    /* transform: translateY(-2px); */
 }
 
 button.copy-button:active {

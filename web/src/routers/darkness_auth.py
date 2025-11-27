@@ -12,10 +12,11 @@ import sys
 import pathlib
 sys.path.append(str(pathlib.Path(__file__).parent.parent))
 
-
 templates = Jinja2Templates(directory="templates")
 
-if not os.getenv("DEV_FLAG", "0"):
+DEV = os.getenv("DEV_FLAG", "0") == "1"
+
+if not DEV:
     OSU_CLIENT_ID = os.getenv("OSU_CLIENT_ID_BOT_AUTH")
     OSU_CLIENT_SECRET = os.getenv("OSU_CLIENT_SECRET_BOT_AUTH")
     OSU_REDIRECT_URI = os.getenv("OSU_REDIRECT_URI_BOT_AUTH")

@@ -55,7 +55,6 @@ CARDS_DIR = BOT_DIR / "cache/cards"
 OSZ_DIR = BOT_DIR / "cache/osz"
 
 IMAGES_JSON = BOT_DIR / "images/images_data.json"
-ALL_UPDATES_LOG = BOT_DIR / "logs/all_updates.log"
 DELETED_MESSAGES_LOG = BOT_DIR / "logs/deleted_messages.log"
 COUNT_ME_FILE = BOT_DIR / "cooldowns/count_me_times.json"
 BLACKLIST_FILE = BOT_DIR / "settings/blacklist.txt"
@@ -186,6 +185,9 @@ REMINDERS_DATA_FILE = BASE_DIR / "web" / "src" / "reminders" / "data" / "reminde
 REMINDERS_PW_FILE = BASE_DIR / "web" / "src" / "reminders" / "data" / "passwords.json"
 VERIFIED_USERS_FILE = BASE_DIR / "web" / "src" / "auth" / "verified.json"
 VERIFY_PENDING_FILE = BASE_DIR / "web" / "src" / "auth" / "pending.json"
+
+ALL_UPDATES_LOG = BASE_DIR / "storage" / "bot_data" / "all_updates.log"
+
 
 GIF_BLACKS_PATH = BOT_DIR / "gifs" / "blacks" / "sticker.webm"
 GIF_DOUBT_PATH = BOT_DIR / "gifs" / "doubt" / "blue-archive-otogi.mp4"
