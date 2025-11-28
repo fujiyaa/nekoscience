@@ -3322,7 +3322,9 @@ async def card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request)
                     count_50 = stats.get("count_50", 0)
                     count_miss = stats.get("count_miss", 0)    
                     if is_legacy_score(score): lazer = False 
-                    else: lazer = True           
+                    else: lazer = True    
+                    
+                    score["lazer"] = lazer       
                     scores.append(Score(
                         map_id=map_id,
                         count_300=count_300,
