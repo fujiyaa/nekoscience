@@ -292,18 +292,27 @@ async def broadcast(msg: dict):
             active_connections[:] = [(ws, u) for ws, u in active_connections if ws not in to_remove]
 
 def compare_versions(client_version: str, server_version: str) -> bool:
-    """
-    Возвращает True, если клиентская версия >= серверной
-    """
     def parse_ver(ver: str):
-        return [int(part) for part in ver.split(".") if part.isdigit()]
-    
+        ver = ver.split("-")[0].strip()
+        parts = []
+        for p in ver.split("."):
+            try:
+                parts.append(int(p))
+            except ValueError:
+                parts.append(0)
+        return parts
+
     client_parts = parse_ver(client_version)
     server_parts = parse_ver(server_version)
-    
+
+    max_len = max(len(client_parts), len(server_parts))
+    client_parts += [0] * (max_len - len(client_parts))
+    server_parts += [0] * (max_len - len(server_parts))
+
     for c, s in zip(client_parts, server_parts):
         if c > s:
             return True
         elif c < s:
             return False
-    return len(client_parts) >= len(server_parts)
+
+    return True
