@@ -1294,10 +1294,7 @@ async def process_score_and_image(score, image_todo_flag = False, is_recent=True
     mods_text = normalize_no_plus(mods_str)
 
     mods_str = score.get("mods", "")
-        
-    #temp pp fix
-    # pp = pp if not isinstance(score.get("pp"), (int, float)) or score.get("pp") <= 0 else score.get("pp")
-
+  
     #neko API 
     payload = {
         "map_path": str(score['beatmap']['id']), 
@@ -1333,6 +1330,10 @@ async def process_score_and_image(score, image_todo_flag = False, is_recent=True
 
     except Exception as e:
         print(f"neko API failed: {e}")
+
+          
+    #temp pp fix
+    pp = pp if not isinstance(score.get("pp"), (int, float)) or score.get("pp") <= 0 else score.get("pp")
 
 
     accuracy = round(score['accuracy'] * 100, 2)
@@ -6473,7 +6474,7 @@ async def nochoke(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
                             expected_bpm = pp_data.get("expected_bpm")
 
                         except Exception as e:
-                            print(f"neko API failed: {e}") 
+                            print(f"neko API failed: {e}")                     
                                                 
 
                     score["index"] = i + 1
