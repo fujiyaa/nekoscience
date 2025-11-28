@@ -1302,9 +1302,9 @@ async def process_score_and_image(score, image_todo_flag = False, is_recent=True
     payload = {
         "map_path": str(score['beatmap']['id']), 
         
-        "n300": score_stats.get("count_300", None),
-        "n100": score_stats.get("count_100", None),
-        "n50": score_stats.get("count_50", None),
+        "n300": score_stats.get("count_300", score_stats.get("great", None)),
+        "n100": score_stats.get("count_100", score_stats.get("ok", None)),
+        "n50": score_stats.get("count_50", score_stats.get("meh", None)),
         "misses": int(misses),                   
         
         "mods": str(score.get("mods", 0)), 
