@@ -189,6 +189,9 @@ async def websocket_endpoint(websocket: WebSocket):
             ((int(k), v) for k, v in history.items() if k.isdigit()),
             key=lambda x: x[0]
         )
+        
+        users = len(connections_unverified) + len(connections_verified)
+        sockets = len(active_connections)
 
         for msg_id, msg in sorted_history:
             name_in_history = msg.get("username")
@@ -203,12 +206,18 @@ async def websocket_endpoint(websocket: WebSocket):
                 msg["tooltip"] = DEFAULT_TOOLTIP
                 msg["avatar"] = AVATAR_URL_QUESTION
 
-            msg["type"] = "message"
-
-            total_users = len(connections_unverified) + len(connections_verified)
-            msg["total_users"] = total_users
+            msg["type"] = "history"            
+            msg["total_users"] = users
+            msg["total_sockets"] = sockets
 
             await websocket.send_text(json.dumps(msg))
+
+        msg = {}
+        msg["type"] = "online_refresh"  
+        msg["total_users"] = users
+
+        await broadcast(msg)
+
 
         update = await get_update()
         server = update.get('server', {})
@@ -262,11 +271,10 @@ async def websocket_endpoint(websocket: WebSocket):
                 msg["tooltip"] = DEFAULT_TOOLTIP
                 msg["avatar"] = AVATAR_URL_QUESTION
 
-            msg["message"] = message
             msg["type"] = "message"
-
-            total_users = len(connections_unverified) + len(connections_verified)
-            msg["total_users"] = total_users
+            msg["message"] = message
+            msg["total_users"] = len(connections_unverified) + len(connections_verified)
+            msg["total_sockets"] = len(active_connections)
 
             await broadcast(msg)
 
