@@ -20,7 +20,7 @@ else
     echo "Web server is not running"
 fi
 
-BOT_PROC=$(pgrep -f "python.*bot/src/main.py")
+BOT_PROC=$(pgrep -f "python main.py")
 
 if [ -n "$BOT_PROC" ]; then
     echo "Stopping Bot (PID: $BOT_PROC)"

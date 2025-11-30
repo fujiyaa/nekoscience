@@ -74,6 +74,7 @@ target/
 
 /storage/osu_users/*.json
 /storage/chat_data/*.json
+/storage/web_data/dashboard/*.json
 
 !*.gitkeep
 !/storage/chat_data/chat_update.json
