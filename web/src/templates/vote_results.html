@@ -1,0 +1,41 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Статистика голосования</title>
+    <link rel="stylesheet" href="/static/css/vote_results.css">
+    <script src="/static/js/vote-results.js" defer></script>    
+    <script src="/static/js/winter-snow.js" defer></script>    
+    <script src="/static/js/footer-max.js" defer></script>
+</head>
+
+<body class="results-page">
+    <div class="container">
+        <h2>Статистика голосования</h2>
+        <p class="total-text">Всего проголосовало: {{ total_users }}</p>
+
+<div class="results-container">
+    {% for img, data in stats.items() %}
+    <div class="result-block">
+        <img src="{{ img }}" class="result-img">
+
+        <div class="stars">
+            {% for i in range(5) %}
+                {% if i < data.average %}
+                    ★
+                {% else %}
+                    ☆
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        <p class="rating-text">
+             {{ data.average }} 
+        </p>
+    </div>
+    {% endfor %}
+
+    </div>
+</body>
+</html>

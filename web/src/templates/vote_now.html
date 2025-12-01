@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Голосование</title>
+    <link rel="stylesheet" href="/static/css/vote_now.css">
+    <script src="/static/js/vote-now.js" defer></script>
+    <script src="/static/js/winter-snow.js" defer></script>
+    <script src="/static/js/footer-mini.js" defer></script>
+</head>
+<body>
+    <div class="container vote-container" data-username="{{ username }}">
+        <h2>Голосование для {{ username }}</h2>
+
+        <div class="vote-content">
+            <img id="voteImage" class="vote-image" src="" alt="Картинка для голосования">
+
+            <div class="rating-buttons">
+                <button data-rating="1" class="star-button">★</button>
+                <button data-rating="2" class="star-button">★</button>
+                <button data-rating="3" class="star-button">★</button>
+                <button data-rating="4" class="star-button">★</button>
+                <button data-rating="5" class="star-button">★</button>
+            </div>
+
+            <div class="buttons-container">
+                <button id="confirmButton" class="confirm-button" disabled>Сохранить</button>
+            </div>
+        </div>
+
+        <p id="statusText"></p>
+    </div>
+</body>
+</html>
