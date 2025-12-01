@@ -214,15 +214,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
             history_payload.append(msg)
 
-        print("Sending history payload:", history_payload)
         await websocket.send_text(json.dumps({"type": "history_bulk", "messages": history_payload}))
-        print("History sent")
-
-        for msg in history_payload:
-            print("Sending single history message:", msg)
-            await websocket.send_text(json.dumps(msg))
-
-
 
         msg = {}
         msg["type"] = "online_refresh"  
