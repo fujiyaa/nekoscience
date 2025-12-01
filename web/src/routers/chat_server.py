@@ -193,8 +193,6 @@ async def websocket_endpoint(websocket: WebSocket):
         users = len(connections_unverified) + len(connections_verified)
         sockets = len(active_connections)
 
-        history_payload = []
-
         for msg_id, msg in sorted_history:
             name_in_history = msg.get("username")
             real_name_h = await check_user_verified_cached(name_in_history)
@@ -208,13 +206,34 @@ async def websocket_endpoint(websocket: WebSocket):
                 msg["tooltip"] = DEFAULT_TOOLTIP
                 msg["avatar"] = AVATAR_URL_QUESTION
 
-            msg["type"] = "history"
+            msg["type"] = "history"            
             msg["total_users"] = users
             msg["total_sockets"] = sockets
 
-            history_payload.append(msg)
+            await websocket.send_text(json.dumps(msg))
+            
+        # history_payload = []
 
-        await websocket.send_text(json.dumps({"type": "history_bulk", "messages": history_payload}))
+        # for msg_id, msg in sorted_history:
+        #     name_in_history = msg.get("username")
+        #     real_name_h = await check_user_verified_cached(name_in_history)
+
+        #     if real_name_h:
+        #         msg["username"] = real_name_h
+        #         msg["tooltip"] = VERIFIED_TOOLTIP
+        #         msg["avatar"] = AVATAR_URL_OSU
+        #     else:
+        #         msg["username"] = name_in_history
+        #         msg["tooltip"] = DEFAULT_TOOLTIP
+        #         msg["avatar"] = AVATAR_URL_QUESTION
+
+        #     msg["type"] = "history"
+        #     msg["total_users"] = users
+        #     msg["total_sockets"] = sockets
+
+        #     history_payload.append(msg)
+
+        # await websocket.send_text(json.dumps({"type": "history_bulk", "messages": history_payload}))
 
         msg = {}
         msg["type"] = "online_refresh"  
