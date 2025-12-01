@@ -193,6 +193,8 @@ async def websocket_endpoint(websocket: WebSocket):
         users = len(connections_unverified) + len(connections_verified)
         sockets = len(active_connections)
 
+        history_payload = []
+
         for msg_id, msg in sorted_history:
             name_in_history = msg.get("username")
             real_name_h = await check_user_verified_cached(name_in_history)
@@ -206,11 +208,13 @@ async def websocket_endpoint(websocket: WebSocket):
                 msg["tooltip"] = DEFAULT_TOOLTIP
                 msg["avatar"] = AVATAR_URL_QUESTION
 
-            msg["type"] = "history"            
+            msg["type"] = "history"
             msg["total_users"] = users
             msg["total_sockets"] = sockets
 
-            await websocket.send_text(json.dumps(msg))
+            history_payload.append(msg)
+
+        await websocket.send_text(json.dumps({"type": "history_bulk", "messages": history_payload}))
 
         msg = {}
         msg["type"] = "online_refresh"  
@@ -279,11 +283,17 @@ async def websocket_endpoint(websocket: WebSocket):
             await broadcast(msg)
 
     finally:
-        if username is not None:  
-            await unregister_connection(username, is_verified)
         async with connections_lock:
+            if username is not None:
+                await unregister_connection(username, is_verified)
             active_connections[:] = [(ws, u) for ws, u in active_connections if ws != websocket]
 
+            try:
+                users = len(connections_unverified) + len(connections_verified)
+                msg = {"type": "online_refresh", "total_users": users}
+                await broadcast(msg)
+            except Exception as e:
+                print("online_refresh:", e)
 
 async def broadcast(msg: dict):
     text = json.dumps(msg)
