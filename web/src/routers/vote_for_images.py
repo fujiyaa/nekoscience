@@ -74,6 +74,10 @@ async def vote_callback(request: Request, code: str = None):
     username = user_data.get("username")
     user_id = user_data.get("id")
 
+    team = user_data.get("team")
+    if team and team.get("id") != 799:
+        return templates.TemplateResponse("vote_home.html", {"request": request})
+
     return templates.TemplateResponse("vote_now.html", {
         "request": request,
         "username": username,
