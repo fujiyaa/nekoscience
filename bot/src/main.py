@@ -2063,7 +2063,7 @@ async def random_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     except Exception as e:
         logging.error(f"Ошибка в random_image: {e}")
-        await safe_send_message(update, "❌ Произошла непредвиденная ошибка.")
+        # await safe_send_message(update, "❌ Произошла непредвиденная ошибка.")
 async def delete_response(resp, delay: int = 10):
     await asyncio.sleep(delay)
     if isinstance(resp, list):
@@ -7154,37 +7154,38 @@ def cleanup_files(*file_paths: str):
 async def start_beatmap_card(update, context, user_request=True):
     if user_request: await log_all_update(update)
     asyncio.create_task(beatmap_card(update, context, user_request))
-async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request=True):
-    message_text = update.message.text.strip()
-    match = OSU_MAP_REGEX.search(message_text)
-    message = update.message
-    if user_request:
-        if not match:        
-            msg = await update.message.reply_text(
-                "❌ Нужна ссылка на карту"
-            )
-            asyncio.create_task(delete_message_after_delay(context, msg.chat.id, msg.message_id, 5))
-            asyncio.create_task(delete_user_message(update, context, delay=4))
-            return
-    
+async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request=True):    
     try:
+        message_text = update.message.text.strip()
+        match = OSU_MAP_REGEX.search(message_text)
+        message = update.message
+        if user_request:
+            if not match:        
+                msg = await update.message.reply_text(
+                    "❌ Нужна ссылка на карту"
+                )
+                asyncio.create_task(delete_message_after_delay(context, msg.chat.id, msg.message_id, 5))
+                asyncio.create_task(delete_user_message(update, context, delay=4))
+                return
+        
         if match is None: return
         beatmap_id = match.group(1) if match.group(1) else match.group(2)
+    
+        if user_request: warn_text = f"⏳ Подождите {COOLDOWN_CARD_COMMAND} секунд"
+        else: warn_text = None
+        can_run = await check_user_cooldown(
+            command_name="render_score",
+            user_id=str(update.effective_user.id),
+            cooldown_seconds=COOLDOWN_CARD_COMMAND,           
+            update=update,
+            context=context,
+            warn_text=warn_text
+        )
+        if not can_run:
+            return
+    
     except Exception as e:
         print(e)
-        return
-
-    if user_request: warn_text = f"⏳ Подождите {COOLDOWN_CARD_COMMAND} секунд"
-    else: warn_text = None
-    can_run = await check_user_cooldown(
-        command_name="render_score",
-        user_id=str(update.effective_user.id),
-        cooldown_seconds=COOLDOWN_CARD_COMMAND,           
-        update=update,
-        context=context,
-        warn_text=warn_text
-    )
-    if not can_run:
         return
     
     
