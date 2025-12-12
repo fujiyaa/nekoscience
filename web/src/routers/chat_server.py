@@ -278,6 +278,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
             msg["type"] = "message"
             msg["message"] = message
+            msg["timestamp"] = timestamp
             msg["total_users"] = len(connections_unverified) + len(connections_verified)
             msg["total_sockets"] = len(active_connections)
 
