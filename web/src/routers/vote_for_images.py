@@ -91,6 +91,9 @@ async def submit_votes(payload: str = Form(...)):
     created_at = data["created_at"]
     votes = data["votes"]
 
+    # Не принимать голоса больше
+    return
+
     await insert_to_file_neko(file_d, {
         username: {
             "created_at": created_at,
