@@ -3,3 +3,4 @@ pub mod get_hits_osu;
 pub mod get_sliders_osu;
 pub mod file_manager;
 pub mod forum_db_manager;
+pub mod db_setup;

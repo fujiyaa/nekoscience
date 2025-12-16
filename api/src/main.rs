@@ -1,4 +1,4 @@
-use axum::{Router, routing::get};
+use axum::{Router, routing::{get, post}};
 use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 use dotenv::dotenv;
 use std::env;
@@ -14,11 +14,19 @@ use calculators::score_pp::calculate_score_pp;
 use calculators::pp_parts::calculate_pp_parts;
 use calculators::map_stats::calculate_map_stats;
 use utils::file_manager::FileManager;
+use utils::db_setup::init_forum_db;
 
 use crate::systems::file_endpoints::read_file;
 use crate::systems::file_endpoints::insert_to_file;
 use crate::systems::file_endpoints::remove_from_file;
-use axum::routing::{post};
+
+use crate::systems::forum_db_endpoints::add_thread;
+use crate::systems::forum_db_endpoints::add_posts_batch;
+use crate::systems::forum_db_endpoints::read_posts_batch;
+use crate::systems::forum_db_endpoints::thread_exists;
+use crate::systems::forum_db_endpoints::thread_stats;
+
+
 
 #[tokio::main]
 async fn main() {
@@ -31,11 +39,36 @@ async fn main() {
     keys_map.insert(password, host);
 
     let fm = Arc::new(FileManager::new());
+    
+    let forum_db = env::var("FORUM_DB").expect("FORUM_DB not set");
+    let (db, _abs_path) = init_forum_db(&forum_db).await.unwrap();
 
     let state = AppState {
         keys: Arc::new(keys_map),
-        log_path: "access.log".to_string(),
+        log_path: "access.log".to_string(), 
     };
+
+    let forum_routes = Router::new()
+    .route("/thread", post({
+        let db = db.clone();
+        move |path| add_thread(path, db.clone())
+    }))
+    .route("/thread/{id}/exists", get({
+        let db = db.clone();
+        move |path| thread_exists(path, db.clone())
+    }))
+    .route("/thread/{id}/posts/add", get({
+        let db = db.clone();
+        move |path, payload| add_posts_batch(path, payload, db.clone())
+    }))
+    .route("/thread/{id}/posts/read", post({
+        let db = db.clone();
+        move |path, payload| read_posts_batch(path, payload, db.clone())
+    }))
+    .route("/thread/{id}/stats", get({
+        let db = db.clone();
+        move |path| thread_stats(path, db.clone())
+    }));
 
     let app = Router::new()
         .route("/", get(handler))
@@ -55,6 +88,9 @@ async fn main() {
             move |path, payload| remove_from_file(path, payload, fm.clone())
         }))
 
+        .nest("/forum", forum_routes)
+
+        .with_state(db.clone())
 
         .layer(axum::middleware::from_fn_with_state(
             state.clone(),

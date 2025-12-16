@@ -140,6 +140,12 @@ impl DbManager {
             _ => false,
         }
     }
+
+    // только для тестов
+    #[allow(unused)]
+    pub async fn close(&self) {
+        self.pool.close().await;
+    }
 }
 
 
