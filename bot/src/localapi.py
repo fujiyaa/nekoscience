@@ -80,3 +80,26 @@ async def insert_to_file_neko(file_id: str, payload: dict) -> dict:
 async def remove_from_file_neko(file_id: str, keys: list[str]) -> dict:
     payload = {k: None for k in keys}  
     return await _post_file("remove", file_id, payload)
+
+
+
+async def get_forum_db_thread_count(dummy: str = "x") -> dict:
+    url = f"{LOCAL_API_URL}forum/thread/count/threads/{dummy}"
+
+    headers = {
+        "X-API-Key": LOCAL_API_KEY
+    }
+
+    timeout = aiohttp.ClientTimeout(total=REQUEST_TIMEOUT)
+
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        try:
+            async with session.get(url, headers=headers) as resp:
+                if resp.status == 200:
+                    return await resp.json()
+                raise RuntimeError(f"Forum API returned HTTP {resp.status}")
+
+        except asyncio.TimeoutError:
+            raise RuntimeError(f"Forum API request timed out after {REQUEST_TIMEOUT}s")
+        except aiohttp.ClientError as e:
+            raise RuntimeError(f"Forum API request failed: {e}")

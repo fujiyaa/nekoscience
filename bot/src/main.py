@@ -5992,6 +5992,38 @@ async def uptime(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     except Exception as e:
         print(f"Ошибка в команде /uptime: {e}")
+async def dev_getthreads(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await log_all_update(update)
+
+    try:
+        can_run = await check_user_cooldown(
+            command_name="dev_getthreads",
+            user_id=str(update.effective_user.id),
+            cooldown_seconds=COOLDOWN_DEV_COMMANDS,           
+            update=update,
+            context=context,
+            warn_text=f"⏳ Подождите {COOLDOWN_DEV_COMMANDS} секунд"
+        )
+        if not can_run:
+            return
+
+        #neko API         
+        try:
+            data = await localapi.get_forum_db_thread_count()
+
+            thread_count = data["current"]["thread_count"]
+
+        except Exception as e:
+            print(f"neko API failed: {e}")
+
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=str(thread_count),
+            message_thread_id=update.message.message_thread_id
+        )
+
+    except Exception as e:
+        print(f"Ошибка в команде /getthreads: {e}")
 async def start_nochoke(update, context, user_request=True):
     await log_all_update(update)
     asyncio.create_task(nochoke(update, context, user_request))
@@ -8182,6 +8214,7 @@ def main():
 
     app.add_handler(CommandHandler("ping", ping))
     app.add_handler(CommandHandler("uptime", uptime))
+    app.add_handler(CommandHandler("getthreads", dev_getthreads))
 
     app.add_handler(CommandHandler("challenge", challenge))
 

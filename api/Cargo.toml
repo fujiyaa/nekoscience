@@ -17,6 +17,7 @@ tokio = { version = "1", features = ["full"] }
 axum = "0.8.7"
 futures = "0.3.31"
 sqlx = { version = "0.7.0", features = ["sqlite", "runtime-tokio-rustls", "macros"] }
+reqwest = { version = "0.11", features = ["json", "rustls-tls"] }
 
 # External / Domain-specific
 rosu-pp = { git = "https://github.com/MaxOhn/rosu-pp.git", branch = "main" }

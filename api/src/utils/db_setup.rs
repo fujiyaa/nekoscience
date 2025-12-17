@@ -44,7 +44,8 @@ mod tests {
 
         assert!(std::path::Path::new(&abs_path).exists());
 
-        let thread_id = db.add_thread("Test Thread", "Fujiya").await.unwrap();
+        let real_id = 1;
+        let thread_id = db.add_thread(real_id, "Test Thread", "Fujiya").await.unwrap();
         assert!(thread_id > 0);
 
         let count = db.count_posts(thread_id).await;

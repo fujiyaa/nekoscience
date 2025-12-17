@@ -15,7 +15,7 @@ impl DbManager {
         sqlx::query(
             r#"
             CREATE TABLE IF NOT EXISTS threads (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id INTEGER PRIMARY KEY,
                 title TEXT NOT NULL,
                 author TEXT NOT NULL,
                 created_at INTEGER NOT NULL
@@ -39,11 +39,13 @@ impl DbManager {
         Ok(Self { pool: Arc::new(pool) })
     }
 
-    pub async fn add_thread(&self, title: &str, author: &str) -> anyhow::Result<i64> {
+    pub async fn add_thread(&self, id: i64,  title: &str, author: &str) -> anyhow::Result<i64> {
         let created_at = Utc::now().timestamp();
+
         let row = sqlx::query(
-            "INSERT INTO threads (title, author, created_at) VALUES (?, ?, ?)"
+            "INSERT INTO threads (id, title, author, created_at) VALUES (?, ?, ?, ?)"
         )
+        .bind(id)
         .bind(title)
         .bind(author)
         .bind(created_at)
@@ -141,6 +143,19 @@ impl DbManager {
         }
     }
 
+    pub async fn count_threads(&self) -> i64 {
+        match sqlx::query("SELECT COUNT(*) as cnt FROM threads")
+            .fetch_one(&*self.pool)
+            .await
+        {
+            Ok(row) => row.get::<i64, _>("cnt"),
+            Err(e) => {
+                eprintln!("Failed to count threads: {}", e);
+                0
+            }
+        }
+    }
+
     // только для тестов
     #[allow(unused)]
     pub async fn close(&self) {
@@ -218,8 +233,10 @@ mod tests {
     async fn test_add_thread_and_check_exists() -> anyhow::Result<()> {
         let db = create_test_db().await?;
 
-        let thread_id = db.add_thread("Thread 1", "Alice").await?;
-        assert!(thread_id > 0);
+        let thread_id = 1;
+        db.add_thread(thread_id, "Thread 1", "Alice").await?;
+
+        println!("Thread count: {}", db.count_threads().await);
 
         assert!(db.thread_exists(thread_id).await);
         assert!(!db.thread_exists(thread_id + 1).await);
@@ -227,11 +244,13 @@ mod tests {
         Ok(())
     }
 
+
     #[tokio::test]
     async fn test_add_posts_and_count() -> anyhow::Result<()> {
         let db = create_test_db().await?;
 
-        let thread_id = db.add_thread("Thread 2", "Bob").await?;
+        let thread_id = 1;
+        db.add_thread(thread_id, "Thread 2", "Bob").await?;
 
         let posts = vec![
             json!({"author": "Alice", "body": "Hello"}),
@@ -251,7 +270,8 @@ mod tests {
     async fn test_get_posts_batch() -> anyhow::Result<()> {
         let db = create_test_db().await?;
 
-        let thread_id = db.add_thread("Thread 3", "Carol").await?;
+        let thread_id = 2;
+        db.add_thread(thread_id, "Thread 3", "Carol").await?;
 
         let posts = (1..=5)
             .map(|i| json!({"author": format!("User{}", i), "body": format!("Post {}", i)}))
@@ -276,9 +296,10 @@ mod tests {
     async fn test_add_posts_empty_array() -> anyhow::Result<()> {
         let db = create_test_db().await?;
 
-        let thread_id = db.add_thread("Thread 4", "Dave").await?;
-        let res = db.add_posts(thread_id, &[]).await;
+        let thread_id = 3;
+        db.add_thread(thread_id, "Thread 4", "Dave").await?;
 
+        let res = db.add_posts(thread_id, &[]).await;
         assert_eq!(res.get("inserted").unwrap().as_i64().unwrap(), 0);
 
         let count = db.count_posts(thread_id).await;
@@ -286,4 +307,5 @@ mod tests {
 
         Ok(())
     }
+
 }
