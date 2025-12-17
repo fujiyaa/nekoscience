@@ -1362,7 +1362,7 @@ async def process_score_and_image(score, image_todo_flag = False, is_recent=True
                  f'{user_link}{map_text}<b><i><a href="{score["url"]}">{score["rank"]}</a></i>  {mods_text}   {accuracy_display}</b>    <code>{format_osu_date(score["date"], today=is_recent)}</code>{spacer}'
                  f"{pp_text} • {combo_text} • <b>{score['count_miss']}</b>❌\n"
                  f"<code>{seconds_to_hhmmss(length)} • CS:{cs} AR:{ar} OD:{od} BPM:{bpm}</code>\n\n"
-                 f'⦿ <a href="{score["url"]}">Mapset</a> by {score["mapper"]} • {score["status"].capitalize()}  <a href="http://myangelfujiya.ru/index.html?id={map_id}&set_id={set_id}">🔗</a>\n'
+                 f'⦿ <a href="{score["url"]}">Mapset</a> by {score["mapper"]} • {score["status"].capitalize()}  <a href="http://myangelfujiya.ru/darkness/direct?id={map_id}&set_id={set_id}">🔗</a>\n'
              )          
 
     img_path = None
@@ -6250,7 +6250,7 @@ def get_page_text_choke(user_data, best_scores, page=0, page_size=5):
         map_id = score.get("beatmap_id")
 
         url = f"https://osu.ppy.sh/beatmaps/{map_id}"
-        url_2 = f"http://myangelfujiya.ru/index.html?id={map_id}"
+        url_2 = f"http://myangelfujiya.ru/darkness/direct?id={map_id}"
 
         line1 = f'<b>#{score.get("index")}</b> <a href="{url}">{title} [{version}]</a> <b>+{mods_str}</b> [{stars:.2f}★]'
         line2 = f'<a href="{url_2}">🔗</a> <code>{pp_old}</code> → <b>{pp_new}pp</b> • <i>Removed {misses}❌</i>'
@@ -7802,7 +7802,7 @@ async def farm_pagination_callback(update: Update, context: ContextTypes.DEFAULT
         ])
 
         url = f"https://osu.ppy.sh/beatmaps/{map_id}"
-        url_2 = f"http://myangelfujiya.ru/index.html?id={map_id}"
+        url_2 = f"http://myangelfujiya.ru/darkness/direct?id={map_id}"
 
         line = f"{total_str}pts {symbols} [http://osu.p...]({url}) | [🔗]({url_2})   +{mods}"
         lines.append(line)
@@ -8072,7 +8072,7 @@ async def generate_farm_results(update: Update, context: ContextTypes.DEFAULT_TY
         ])
 
         url = f"https://osu.ppy.sh/beatmaps/{map_id}"
-        url_2 = f"http://myangelfujiya.ru/index.html?id={map_id}"
+        url_2 = f"http://myangelfujiya.ru/darkness/direct?id={map_id}"
 
         line = f"{total_str}pts {symbols} [http://osu.p...]({url}) | [🔗]({url_2})   +{mods}"
         lines.append(line)

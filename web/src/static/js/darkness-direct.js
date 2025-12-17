@@ -9,7 +9,7 @@ if (!id) {
     box.innerHTML = `
     <h1>${title}</h1>
     <p>Отсутствует ID карты.</p>
-    <small>Пример правильного URL: <code>index.html?id=727727&set_id=12345</code></small>
+    <small>Пример правильного URL: <code>darkness_direct.html?id=727727&set_id=12345</code></small>
     `;
 } else if (!/^\d+$/.test(id)) {
     const title = "422";
@@ -17,7 +17,7 @@ if (!id) {
     box.innerHTML = `
     <h1>${title}</h1>
     <p>Неправильный ID карты.</p>
-    <small>Пример правильного URL: <code>index.html?id=727727&set_id=12345</code></small>
+    <small>Пример правильного URL: <code>darkness_direct.html?id=727727&set_id=12345</code></small>
     `;
 } else {
     const title = "Переадресация...";
