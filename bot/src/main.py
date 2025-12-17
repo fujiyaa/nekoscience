@@ -1886,7 +1886,7 @@ async def random_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not can_run:
             return
 
-        if update.effective_chat.type != "supergroup":
+        if update.effective_chat.id != TARGET_CHAT_ID:
             user_msg = update.message
 
             if random.random() > CHANCE_PIC:                
