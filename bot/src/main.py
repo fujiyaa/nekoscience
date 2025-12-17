@@ -1,3 +1,6 @@
+
+
+# остальные модули импортируются внутри конфига, такие как longtext.py
 from config import *
 import localapi, auth
 
@@ -374,7 +377,6 @@ async def beatmap(map_id: int) -> tuple[str | None, dict]:
         except Exception as e:
             print(f"⚠ Ошибка при парсинге .osu {map_id}: {e}")
 
-    # проверка кэша
     if os.path.exists(path_to_map):
         file_age = time.time() - os.path.getmtime(path_to_map)
         if file_age < CACHE_TTL:
@@ -383,7 +385,6 @@ async def beatmap(map_id: int) -> tuple[str | None, dict]:
         else:
             os.remove(path_to_map)
 
-    # качаем заново
     base_url = 'https://osu.ppy.sh/osu'
     try:
         response = requests.get(f'{base_url}/{map_id}', timeout=3)
@@ -397,15 +398,12 @@ async def beatmap(map_id: int) -> tuple[str | None, dict]:
 
     parse_values(path_to_map)
     return path_to_map, base_values
-async def build_beatmaps_text(caller_id: int) -> tuple[str, InlineKeyboardMarkup]:  
-
-    # считаем количество строк в queue.txt
+async def build_beatmaps_text(caller_id: int) -> tuple[str, InlineKeyboardMarkup]:
     queue_count = 0
     if os.path.exists(QUEUE_FILE):
         with open(QUEUE_FILE, "r", encoding="utf-8") as f:
             queue_count = sum(1 for _ in f)
 
-    # собираем список пользователей и статусов
     users_states = []
     done_count = 0
 
@@ -596,7 +594,6 @@ async def check_user_cooldown(command_name: str, user_id: str, cooldown_seconds:
     if last_used_str:
         last_used = datetime.fromisoformat(last_used_str)
         if datetime.now(timezone.utc) - last_used < cooldown:
-            # пользователь в кулдауне
             if not warn_text is None:
                 if update and context:
                     try:
@@ -627,8 +624,8 @@ async def is_on_cooldown(command_name: str, cooldown_seconds: int) -> bool:
     if last_used_str:
         last_used = datetime.fromisoformat(last_used_str)
         if datetime.now(timezone.utc) - last_used < cooldown:
-            return True  # Еще на кулдауне
-    return False  # Не на кулдауне
+            return True
+    return False
 
 async def update_cooldown(command_name: str):
     bot_id = str(727)
@@ -641,17 +638,12 @@ async def update_cooldown(command_name: str):
     data[command_name] = user_cooldowns
     await write_cooldowns(data)
 async def delete_message_after_delay(context, chat_id: int, message_id: int, delay: int):
-    """Удаляет сообщение через delay секунд."""
     await asyncio.sleep(delay)
     try:
         await context.bot.delete_message(chat_id=chat_id, message_id=message_id)
     except Exception as e:
         print(f"Ошибка при удалении сообщения: {e}")
 async def delete_user_message(update: Update, context: ContextTypes.DEFAULT_TYPE, delay: int = 5):
-    """
-    Удаляет сообщение, которое написал пользователь, через delay секунд.
-    Работает только если сообщение есть (update.message).
-    """
     if not update.message:
         return
 
@@ -666,15 +658,6 @@ async def delete_user_message(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 #retries
 async def safe_query_answer(query, text=None, show_alert=True, retries=2, delay=1):
-    """
-    Пытается ответить на callback_query несколько раз при ошибке.
-    
-    :param query: объект callback_query
-    :param text: текст ответа
-    :param show_alert: показывать alert или нет
-    :param retries: количество повторных попыток при ошибке
-    :param delay: задержка между попытками в секундах
-    """
     attempt = 0
     while attempt <= retries:
         try:
@@ -682,7 +665,7 @@ async def safe_query_answer(query, text=None, show_alert=True, retries=2, delay=
                 await query.answer(text, show_alert=show_alert)
             else:
                 await query.answer()
-            return  # если удалось, выходим
+            return
         except Exception as e:
             attempt += 1
             if attempt > retries:
@@ -690,16 +673,13 @@ async def safe_query_answer(query, text=None, show_alert=True, retries=2, delay=
                 return
             await asyncio.sleep(delay)  # ждем перед следующей попыткой
 async def safe_edit_message(message, text, parse_mode=None, reply_markup=None):
-    try:
-        # редактируем только если сообщение текстовое
+    try:       
         if message and (message.text or message.caption):
             return await message.edit_text(text, parse_mode=parse_mode, reply_markup=reply_markup)
         else:
-            # если редактировать нельзя, отправляем новое
             return await message.reply_text(text, parse_mode=parse_mode, reply_markup=reply_markup)
     except Exception as e:
         print(f"safe_edit_message failed: {e}")
-        # как запасной вариант: просто отправить новое сообщение
         return await message.reply_text(text, parse_mode=parse_mode, reply_markup=reply_markup) 
 async def fetch_with_timeout(session, url, headers=None, timeout_sec=10):
     try:
@@ -721,7 +701,6 @@ async def safe_send_message(update: Update, text: str, parse_mode=None):
     logging.error("Не удалось отправить сообщение после 5 попыток.")
     return None
 async def try_send(coro_func, *args, retries=3, delay=1, **kwargs):
-    """Пробуем выполнить асинхронную функцию с повторной попыткой при ошибке"""
     for attempt in range(retries):
         try:
             return await coro_func(*args, **kwargs)
@@ -732,7 +711,6 @@ async def try_send(coro_func, *args, retries=3, delay=1, **kwargs):
                 print(f"Failed after {retries} attempts: {e}")
                 return None
 async def try_request(coro, retries=3, delay=1, *args, **kwargs):
-    """Попытка выполнить асинхронную функцию coro до retries раз при сетевой ошибке"""
     for attempt in range(1, retries + 1):
         try:
             return await coro(*args, **kwargs)
@@ -782,7 +760,6 @@ async def get_top_100_scores(username: str, token: str = None, user_id: str = No
 
     async with aiohttp.ClientSession() as session:
         if user_id is None:
-            # Получаем user_id по нику
             user_url = f"https://osu.ppy.sh/api/v2/users/{username}/osu"
             print('🔻 API request (get_top_100_scores 1/2)')
             user_data = await try_request(fetch_with_timeout, retries=3, delay=1, session=session, url=user_url, headers=headers)
@@ -791,7 +768,6 @@ async def get_top_100_scores(username: str, token: str = None, user_id: str = No
                 return None
             user_id = user_data["id"]
 
-        # Запрашиваем топ-100 скор
         best_scores_url = f"https://osu.ppy.sh/api/v2/users/{user_id}/scores/best?mode=osu&limit={limit}"
         print('🔻 API request (get_top_100_scores 2/2)')
         best_scores = await try_request(fetch_with_timeout, retries=3, delay=1, session=session, url=best_scores_url, headers=headers)
@@ -845,7 +821,6 @@ async def get_most_played(username: str, token: str = None) -> list[dict] | None
     headers = {"Authorization": f"Bearer {token}"}
 
     async with aiohttp.ClientSession() as session:
-        # Получаем user_id по нику
         user_url = f"https://osu.ppy.sh/api/v2/users/{username}/osu"
         user_data = await fetch_with_timeout(session, user_url, headers)
         if not user_data:
@@ -853,7 +828,6 @@ async def get_most_played(username: str, token: str = None) -> list[dict] | None
             return None
         user_id = user_data["id"]
 
-        # Запрашиваем топ-100 скор
         most_played_url = f"https://osu.ppy.sh/api/v2/users/{user_id}/beatmapsets/most_played?limit=100"
         most_played = await fetch_with_timeout(session, most_played_url, headers)
         if not most_played:
@@ -921,10 +895,8 @@ async def get_beatmap(beatmap_id: int, token: str, timeout_sec: int = 10):
         print(f"Request for beatmap_id '{beatmap_id}' failed: {e}")
         return None
 async def get_user_id(username: str, token: str = None, timeout_sec: int = 10):
-    # Загружаем кэш при каждом вызове
     user_cache = temp.load_json(OSU_ID_CACHE_FILE, {})
 
-    # Проверяем кэш
     if username in user_cache:
         return user_cache[username]
 
@@ -944,7 +916,6 @@ async def get_user_id(username: str, token: str = None, timeout_sec: int = 10):
                 data = await resp.json()
                 user_id = data.get("id")
                 if user_id:
-                    # Сохраняем в кэш и файл
                     user_cache[username] = user_id
                     temp.save_json(OSU_ID_CACHE_FILE, user_cache)
                 return user_id
@@ -974,9 +945,7 @@ async def get_osu_user_additional_data(user_id: str, mode: str, token: str = Non
     except (asyncio.TimeoutError, aiohttp.ClientError) as e:
         print(f"Request for user_pp failed: {e}")
         return None
-async def get_score_page(session, user_id: str, score_id: str, no_check:bool = False) -> dict | None:
-    """Возвращает сырой JSON со страницы или из файла <score_id>.json"""
-  
+async def get_score_page(session, user_id: str, score_id: str, no_check:bool = False) -> dict | None:  
     url = f"https://osu.ppy.sh/scores/{score_id}"
     try:
         print(f'🔻 lxml request ({score_id})')
@@ -1008,7 +977,6 @@ async def get_score_page(session, user_id: str, score_id: str, no_check:bool = F
 
     return None
 async def get_user_scores(username: str, token: str, timeout_sec: int = 10, limit: int = 25):
-    """Получает последние скоры пользователя и сохраняет каждый в отдельный файл"""
     user_id = await get_user_id(username, token)
     if not user_id:
         return None
@@ -1069,7 +1037,6 @@ async def start_rs(update, context, is_button_press=False):
     await log_all_update(update)
     asyncio.create_task(rs(update, context, is_button_press))
 async def rs(update: Update, context: ContextTypes.DEFAULT_TYPE, is_button_press=False):
-    """Основная функция команды /rs с поддержкой кнопок и кеша каждого скора в отдельном файле"""
     user_id = str(update.effective_user.id)
     can_run = await check_user_cooldown(
         command_name="rs",
@@ -1109,10 +1076,8 @@ async def rs(update: Update, context: ContextTypes.DEFAULT_TYPE, is_button_press
                     await safe_send_message(update, "❌ Нет последних игр", parse_mode="Markdown")
                     return
 
-                # Берем первый score
                 score = scores[0]
                
-                # Создаем локальный session_data для первой отправки
                 local_session = {
                     "scores": scores,
                     "index": 0,
@@ -1121,14 +1086,12 @@ async def rs(update: Update, context: ContextTypes.DEFAULT_TYPE, is_button_press
                     "saved_name": saved_name
                 }
 
-                # Отправляем первый score
                 msg = await try_send(send_score, update, score, user_id, local_session, message_id=0)
                 await loading_msg.delete()
 
                 message_id = msg.message_id
                 user_sessions[message_id] = local_session
 
-                # Асинхронное кеширование остальных скоов
                 asyncio.create_task(cache_remaining_scores(str(scores[0]['user']['id']), scores, username))
 
             else:
@@ -1140,7 +1103,6 @@ async def rs(update: Update, context: ContextTypes.DEFAULT_TYPE, is_button_press
                 message_id = msg.message_id
                 await send_score(update, score, session_data["user_id"], session_data, message_id, query=update.callback_query)
 
-            # Формируем кнопки безопасно
             session = user_sessions[message_id]
             index = session["index"]
             total = len(session["scores"])
@@ -1185,7 +1147,6 @@ async def send_score( update: Update, score: dict, user_id: str,  session: dict,
 
     try:
         if query:
-            # редактируем сообщение по кнопке
             if img_path:
                 with open(img_path, "rb") as f:
                     bio = BytesIO(f.read())
@@ -1198,7 +1159,6 @@ async def send_score( update: Update, score: dict, user_id: str,  session: dict,
                     link_preview_options=link_preview
                 )
         else:
-            # отправка нового сообщения
             if img_path:
                 return await update.message.reply_photo(
                     photo=open(img_path, "rb"),
@@ -1214,7 +1174,6 @@ async def send_score( update: Update, score: dict, user_id: str,  session: dict,
     except Exception:
         traceback.print_exc()
 async def process_score(score, additional_data):
-    """Обрабатываем один скор, используя уже загруженные данные"""
     raw = score
 
     beatmap = raw.get("beatmap", {})
@@ -1436,7 +1395,6 @@ async def rs_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await safe_query_answer(query, text="⛔ Не твои кнопки", show_alert=True)
         return
 
-    # Локальная копия индекса
     new_index = session["index"]
     if action == "next" and new_index < len(session["scores"]) - 1:
         new_index += 1
@@ -1450,11 +1408,9 @@ async def rs_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await safe_query_answer(query)
         return
 
-    # Данные готовы — формируем картинку и подпись
     await safe_query_answer(query)
     img_path, caption = await process_score_and_image(entry.get('raw'), image_todo_flag=rs_bg_render)
 
-    # Формируем кнопки
     total = len(session["scores"])
     buttons = [
         InlineKeyboardButton("⬅️", callback_data=f"rs_prev_{message_id}" if new_index > 0 else "rs_disabled"),
@@ -1484,7 +1440,6 @@ async def rs_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 reply_markup=keyboard
             )
 
-        # только после успешного обновления медиa меняем индекс
         session["index"] = new_index
 
         reset_remove_timer(
@@ -1566,7 +1521,7 @@ async def create_beatmap_image(score: dict) -> str | None:
             image = Image.open(f"{BOT_DIR}/cards/assets/rs/default_cover.png").convert("RGBA")
 
         else:
-            for attempt in range(3):  # максимум 2 попытки
+            for attempt in range(3):
                 try:
                     async with aiohttp.ClientSession(timeout=timeout) as session:
                         async with session.get(cover_url) as resp:
@@ -1575,11 +1530,11 @@ async def create_beatmap_image(score: dict) -> str | None:
                             img_data = await resp.read()
                             image = Image.open(io.BytesIO(img_data)).convert("RGBA")
                             image.save(cover_path, format="PNG")
-                            break  # успех — выходим из цикла
+                            break
                 except Exception as e:
                     print(f"⚠ Ошибка загрузки обложки (попытка {attempt+1}/2): {e}")
                     if attempt < 1:
-                        await asyncio.sleep(1)  # немного подождать перед повтором
+                        await asyncio.sleep(1)
                     else:
                         image = Image.open("assets/default_cover.png").convert("RGBA")
 
@@ -1592,7 +1547,7 @@ async def create_beatmap_image(score: dict) -> str | None:
         if f.startswith(f"{user_id}_") and f.endswith(".png"):
             path = os.path.join(AVATARS_DIR, f)
             mtime = datetime.fromtimestamp(os.path.getmtime(path))
-            if now - mtime < timedelta(hours=1):  # файл свежий, используем
+            if now - mtime < timedelta(hours=1):
                 avatar_file = path
                 break
             
@@ -1612,16 +1567,14 @@ async def create_beatmap_image(score: dict) -> str | None:
                     async with session.get(avatar_url) as resp:
                         if resp.status == 200:
                             def add_rounded_corners(img: Image.Image, radius: int) -> Image.Image:
-                                # создаем маску в два раза больше для сглаживания
+                               
                                 big_size = (img.size[0]*2, img.size[1]*2)
                                 mask = Image.new("L", big_size, 0)
                                 draw_mask = ImageDraw.Draw(mask)
                                 draw_mask.rounded_rectangle((0, 0, big_size[0], big_size[1]), radius*2, fill=255)
                                 
-                                # сжимаем маску обратно для сглаживания
                                 mask = mask.resize(img.size, Image.LANCZOS)
                                 
-                                # применяем альфу
                                 img.putalpha(mask)
                                 return img
                             extra_img_data = await resp.read()
@@ -1776,10 +1729,8 @@ async def enrich_score_lazer(session, user_id: str, score_id: str):
 
     accuracy = score_page.get("accuracy", accuracy)
 
-    # универсальные моды
     mods_orig = raw.get("mods", [])
 
-    # выкидываем DA, если он там есть
     mods_clean = []
     if mods_orig:
         if isinstance(mods_orig[0], dict):
@@ -1796,8 +1747,6 @@ async def enrich_score_lazer(session, user_id: str, score_id: str):
     if da_active:
         mods_text = mods_text + "+DA" if mods_text != "NM" else "+DA"
 
-
-    # записываем обратно в raw
     raw.update({
         "lazer": lazer,
         "DA_values": custom_values,
@@ -1810,9 +1759,8 @@ async def enrich_score_lazer(session, user_id: str, score_id: str):
     cached_entry["ready"] = True
     save_score_file(score_id, cached_entry)
 async def cache_remaining_scores(user_id: str, scores: list, username: str):
-    """Кешируем оставшиеся скоры без process_score_and_image"""
     async with aiohttp.ClientSession() as session:
-        for s in scores[1:]:  # пропускаем первый
+        for s in scores[1:]:
             score_id = str(s['id'])
             cached_entry = load_score_file(score_id)
             if not cached_entry:
@@ -1938,128 +1886,99 @@ async def random_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not can_run:
             return
 
-        # Проверяем, что чат — супергруппа и топик совпадает
         if update.effective_chat.type != "supergroup":
-            await safe_send_message(update, "⚠️ Команда доступна только в супергруппе.")
-            return
+            user_msg = update.message
 
-        # Проверяем топик (message_thread_id есть только в топиках)
-        if update.message.message_thread_id != LUCKY_TOPIC_ID:
-            await safe_send_message(update, "⚠️ Команда доступна только в определённом топике.")
-            return
+            if random.random() > CHANCE_PIC:                
+                bot_msg = await safe_send_message(update, random.choice(fail_texts))
 
-        if update.effective_user.id == ARCHER_BOT:
-            await safe_send_message(update, "⚠️ Команда недоступна для ботов.")
-            return
+                if bot_msg:
+                    asyncio.create_task(delete_response([user_msg, bot_msg], delay=30))
 
-        user_msg = update.message
+            else:
+                data = temp.load_images_data()
+                all_images = data.get("all", [])
 
-        
-        
+                if not all_images:
+                    await safe_send_message(update, "❌ В папке нет картинок.")
+                    return
 
-        if random.random() > CHANCE_PIC:
-            fail_texts = [
-                "Не повезло",
-                "Ничего",
-                "Пусто",
-                "Не повезло",
-                "Ничего",
-                "Пусто",
-                "Не повезло",
-                "Ничего",
-                "Пусто",
-                "Не повезло",
-                "Ничего",
-                "Пусто",
-                "Не повезло",
-                "Ничего",
-                "Ничего",
-                "Пусто",
-                "Не повезло",
-                "Ничего",
-                "Пусто",
-                "Не повезло",
-                "Ничего",
-                "Пусто",
-                "Не повезло",
-                "Ничего",
-                "Пусто",
-                "Не повезло",
-                "Ничего",
-                "Неа",
-                "Не",
-                "Мылся?",
-                "Ничего",
-                "Пусто",
-                "Не повезло",
-                "Ничего",
-                "Пусто",
-                "Не повезло",
-                "Ничего",
-                "Пусто",
-                "Не повезло",
-                "Ничего",
-                "Пусто",
-                "Не повезло",
-                "Ничего",
-                "Может лучше в осу поиграть? у тебя кажется только это получается в жизни",
-                "Пусто",
-                "Не надо стараться",
-                "Сорян",
-                "Неа",
-                "Не",
-                "..?",
-                "...",
-                "-_-",
-                "xD",
-                "xd",
-            ]
-            bot_msg = await safe_send_message(update, random.choice(fail_texts))
+                available_images = list(set(all_images))
 
-            if bot_msg:
-                asyncio.create_task(delete_response([user_msg, bot_msg], delay=30))
-            return
+                selected_image = random.choice(available_images)
+                image_path = os.path.join(IMAGES_DIR, selected_image)
 
-        data = temp.load_images_data()
-        all_images = data.get("all", [])
-        used_images = data.get("used", [])
+                try:
+                    with open(image_path, "rb") as img:
+                        await context.bot.send_photo(
+                            chat_id=update.effective_chat.id, 
+                            photo=img,
+                            message_thread_id=update.message.message_thread_id
+                        )
+                except FileNotFoundError:
+                    logging.error(f"Файл не найден: {image_path}")
+                    await safe_send_message(update, "❌ Ошибка: картинка не найдена.")
+                    return
+                except Exception as e:
+                    logging.error(f"Ошибка при отправке фото: {e}")
+                    await safe_send_message(update, "❌ Ошибка при отправке фото.")
+                    return
+        else:
+            if update.message.message_thread_id != LUCKY_TOPIC_ID:
+                await safe_send_message(update, "⚠️ Команда доступна только в определённом топике.")
+                return
 
-        if not all_images:
-            await safe_send_message(update, "❌ В папке нет картинок.")
-            return
+            if update.effective_user.id == ARCHER_BOT:
+                await safe_send_message(update, "⚠️ Команда недоступна для ботов.")
+                return
 
-        available_images = list(set(all_images) - set(used_images))
+            user_msg = update.message
 
-        if not available_images:
-            #data["used"] = []
-            #save_images_data(data)
-            await safe_send_message(update, "✅ Все картинки были использованы")
-            return
+            if random.random() > CHANCE_PIC:                
+                bot_msg = await safe_send_message(update, random.choice(fail_texts))
 
-        selected_image = random.choice(available_images)
-        image_path = os.path.join(IMAGES_DIR, selected_image)
+                if bot_msg:
+                    asyncio.create_task(delete_response([user_msg, bot_msg], delay=30))
 
-        try:
-            with open(image_path, "rb") as img:
-                await context.bot.send_photo(
-                    chat_id=update.effective_chat.id, 
-                    photo=img,
-                    message_thread_id=update.message.message_thread_id
-                )
-        except FileNotFoundError:
-            logging.error(f"Файл не найден: {image_path}")
-            await safe_send_message(update, "❌ Ошибка: картинка не найдена.")
-            return
-        except Exception as e:
-            logging.error(f"Ошибка при отправке фото: {e}")
-            await safe_send_message(update, "❌ Ошибка при отправке фото.")
-            return
+            else:
+                data = temp.load_images_data()
+                all_images = data.get("all", [])
+                used_images = data.get("used", [])
 
+                if not all_images:
+                    await safe_send_message(update, "❌ В папке нет картинок.")
+                    return
 
-        # Сохраняем как использованную
-        used_images.append(selected_image)
-        data["used"] = used_images
-        temp.save_images_data(data)
+                available_images = list(set(all_images) - set(used_images))
+
+                if not available_images:
+                    #data["used"] = []
+                    #save_images_data(data)
+                    await safe_send_message(update, "✅ Все картинки были использованы")
+                    return
+
+                selected_image = random.choice(available_images)
+                image_path = os.path.join(IMAGES_DIR, selected_image)
+
+                try:
+                    with open(image_path, "rb") as img:
+                        await context.bot.send_photo(
+                            chat_id=update.effective_chat.id, 
+                            photo=img,
+                            message_thread_id=update.message.message_thread_id
+                        )
+                except FileNotFoundError:
+                    logging.error(f"Файл не найден: {image_path}")
+                    await safe_send_message(update, "❌ Ошибка: картинка не найдена.")
+                    return
+                except Exception as e:
+                    logging.error(f"Ошибка при отправке фото: {e}")
+                    await safe_send_message(update, "❌ Ошибка при отправке фото.")
+                    return
+
+                used_images.append(selected_image)
+                data["used"] = used_images
+                temp.save_images_data(data)
 
     except Exception as e:
         logging.error(f"Ошибка в random_image: {e}")
@@ -2122,7 +2041,7 @@ async def get_random_beatmap_from_random_pack(max_attempts=5):
             data = await resp.json()
 
         packs = data.get("beatmap_packs", [])
-        # Фильтруем паки, где ruleset_id == 0 (стандартный режим)
+        # ruleset_id == 0
         packs = [p for p in packs if p.get("ruleset_id") == None]
 
         if not packs:
@@ -2137,7 +2056,7 @@ async def get_random_beatmap_from_random_pack(max_attempts=5):
             async with session.get(pack_detail_url, headers=headers) as resp:
                 pack_detail = await resp.json()
 
-            # Фильтруем beatmapsets с ruleset_id == 0
+            # ruleset_id == 0
             beatmapsets =  pack_detail.get("beatmapsets", [])
 
             if beatmapsets:
@@ -2170,7 +2089,7 @@ async def mappers(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
     if not can_run:
         return
 
-    MAX_ATTEMPTS = 3  # Количество попыток
+    MAX_ATTEMPTS = 3
 
     user_id = str(update.message.from_user.id)
     saved_name = await auth.check_osu_verified(str(update.effective_user.id))
@@ -2182,9 +2101,7 @@ async def mappers(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
             text = (
                 "Использование: `/mappers fujina123` <- никнейм\n\n\n"
                 "⚙ *Дополнительно*\n\n"
-                "/name <ник> – сохранить ник\n"
-                "/reset – удалить ник\n\n"
-                f"Сохраненный ник: *нет*"
+                "/name – сохранить ник"
             )
             await safe_send_message(update, text, parse_mode="Markdown")
             return
@@ -2195,11 +2112,7 @@ async def mappers(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
         saved_name = 'нет'
 
     temp_message = await update.message.reply_text(
-        "`Загрузка...`\n\n\n"
-        "⚙ *Дополнительно*\n\n"
-        "/name <ник> – сохранить ник\n"
-        "/reset – удалить ник\n\n"
-        f"Сохраненный ник: *{saved_name}*", parse_mode="Markdown"
+        "`Загрузка...`", parse_mode="Markdown"
     )
 
     for attempt in range(1, MAX_ATTEMPTS + 1):
@@ -2210,11 +2123,7 @@ async def mappers(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
                 await context.bot.edit_message_text(
                     chat_id=update.effective_chat.id,
                     message_id=temp_message.message_id,
-                    text="`Игрок не найден`\n\n\n"
-                        "⚙ *Дополнительно*\n\n"
-                        "/name <ник> – сохранить ник\n"
-                        "/reset – удалить ник\n\n"
-                        f"Сохраненный ник: *{saved_name}*",
+                    text="`Игрок не найден`",
                     parse_mode="Markdown"
                 )
                 return
@@ -2236,23 +2145,20 @@ async def mappers(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
                     mapper = score.get("mapper", "Unknown")
                     raw_pp = score.get("pp", 0.0) or 0.0
 
-                    # Взвешивание по weight_percent (если есть)
                     if "weight_percent" in score:
                         weighted_pp = raw_pp * (score["weight_percent"] / 100.0)
                     else:
-                        weighted_pp = raw_pp  # fallback, если веса нет
+                        weighted_pp = raw_pp
 
                     mapper_counter[mapper]["pp_sum"] += weighted_pp
-                    mapper_counter[mapper]["count"] += 1  # просто количество карт
+                    mapper_counter[mapper]["count"] += 1
 
-                # Сортировка: сначала по количеству, потом по сумме wPP
                 sorted_mappers = sorted(
                     mapper_counter.items(),
                     key=lambda x: (x[1]["count"], x[1]["pp_sum"]),
                     reverse=True
                 )
 
-                # --- Формируем таблицу ---
                 top_mappers = sorted_mappers[:10]
 
                 mapper_width = max(len(mapper) for mapper, _ in top_mappers) if top_mappers else 0
@@ -2270,7 +2176,6 @@ async def mappers(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
 
                 table_text = "\n".join(table_lines)
 
-                # Данные о пользователе
                 username = user_data["username"]
                 stats = user_data["statistics"]
                 pp_text = f"{stats.get('pp')}" if stats.get("pp") else "0"
@@ -2304,37 +2209,16 @@ async def mappers(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
             else:
                 await context.bot.send_message(chat_id=update.effective_chat.id, text="Нет данных или ошибка сети")
 
-
-
-
-
             await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=temp_message.message_id)
             return
 
-        except asyncio.TimeoutError:
-            print(f"Таймаут при выполнении команды mappers (попытка {attempt}/{MAX_ATTEMPTS})")
-            if attempt == MAX_ATTEMPTS:
-                await context.bot.edit_message_text(
-                    chat_id=update.effective_chat.id,
-                    message_id=temp_message.message_id,
-                    text=f"`Таймаут после {MAX_ATTEMPTS} попыток...`\n\n\n"
-                        "⚙ *Дополнительно*\n\n"
-                        "/name <ник> – сохранить ник\n"
-                        "/reset – удалить ник\n\n"
-                        f"Сохраненный ник: *{saved_name}*",
-                    parse_mode="Markdown"
-                )
         except Exception as e:
             print(f"Ошибка при mappers (попытка {attempt}/{MAX_ATTEMPTS}): {e}")
             if attempt == MAX_ATTEMPTS:
                 await context.bot.edit_message_text(
                     chat_id=update.effective_chat.id,
                     message_id=temp_message.message_id,
-                    text=f"`Ошибка после {MAX_ATTEMPTS} попыток...`\n\n\n"
-                        "⚙ *Дополнительно*\n\n"
-                        "/name <ник> – сохранить ник\n"
-                        "/reset – удалить ник\n\n"
-                        f"Сохраненный ник: *{saved_name}*",
+                    text=f"`Ошибка после {MAX_ATTEMPTS} попыток...`",
                     parse_mode="Markdown"
                 )
 async def start_mods(update, context, user_request=True):
@@ -2351,9 +2235,8 @@ async def mods(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request)
         )
     if not can_run:
         return
-    MAX_ATTEMPTS = 3  # Количество попыток
+    MAX_ATTEMPTS = 3
 
-    # --- Логика сохранённого ника ---
     user_id = str(update.message.from_user.id)
     saved_name = await auth.check_osu_verified(str(update.effective_user.id))
 
@@ -2364,9 +2247,7 @@ async def mods(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request)
             text = (
                 "Использование: `/mods fujina123` <- никнейм\n\n\n"
                 "⚙ *Дополнительно*\n\n"
-                "/name <ник> – сохранить ник\n"
-                "/reset – удалить ник\n\n"
-                f"Сохраненный ник: *нет*"
+                "/name – сохранить ник\n"
             )
             await safe_send_message(update, text, parse_mode="Markdown")
             return
@@ -2376,29 +2257,19 @@ async def mods(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request)
     if saved_name is None:
         saved_name = 'нет'
 
-    # Временное сообщение создаём ОДИН РАЗ до попыток
     temp_message = await update.message.reply_text(
-        "`Загрузка...`\n\n\n"
-        "⚙ *Дополнительно*\n\n"
-        "/name <ник> – сохранить ник\n"
-        "/reset – удалить ник\n\n"
-        f"Сохраненный ник: *{saved_name}*", parse_mode="Markdown"
+        "`Загрузка...`", parse_mode="Markdown"
     )
 
     for attempt in range(1, MAX_ATTEMPTS + 1):
         try:
-            # --- Получение профиля с таймаутом 10 секунд ---
             token = await get_osu_token()
             user_data = await asyncio.wait_for(get_user_profile(username, token=token), timeout=10)
             if not user_data:
                 await context.bot.edit_message_text(
                     chat_id=update.effective_chat.id,
                     message_id=temp_message.message_id,
-                    text="`Игрок не найден`\n\n\n"
-                        "⚙ *Дополнительно*\n\n"
-                        "/name <ник> – сохранить ник\n"
-                        "/reset – удалить ник\n\n"
-                        f"Сохраненный ник: *{saved_name}*",
+                    text="`Игрок не найден`",
                     parse_mode="Markdown"
                 )
                 return
@@ -2487,40 +2358,22 @@ async def mods(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request)
             await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=temp_message.message_id)
             return
 
-        except asyncio.TimeoutError:
-            print(f"Таймаут при выполнении команды mods (попытка {attempt}/{MAX_ATTEMPTS})")
-            if attempt == MAX_ATTEMPTS:
-                await context.bot.edit_message_text(
-                    chat_id=update.effective_chat.id,
-                    message_id=temp_message.message_id,
-                    text=f"`Таймаут после {MAX_ATTEMPTS} попыток...`\n\n\n"
-                        "⚙ *Дополнительно*\n\n"
-                        "/name <ник> – сохранить ник\n"
-                        "/reset – удалить ник\n\n"
-                        f"Сохраненный ник: *{saved_name}*",
-                    parse_mode="Markdown"
-                )
         except Exception as e:
             print(f"Ошибка при mods (попытка {attempt}/{MAX_ATTEMPTS}): {e}")
             if attempt == MAX_ATTEMPTS:
                 await context.bot.edit_message_text(
                     chat_id=update.effective_chat.id,
                     message_id=temp_message.message_id,
-                    text=f"`Ошибка после {MAX_ATTEMPTS} попыток...`\n\n\n"
-                        "⚙ *Дополнительно*\n\n"
-                        "/name <ник> – сохранить ник\n"
-                        "/reset – удалить ник\n\n"
-                        f"Сохраненный ник: *{saved_name}*",
+                    text=f"`Ошибка после {MAX_ATTEMPTS} попыток...`",
                     parse_mode="Markdown"
                 )
-
 #profile&card cmd TODO card rework
 async def start_profile(update, context, user_request=True):
     await log_all_update(update)
     asyncio.create_task(profile(update, context, user_request))
 async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request):
     query = update.callback_query
-    if query:  # если это нажатие кнопки
+    if query:
         await query.answer()
         message = query.message
     else:
@@ -2537,7 +2390,7 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
     if not can_run:
         return
 
-    MAX_ATTEMPTS = 3  # Количество попыток
+    MAX_ATTEMPTS = 3
 
     user_id = str(update.effective_user.id)
     saved_name = await auth.check_osu_verified(str(update.effective_user.id))
@@ -2547,11 +2400,9 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
             username = saved_name
         else:
             text = (
-                "Использование: `/p Fujiya` <- никнейм\n\n\n"
+                "Использование: `/p Fujiya` <- никнейм"
                 "⚙ *Дополнительно*\n\n"
-                "/name <ник> – сохранить ник\n"
-                "/reset – удалить ник\n\n"
-                f"Сохраненный ник: *нет*"
+                "/name – сохранить ник\n"
             )
             await safe_send_message(update, text, parse_mode="Markdown")
             return
@@ -2561,39 +2412,22 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
     if saved_name is None:
         saved_name = 'нет'
 
-    
-   # Если команда вызвана через текстовое сообщение
     if update.message:
         temp_message = await update.message.reply_text(
-            "`Загрузка...`\n\n\n"
-            "⚙ *Дополнительно*\n\n"
-            "/name <ник> – сохранить ник\n"
-            "/reset – удалить ник\n\n"
-            f"Сохраненный ник: *{saved_name}*",
+            "`Загрузка...`",
             parse_mode="Markdown"
         )
 
-    # Если команда вызвана через кнопку
     elif update.callback_query:
         query = update.callback_query
-        # проверяем, что сообщение текстовое
         if query.message.text or query.message.caption:
             temp_message = await query.message.edit_text(
-                "`Загрузка...`\n\n\n"
-                "⚙ *Дополнительно*\n\n"
-                "/name <ник> – сохранить ник\n"
-                "/reset – удалить ник\n\n"
-                f"Сохраненный ник: *{saved_name}*",
+                "`Загрузка...`",
                 parse_mode="Markdown"
             )
         else:
-            # если редактировать нельзя (например, фото), создаём новое сообщение
             temp_message = await query.message.reply_text(
-                "`Загрузка...`\n\n\n"
-                "⚙ *Дополнительно*\n\n"
-                "/name <ник> – сохранить ник\n"
-                "/reset – удалить ник\n\n"
-                f"Сохраненный ник: *{saved_name}*",
+                "`Загрузка...`",
                 parse_mode="Markdown"
             )
 
@@ -2607,11 +2441,7 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
                 await context.bot.edit_message_text(
                     chat_id=update.effective_chat.id,
                     message_id=temp_message.message_id,
-                    text="`Игрок не найден`\n\n\n"
-                        "⚙ *Дополнительно*\n\n"
-                        "/name <ник> – сохранить ник\n"
-                        "/reset – удалить ник\n\n"
-                        f"Сохраненный ник: *{saved_name}*",
+                    text="`Игрок не найден`",
                     parse_mode="Markdown"
                 )
                 return
@@ -2623,10 +2453,7 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
                 best_pp = []
                 print(e)
 
-            if isinstance(best_pp, list) and best_pp:
-                
-
-                # Первая строка с ником и PP
+            if isinstance(best_pp, list) and best_pp:                
                 username = user_data["username"]
                 stats = user_data["statistics"]
                 pp_text = f"{stats.get('pp')}" if stats.get("pp") else "0"
@@ -2655,32 +2482,21 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
                     team_link = f'<a href="{team_url}">{team}</a>'
                 except:
                     team_link = '✖️' 
-                
-                
-
+                                
                 peak_rank = user_data['rank_highest']['rank']
 
                 def format_osu_date(date_str: str, fmt: str = "%Y-%m-%d %H:%M:%S", flag = True) -> str:
-                    """
-                    Парсит дату из osu! API, форматирует её и добавляет 'x ago'.
-                    
-                    date_str: строка даты из API
-                    fmt: формат вывода даты
-                    """
                     try:
-                        # Парсим дату
                         if date_str.endswith("Z"):
                             dt = datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
                         else:
                             dt = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
                     except Exception as e:
-                        print(f"Ошибка парсинга даты: {e}")
+                        print(f"Ошибка: {e}")
                         return "N/A"
 
-                    # Форматирование даты
                     formatted = dt.strftime(fmt)
 
-                    # Вычисление 'x ago'
                     now = datetime.now(timezone.utc)
                     delta = now - dt
 
@@ -2717,7 +2533,6 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
                 ) 
 
                 if query:
-                    # Удаляем старые карточки пользователя
                     for msg_id, author_id in list(message_authors.items()):
                         if author_id == query.from_user.id:
                             try:
@@ -2726,14 +2541,12 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
                                 pass
                             message_authors.pop(msg_id, None)
 
-                    # Теперь редактируем профиль
                     new_msg = await safe_edit_message(
                         temp_message,
                         text,
                         parse_mode="HTML",
                         # reply_markup=get_profile_keyboard("profile")
                     )
-                    # Сохраняем ID нового сообщения
                     message_authors[new_msg.message_id] = query.from_user.id
                     return
                 else:
@@ -2745,7 +2558,6 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
                             parse_mode="HTML", 
                             # reply_markup=get_profile_keyboard("profile")
                         )
-                        # Сохраняем ID нового сообщения
                         message_authors[new_msg.message_id] = update.effective_user.id
                         return
                     except:
@@ -2755,7 +2567,6 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
                             parse_mode="HTML", 
                             # reply_markup=get_profile_keyboard("profile")
                         )
-                        # Сохраняем ID нового сообщения
                         message_authors[new_msg.message_id] = update.effective_user.id
 
             else:
@@ -2764,30 +2575,13 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
             await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=temp_message.message_id)
             return
 
-        except asyncio.TimeoutError:
-            print(f"Таймаут при выполнении команды profile (попытка {attempt}/{MAX_ATTEMPTS})")
-            if attempt == MAX_ATTEMPTS:
-                await context.bot.edit_message_text(
-                    chat_id=update.effective_chat.id,
-                    message_id=temp_message.message_id,
-                    text=f"`Таймаут после {MAX_ATTEMPTS} попыток...`\n\n\n"
-                        "⚙ *Дополнительно*\n\n"
-                        "/name <ник> – сохранить ник\n"
-                        "/reset – удалить ник\n\n"
-                        f"Сохраненный ник: *{saved_name}*",
-                    parse_mode="Markdown"
-                )
         except Exception as e:
             print(f"Ошибка при profile (попытка {attempt}/{MAX_ATTEMPTS}): {e}")
             if attempt == MAX_ATTEMPTS:
                 await context.bot.edit_message_text(
                     chat_id=update.effective_chat.id,
                     message_id=temp_message.message_id,
-                    text=f"`Ошибка после {MAX_ATTEMPTS} попыток...`\n\n\n"
-                        "⚙ *Дополнительно*\n\n"
-                        "/name <ник> – сохранить ник\n"
-                        "/reset – удалить ник\n\n"
-                        f"Сохраненный ник: *{saved_name}*",
+                    text=f"`Ошибка после {MAX_ATTEMPTS} попыток...`",
                     parse_mode="Markdown"
                 )
 async def create_profile_image(user_data: dict, best_pp: str) -> str | None:
@@ -2824,7 +2618,6 @@ async def create_profile_image(user_data: dict, best_pp: str) -> str | None:
 
     draw = ImageDraw.Draw(banner)
 
-    # --- Шрифты ---
     try:
         font_name = ImageFont.truetype(f"{BOT_DIR}/cards/Jua.ttf", 60)
         font_stats = ImageFont.truetype(f"{BOT_DIR}/cards/Jua.ttf", 28)
@@ -2836,10 +2629,8 @@ async def create_profile_image(user_data: dict, best_pp: str) -> str | None:
 
     def draw_text_with_shadow_3(draw, pos, text, font, fill, shadowcolor):
         x, y = pos
-        # Рисуем тень в 4 направления сдвига для "густоты"
         for dx, dy in [(-2,0), (2,0), (0,-2), (0,2)]:
             draw.text((x+dx, y+dy), text, font=font, fill=shadowcolor)
-        # Сам текст поверх
         draw.text((x, y), text, font=font, fill=fill)
 
     def draw_text_with_shadow(draw_obj, position, text, font, fill=(255, 255, 255, 255),
@@ -2863,19 +2654,16 @@ async def create_profile_image(user_data: dict, best_pp: str) -> str | None:
                     avatar_img = avatar_img.resize((200, 200))
                     mask = Image.new("L", avatar_img.size, 0)
                     mask_draw = ImageDraw.Draw(mask)
-                    corner_radius = 20  # радиус скругления углов, уменьшай это число для менее закругленных углов
+                    corner_radius = 20
                     mask_draw.rounded_rectangle((0, 0, 200, 200), radius=corner_radius, fill=255)
                     avatar_img.putalpha(mask)
                     shadow = Image.new("RGBA", avatar_img.size, (0, 0, 0, 180))
                     banner.paste(shadow, (50 + 5, avatar_top + 5), mask)
-                    banner.paste(avatar_img, (50, avatar_top), avatar_img)
-                    # ... остальной код обработки аватара
+                    banner.paste(avatar_img, (50, avatar_top), avatar_img)                  
         except (asyncio.TimeoutError, aiohttp.ClientError) as e:
-            print(f"Failed to load avatar_url: {e}")
-            # можно пропустить вставку аватара или использовать заглушку
+            print(f"Failed to load avatar_url: {e}")           
 
     try:
-        # --- Team Flag (под аватар, оригинальные пропорции) ---
         short_name = ""
         team_flag_url = user_data.get("team", {}).get("flag_url")
         if team_flag_url:
@@ -2885,24 +2673,22 @@ async def create_profile_image(user_data: dict, best_pp: str) -> str | None:
                         flag_bytes = await resp.read()
                         flag_img = Image.open(io.BytesIO(flag_bytes)).convert("RGBA")
                         fw, fh = flag_img.size
-                        scale_factor = 200 / fw  # подгоняем ширину под аватар
+                        scale_factor = 200 / fw
                         new_w = int(fw * scale_factor)
                         new_h = int(fh * scale_factor)
                         flag_img = flag_img.resize((new_w, new_h), Image.LANCZOS)
-                        # Создаем тень для флага
+                        
                         shadow = Image.new("RGBA", flag_img.size, (0, 0, 0, 180))
-                        # Используем альфа-канал флага как маску для тени
+                        
                         flag_alpha = flag_img.split()[3]
 
                         flag_y = avatar_top + 200 + 10
-                        shadow_offset = (5, 5)  # смещение тени
+                        shadow_offset = (5, 5) 
 
-                        # Вставляем тень с небольшим сдвигом
                         banner.paste(shadow, (50 + shadow_offset[0], flag_y + shadow_offset[1]), flag_alpha)
-                        # Вставляем сам флаг поверх тени
+                        
                         banner.paste(flag_img, (50, flag_y), flag_img)
 
-        # --- Short name под флаг ---
         short_name = "team tag:  " + user_data.get("team", {}).get("short_name", "")
         if short_name:
             flag_y_bottom = avatar_top + 200 + 15 + (new_h if team_flag_url else 0)
@@ -2910,52 +2696,44 @@ async def create_profile_image(user_data: dict, best_pp: str) -> str | None:
     except Exception as e: 
         print(e)
         
-    # --- Ник ---
     username = user_data["username"]
     draw_text_with_shadow(draw, (280, 40), username, font_name)
 
-
-    # --- Статистика ---
     stats = user_data["statistics"]
     country_rank = stats.get("rank", {}).get("country", None)
 
-    # --- Функция конвертации hue в rgba ---
     def hue_to_rgba(hue, saturation=1.0, lightness=0.5, alpha=255):
         if hue is None:
-            hue = 349  # значение по умолчанию
+            hue = 349
         h = (hue % 360) / 360.0
         r, g, b = colorsys.hls_to_rgb(h, lightness, saturation)
         return (int(r * 255), int(g * 255), int(b * 255), alpha)
 
-    # --- Функция отрисовки текста с тенью (твой код) ---
     def draw_text_with_shadow_2(draw, pos, text, font, fill, shadowcolor):
         x, y = pos
-        # Рисуем тень в 4 направления сдвига для "густоты"
+        
         for dx, dy in [(-2,0), (2,0), (0,-2), (0,2)]:
             draw.text((x+dx, y+dy), text, font=font, fill=shadowcolor)
-        # Сам текст поверх
+       
         draw.text((x, y), text, font=font, fill=fill)
 
     def draw_text_with_shadow(draw, pos, text, font, fill, shadowcolor):
         x, y = pos
-        # Тень (смещение 1,1 пиксель)
+        
         draw.text((x + 1, y + 1), text, font=font, fill=shadowcolor)
-        # Основной текст
+        
         draw.text((x, y), text, font=font, fill=fill)
 
-    # --- Функция отрисовки строки статистики с двумя цветами ---
     def draw_stat_line(draw, pos, key_text, value_text, font_key, font_value,
                     key_fill, key_shadow, value_fill, value_shadow, gap=8):
         x, y = pos
-        # Рисуем ключ с тенью
+        
         draw_text_with_shadow(draw, (x, y), key_text, font_key, fill=key_fill, shadowcolor=key_shadow)
-        # Получаем ширину ключа через textbbox
+        
         bbox = draw.textbbox((x, y), key_text, font=font_key)
         key_w = bbox[2] - bbox[0]
-        # Рисуем значение с тенью, с отступом gap
+        
         draw_text_with_shadow(draw, (x + key_w + gap, y), value_text, font_value, fill=value_fill, shadowcolor=value_shadow)
-
-
 
     stat_lines = [
         f"PP: {round(stats.get('pp', 0), 2)}",
@@ -2968,20 +2746,17 @@ async def create_profile_image(user_data: dict, best_pp: str) -> str | None:
         f" ",
         f" ",
         f"Max PP: {best_pp}",       
-        f"Replays Watched: {stats.get('replays_watched_by_others', 0):,}", 
-        
+        f"Replays Watched: {stats.get('replays_watched_by_others', 0):,}",         
     ]
 
     profile_hue = user_data.get("profile_hue", 211)
     glow_color = hue_to_rgba(profile_hue, saturation=1, lightness=0.5, alpha=180)
 
-    # Подложка для текста
     overlay_x, overlay_y = 270, 106
     overlay_w, overlay_h = 680, 240
     overlay = Image.new("RGBA", (overlay_w, overlay_h), (0, 0, 0, 190))
     banner.paste(overlay, (overlay_x, overlay_y), overlay)
 
-    # Рисуем статистику в 2 колонки
     col_gap = 340
     left_x, right_x = 280, 280 + col_gap
     y_start = 120
@@ -3007,36 +2782,28 @@ async def create_profile_image(user_data: dict, best_pp: str) -> str | None:
             gap=8
         )
 
-
-    # --- Прогресс-бар уровня ---
     lvl_current = stats.get("level", {}).get("current", 0)
     lvl_progress = stats.get("level", {}).get("progress", 0)
     bar_x, bar_y = 280, final_h - 35
     bar_width, bar_height = 480, 15
     
-    # Параметры тени
-    shadow_offset = (10, 10)  # смещение тени вправо и вниз
-    shadow_color = (0, 0, 0, 200)  # почти черная с прозрачностью
-    shadow_radius = 35  # радиус размытия тени
+    shadow_offset = (10, 10) 
+    shadow_color = (0, 0, 0, 200) 
+    shadow_radius = 35
 
-    # Создаем слой для тени
     shadow_layer = Image.new("RGBA", banner.size, (0, 0, 0, 0))
     shadow_draw = ImageDraw.Draw(shadow_layer)
 
-    # Рисуем тень — тот же прямоугольник, что и прогресс-бар, но смещенный
     shadow_draw.rounded_rectangle(
         [bar_x + shadow_offset[0], bar_y + shadow_offset[1], bar_x + bar_width + shadow_offset[0], bar_y + bar_height + shadow_offset[1]],
         radius=12,
         fill=shadow_color
     )
 
-    # Размываем тень
     shadow_layer = shadow_layer.filter(ImageFilter.GaussianBlur(radius=shadow_radius))
 
-    # Вставляем тень под баннер
     banner = Image.alpha_composite(banner, shadow_layer)
 
-    # Теперь рисуем сам прогресс-бар поверх тени (как было у тебя)
     draw = ImageDraw.Draw(banner)
     draw.rounded_rectangle([bar_x, bar_y, bar_x + bar_width, bar_y + bar_height],
                         radius=12, fill=(60, 60, 60, 200))
@@ -3049,37 +2816,24 @@ async def create_profile_image(user_data: dict, best_pp: str) -> str | None:
     text_w = bbox[2] - bbox[0]
     text_h = bbox[3] - bbox[1]
 
-    # x — справа от прогресс-бара с небольшим отступом
-    text_x = bar_x + bar_width + 10  # 10 пикселей отступ справа от бара
-    # y — вертикально выровнять по центру бара
+    text_x = bar_x + bar_width + 10
     text_y = bar_y + (bar_height - text_h) // 2
 
     draw_text_with_shadow_2(draw, (text_x, text_y), text, font_small, fill=(255, 255, 255, 230), shadowcolor=(0,0,0,150))
 
-
-
-    
-
-    def draw_neon_glow(base_img, points, glow_color, glow_width=15, blur_radius=10):
-        # Создаем прозрачный слой по размеру base_img
+    def draw_neon_glow(base_img, points, glow_color, glow_width=15, blur_radius=10):       
         glow_layer = Image.new("RGBA", base_img.size, (0, 0, 0, 0))
         glow_draw = ImageDraw.Draw(glow_layer)
 
-        # Рисуем толстую линию яркого цвета (glow_color)
         glow_draw.line(points, fill=glow_color, width=glow_width, joint="curve")
 
-        # Размываем слой, чтобы получить свечения
         glow_layer = glow_layer.filter(ImageFilter.GaussianBlur(blur_radius))
 
-        # Накладываем слой свечения поверх base_img
         base_img.alpha_composite(glow_layer)
 
-    def draw_gradient_line(draw, points, start_color, end_color, width=3):
-        # Рисует линию с градиентом цвета от start_color к end_color
-        # По точкам последовательно соединяем сегменты
+    def draw_gradient_line(draw, points, start_color, end_color, width=3):       
         n = len(points)
-        for i in range(n - 1):
-            # Интерполяция цвета
+        for i in range(n - 1):           
             t = i / (n - 2) if n > 2 else 0
             r = int(start_color[0] + (end_color[0] - start_color[0]) * t)
             g = int(start_color[1] + (end_color[1] - start_color[1]) * t)
@@ -3089,23 +2843,15 @@ async def create_profile_image(user_data: dict, best_pp: str) -> str | None:
             color = (r, g, b, a)
             draw.line([points[i], points[i+1]], fill=color, width=width, joint="curve")
 
-    # --- Основной код с добавлением места под график ---
-
     extra_height = 200
     new_banner = Image.new("RGBA", (banner.width, banner.height + extra_height), (30, 30, 30, 255))
     new_banner.paste(banner, (0, 0))
     banner = new_banner
     draw = ImageDraw.Draw(banner)
 
-    # Загрузка картинки для фона графика
     background_img = Image.open(GRAPH_PNG).convert("RGBA")
 
-    # Масштабируем фон по ширине графика и высоте области
-    # background_img = background_img.resize((graph_width, graph_height))
-
-    # Вставляем картинку на баннер в область графика
-    banner.paste(background_img, (0, 400), background_img)  # третий аргумент — маска альфа
-
+    banner.paste(background_img, (0, 400), background_img)
 
     rank_history = user_data.get("rank_history", {}).get("data")
     if rank_history:
@@ -3118,7 +2864,6 @@ async def create_profile_image(user_data: dict, best_pp: str) -> str | None:
         max_rank = max(rank_history)
         rank_range = max_rank - min_rank if max_rank != min_rank else 1
 
-        # Нормализация значений в диапазон [0, graph_height], инвертируем Y для графика (чтобы ниже = хуже)
         points = []
         for i, rank in enumerate(rank_history):
             x = graph_x + (i / (len(rank_history) - 1)) * graph_width
@@ -3126,30 +2871,19 @@ async def create_profile_image(user_data: dict, best_pp: str) -> str | None:
 
             points.append((x, y))
 
-        # Серый фон графика
-        # draw.rectangle([graph_x, graph_y, graph_x + graph_width, graph_y + graph_height], fill=(50, 50, 50, 255))
-
-       
-
-        # Рисуем неоновое свечение
         draw_neon_glow(banner, points, glow_color, glow_width=15, blur_radius=15)
 
-        # Рисуем основную градиентную линию поверх свечения
         start_color = (255, 255, 255, 255)
         end_color = glow_color
         draw_gradient_line(draw, points, start_color, end_color, width=3)
 
-        # Рамка графика
         draw.rectangle([graph_x, graph_y, graph_x + graph_width, graph_y + graph_height], outline=(150, 150, 150, 255), width=1)
 
-    # Нормализация значений с инверсией Y
     points = []
     for i, rank in enumerate(rank_history):
         x = graph_x + (i / (len(rank_history) - 1)) * graph_width
         y = graph_y + graph_height - ((rank - min_rank) / rank_range) * graph_height
         points.append((x, y))
-
-    # ...
 
     rank_text = f"#{stats.get('global_rank'):,}" if stats.get("global_rank") else "Global Rank: N/A"
     bbox = draw.textbbox((0, 0), rank_text, font=font_name)
@@ -3160,13 +2894,11 @@ async def create_profile_image(user_data: dict, best_pp: str) -> str | None:
     mid_y = graph_y + graph_height / 2
     padding = 5
 
-    text_x = graph_x + graph_width - text_w  # Правый край текста по правому краю графика
+    text_x = graph_x + graph_width - text_w
 
-    if last_point_y > mid_y:
-        # Линия снизу -> текст внутри графика, выше линии (меньше Y)
+    if last_point_y > mid_y:      
         text_y = max(last_point_y - text_h - padding, graph_y)
-    else:
-        # Линия сверху -> текст внутри графика, ниже линии (больше Y)
+    else:        
         text_y = min(last_point_y + padding, graph_y + graph_height - text_h)
 
     draw_text_with_shadow(
@@ -3203,32 +2935,25 @@ async def card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request)
         )
     if not can_run:
         return
-    MAX_ATTEMPTS = 3  # Количество попыток
+    MAX_ATTEMPTS = 3 
 
-    # --- Логика сохранённого ника ---
     user_id = str(update.effective_user.id)
     saved_name = await auth.check_osu_verified(str(update.effective_user.id))
 
     if update.message:
         temp_message = await update.message.reply_text(
-            "`Загрузка карточки...`\n\n⚙ *Дополнительно*\n\n"
-            "/name <ник> – сохранить ник\n/reset – удалить ник\n\n"
-            f"Сохраненный ник: *{saved_name}*",
+            "`Загрузка...`",
             parse_mode="Markdown"
         )
     elif query:
         if query.message.text or query.message.caption:
             temp_message = await query.message.edit_text(
-                "`Загрузка карточки...`\n\n⚙ *Дополнительно*\n\n"
-                "/name <ник> – сохранить ник\n/reset – удалить ник\n\n"
-                f"Сохраненный ник: *{saved_name}*",
+                "`Загрузка...`",
                 parse_mode="Markdown"
             )
         else:
             temp_message = await query.message.reply_text(
-                "`Загрузка карточки...`\n\n⚙ *Дополнительно*\n\n"
-                "/name <ник> – сохранить ник\n/reset – удалить ник\n\n"
-                f"Сохраненный ник: *{saved_name}*",
+                "`Загрузка...`",
                 parse_mode="Markdown"
             )
 
@@ -3239,9 +2964,7 @@ async def card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request)
             text = (
                 "Использование: `/c Fujiya` <- никнейм\n\n\n"
                 "⚙ *Дополнительно*\n\n"
-                "/name <ник> – сохранить ник\n"
-                "/reset – удалить ник\n\n"
-                f"Сохраненный ник: *нет*"
+                "/name – сохранить ник\n"
             )
             await safe_send_message(update, text, parse_mode="Markdown")
             return
@@ -3424,7 +3147,7 @@ async def card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request)
                     if f.startswith(f"{user_id}_") and f.endswith(".png"):
                         path = os.path.join(AVATARS_DIR, f)
                         mtime = datetime.fromtimestamp(os.path.getmtime(path))
-                        if now - mtime < timedelta(hours=1):  # файл свежий, используем
+                        if now - mtime < timedelta(hours=1):
                             avatar_file = path
                             break
                 
@@ -3441,17 +3164,14 @@ async def card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request)
                             async with aiohttp.ClientSession(timeout=timeout) as session:
                                 async with session.get(avatar_url) as resp:
                                     if resp.status == 200:
-                                        def add_rounded_corners(img: Image.Image, radius: int) -> Image.Image:
-                                            # создаем маску в два раза больше для сглаживания
+                                        def add_rounded_corners(img: Image.Image, radius: int) -> Image.Image:                                            
                                             big_size = (img.size[0]*2, img.size[1]*2)
                                             mask = Image.new("L", big_size, 0)
                                             draw_mask = ImageDraw.Draw(mask)
                                             draw_mask.rounded_rectangle((0, 0, big_size[0], big_size[1]), radius*2, fill=255)
                                             
-                                            # сжимаем маску обратно для сглаживания
                                             mask = mask.resize(img.size, Image.LANCZOS)
                                             
-                                            # применяем альфу
                                             img.putalpha(mask)
                                             return img
                                         extra_img_data = await resp.read()
@@ -3512,15 +3232,6 @@ async def card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request)
                 os.remove(img_path)
                 return
 
-        except asyncio.TimeoutError:
-            print(f"Таймаут при выполнении команды card (попытка {attempt}/{MAX_ATTEMPTS})")
-            if attempt == MAX_ATTEMPTS:
-                await context.bot.edit_message_text(
-                    chat_id=update.effective_chat.id,
-                    message_id=temp_message.message_id,
-                    text=f"`ошибка после {MAX_ATTEMPTS} попыток...`",
-                    parse_mode="Markdown"
-                )
         except Exception as e:
             print(f"Ошибка при card (попытка {attempt}/{MAX_ATTEMPTS}): {e}")
             if attempt == MAX_ATTEMPTS:
@@ -3531,16 +3242,10 @@ async def card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request)
                     parse_mode="Markdown"
                 )
 def is_legacy_score(score: dict) -> bool:
-    """
-    Проверяет, является ли скор legacy (scorev1) по данным из osu!api v2.
-    score — это словарь, полученный из ответа API для одного скор.
-    """
-    # score_id отсутствует или равен 0
     score_id = score.get("score_id")
     legacy_score_id = score.get("legacy_score_id")
     score_val = score.get("score")
 
-    # Если нет score_id, но есть legacy_score_id или просто score — это legacy
     if not score_id or score_id == 0:
         if legacy_score_id or score_val:
             return True
@@ -3647,11 +3352,9 @@ def get_suffix(aim: float, speed: float, acc: float, tol: float = 3.0) -> str:
 
 
 def get_title(aim: float, speed: float, acc: float, scores) -> str:
-    # Префикс зависит от максимального скилла
     max_skill = max(aim, speed, acc)
     prefix = get_prefix(max_skill)
 
-    # Дескрипшен пока заглушка    
     description = get_description(scores, mode="osu")
 
     suffix = get_suffix(aim, speed, acc, 10) # для 100 скоров = 3
@@ -3660,10 +3363,6 @@ def get_title(aim: float, speed: float, acc: float, scores) -> str:
 
 
 def get_description(scores: dict, mode) -> str:
-    """
-    scores["mods"] = список списков модов для топовых скор.
-    пример: [["HD","HR"], ["NM"], ["DT"], ...]
-    """
     mods_counter = Counter()
     total = len(scores) or 1
 
@@ -3753,7 +3452,6 @@ def make_card(title, bg, username, country_code, avatar_path, accuracy, aim, spe
     # # Верхний заголовок
     # draw.text((52, 35),title,font=font_bold_italic_med, fill=(200, 200, 200))
 
-    # # Никнейм + флаг
     flag_path = f"{BOT_DIR}/cards/assets/flags/{country_code}.png"    
     flag_img = Image.open(flag_path).convert("RGBA")
 
@@ -3762,7 +3460,6 @@ def make_card(title, bg, username, country_code, avatar_path, accuracy, aim, spe
     block_right = 980 - 250
     max_width = block_right - block_left
 
-    # --- Подбор заголовка ---
     words = title.split()
     lines = []
     current_line = ""
@@ -3779,31 +3476,24 @@ def make_card(title, bg, username, country_code, avatar_path, accuracy, aim, spe
     if current_line:
         lines.append(current_line)
 
-    # Ограничение максимум 2 строки
     lines = lines[:2]
     title_multiline = "\n".join(lines)
 
-    # --- Координаты ---
     if len(lines) == 1:
-        # Одна строка: заголовок чуть ниже, ник + флаг выше
         title_y = 55
         username_y = 110
         flag_y = 126
     else:
-        # Две строки: заголовок сверху, ник + флаг чуть ниже
         title_y = 25
         username_y = 145
         flag_y = 162
 
-    # --- Рисуем заголовок ---
     draw.text((block_left, title_y), title_multiline, font=font_bold_italic_med, fill=(200, 200, 200), spacing=14)
 
-    # --- Рисуем никнейм ---
     draw.text((block_left, username_y), username, font=font_black_big, fill="white")
     bbox = draw.textbbox((block_left, username_y), username, font=font_black_big)
     text_width = bbox[2] - bbox[0]
 
-    # --- Рисуем флаг ---
     flag_ratio = flag_img.width / flag_img.height
     flag_height = 50 
     flag_width = int(flag_height * flag_ratio)
@@ -3816,13 +3506,10 @@ def make_card(title, bg, username, country_code, avatar_path, accuracy, aim, spe
 
     card.paste(flag_img, (block_left + text_width + 15, flag_y), mask)
 
-
-
     size = 444
     avatar = Image.open(avatar_path).convert("RGBA").resize((size, size))
     card.paste(avatar, (52, 302), avatar)
 
-    # Блок Accuracy/Aim/Speed
     x0, y0 = 535, 337
 
     block_spacing = 60
@@ -4508,29 +4195,15 @@ async def compare_profile(update: Update, context: ContextTypes.DEFAULT_TYPE, us
             )
             return
         
-        except asyncio.TimeoutError:
-            print(f"Таймаут при выполнении команды pc (попытка {attempt}/{MAX_ATTEMPTS})")
-            if attempt == MAX_ATTEMPTS:
-                await context.bot.edit_message_text(
-                    chat_id=update.effective_chat.id,
-                    message_id=temp_message.message_id,
-                    text=f"`Таймаут после {MAX_ATTEMPTS} попыток...`\n\n\n"
-                        "⚙ *Дополнительно*\n\n"
-                        "???\n",
-                    parse_mode="Markdown"
-                )
         except Exception as e:
             print(f"Ошибка при pc (попытка {attempt}/{MAX_ATTEMPTS}): {e}")
             if attempt == MAX_ATTEMPTS:
                 await context.bot.edit_message_text(
                     chat_id=update.effective_chat.id,
                     message_id=temp_message.message_id,
-                    text=f"`Ошибка после {MAX_ATTEMPTS} попыток...`\n\n\n"
-                        "⚙ *Дополнительно*\n\n"
-                        "???\n",
+                    text=f"`Ошибка после {MAX_ATTEMPTS} попыток...`",
                     parse_mode="Markdown"
                 )
-
 #fix cmd TODO add index arg 
 async def start_recent_fix(update, context, user_request=True):
     await log_all_update(update)
@@ -4552,26 +4225,19 @@ async def recent_fix(update: Update, context: ContextTypes.DEFAULT_TYPE, user_re
         saved_name = await auth.check_osu_verified(str(uid))
 
         if context.args:
-            username = " ".join(context.args)  # <-- собираем ник целиком, даже если есть пробелы
+            username = " ".join(context.args)
         elif saved_name:
             username = saved_name
         else:
             text = (
                 "Использование: `/fix Fujiya` <- никнейм\n\n\n"
                 "⚙ *Дополнительно*\n\n"
-                "/name <ник> – сохранить ник\n"
-                "/reset – удалить ник\n\n"
-                f"Сохраненный ник: *нет*"
+                "/name – сохранить ник\n"
             )
             await safe_send_message(update, text, parse_mode="Markdown")
             return
      
-        text = (
-                    "`загрузка...`\n\n\n"
-                    "⚙ *Дополнительно*\n\n"
-                    "/name <ник> – сохранить ник\n"
-                    "/reset – удалить ник\n\n"
-                )
+        text = "`загрузка...`"
         
         loading_msg = await try_send(update.message.reply_text, text, parse_mode="Markdown")
 
@@ -5045,8 +4711,6 @@ async def beatmaps_button_handler(update: Update, context: ContextTypes.DEFAULT_
                     )
                 except Exception as e:
                     print(f"Ошибка редактирования сообщения: {e}")
-
-
         except Exception as e:
             print(f"Ошибка обработки beatmaps_stats: {e}")
             await safe_query_answer(query, f"❌ Произошла неизвестная ошибка. \n\n{e}")
@@ -5941,7 +5605,6 @@ async def check_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         await message.delete()
                     except Exception as e:
                         print(f"Ошибка при удалении уведомления: {e}")
-
                 asyncio.create_task(delete_notice(msg))
 
                 user_str = f"{update.effective_message.from_user.full_name} (id: {update.effective_message.from_user.id})" if update.effective_message.from_user else "Неизвестный пользователь"
@@ -6390,7 +6053,6 @@ async def nochoke(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
                     chat_id=update.effective_chat.id,
                     message_id=temp_message.message_id,
                     text=f"`Нет игрока или статистики...`\n\n"
-                        f"Сохраненный ник: *{saved_name}*\n\n"
                         "✨*/help*"
                         " | `/help nochoke`\n\n",
                     parse_mode="Markdown"
@@ -6553,31 +6215,17 @@ async def nochoke(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
             await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=temp_message.message_id)
             return
 
-        except asyncio.TimeoutError:
-            print(f"Таймаут при выполнении команды nochoke (попытка {attempt}/{MAX_ATTEMPTS})")
-            if attempt == MAX_ATTEMPTS:
-                await context.bot.edit_message_text(
-                    chat_id=update.effective_chat.id,
-                    message_id=temp_message.message_id,
-                    text=f"`Непонятно... Попробуй еще раз через несколько секунд!`\n\n\n"
-                        f"Сохраненный ник: *{saved_name}*\n\n"
-                        "✨*/help*"
-                        " | `/help nochoke`\n\n",
-                    parse_mode="Markdown"
-                )
         except Exception as e:
             print(f"Ошибка при nochoke (попытка {attempt}/{MAX_ATTEMPTS}): {e}")
             if attempt == MAX_ATTEMPTS:
                 await context.bot.edit_message_text(
                     chat_id=update.effective_chat.id,
                     message_id=temp_message.message_id,
-                    text=f"`Непонятно... Попробуй еще раз через несколько секунд!`\n\n\n"
-                        f"Сохраненный ник: *{saved_name}*\n\n"
+                    text=f"`Непонятно... Попробуй еще раз через несколько секунд!`\n\n"
                         "✨*/help*"
                         " | `/help nochoke`\n\n",
                     parse_mode="Markdown"
                 )
-
 def get_page_text_choke(user_data, best_scores, page=0, page_size=5):
     start = page * page_size
     end = start + page_size
@@ -6701,9 +6349,7 @@ async def average_stats(update: Update, context: ContextTypes.DEFAULT_TYPE, user
             text = (
                 "Использование: `/average_stats fujina123` <- никнейм\n\n\n"
                 "⚙ *Дополнительно*\n\n"
-                "/name <ник> – сохранить ник\n"
-                "/reset – удалить ник\n\n"
-                f"Сохраненный ник: *нет*"
+                "/name – сохранить ник\n"
             )
             await safe_send_message(update, text, parse_mode="Markdown")
             return
@@ -6714,11 +6360,8 @@ async def average_stats(update: Update, context: ContextTypes.DEFAULT_TYPE, user
         saved_name = 'нет'
 
     temp_message = await update.message.reply_text(
-        "`Загрузка...`\n\n\n"
-        "⚙ *Дополнительно*\n\n"
-        "/name <ник> – сохранить ник\n"
-        "/reset – удалить ник\n\n"
-        f"Сохраненный ник: *{saved_name}*", parse_mode="Markdown"
+        "`Загрузка...`", 
+        parse_mode="Markdown"
     )
 
     for attempt in range(1, MAX_ATTEMPTS + 1):
@@ -6729,11 +6372,7 @@ async def average_stats(update: Update, context: ContextTypes.DEFAULT_TYPE, user
                 await context.bot.edit_message_text(
                     chat_id=update.effective_chat.id,
                     message_id=temp_message.message_id,
-                    text="`Игрок не найден`\n\n\n"
-                        "⚙ *Дополнительно*\n\n"
-                        "/name <ник> – сохранить ник\n"
-                        "/reset – удалить ник\n\n"
-                        f"Сохраненный ник: *{saved_name}*",
+                    text="`Игрок не найден`",
                     parse_mode="Markdown"
                 )
                 return
@@ -6960,30 +6599,13 @@ async def average_stats(update: Update, context: ContextTypes.DEFAULT_TYPE, user
             await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=temp_message.message_id)
             return
 
-        except asyncio.TimeoutError:
-            print(f"Таймаут при выполнении команды average_stats (попытка {attempt}/{MAX_ATTEMPTS})")
-            if attempt == MAX_ATTEMPTS:
-                await context.bot.edit_message_text(
-                    chat_id=update.effective_chat.id,
-                    message_id=temp_message.message_id,
-                    text=f"`Таймаут после {MAX_ATTEMPTS} попыток...`\n\n\n"
-                        "⚙ *Дополнительно*\n\n"
-                        "/name <ник> – сохранить ник\n"
-                        "/reset – удалить ник\n\n"
-                        f"Сохраненный ник: *{saved_name}*",
-                    parse_mode="Markdown"
-                )
         except Exception as e:
             print(f"Ошибка при average_stats (попытка {attempt}/{MAX_ATTEMPTS}): {e}")
             if attempt == MAX_ATTEMPTS:
                 await context.bot.edit_message_text(
                     chat_id=update.effective_chat.id,
                     message_id=temp_message.message_id,
-                    text=f"`Ошибка после {MAX_ATTEMPTS} попыток...`\n\n\n"
-                        "⚙ *Дополнительно*\n\n"
-                        "/name <ник> – сохранить ник\n"
-                        "/reset – удалить ник\n\n"
-                        f"Сохраненный ник: *{saved_name}*",
+                    text=f"`Ошибка после {MAX_ATTEMPTS} попыток...`",
                     parse_mode="Markdown"
                 )
 async def post_with_timeout(session: aiohttp.ClientSession, url: str, headers: dict, json_body: dict, timeout: int = 10):
@@ -7196,9 +6818,7 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
             try:
                 if update.message:
                     temp_message = await update.message.reply_text(
-                        "`Загрузка карточки...`\n\n⚙ *Дополнительно*\n\n"
-                        "/name <ник> – сохранить ник\n/reset – удалить ник\n\n"
-                        f"",
+                        "`Загрузка...`",
                         parse_mode="Markdown"
                     )
                 break
@@ -8032,29 +7652,24 @@ async def farm(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request)
         )
     if not can_run:
         return
-    MAX_ATTEMPTS = 3  # Количество попыток
+    MAX_ATTEMPTS = 3
 
     saved_name = await auth.check_osu_verified(str(update.effective_user.id))
 
     if update.message:
         temp_message = await update.message.reply_text(
-            "`Загрузка...`\n\n⚙ *Дополнительно*\n\n"
-            "/name <ник> – сохранить ник\n/reset – удалить ник\n\n"
-            f"Сохраненный ник: *{saved_name}*",
+            "`Загрузка...`",
             parse_mode="Markdown"
         )
 
     if not context.args:
         if saved_name:
             username = saved_name
-        else:            
-            text = (
-                "`Для использования этой команды должно быть сохранено имя /name`"                
-            )
+        else:       
             await context.bot.edit_message_text(
                     chat_id=update.effective_chat.id,
                     message_id=temp_message.message_id,
-                    text=text,
+                    text="`Для использования этой команды должно быть сохранено имя /name`" ,
                     parse_mode="Markdown"
                 )
             return
@@ -8087,9 +7702,8 @@ async def farm(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request)
                 )
                 return
 
-            # Сохраняем, кто инициировал команду
             context.user_data["farm_user_id"] = update.effective_user.id
-            context.user_data["farm_choices"] = {}  # Здесь будем хранить выбор пользователя
+            context.user_data["farm_choices"] = {}
             context.user_data["farm_step"] = 0
             context.user_data["farm_topic_id"] = getattr(update.effective_message, "message_thread_id", None)
 
@@ -8103,15 +7717,6 @@ async def farm(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request)
             )
 
             return
-        except asyncio.TimeoutError:
-            print(f"Таймаут при выполнении команды farm (попытка {attempt}/{MAX_ATTEMPTS})")
-            if attempt == MAX_ATTEMPTS:
-                await context.bot.edit_message_text(
-                    chat_id=update.effective_chat.id,
-                    message_id=temp_message.message_id,
-                    text=f"`ошибка после {MAX_ATTEMPTS} попыток...`",
-                    parse_mode="Markdown"
-                )
         except Exception as e:
             print(f"Ошибка при farm (попытка {attempt}/{MAX_ATTEMPTS}): {e}")
             if attempt == MAX_ATTEMPTS:
@@ -8121,8 +7726,6 @@ async def farm(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request)
                     text=f"`ошибка после {MAX_ATTEMPTS} попыток...`",
                     parse_mode="Markdown"
                 )
-
-
 def create_pagination_keyboard(page, total_pages, user_id):
     buttons = []
     if page > 0:
@@ -8208,8 +7811,6 @@ async def farm_pagination_callback(update: Update, context: ContextTypes.DEFAULT
 
     keyboard = create_pagination_keyboard(page, len(pages), user_id)  # <-- тоже page
 
-
-
     await query.edit_message_text(
         text=text,
         reply_markup=keyboard,
@@ -8284,13 +7885,11 @@ async def farm_step_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
     query = update.callback_query
     await query.answer()
 
-    # Проверка, что это тот, кто инициировал команду
     if query.from_user.id != context.user_data.get("farm_user_id"):
         await query.answer("❌ Это не ваша команда", show_alert=True)
         return
 
-    # Сохраняем выбор
-    data = query.data.split(":")  # Например, "farm_skill:medium"
+    data = query.data.split(":")  # farm_skill:medium
     param_type, value = data
 
     if param_type == "farm_skill":
@@ -8298,20 +7897,17 @@ async def farm_step_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
     elif param_type == "farm_mod":
         context.user_data["farm_choices"]["mod"] = value
     elif param_type == "farm_lazer":
-        context.user_data["farm_choices"]["lazer"] = value == "True"  # конвертируем в bool
+        context.user_data["farm_choices"]["lazer"] = value == "True"
     elif param_type == "farm_tol":
         context.user_data["farm_choices"]["tol"] = value
 
-    # Переходим к следующему шагу
     context.user_data["farm_step"] += 1
     step = context.user_data["farm_step"]
 
-    # Если все шаги пройдены, формируем результаты
     if step > 3:
         await query.edit_message_text(f"⏳ @{query.from_user.username}...")
         await generate_farm_results(update, context)
     else:
-        # Показываем следующую клавиатуру
         if step == 0: text="Клиент?"
         elif step == 1:text="Интенсивность фарма? (80-90% около топскора)"
         elif step == 2:text="Разброс, меньше - точнее уровень прошлого меню, а больше - больше карт за счет увеличения диапазона поиска"
@@ -8321,7 +7917,6 @@ async def farm_step_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
             reply_markup=get_farm_step_keyboard(step)
         )
 async def generate_farm_results(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Генерирует результаты поиска beatmap после выбора всех параметров пользователем"""
     user_id = context.user_data.get("farm_user_id")
     choices = context.user_data.get("farm_choices", {})
     topic_id = context.user_data.get("farm_topic_id", None)
@@ -8357,7 +7952,6 @@ async def generate_farm_results(update: Update, context: ContextTypes.DEFAULT_TY
         raise ValueError(f"Пользователь {saved_name} не найден в JSON")
 
 
-    # --- Формируем фильтры для search_beatmaps ---
     skill_level = choices.get("skill", "low")
     mod = choices.get("mod", "NM")
     lazer = choices.get("lazer", "True")
@@ -8385,8 +7979,8 @@ async def generate_farm_results(update: Update, context: ContextTypes.DEFAULT_TY
         base_start, base_end = 1.25, 1.35
 
     static_mult = 1.0
-    start_mult = base_start / (tol*static_mult)  # нижний предел уменьшаем
-    end_mult = base_end * (tol*static_mult)      # верхний предел увеличиваем
+    start_mult = base_start / (tol*static_mult)
+    end_mult = base_end * (tol*static_mult)
 
     #if skill_level == "floor":
     #    base_start, base_end = 0.4, 0.6
@@ -8397,8 +7991,8 @@ async def generate_farm_results(update: Update, context: ContextTypes.DEFAULT_TY
     #else:  # high
     #    base_start, base_end = 1.0, 1.3
 
-    #start_mult = base_start / tol  # нижний предел уменьшаем
-    #end_mult = base_end * tol      # верхний предел увеличиваем
+    #start_mult = base_start / tol 
+    #end_mult = base_end * tol      
 
     filters = {
         "aim": (aim * start_mult, aim * end_mult),
@@ -8409,7 +8003,6 @@ async def generate_farm_results(update: Update, context: ContextTypes.DEFAULT_TY
     mods = [mod]
     limit = 800
     offset = 0   
-    # --- Поиск карт ---
 
     try:
         results = search_beatmaps(
@@ -8420,8 +8013,6 @@ async def generate_farm_results(update: Update, context: ContextTypes.DEFAULT_TY
             offset=offset,
             lazer=lazer
         )
-
-   
 
     except Exception as e:
         await context.bot.send_message(
@@ -8439,7 +8030,6 @@ async def generate_farm_results(update: Update, context: ContextTypes.DEFAULT_TY
         )
         return
 
-    # --- Разбиваем на страницы ---
     PAGE_SIZE = 8
     pages = [results[i:i+PAGE_SIZE] for i in range(0, len(results), PAGE_SIZE)]
     context.user_data["farm_pages"] = pages
