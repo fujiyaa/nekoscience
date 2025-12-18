@@ -9,45 +9,182 @@ pub struct DbManager {
 }
 
 impl DbManager {
+    async fn exec(pool: &SqlitePool, sql: &str) -> anyhow::Result<()> {
+    sqlx::query(sql).execute(pool).await?;
+    Ok(())
+    }
+
     pub async fn new(database_url: &str) -> anyhow::Result<Self> {
         let pool = SqlitePool::connect(database_url).await?;
 
-        sqlx::query(
-            r#"
-            CREATE TABLE IF NOT EXISTS threads (
-                id INTEGER PRIMARY KEY,
-                title TEXT NOT NULL,
-                author TEXT NOT NULL,
-                created_at INTEGER NOT NULL
-            )
-            "#
-        ).execute(&pool).await?;
 
-        sqlx::query(
-            r#"
-            CREATE TABLE IF NOT EXISTS posts (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        // users                    пользователи
+
+        // threads                  треды и категория
+
+        // posts                    посты и контент
+
+        // thread_rating            рейтинг тредов
+
+        // thread_aggregates        агр. кол-во постов и голосов
+
+        // user_category_stats      агр. пользователей по категориям
+
+
+
+        Self::exec(&pool, "PRAGMA foreign_keys = ON;").await?;
+
+        Self::exec(&pool, r#"
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY,                     -- автор (id)
+                username TEXT NOT NULL,                     -- имя пользователя
+
+                created_at INTEGER NOT NULL                 -- время добавления в базу
+            );
+        "#).await?;
+
+        Self::exec(&pool, r#"
+            CREATE TABLE IF NOT EXISTS threads (
+                id INTEGER PRIMARY KEY,                     -- id треда как на сайте                
+                title TEXT NOT NULL,                        -- название треда
+                author_id INTEGER NOT NULL,                 -- автор (id)
+
+                state TEXT NOT NULL DEFAULT 'open',         -- open, locked, deleted
+                is_archived INTEGER NOT NULL DEFAULT '0',   -- 0 или 1
+
+                view_count_fallback INTEGER NOT NULL DEFAULT '0',    -- for future use TM
+                post_count_fallback INTEGER NOT NULL DEFAULT '0',
+
+                created_at INTEGER NOT NULL,                -- создан
+                updated_at INTEGER NOT NULL DEFAULT '0',    -- последнее действие
+
+                category TEXT NOT NULL DEFAULT 'all',       -- категория
+
+                FOREIGN KEY(author_id) REFERENCES users(id)
+            );
+        "#).await?;
+
+        Self::exec(&pool, r#"
+            CREATE INDEX IF NOT EXISTS idx_threads_created
+            ON threads(created_at);
+        "#).await?;
+
+        Self::exec(&pool, r#"
+            CREATE TABLE IF NOT EXISTS posts (                
+                thread_id INTEGER NOT NULL,                 -- id треда как на сайте
+                author_id INTEGER NOT NULL,                 -- автор (id)
+                post_number INTEGER NOT NULL,               -- последовательность постов                
+
+                state TEXT NOT NULL,                        -- ok, edited, deleted
+                body_raw TEXT NOT NULL,                     -- html
+                body_bbc TEXT NOT NULL,                     -- raw
+            
+                created_at INTEGER NOT NULL,                -- создан
+                updated_at INTEGER NOT NULL DEFAULT '0',    -- последнее действие
+
+                update_action TEXT NOT NULL DEFAULT '',     -- действие обновления                
+
+                PRIMARY KEY(thread_id, post_number),
+                FOREIGN KEY(thread_id) REFERENCES threads(id) ON DELETE CASCADE,
+                FOREIGN KEY(author_id) REFERENCES users(id) ON DELETE CASCADE
+            );
+        "#).await?;
+
+        Self::exec(&pool, r#"
+            CREATE INDEX IF NOT EXISTS idx_posts_thread
+            ON posts(thread_id);
+        "#).await?;
+
+        Self::exec(&pool, r#"
+            CREATE INDEX IF NOT EXISTS idx_posts_created
+            ON posts(created_at);
+        "#).await?;
+
+        Self::exec(&pool, r#"
+            CREATE TABLE IF NOT EXISTS thread_rating (
                 thread_id INTEGER NOT NULL,
-                author TEXT NOT NULL,
-                body TEXT NOT NULL,
+                user_id   INTEGER NOT NULL,
+                value     INTEGER NOT NULL CHECK (value IN (-1, 1)),
                 created_at INTEGER NOT NULL,
-                FOREIGN KEY(thread_id) REFERENCES threads(id) ON DELETE CASCADE
-            )
-            "#
-        ).execute(&pool).await?;
+
+                PRIMARY KEY (thread_id, user_id),
+                FOREIGN KEY (thread_id) REFERENCES threads(id) ON DELETE CASCADE,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            );
+        "#).await?;
+
+        Self::exec(&pool, r#"
+            CREATE INDEX IF NOT EXISTS idx_votes_thread
+            ON thread_rating(thread_id);
+        "#).await?;
+       
+        Self::exec(&pool, r#"
+        CREATE TABLE IF NOT EXISTS thread_aggregates (
+            thread_id INTEGER NOT NULL,
+            period_start INTEGER NOT NULL,              -- начало периода
+            period_end INTEGER NOT NULL,                -- конец периода
+            
+            post_count INTEGER NOT NULL DEFAULT 0,
+            score INTEGER NOT NULL DEFAULT 0,           -- сумма голосов (+1/-1)
+
+            PRIMARY KEY(thread_id, period_start, period_end),
+            FOREIGN KEY(thread_id) REFERENCES threads(id) ON DELETE CASCADE
+        );
+        "#).await?;
+
+        Self::exec(&pool, r#"
+            CREATE INDEX IF NOT EXISTS idx_thread_aggregates_thread_period
+            ON thread_aggregates(thread_id, period_start, period_end);
+        "#).await?;
+
+        Self::exec(&pool, r#"
+            CREATE INDEX IF NOT EXISTS idx_thread_aggregates_period
+            ON thread_aggregates(period_start, period_end);
+        "#).await?;        
+
+        Self::exec(&pool, r#"
+        CREATE TABLE IF NOT EXISTS user_category_stats (
+            user_id INTEGER NOT NULL,                   -- автор (id)
+            category TEXT NOT NULL,                     -- категория треда
+            period_start INTEGER NOT NULL,
+            period_end INTEGER NOT NULL,
+
+            post_count INTEGER NOT NULL DEFAULT 0,      -- количество постов в категории
+
+            PRIMARY KEY(user_id, category, period_start, period_end),
+            FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+        "#).await?;
+
+        Self::exec(&pool, r#"
+            CREATE INDEX IF NOT EXISTS idx_user_category_user_period
+            ON user_category_stats(user_id, period_start, period_end);
+        "#).await?;
+
+        Self::exec(&pool, r#"
+            CREATE INDEX IF NOT EXISTS idx_user_category_period
+            ON user_category_stats(period_start, period_end);
+        "#).await?;
+        
+        Self::exec(&pool, r#"
+            CREATE INDEX IF NOT EXISTS idx_user_category_category_period
+            ON user_category_stats(category, period_start, period_end);
+        "#).await?;
 
         Ok(Self { pool: Arc::new(pool) })
     }
 
-    pub async fn add_thread(&self, id: i64,  title: &str, author: &str) -> anyhow::Result<i64> {
+
+    pub async fn add_thread(&self, id: i64,  title: &str, author_id: &str) -> anyhow::Result<i64> {
         let created_at = Utc::now().timestamp();
 
         let row = sqlx::query(
-            "INSERT INTO threads (id, title, author, created_at) VALUES (?, ?, ?, ?)"
+            "INSERT INTO threads (id, title, author_id, created_at) VALUES (?, ?, ?, ?)"
         )
         .bind(id)
         .bind(title)
-        .bind(author)
+        .bind(author_id)
         .bind(created_at)
         .execute(&*self.pool)
         .await?;
@@ -170,64 +307,17 @@ mod tests {
     use super::*;
     use serde_json::json;
 
-    const USE_FILE_DB: bool = true; // true - в файл
-
     async fn create_test_db() -> anyhow::Result<DbManager> {
-        let database_url = if USE_FILE_DB {
-            use std::fs;
-            use std::path::PathBuf;
-
-            // потом поменять на env
-            let mut path = PathBuf::from("E:\\fa\\nekoscience\\storage\\tests");
-            fs::create_dir_all(&path)?; 
-
-            path.push("test_in_forum_db_manager.db");
-
-            if !path.exists() {
-                fs::File::create(&path)?;
-            }
-
-            path.to_str().unwrap().to_string()
-        } else {
-            ":memory:".to_string()
-        };
-
-        let db = DbManager::new(&database_url).await?;
-
-        sqlx::query(
-            r#"
-            CREATE TABLE IF NOT EXISTS threads (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                title TEXT NOT NULL,
-                author TEXT NOT NULL,
-                created_at INTEGER NOT NULL
-            )
-            "#
-        )
-        .execute(&*db.pool)
-        .await?;
-
-        sqlx::query(
-            r#"
-            CREATE TABLE IF NOT EXISTS posts (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                thread_id INTEGER NOT NULL,
-                author TEXT NOT NULL,
-                body TEXT NOT NULL,
-                created_at INTEGER NOT NULL,
-                FOREIGN KEY(thread_id) REFERENCES threads(id)
-            )
-            "#
-        )
-        .execute(&*db.pool)
-        .await?;
-
+        // в памяти SQLite
+        let db = DbManager::new(":memory:").await?;
+        
+        // очищаем таблицы, если нужно
         sqlx::query("DELETE FROM posts").execute(&*db.pool).await?;
         sqlx::query("DELETE FROM threads").execute(&*db.pool).await?;
-
+        sqlx::query("DELETE FROM thread_rating").execute(&*db.pool).await?;
+        
         Ok(db)
     }
-
 
     #[tokio::test]
     async fn test_add_thread_and_check_exists() -> anyhow::Result<()> {
