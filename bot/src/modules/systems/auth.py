@@ -1,5 +1,8 @@
+
+
+
 import os, datetime
-import localapi
+import bot.src.modules.external.localapi as localapi
 
 file_p = "file_osu_pending"
 file_v = "file_osu_verified"

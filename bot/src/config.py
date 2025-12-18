@@ -37,7 +37,7 @@ dev_flag = "1"
 from pathlib import Path
 
 
-from translations import TRANSLATIONS as TR
+from bot.src.modules.systems.translations import TRANSLATIONS as TR
 from longtext import *
 
 
@@ -102,7 +102,6 @@ CHANCE_DICE = 0.20
 CHANCE_PIC = 0.10
 tier_points_plus = {1: 75, 2: 50, 3: 25, 4: 5}
 tier_points_minus = {1: 30, 2: 25, 3: 15, 4: 10}
-COL1, COLMID, COL2 = 14, 12, 14
 SOURCE_TOPIC_ID = 37686
 CHALLENGE_TOPIC_ID = 85927          
 TARGET_FORWARD_TOPIC_ID = None
