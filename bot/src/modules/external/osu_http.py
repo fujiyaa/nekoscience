@@ -1,10 +1,25 @@
 
 
 
-import lxml.html, json, os, time, requests, zipfile, aiohttp, aiofiles, asyncio
+import lxml.html 
+import json 
+import os
+import time
+import requests
+import zipfile
+import aiohttp
+import aiofiles
+import asyncio
 
-from bot.src.modules.external.external_config import semaphore
-from bot.src.config import BEATMAPS_DIR, CACHE_TTL
+from ..systems.json_files import load_score_file, save_score_file
+from ..external.osu_api import enrich_score_lazer
+
+from ...config import CACHE_TTL, LXML_TIMEOUT
+from ...config import BEATMAPS_DIR, STATS_BEATMAPS, MAX_CONCURRENT_REQUESTS
+
+semaphore = asyncio.Semaphore(MAX_CONCURRENT_REQUESTS) 
+
+
 
 async def get_score_page(session, user_id: str, score_id: str, no_check:bool = False) -> dict | None:  
     url = f"https://osu.ppy.sh/scores/{score_id}"
@@ -22,9 +37,10 @@ async def get_score_page(session, user_id: str, score_id: str, no_check:bool = F
                             if not no_check:
                                 if not str(data['user_id']) == str(user_id):
                                     return None
-                            # Сохраняем в файл
                             # cached_entry = {"raw": data, "processed": {}, "ready": False}
                             # save_score_file(score_id, cached_entry)
+
+                            # я не знаю почему оно закомментировано но не надо трогать
 
                             return data
                         except json.JSONDecodeError:
@@ -38,14 +54,80 @@ async def get_score_page(session, user_id: str, score_id: str, no_check:bool = F
 
     return None
 
-async def beatmap(map_id: int) -> tuple[str | None, dict]:
-    """
-    Скачивает карту (если нет или устарела) и возвращает:
-    (путь_к_файлу, dict с base-значениями HP/CS/OD/AR)
-    """
+async def cache_remaining_scores(user_id: str, scores: list, username: str):
+    async with aiohttp.ClientSession() as session:
+        for s in scores[1:]:
+            score_id = str(s['id'])
+            cached_entry = load_score_file(score_id)
+            if not cached_entry:
+                cached_entry = {"raw": s, "processed": {}, "ready": False}
+                save_score_file(score_id, cached_entry)
+
+            if not cached_entry.get("ready"):
+                await enrich_score_lazer(session, str(s['user']['id']), score_id)
+                cached_entry = load_score_file(score_id)
+                cached_entry["ready"] = True
+                save_score_file(score_id, cached_entry)
+            await asyncio.sleep(LXML_TIMEOUT)
+
+async def beatmap_txt_downlaod(session: aiohttp.ClientSession, map_id: int) -> str | None:
     path_to_map = os.path.join(BEATMAPS_DIR, f"{map_id}.osu")
 
-    # словарь с дефолтами
+    if os.path.exists(path_to_map):
+        file_age = time.time() - os.path.getmtime(path_to_map)
+        if file_age < CACHE_TTL:
+            print('🍡 using cache (beatmap_txt_downlaod)')
+            return path_to_map
+        else:
+            os.remove(path_to_map)
+
+    url = f"https://osu.ppy.sh/osu/{map_id}"
+    try:
+        print('🔻 beatmap request (beatmap_txt_downlaod)')
+        async with session.get(url, timeout=3) as resp:
+            if resp.status != 200:
+                return None
+            text = await resp.text()
+    except Exception as e:
+        print(f"Ошибка при скачивании карты {map_id}: {e}")
+        return None
+
+    with open(path_to_map, "w", encoding="utf-8") as f:
+        f.write(text)
+
+    return path_to_map
+
+async def fetch_txt_beatmaps(map_ids, retries: int = 3, batch_size: int = 5, delay: float = 0.05):
+    results = {}
+    failed = map_ids[:]
+
+    async with aiohttp.ClientSession() as session:
+        for attempt in range(1, retries + 1):
+            if not failed:
+                break
+
+            new_failed = []
+            for i in range(0, len(failed), batch_size):
+                batch = failed[i:i + batch_size]
+
+                tasks = [beatmap_txt_downlaod(session, mid) for mid in batch]
+                done = await asyncio.gather(*tasks, return_exceptions=True)
+
+                for mid, result in zip(batch, done):
+                    if isinstance(result, Exception) or result is None:
+                        new_failed.append(mid)
+                    else:
+                        results[mid] = result
+
+                await asyncio.sleep(delay)
+
+            failed = new_failed
+
+    return results, failed
+
+async def beatmap(map_id: int) -> tuple[str | None, dict]:
+    path_to_map = os.path.join(BEATMAPS_DIR, f"{map_id}.osu")
+
     base_values = {
         "hp": None,
         "cs": None,
@@ -89,6 +171,74 @@ async def beatmap(map_id: int) -> tuple[str | None, dict]:
 
     parse_values(path_to_map)
     return path_to_map, base_values
+
+async def fetch_beatmap_data(beatmap_url, cache_expire_sec=3600, retries=3, timeout_sec=10):    
+    beatmap_id = beatmap_url.rstrip("/").split("/")[-1]
+    cache_path = f"{STATS_BEATMAPS}/{beatmap_id}.json"
+
+    if os.path.exists(cache_path):
+        mtime = os.path.getmtime(cache_path)
+        if time.time() - mtime < cache_expire_sec:
+            try:
+                with open(cache_path, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except json.JSONDecodeError:
+                pass
+
+    for attempt in range(1, retries + 1):
+        try:
+            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=timeout_sec)) as session:
+                async with session.get(f"https://osu.ppy.sh/beatmaps/{beatmap_id}") as resp:
+                    if resp.status == 200:
+                        html_text = await resp.text()
+                        tree = lxml.html.fromstring(html_text)
+                        script = tree.xpath('//script[@id="json-beatmapset"]/text()')
+
+                        result = {
+                            "related_tags": [],
+                            "tags": [],
+                            "genre": None,
+                            "language": None,
+                            "artist": None
+                        }
+
+                        if script:
+                            try:
+                                data = json.loads(script[0])
+                                
+                                related_tags = data.get("related_tags", [])
+                                result["related_tags"] = [tag.get("name") for tag in related_tags if "name" in tag]
+
+                                tags_str = data.get("tags", "")
+                                result["tags"] = tags_str.split() if tags_str else []
+
+                                genre = data.get("genre")
+                                if genre and "name" in genre:
+                                    result["genre"] = genre["name"]
+
+                                language = data.get("language")
+                                if language and "name" in language:
+                                    result["language"] = language["name"]
+
+                                artist = data.get("artist")
+                                if isinstance(artist, dict) and "name" in artist:
+                                    result["artist"] = artist["name"]
+                                elif isinstance(artist, str):
+                                    result["artist"] = artist
+
+
+                                with open(cache_path, "w", encoding="utf-8") as f:
+                                    json.dump(result, f, ensure_ascii=False)
+                            except json.JSONDecodeError:
+                                pass
+
+                        return result
+                    else:
+                        print(f"Attempt {attempt}: Status {resp.status} for beatmap {beatmap_id}")
+        except Exception as e:
+            print(f"Attempt {attempt}: Error fetching beatmap {beatmap_id}: {e}")
+            await asyncio.sleep(1)
+    return None
 
 async def download_osz_async(mapset_id: int, osu_session: str, save_dir: str,
                              connect_timeout: int = 5, read_timeout: int = 60, chunk_size: int = 8192):

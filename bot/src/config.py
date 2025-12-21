@@ -190,3 +190,8 @@ ALL_UPDATES_LOG = BASE_DIR / "storage" / "bot_data" / "all_updates.log"
 
 GIF_BLACKS_PATH = BOT_DIR / "gifs" / "blacks" / "sticker.webm"
 GIF_DOUBT_PATH = BOT_DIR / "gifs" / "doubt" / "blue-archive-otogi.mp4"
+
+
+
+
+START_TIME = time.time()

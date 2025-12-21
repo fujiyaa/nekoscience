@@ -15,6 +15,20 @@ async def delete_message_after_delay(context, chat_id: int, message_id: int, del
     except Exception as e:
         print(f"Ошибка при удалении сообщения: {e}")
 
+async def delete_response(resp, delay: int = 10):
+    await asyncio.sleep(delay)
+    if isinstance(resp, list):
+        for r in resp:
+            try:
+                await r.delete()
+            except Exception as e:
+                print(f"Ошибка при удалении сообщения: {e}")
+    else:
+        try:
+            await resp.delete()
+        except Exception as e:
+            print(f"Ошибка при удалении сообщения: {e}")
+
 async def delete_user_message(update: Update, context: ContextTypes.DEFAULT_TYPE, delay: int = 5):
     if not update.message:
         return

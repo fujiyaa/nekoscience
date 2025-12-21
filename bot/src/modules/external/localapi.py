@@ -1,6 +1,14 @@
-from config import *
+
+
+
+import aiohttp
+import asyncio
+
+from config import LOCAL_API_KEY, LOCAL_API_URL
 
 REQUEST_TIMEOUT = 5
+
+
 
 #rosu & osu
 async def _post_neko(endpoint: str, payload: dict) -> dict:

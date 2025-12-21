@@ -1,12 +1,17 @@
 
 
 
-import aiohttp, asyncio, time
+import aiohttp
+import asyncio
+import time
 
-from bot.src.config import OSU_CLIENT_ID, OSU_CLIENT_SECRET
+from ...config import OSU_CLIENT_ID, OSU_CLIENT_SECRET
 
 _cached_token = None
 _token_expiry = 0
+
+
+
 async def get_osu_token(timeout_sec: int = 10):
     global _cached_token, _token_expiry
     now = time.time()

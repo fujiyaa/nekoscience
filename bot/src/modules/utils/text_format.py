@@ -1,10 +1,19 @@
 
 
 
-from datetime import datetime, timedelta
+import os
 from collections import defaultdict
+from datetime import datetime, timedelta
+
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+
+from ..systems.auth import get_all_osu_verified
+     
+from ...config import QUEUE_FILE, GROUPS_DIR, URL_SCAN_TIMEOUT
 
 COL1, COLMID, COL2 = 14, 12, 14
+
+
 
 def normalize_plus(text: str) -> str:
     if isinstance(text, list):
@@ -128,6 +137,132 @@ def format_stats(user, best_pp):
         "posts":user['post_count'],
         "hpp":hpp,
     }
+
+# async def build_beatmaps_text(caller_id: int) -> tuple[str, InlineKeyboardMarkup]:
+#     queue_count = 0
+#     if os.path.exists(QUEUE_FILE):
+#         with open(QUEUE_FILE, "r", encoding="utf-8") as f:
+#             queue_count = sum(1 for _ in f)
+
+#     users_states = []
+#     done_count = 0
+
+#     if os.path.exists(GROUPS_DIR):
+#         verified_all = await get_all_osu_verified()  
+
+#         for fname in os.listdir(GROUPS_DIR):
+#             if "." in fname:
+#                 uid, status = fname.split(".", 1)
+#                 saved_data = verified_all.get(uid)
+#                 saved_name = saved_data["osu_username"] if saved_data else "неизвестно"
+
+#                 if status == "todo":
+#                     users_states.append((saved_name, "не готово"))
+#                 elif status == "done":
+#                     done_count += 1
+
+#     max_name_len = max((len(name) for name, _ in users_states), default=4)
+#     header = f"{'Имя'.ljust(max_name_len)} | Статус"
+#     table_lines = [f"`{header}`"]
+#     for name, status in users_states:
+#         line = f"{name.ljust(max_name_len)} | {status}"
+#         table_lines.append(f"`{line}`")
+
+#     if users_states:
+#         table_text = "\n".join(table_lines)
+#     else:
+#         table_text = "`нет никого в очереди!`"
+
+#     if done_count > 0:
+#         table_text += f"\n+{done_count} уже готовых.."
+
+#     seconds_todo = ""
+#     if queue_count > 0:
+#         total_seconds = queue_count * URL_SCAN_TIMEOUT
+#         if total_seconds < 60:
+#             seconds_todo = f", примерно *{total_seconds}* секунд осталось"
+#         else:
+#             minutes = total_seconds // 60
+#             seconds_todo = f", примерно *{minutes}* минут осталось"
+
+#     msg = (
+#         f"📄 Карт в очереди: *{queue_count}* {seconds_todo}\n\n"
+#         f"{table_text}"
+#         f"\n\n💧 Занимает время, так что просто подожди немного. Время - с запасом, будет готово немного раньше. Считается в порядке очереди (добавляешься при идущем расчете, не влияет на время ожидания других). Чтобы добавить себя, нажми кнопку со звездочкой."
+#     )
+
+#     keyboard = [
+#         [
+#             InlineKeyboardButton("🔄 Обновить", callback_data=f"beatmaps_refresh:{caller_id}"),
+#             InlineKeyboardButton("⭐️ Посчитать меня", callback_data=f"beatmaps_count_me:{caller_id}"),
+#         ],
+#         [
+#             InlineKeyboardButton("посмотреть статистику карт из...", callback_data=f"beatmaps_refresh:{caller_id}"),
+#         ],
+#         [
+#             InlineKeyboardButton("📊 200 карт", callback_data=f"beatmaps_stats_200:{caller_id}"),
+#             InlineKeyboardButton("🔹 top-100 pp", callback_data=f"beatmaps_stats_1_100:{caller_id}"),
+#             InlineKeyboardButton("🔸 most played", callback_data=f"beatmaps_stats_101_200:{caller_id}"),            
+#         ]
+#     ]
+#     reply_markup = InlineKeyboardMarkup(keyboard)
+
+#     return msg, reply_markup
+
+async def build_beatmaps_text(caller_id: int) -> str:
+    queue_count = 0
+    if os.path.exists(QUEUE_FILE):
+        with open(QUEUE_FILE, "r", encoding="utf-8") as f:
+            queue_count = sum(1 for _ in f)
+
+    users_states = []
+    done_count = 0
+
+    if os.path.exists(GROUPS_DIR):
+        verified_all = await get_all_osu_verified()  
+
+        for fname in os.listdir(GROUPS_DIR):
+            if "." in fname:
+                uid, status = fname.split(".", 1)
+                saved_data = verified_all.get(uid)
+                saved_name = saved_data["osu_username"] if saved_data else "неизвестно"
+
+                if status == "todo":
+                    users_states.append((saved_name, "не готово"))
+                elif status == "done":
+                    done_count += 1
+
+    max_name_len = max((len(name) for name, _ in users_states), default=4)
+    header = f"{'Имя'.ljust(max_name_len)} | Статус"
+    table_lines = [f"`{header}`"]
+    for name, status in users_states:
+        line = f"{name.ljust(max_name_len)} | {status}"
+        table_lines.append(f"`{line}`")
+
+    if users_states:
+        table_text = "\n".join(table_lines)
+    else:
+        table_text = "`нет никого в очереди!`"
+
+    if done_count > 0:
+        table_text += f"\n+{done_count} уже готовых.."
+
+    seconds_todo = ""
+    if queue_count > 0:
+        total_seconds = queue_count * URL_SCAN_TIMEOUT
+        if total_seconds < 60:
+            seconds_todo = f", примерно *{total_seconds}* секунд осталось"
+        else:
+            minutes = total_seconds // 60
+            seconds_todo = f", примерно *{minutes}* минут осталось"
+
+    msg = (
+        f"📄 Карт в очереди: *{queue_count}* {seconds_todo}\n\n"
+        f"{table_text}"
+        f"\n\n💧 Занимает время, так что просто подожди немного. Время - с запасом, будет готово немного раньше. Считается в порядке очереди (добавляешься при идущем расчете, не влияет на время ожидания других). Чтобы добавить себя, нажми кнопку со звездочкой."
+    )
+
+    return msg
 
 def row(val1, mid, val2, higher_is_better=True, suffix="", preffix: str = None, fmt="{:,}", is_date=False):
     def format_val(v):

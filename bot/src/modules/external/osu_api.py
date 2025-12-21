@@ -1,15 +1,23 @@
 
 
 
-import aiohttp, asyncio, temp, re, requests
-from bot.src.modules.external.osu_http import get_score_page
-from bot.src.modules.external.osu_auth import get_osu_token
-from bot.src.modules.utils.network import fetch_with_timeout, post_with_timeout, try_request
-from bot.src.modules.utils.osu_conversions import is_legacy_score
-from bot.src.modules.systems.json_files import load_score_file, save_score_file
+import aiohttp
+import random
+import asyncio
+import temp
+import re
+import requests
 from typing import List, Dict
 
+from .osu_http import get_score_page
+from .osu_auth import get_osu_token
+from ...modules.utils.network import fetch_with_timeout, post_with_timeout, try_request
+from ...modules.utils.osu_conversions import is_legacy_score
+from ...modules.systems.json_files import load_score_file, save_score_file
+
 from bot.src.config import OSU_ID_CACHE_FILE
+
+
 
 async def get_user_profile(username: str, token: str = None) -> dict | None:
     if token is None:
@@ -322,7 +330,6 @@ async def process_score(score, additional_data):
         "id": raw.get("id")
     }
 
-
 async def enrich_score_lazer(session, user_id: str, score_id: str):
     cached_entry = load_score_file(score_id)
     if not cached_entry:
@@ -393,6 +400,39 @@ async def enrich_score_lazer(session, user_id: str, score_id: str):
     cached_entry["ready"] = True
     save_score_file(score_id, cached_entry)
 
+async def get_score_by_id(score_id: str, token: str, timeout_sec: int = 10):
+    cached_entry = load_score_file(score_id)
+
+    if cached_entry:
+        final_score = cached_entry["raw"]
+
+    else:
+        async with aiohttp.ClientSession() as session:
+            data = await get_score_page(session, score_id, score_id, no_check=True)
+
+        if not data:
+            return None  
+
+        user_id = str(data["user"]["id"])
+        additional_data = await get_osu_user_additional_data(user_id, "osu", token)
+
+        cached_entry = {"raw": data, "processed": {}, "ready": False}
+        save_score_file(score_id, cached_entry)
+
+        async with aiohttp.ClientSession() as session:
+            await enrich_score_lazer(session, user_id, score_id)
+
+        cached_entry = load_score_file(score_id)
+        raw = cached_entry["raw"]
+
+        final_score = await process_score(raw, additional_data)
+
+        cached_entry["raw"] = final_score
+        cached_entry["ready"] = True
+        save_score_file(score_id, cached_entry)
+
+    return final_score
+
 
 
 # это нигде не исопользуется???
@@ -443,3 +483,45 @@ async def get_beatmapset_id_from_md5(md5_hash: str, token: str) -> int:
     response = requests.get(url, headers=headers)
     response.raise_for_status()
     return response.json()["beatmapset_id"]
+
+async def get_random_beatmap_from_random_pack(max_attempts=5):
+    async with aiohttp.ClientSession() as session:
+        token = await get_osu_token()
+        packs_url = "https://osu.ppy.sh/api/v2/beatmaps/packs?type=standard"
+        headers = {"Authorization": f"Bearer {token}"}
+        print('🔻 API request (get_random_beatmap_from_random_pack 1/2)')
+        async with session.get(packs_url, headers=headers) as resp:
+            data = await resp.json()
+
+        packs = data.get("beatmap_packs", [])
+        # ruleset_id == 0
+        packs = [p for p in packs if p.get("ruleset_id") == None]
+
+        if not packs:
+            return None
+
+        for _ in range(max_attempts):
+            pack = random.choice(packs)
+            pack_tag = pack["tag"]
+
+            pack_detail_url = f"https://osu.ppy.sh/api/v2/beatmaps/packs/{pack_tag}"
+            print('🔻 API request (get_random_beatmap_from_random_pack 2/2)')
+            async with session.get(pack_detail_url, headers=headers) as resp:
+                pack_detail = await resp.json()
+
+            # ruleset_id == 0
+            beatmapsets =  pack_detail.get("beatmapsets", [])
+
+            if beatmapsets:
+                beatmapset = random.choice(beatmapsets)
+                return {
+                    "pack_tag": pack_tag,
+                    "pack_name": pack["name"],
+                    "beatmapset_id": beatmapset["id"],
+                    "artist": beatmapset["artist"],
+                    "title": beatmapset["title"],
+                    "creator": beatmapset["creator"],
+                    "url": f"https://osu.ppy.sh/beatmapsets/{beatmapset['id']}"
+                }
+
+        return None
