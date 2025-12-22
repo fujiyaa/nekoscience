@@ -119,7 +119,7 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
                 if f.startswith(f"{beatmap_id}_") and f.endswith(".png"):
                     path = os.path.join(COVERS_DIR, f)
                     mtime = datetime.fromtimestamp(os.path.getmtime(path))
-                    if now - mtime < timedelta(hours=1):  # файл свежий, используем
+                    if now - mtime < timedelta(hours=1):
                         bg_file = path
                         break
                 
@@ -286,7 +286,6 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
                 else:  # 9-11
                     return x1 + 4*unit1 + 8*unit1 + (val - 9) * 4 * unit1
 
-            # Генерируем деления
             scale_1_5 = [1, 2, 3, 4, 5]
             scale_5_9 = [5 + i*0.5 for i in range(1, 9)]  # 5.5,6,6.5 ...9
             scale_9_11 = [9 + i*0.25 for i in range(1, 9)]  # 9.25,9.5,...11
@@ -305,12 +304,10 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
             # y_positions = [120, 305, 405]
             # for y in y_positions:
             #     draw.line((x1 -10, y, x2 + 10, y), fill=(150,150,150), width=1)
-            # Вертикальные линии
             y_grid_top = 10 + offset_y_w
             y_grid_bottom = 150 + offset_y_w
             for val in all_scale:
                 x = value_to_x_custom(val)
-                # выделяем целые числа жирнее
                 if int(val) == val:
                     if val in(1, 0): continue
                     if val in (1, 2, 3, 4):
@@ -327,7 +324,6 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
             y_grid_bottom = 420 + offset_y_w
             for val in all_scale:
                 x = value_to_x_custom(val)
-                # выделяем целые числа жирнее
                 if int(val) == val:
                     if val in(1, 0): continue
                     if val in (1, 2, 3, 4):
@@ -344,7 +340,6 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
             y_grid_bottom = 600 + offset_y_w
             for val in all_scale:
                 x = value_to_x_custom(val)
-                # выделяем целые числа жирнее
                 if int(val) == val:
                     if val in(1, 0): continue
                     if val in (1, 2, 3, 4):
@@ -358,9 +353,6 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
                         draw.line((x, y_grid_top + 10, x, y_grid_bottom - 15), fill=(180,180,180), width=1)
 
 
-
-
-            # Рисуем полосы без цикла, как у тебя было
             bar_offset_y = 20 + offset_y_w
             val = cs_values[0]
             y = bar_offset_y + 20
@@ -604,14 +596,11 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
             asset = asset.resize((110,110))
             img.paste(asset, (0, 690), asset)
 
-
             block_left = 32
             block_right = 1300 
             max_width = block_right - block_left
 
 
-
-            # --- Подбор заголовка ---
             words = title.split()
 
             def wrap_text(words, font, max_width, draw):
@@ -629,16 +618,14 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
                     lines.append(current_line)
                 return lines
 
-            # Сначала считаем с большим шрифтом
             lines = wrap_text(words, font_black_big, max_width, draw)
 
             if len(lines) == 1:
                 title_y = 23
                 font_text = font_black_big
             else:
-                # если получилось больше одной строки — пересчёт с меньшим шрифтом
                 lines = wrap_text(words, font_black_big_2, max_width, draw)
-                lines = lines[:2]  # максимум две строки
+                lines = lines[:2]
                 title_y = 15
                 font_text = font_black_big_2
 

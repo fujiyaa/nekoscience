@@ -21,11 +21,18 @@ from ....config import SOURCE_TOPIC_ID, TARGET_CHAT_ID, TARGET_FORWARD_TOPIC_ID
 from ....config import LUCKY_TOPIC_ID, CLIPS_TOPIC_ID
 from ....config import LUCKY_DICE_EMOJI, CHANCE_DICE, UNLUCKY_MESSAGES
 
+DICE_EMOJI = '🎲'
+SLOT_EMOJI = '🎰'
+BALL_EMOJI = '🏀'
+DART_EMOJI = '🎯'
+
+LUCKY_EMOJIS = {DICE_EMOJI, SLOT_EMOJI, BALL_EMOJI, DART_EMOJI}
+
 
 
 async def check_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
-        await log_all_update(update)
+        await log_all_update(update)              
         
         print(f"chat {update.effective_chat.id}, topic {getattr(update.effective_message, 'message_thread_id', None)}")
 
@@ -97,15 +104,7 @@ async def check_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         await message.delete()
                     except Exception as e:
                         print(f"Ошибка при if thread_id == CLIPS_TOPIC_ID: {e}")
-
-                                
-            DICE_EMOJI = '🎲'
-            SLOT_EMOJI = '🎰'
-            BALL_EMOJI = '🏀'
-            DART_EMOJI = '🎯'
-
-            LUCKY_EMOJIS = {DICE_EMOJI, SLOT_EMOJI, BALL_EMOJI, DART_EMOJI}
-
+                  
             if update.effective_message.dice and update.effective_message.dice.emoji in LUCKY_EMOJIS:
                 if random.random() < 0.03: 
                     try:
@@ -158,31 +157,12 @@ async def check_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         text = message.text or message.caption or "<нет текста>"
                         log_deleted_message(user_str, f"Перенесено сообщение: {text}")
                         print("Сообщение без вложений перенесено и удалено")
-                    except Exception as e:
+
+                    except Exception as e:                    
                         print(f"Ошибка при пересылке и удалении сообщения: {e}")
+
                 else:
                     print("Есть вложение (файл или картинка), не трогаем")
 
-            if not update.message or not update.message.text:
-                return
-        
-            user_id = str(update.message.from_user.id)
-            username = update.message.from_user.username or update.message.from_user.first_name
-            text = update.message.text.lower()
-            
-            # positive_words = temp.load_text_list(POSITIVE_FILE)
-            # negative_words = temp.load_text_list(NEGATIVE_FILE)
-            
-            # ratings = load_ratings()
-
-            # if user_id not in ratings:
-            #     ratings[user_id] = {"name": username, "rating": 0}
-            # else:
-            #     ratings[user_id]["name"] = username
-
-            # if any(word in text for word in positive_words):
-            #     ratings[user_id]["rating"] += 1
-            # if any(word in text for word in negative_words):
-            #     ratings[user_id]["rating"] -= 1
-            # save_ratings(ratings)
     except: print(e)
+    

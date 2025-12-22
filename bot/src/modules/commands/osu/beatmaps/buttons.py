@@ -5,7 +5,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 
 
-def beatmaps_keyboard(caller_id: int) -> InlineKeyboardMarkup:
+def get_keyboard(caller_id: int) -> InlineKeyboardMarkup:
     keyboard = [
         [
             InlineKeyboardButton("🔄 Обновить", callback_data=f"beatmaps_refresh:{caller_id}"),
