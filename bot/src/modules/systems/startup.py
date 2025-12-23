@@ -6,7 +6,7 @@ import atexit
 import glob
 import os
 
-from ...config import BOT_DIR, TEMP_DIR
+from config import BOT_DIR, TEMP_DIR
 
 
 

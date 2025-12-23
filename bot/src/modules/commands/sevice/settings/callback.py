@@ -9,11 +9,11 @@ from telegram.ext import ContextTypes
 from ....actions.messages import safe_query_answer
 from .buttons import get_settings_kb
 
-from .....config import USER_SETTINGS_FILE
+from config import USER_SETTINGS_FILE
 
 
 
-async def settings_button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     user_id = str(query.from_user.id)
     name = str(query.from_user.name)

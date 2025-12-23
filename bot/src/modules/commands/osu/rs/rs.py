@@ -15,7 +15,7 @@ from ....external.osu_api import get_osu_token, get_user_scores
 from ....external.osu_http import cache_remaining_scores
 from ....wrappers.score import send_score
 
-from .....config import COOLDOWN_RS_COMMAND, RS_BUTTONS_TIMEOUT, user_sessions
+from config import COOLDOWN_RS_COMMAND, RS_BUTTONS_TIMEOUT, user_sessions
 
 
 

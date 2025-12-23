@@ -13,13 +13,13 @@ from ...systems.auth import verify_osu_user
 from ...systems.logging import log_deleted_message
 from ..fun.reminders.reminders import start_check_reminders
 from ..osu.simulate.text_input import start_simulate_text_handler
-from ..osu.beatmap.beatmap import start_beatmap_card
+from ..osu.card_beatmap.beatmap import start_beatmap_card
 from .start_something import start_osu_link_handler
 
 from .blacklist import blacklist
-from ....config import SOURCE_TOPIC_ID, TARGET_CHAT_ID, TARGET_FORWARD_TOPIC_ID
-from ....config import LUCKY_TOPIC_ID, CLIPS_TOPIC_ID
-from ....config import LUCKY_DICE_EMOJI, CHANCE_DICE, UNLUCKY_MESSAGES
+from config import SOURCE_TOPIC_ID, TARGET_CHAT_ID, TARGET_FORWARD_TOPIC_ID
+from config import LUCKY_TOPIC_ID, CLIPS_TOPIC_ID
+from config import LUCKY_DICE_EMOJI, CHANCE_DICE, UNLUCKY_MESSAGES
 
 DICE_EMOJI = '🎲'
 SLOT_EMOJI = '🎰'

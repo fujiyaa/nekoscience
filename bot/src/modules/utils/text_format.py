@@ -5,11 +5,9 @@ import os
 from collections import defaultdict
 from datetime import datetime, timedelta
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-
 from ..systems.auth import get_all_osu_verified
      
-from ...config import QUEUE_FILE, GROUPS_DIR, URL_SCAN_TIMEOUT
+from config import QUEUE_FILE, GROUPS_DIR, URL_SCAN_TIMEOUT
 
 COL1, COLMID, COL2 = 14, 12, 14
 

@@ -4,7 +4,7 @@
 from datetime import date
 from PIL import Image, ImageDraw, ImageFont
 
-from .....config import BOT_DIR
+from config import BOT_DIR
 
 
 

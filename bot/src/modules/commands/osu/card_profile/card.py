@@ -13,7 +13,7 @@ from PIL import Image, ImageDraw
 from telegram import Update, InputFile
 from telegram.ext import ContextTypes
 
-from .....models.score import Score 
+from models.score import Score 
 from ....actions.messages import safe_send_message
 from ....systems.cooldowns import check_user_cooldown
 from ....utils.osu_conversions import is_legacy_score
@@ -27,8 +27,8 @@ from .processing_v1 import create_profile_image
 from .processing_v2 import make_card
 from .descriptoins import get_title # какого хрена только тайтл тут
 
-from .....config import COOLDOWN_CARD_COMMAND, USER_SETTINGS_FILE, CARDS_DIR
-from .....config import USERS_SKILLS_FILE, AVATARS_DIR, message_authors
+from config import COOLDOWN_CARD_COMMAND, USER_SETTINGS_FILE, CARDS_DIR
+from config import USERS_SKILLS_FILE, AVATARS_DIR, message_authors
 
 
 

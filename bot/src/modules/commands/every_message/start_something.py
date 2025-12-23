@@ -10,7 +10,7 @@ from ...systems.cooldowns import is_on_cooldown, update_cooldown
 from ..osu.score.score import score
 from ..osu.profile.profile import start_profile
 
-from ....config import COOLDOWN_LINKS_IN_CHAT, OSU_USER_REGEX, OSU_SCORE_REGEX
+from config import COOLDOWN_LINKS_IN_CHAT, OSU_USER_REGEX, OSU_SCORE_REGEX
 
 
 

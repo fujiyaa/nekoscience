@@ -1,7 +1,7 @@
 
 
 
-from .....config import sessions_simulate
+from config import sessions_simulate
 
 
 

@@ -4,13 +4,19 @@
 import logging
 
 from telegram.error import NetworkError
-from telegram.ext import ApplicationBuilder, CommandHandler
-from telegram.ext import MessageHandler, filters, CallbackQueryHandler
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    MessageHandler,
+    CallbackQueryHandler,
+    filters,
+)
 
+from config import TOKEN
 from modules.systems.startup import startup
-
 from modules.commands.every_message.check_message import check_message
 
+# osu
 from modules.commands.osu.rs.rs import start_rs
 from modules.commands.osu.name.name import set_name
 from modules.commands.osu.mods.mods import start_mods
@@ -27,108 +33,109 @@ from modules.commands.osu.recent_fix.recent_fix import start_recent_fix
 from modules.commands.osu.music.beatmap_audio import start_beatmap_audio
 from modules.commands.osu.compare_profile.compare_profile import start_compare_profile
 
+# fun
 from modules.commands.fun.doubt.doubt import doubt
 from modules.commands.fun.blacks.blacks import blacks
+from modules.commands.fun.reminders.reminders import reminders_command
 from modules.commands.fun.random_image.random_image import random_image
 
+# service
 from modules.commands.sevice.ping.ping import ping
 from modules.commands.sevice.uptime.uptime import uptime
 from modules.commands.sevice.help.help import start_help
-from modules.commands.sevice.settings.settings  import settings_cmd
+from modules.commands.sevice.settings.settings import settings_cmd
 from modules.commands.sevice.forum_db_related.getthreads import dev_getthreads
 
-from .config import TOKEN
+# callback
+from modules.commands.osu.rs.callback import callback as rs_handler
+from modules.commands.osu.nochoke.callback import callback as nochoke_handler
+from modules.commands.osu.beatmaps.callback import callback as beatmaps_handler
+from modules.commands.osu.maps_skill.callback_level1 import farm_step_callback as ms_callback1
+from modules.commands.osu.maps_skill.callback_level2 import farm_pagination_callback as ms_callback2
+from modules.commands.osu.simulate.callback import callback as simulate_handler
+from modules.commands.sevice.settings.callback import callback as settings_handler
 
 
 
-def main():
-    app = ApplicationBuilder().token(TOKEN).build()
-    app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, check_message))
-    
-    #async
-    app.add_handler(CommandHandler("mods", start_mods))
-    app.add_handler(CommandHandler("mappers", start_mappers))
+def register_commands(app):
+    command_map = {
+        # osu
+        ("mods",): start_mods,
+        ("mappers",): start_mappers,
+        ("profile", "p"): start_profile,
+        ("card", "c"): start_card,
+        ("recent_fix", "fix", "f"): start_recent_fix,
+        ("recent", "rs", "r"): start_rs,
+        ("pc",): start_compare_profile,
+        ("music",): start_beatmap_audio,
+        ("maps_skill", "ms"): start_farm,
+        ("average", "avg", "a"): start_average_stats,
+        ("nochoke", "n"): start_nochoke,
+        ("simulate", "s"): simulate,
+        ("beatmaps", "b"): beatmaps,
+        ("name", "link", "nick", "osu"): set_name,
+        ("challenge",): challenge,
 
-    app.add_handler(CommandHandler("profile", start_profile))
-    app.add_handler(CommandHandler("p", start_profile))
+        # fun
+        ("gn",): random_image,
+        ("doubt",): doubt,
+        ("blacks",): blacks,
+        ("reminders",): reminders_command,
 
-    app.add_handler(CommandHandler("card", start_card))  
-    app.add_handler(CommandHandler("c", start_card))  
+        # service
+        ("start", "help"): start_help,
+        ("settings",): settings_cmd,
+        ("ping",): ping,
+        ("uptime",): uptime,
+        ("getthreads",): dev_getthreads,
+    }
 
-    app.add_handler(CommandHandler("recent_fix", start_recent_fix))
-    app.add_handler(CommandHandler("fix", start_recent_fix))
-    app.add_handler(CommandHandler("f", start_recent_fix))   
-    
-    app.add_handler(CommandHandler("recent", start_rs))
-    app.add_handler(CommandHandler("rs", start_rs))    
-    app.add_handler(CommandHandler("r", start_rs))
+    for names, handler in command_map.items():
+        for name in names:
+            app.add_handler(CommandHandler(name, handler))
 
-    app.add_handler(CommandHandler("pc", start_compare_profile))    
- 
-    app.add_handler(CommandHandler("start", start_help))
-    app.add_handler(CommandHandler("help", start_help))
-      
-    app.add_handler(CommandHandler("music", start_beatmap_audio))
+def register_callbacks(app):
+    callbacks = [
+        (rs_handler, r"^rs_"),
+        (beatmaps_handler, r"^beatmaps_"),
+        (settings_handler, r"^settings_"),
+        (simulate_handler, r"^simulate_"),
+        (ms_callback2, r"^farm_page:"),
+        (ms_callback1, r"^farm_(skill|mod|lazer|tol):"),
+        (nochoke_handler, r"^page_\d+_\d+$"),
+    ]
 
-    app.add_handler(CommandHandler("maps_skill", start_farm))
-    app.add_handler(CommandHandler("ms", start_farm))
-    
-    app.add_handler(CommandHandler("average", start_average_stats))
-    app.add_handler(CommandHandler("avg", start_average_stats))
-    app.add_handler(CommandHandler("a", start_average_stats))
+    for handler, pattern in callbacks:
+        app.add_handler(CallbackQueryHandler(handler, pattern=pattern))
 
-    app.add_handler(CommandHandler("nochoke", start_nochoke))
-    app.add_handler(CommandHandler("n", start_nochoke))
-
-    #TODO make async
-    app.add_handler(CommandHandler("simulate", simulate))
-    app.add_handler(CommandHandler("s", simulate))
-
-    app.add_handler(CommandHandler("settings", settings_cmd))  
-
-    app.add_handler(CommandHandler("beatmaps", beatmaps))
-    app.add_handler(CommandHandler("b", beatmaps))
-
-    app.add_handler(CommandHandler("name", set_name))
-    app.add_handler(CommandHandler("link", set_name))
-    app.add_handler(CommandHandler("nick", set_name))
-    app.add_handler(CommandHandler("osu", set_name))
-
-    app.add_handler(CommandHandler("gn", random_image))    
-
-    app.add_handler(CommandHandler("doubt", doubt))
-    app.add_handler(CommandHandler("blacks", blacks))
-
-    app.add_handler(CommandHandler("ping", ping))
-    app.add_handler(CommandHandler("uptime", uptime))
-    app.add_handler(CommandHandler("getthreads", dev_getthreads))
-
-    app.add_handler(CommandHandler("challenge", challenge))
-
-
-    app.add_handler(CallbackQueryHandler(rs_button, pattern=r"^rs_"))
-    app.add_handler(CallbackQueryHandler(button_handler_profile, pattern=r"^(profile|card|noop)$"))
-    app.add_handler(CallbackQueryHandler(beatmaps_button_handler, pattern="^beatmaps_"))    
-    app.add_handler(CallbackQueryHandler(settings_button_handler, pattern="^settings_"))
-    # app.add_handler(CallbackQueryHandler(button_handler, pattern=r"^(next_challenge|finish_challenge|leaderboard|info|skip_challenge|menu_challenge)$"))
-    app.add_handler(CallbackQueryHandler(simulate_button_handler, pattern="^simulate_"))
-
-    app.add_handler(CallbackQueryHandler(farm_pagination_callback, pattern=r"^farm_page:"))
-    app.add_handler(CallbackQueryHandler(farm_step_callback, pattern=r"^farm_(skill|mod|lazer|tol):"))
-    app.add_handler(CallbackQueryHandler(page_callback_choke, pattern=r"^page_\d+_\d+$"))
-    
-    app.add_handler(CommandHandler("reminders", reminders_command))
-
+def setup_logging():
     class ShortNetworkHandler(logging.Handler):
         def emit(self, record):
             msg = record.getMessage()
-            if "NetworkError" in msg: print("NetworkError")
-            else: print(msg)
+            if "NetworkError" in msg:
+                print("NetworkError")
+            else:
+                print(msg)
 
     logger = startup()
-    logger.addHandler(ShortNetworkHandler())    
+    logger.addHandler(ShortNetworkHandler())
 
-    try: app.run_polling()
-    except NetworkError:  print("NetworkError")
+def main():
+    app = ApplicationBuilder().token(TOKEN).build()
+
+    app.add_handler(
+        MessageHandler(filters.ALL & ~filters.COMMAND, check_message)
+    )
+
+    register_commands(app)
+    register_callbacks(app)
+    setup_logging()
+
+    try:
+        app.run_polling()
+    except NetworkError:
+        print("NetworkError")
+
+
 if __name__ == "__main__":
     main()

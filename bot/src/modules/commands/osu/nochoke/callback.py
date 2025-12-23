@@ -9,7 +9,7 @@ from .page_text import get_text
 
 
 
-async def callback_choke(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer() 
 

@@ -4,7 +4,7 @@
 import asyncio
 from datetime import datetime
 
-from bot.src.config import ALL_UPDATES_LOG, DELETED_MESSAGES_LOG
+from config import ALL_UPDATES_LOG, DELETED_MESSAGES_LOG
 
 
 log_queue = asyncio.Queue()

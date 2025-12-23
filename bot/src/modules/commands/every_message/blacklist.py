@@ -3,7 +3,7 @@
 
 import temp  
 
-from ....config import BLACKLIST_FILE
+from config import BLACKLIST_FILE
 
 
 

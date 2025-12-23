@@ -11,7 +11,7 @@ from telegram.ext import ContextTypes
 from ....systems.logging import log_all_update
 from .code import generate_unique_code
 
-from .....config import REMINDERS_DATA_FILE, REMINDERS_PW_FILE, user_sessions
+from config import REMINDERS_DATA_FILE, REMINDERS_PW_FILE, user_sessions
 
 
 

@@ -37,7 +37,6 @@ dev_flag = "1"
 from pathlib import Path
 
 
-from bot.src.modules.systems.translations import TRANSLATIONS as TR
 from longtext import *
 
 

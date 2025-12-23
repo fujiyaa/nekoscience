@@ -14,7 +14,7 @@ from ....systems.auth import check_osu_verified
 from .buttons_level2 import get_keyboard
 from .sql_template import search_beatmaps
 
-from .....config import BOT_DIR, USERS_SKILLS_FILE
+from config import BOT_DIR, USERS_SKILLS_FILE
 
 
 

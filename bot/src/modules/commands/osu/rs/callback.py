@@ -14,11 +14,11 @@ from ....actions.messages import reset_remove_timer, safe_query_answer
 from ....systems.json_files import load_score_file
 from ....wrappers.score import process_score_and_image
 
-from .....config import RS_BUTTONS_TIMEOUT, USER_SETTINGS_FILE, user_sessions
+from config import RS_BUTTONS_TIMEOUT, USER_SETTINGS_FILE, user_sessions
 
 
 
-async def rs_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     s = temp.load_json(USER_SETTINGS_FILE, default={})
     user_settings = s.get(str(update.effective_user.id), {}) 

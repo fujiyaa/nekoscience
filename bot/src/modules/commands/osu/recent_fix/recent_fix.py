@@ -14,7 +14,7 @@ from ....systems.auth import check_osu_verified
 from ....external.osu_api import get_osu_token, get_user_scores
 from .send_score_fix import send_score_fix
 
-from .....config import COOLDOWN_RECENT_FIX_COMMAND
+from config import COOLDOWN_RECENT_FIX_COMMAND
 
 
 

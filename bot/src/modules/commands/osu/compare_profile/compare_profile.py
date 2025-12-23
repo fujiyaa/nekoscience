@@ -11,7 +11,7 @@ from ....systems.logging import log_all_update
 from ....external.osu_api import get_osu_token, get_user_profile, get_top_100_scores
 from ....utils.text_format import format_stats, make_header, row
 
-from .....config import COOLDOWN_STATS_COMMANDS
+from config import COOLDOWN_STATS_COMMANDS
 
 MAX_ATTEMPTS = 3  
 

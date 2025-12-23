@@ -7,8 +7,8 @@ import json
 
 from ....external.osu_http import fetch_beatmap_data
 
-from .....config import QUEUE_FILE, FLAG_FILE, STATS_BEATMAPS
-from .....config import GROUPS_DIR, URL_SCAN_TIMEOUT
+from config import QUEUE_FILE, FLAG_FILE, STATS_BEATMAPS
+from config import GROUPS_DIR, URL_SCAN_TIMEOUT
 
 
 

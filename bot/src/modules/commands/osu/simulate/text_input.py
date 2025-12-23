@@ -13,8 +13,8 @@ from .buttons import get_simulate_keyboard
 from ....external.localapi import get_map_stats_neko_api
 from ....actions.messages import delete_user_message
 
-from .....config import VALID_MODS, INVALID_MODS_COMBINATIONS, ABSOLUTELY_FORBIDDEN
-from .....config import sessions_simulate
+from config import VALID_MODS, INVALID_MODS_COMBINATIONS, ABSOLUTELY_FORBIDDEN
+from config import sessions_simulate
 
 
 

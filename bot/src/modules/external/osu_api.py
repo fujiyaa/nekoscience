@@ -9,13 +9,13 @@ import re
 import requests
 from typing import List, Dict
 
-from .osu_http import get_score_page
+from .osu_http import get_score_page, enrich_score_lazer
 from .osu_auth import get_osu_token
-from ...modules.utils.network import fetch_with_timeout, post_with_timeout, try_request
-from ...modules.utils.osu_conversions import is_legacy_score
-from ...modules.systems.json_files import load_score_file, save_score_file
+from modules.utils.network import fetch_with_timeout, post_with_timeout, try_request
+from modules.utils.osu_conversions import is_legacy_score
+from modules.systems.json_files import load_score_file, save_score_file
 
-from bot.src.config import OSU_ID_CACHE_FILE
+from config import OSU_ID_CACHE_FILE
 
 
 
@@ -329,76 +329,6 @@ async def process_score(score, additional_data):
         "score_stats": raw.get("statistics", {}),
         "id": raw.get("id")
     }
-
-async def enrich_score_lazer(session, user_id: str, score_id: str):
-    cached_entry = load_score_file(score_id)
-    if not cached_entry:
-        return
-
-    raw = cached_entry["raw"]
-    score_page = await get_score_page(session, user_id, score_id)
-
-    if not score_page:
-        cached_entry["ready"] = True
-        save_score_file(score_id, cached_entry)
-        return
-
-    lazer = True
-    da_active = False
-    speed_multiplier = None
-    custom_values = {}
-    accuracy = raw.get("accuracy")
-
-    mods = score_page.get("mods", [])
-    for mod in mods:
-        if isinstance(mod, dict):
-            acronym = mod.get("acronym", "").upper()
-            settings = mod.get("settings", {})
-        else:
-            acronym = str(mod).upper()
-            settings = {}
-
-        if acronym == "DA":
-            da_active = True
-
-        if "speed_change" in settings:
-            speed_multiplier = settings["speed_change"]
-
-        for key, value in settings.items():
-            if key in ["drain_rate", "circle_size", "approach_rate", "overall_difficulty"]:
-                custom_values[key] = value
-
-    accuracy = score_page.get("accuracy", accuracy)
-
-    mods_orig = raw.get("mods", [])
-
-    mods_clean = []
-    if mods_orig:
-        if isinstance(mods_orig[0], dict):
-            mods_clean = [m for m in mods_orig if m.get("acronym") != "DA"]
-            mods_text = "+".join(m.get("acronym", "") for m in mods_clean if "acronym" in m)
-        else:
-            mods_clean = [m for m in mods_orig if m != "DA"]
-            mods_text = "+".join(mods_clean)
-    else:
-        mods_text = "NM"
-
-    if speed_multiplier:
-        mods_text += f" ({speed_multiplier}x)"
-    if da_active:
-        mods_text = mods_text + "+DA" if mods_text != "NM" else "+DA"
-
-    raw.update({
-        "lazer": lazer,
-        "DA_values": custom_values,
-        "speed_multiplier": speed_multiplier,
-        "accuracy": accuracy,
-        "mods": mods_text
-    })
-
-    cached_entry["raw"] = raw
-    cached_entry["ready"] = True
-    save_score_file(score_id, cached_entry)
 
 async def get_score_by_id(score_id: str, token: str, timeout_sec: int = 10):
     cached_entry = load_score_file(score_id)

@@ -12,7 +12,7 @@ from ....systems.logging import log_all_update
 from ....systems.auth import check_osu_verified
 from .buttons_level2 import get_keyboard
 
-from .....config import USERS_SKILLS_FILE
+from config import USERS_SKILLS_FILE
 
 
 

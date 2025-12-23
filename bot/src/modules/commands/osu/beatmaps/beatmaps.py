@@ -9,7 +9,7 @@ from ....systems.cooldowns import check_user_cooldown
 from ....utils.text_format import build_beatmaps_text
 from .buttons import get_keyboard
 
-from .....config import COOLDOWN_STATS_COMMANDS
+from config import COOLDOWN_STATS_COMMANDS
 
 
 

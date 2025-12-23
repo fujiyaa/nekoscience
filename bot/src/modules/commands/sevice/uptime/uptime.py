@@ -9,7 +9,7 @@ from telegram.ext import ContextTypes
 from ....systems.logging import log_all_update
 from ....systems.cooldowns import check_user_cooldown
 
-from .....config import COOLDOWN_DEV_COMMANDS, START_TIME
+from config import COOLDOWN_DEV_COMMANDS, START_TIME
 
 
 

@@ -17,7 +17,7 @@ from ....systems.auth import check_osu_verified
 from ....utils.text_format import country_code_to_flag
 from ....utils.osu_conversions import apply_mods_to_stats, get_mods_info
 
-from .....config import COOLDOWN_STATS_COMMANDS
+from config import COOLDOWN_STATS_COMMANDS
 
 
 

@@ -8,7 +8,7 @@ from ....systems.logging import log_all_update
 from ....systems.cooldowns import check_user_cooldown
 from ....external.localapi import get_forum_db_thread_count
 
-from .....config import COOLDOWN_DEV_COMMANDS
+from config import COOLDOWN_DEV_COMMANDS
 
 
 

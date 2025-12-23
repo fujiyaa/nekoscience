@@ -18,7 +18,7 @@ from ....utils.osu_conversions import calculate_weighted_pp
 from .buttons import get_keyboard
 from .page_text import get_text
 
-from .....config import COOLDOWN_STATS_COMMANDS
+from config import COOLDOWN_STATS_COMMANDS
 
 
 

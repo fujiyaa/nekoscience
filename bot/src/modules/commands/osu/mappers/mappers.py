@@ -14,7 +14,7 @@ from ....external.osu_api import get_osu_token, get_user_profile, get_top_100_sc
 from ....systems.auth import check_osu_verified
 from ....utils.text_format import country_code_to_flag
 
-from .....config import COOLDOWN_STATS_COMMANDS
+from config import COOLDOWN_STATS_COMMANDS
 
 
 

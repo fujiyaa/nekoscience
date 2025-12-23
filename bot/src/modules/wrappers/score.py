@@ -13,7 +13,7 @@ from ..external.osu_http import beatmap
 from ..utils.osu_conversions import get_mods_info, apply_mods_to_stats
 from ..wrappers.beatmap import create_beatmap_image
 
-from ...config import USER_SETTINGS_FILE
+from config import USER_SETTINGS_FILE
 
 
 

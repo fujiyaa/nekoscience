@@ -6,7 +6,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 import logging
 
-from bot.src.config import remove_tasks
+from config import remove_tasks
 
 async def delete_message_after_delay(context, chat_id: int, message_id: int, delay: int):
     await asyncio.sleep(delay)

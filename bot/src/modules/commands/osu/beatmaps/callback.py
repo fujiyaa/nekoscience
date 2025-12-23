@@ -18,12 +18,13 @@ from ....systems.auth import check_osu_verified
 from ....external.osu_api import get_osu_token, get_most_played, get_top_100_scores
 from ....utils.text_format import build_beatmaps_text
 from .processing import worker, check_group_status, delete_done_file, addtask
+from .buttons import get_keyboard
 
-from .....config import COOLDOWN_WEEK_SECONDS, FLAG_FILE, COUNT_ME_FILE, GROUPS_DIR
+from config import COOLDOWN_WEEK_SECONDS, FLAG_FILE, COUNT_ME_FILE, GROUPS_DIR
 
 
 
-async def beatmaps_button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     user_id = query.from_user.id
     user_name = query.from_user.username
@@ -36,7 +37,7 @@ async def beatmaps_button_handler(update: Update, context: ContextTypes.DEFAULT_
             asyncio.create_task(worker())
             print("worker startup from query")
 
-        msg, reply_markup = await build_beatmaps_text(owner_id)
+        msg, reply_markup = await build_beatmaps_text(owner_id), get_keyboard(owner_id)
         
         try:
             await query.edit_message_text(

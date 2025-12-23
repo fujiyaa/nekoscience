@@ -14,7 +14,7 @@ from ....actions.messages import safe_send_message, safe_edit_message
 from ....external.osu_api import get_osu_token, get_user_profile, get_top_100_scores
 from ....utils.text_format import country_code_to_flag
 
-from .....config import COOLDOWN_STATS_COMMANDS, message_authors
+from config import COOLDOWN_STATS_COMMANDS, message_authors
 
 
 

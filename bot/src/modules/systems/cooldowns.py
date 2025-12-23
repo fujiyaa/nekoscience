@@ -3,9 +3,9 @@
 
 import os, aiofiles, json, asyncio
 from datetime import datetime, timedelta, timezone
-from bot.src.modules.actions.messages import delete_message_after_delay
+from modules.actions.messages import delete_message_after_delay
 
-from bot.src.config import COOLDOWN_FILE
+from config import COOLDOWN_FILE
 
 async def read_cooldowns():
     if not os.path.exists(COOLDOWN_FILE):

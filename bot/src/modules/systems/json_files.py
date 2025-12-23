@@ -3,7 +3,9 @@
 
 import os, json
 
-from bot.src.config import SCORES_DIR
+from config import SCORES_DIR
+
+
 
 def get_score_path(score_id: str) -> str:
     return os.path.join(SCORES_DIR, f"{score_id}.json")

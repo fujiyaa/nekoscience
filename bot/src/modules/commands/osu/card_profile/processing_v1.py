@@ -9,7 +9,7 @@ import tempfile
 from datetime import date
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
-from .....config import BOT_DIR, GRAPH_PNG
+from config import BOT_DIR, GRAPH_PNG
 
 
 

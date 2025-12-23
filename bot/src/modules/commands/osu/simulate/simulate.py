@@ -13,8 +13,8 @@ from ....external.osu_http import beatmap
 from ....external.localapi import get_map_stats_neko_api
 from ....actions.messages import delete_user_message, delete_message_after_delay
 
-from .....config import OSU_MAP_REGEX, PARAMS_TEMPLATE
-from .....config import sessions_simulate
+from config import OSU_MAP_REGEX, PARAMS_TEMPLATE
+from config import sessions_simulate
 
 
 

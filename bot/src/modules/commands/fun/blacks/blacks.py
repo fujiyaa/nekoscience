@@ -7,7 +7,7 @@ from telegram.ext import ContextTypes
 from ....systems.logging import log_all_update
 from ....systems.cooldowns import check_user_cooldown
 
-from .....config import COOLDOWN_GIFS_COMMANDS, GIF_BLACKS_PATH
+from config import COOLDOWN_GIFS_COMMANDS, GIF_BLACKS_PATH
 
 
 

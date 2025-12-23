@@ -15,7 +15,7 @@ from ....systems.auth import check_osu_verified
 from ....utils.text_format import format_blocks_percent, format_blocks_pp, country_code_to_flag
 from ....utils.osu_conversions import format_mods
 
-from .....config import COOLDOWN_STATS_COMMANDS
+from config import COOLDOWN_STATS_COMMANDS
 
 
 

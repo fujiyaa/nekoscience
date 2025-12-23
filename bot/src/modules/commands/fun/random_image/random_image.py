@@ -14,8 +14,8 @@ from ....systems.logging import log_all_update
 from ....systems.cooldowns import check_user_cooldown
 from ....actions.messages import safe_send_message, delete_response
 
-from .....config import COOLDOWN_PICS_COMMANDS, ARCHER_BOT, CHANCE_PIC
-from .....config import IMAGES_DIR, LUCKY_TOPIC_ID, TARGET_CHAT_ID, fail_texts
+from config import COOLDOWN_PICS_COMMANDS, ARCHER_BOT, CHANCE_PIC
+from config import IMAGES_DIR, LUCKY_TOPIC_ID, TARGET_CHAT_ID, fail_texts
 
 
 

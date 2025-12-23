@@ -14,7 +14,7 @@ from ....external.localapi import get_score_pp_neko_api
 from ....utils.osu_conversions import calculate_weighted_pp, insert_pp
 from ....utils.text_format import normalize_no_plus, country_code_to_flag
 
-from .....config import USER_SETTINGS_FILE
+from config import USER_SETTINGS_FILE
 from ....systems.translations import TRANSLATIONS as TR
 
 

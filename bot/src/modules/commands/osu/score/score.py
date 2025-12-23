@@ -12,7 +12,7 @@ from ....external.osu_api import get_osu_token, get_score_by_id
 from ....systems.json_files import load_score_file
 from ....wrappers.score import send_score
 
-from .....config import COOLDOWN_RS_COMMAND     # why
+from config import COOLDOWN_RS_COMMAND     # why
 
 
 

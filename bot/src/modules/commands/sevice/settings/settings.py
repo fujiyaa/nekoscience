@@ -9,7 +9,7 @@ from telegram.ext import ContextTypes
 from ....systems.logging import log_all_update
 from .buttons import get_settings_kb
 
-from .....config import USER_SETTINGS_FILE
+from config import USER_SETTINGS_FILE
 
 
 

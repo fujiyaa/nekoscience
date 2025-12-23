@@ -20,7 +20,7 @@ from ....external.localapi import get_map_stats_neko_api
 from ....utils.osu_conversions import get_mods_info, apply_mods_to_stats
 from ....utils.text_format import format_osu_date
 
-from .....config import OSU_MAP_REGEX, COOLDOWN_CARD_COMMAND, BOT_DIR, COVERS_DIR
+from config import OSU_MAP_REGEX, COOLDOWN_CARD_COMMAND, BOT_DIR, COVERS_DIR
 
 
 

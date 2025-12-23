@@ -15,7 +15,7 @@ from ....external.osu_http import download_osz_async
 from .send_audio import send_audio
 from .utils import beatmap_artists_and_audio_path
 
-from .....config import COOLDOWN_MP3_COMMAND, OSU_SESSION, OSZ_DIR
+from config import COOLDOWN_MP3_COMMAND, OSU_SESSION, OSZ_DIR
 
 
 

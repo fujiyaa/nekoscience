@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 import aiohttp 
 from PIL import Image, ImageDraw, ImageFont
 
-from ...config import BOT_DIR, TEMP_DIR, AVATARS_DIR, COVERS_DIR
+from config import BOT_DIR, TEMP_DIR, AVATARS_DIR, COVERS_DIR
 
 
 

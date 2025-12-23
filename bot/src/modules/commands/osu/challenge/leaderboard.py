@@ -9,7 +9,7 @@ from telegram.ext import ContextTypes
 from ....systems.auth import check_osu_verified
 from ....systems.logging import log_all_update
 
-from .....config import POINTS_FILE
+from config import POINTS_FILE
 
 
 

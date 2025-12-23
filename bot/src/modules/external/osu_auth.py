@@ -5,7 +5,7 @@ import aiohttp
 import asyncio
 import time
 
-from ...config import OSU_CLIENT_ID, OSU_CLIENT_SECRET
+from config import OSU_CLIENT_ID, OSU_CLIENT_SECRET
 
 _cached_token = None
 _token_expiry = 0
