@@ -33,7 +33,7 @@ async def reminders_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if user_id in passwords:
         code = passwords[user_id]
         await update.effective_message.reply_text(f"Твой пароль: `{code}` \n https://myangelfujiya.ru/darkness", parse_mode="Markdown")
-        print(f"[DEBUG] Пользователь {user_id} запросил существующий код: {code}")
+        
         return
 
     existing_codes = set(passwords.values())
@@ -44,9 +44,7 @@ async def reminders_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         json.dump(passwords, f, ensure_ascii=False, indent=2)
 
     await update.effective_message.reply_text(f"Твой пароль: `{code}`", parse_mode="Markdown")
-    print(f"[DEBUG] Создан новый код для пользователя {user_id}: {code}")
-
-
+    
 
 # эта команда используется автоматически при новых смс
 async def start_check_reminders(update, context):

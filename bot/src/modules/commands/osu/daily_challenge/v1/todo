@@ -1,0 +1,37 @@
+{
+    "11596989": { # osu id                     
+        "telegram_username": user_name,
+
+        "osu_username": "FujiyaXdx",
+        "osu_id": 11596989,   
+
+        "v1":{
+            "current_tier": 1,
+
+            "points":{
+                "previous_seasons": 239,
+                "current_season": 1,
+
+                "total": 240
+            },                  
+            "active":{  #один челлендж                 
+                "beatmapset_id": None,       
+                "beatmap_id": 2173545,
+
+                "artist": "Marie",
+                "title": "Koko ni Iru yo (Game Ver.)",
+                "creator": "Elie",
+                "version": "Hard",
+                "stars": 3.2,
+                "bg_url": "https://osu.ppy.sh/.....",
+
+                "goal": "Пройти на В (80%+ Accuracy)",                        
+                "given": 1754848794.6378334, 
+            },
+            "completed":{
+                "2172175": 1754848894.6378334, # id карты / время завершения
+                "2113350": 1754848754.6378334,
+            },
+        }
+    }          
+}

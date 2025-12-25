@@ -24,13 +24,13 @@ from modules.commands.osu.simulate.simulate import simulate
 from modules.commands.osu.beatmaps.beatmaps import beatmaps
 from modules.commands.osu.card_profile.card import start_card
 from modules.commands.osu.profile.profile import start_profile
-from modules.commands.osu.challenge.challenge import challenge
 from modules.commands.osu.mappers.mappers import start_mappers
 from modules.commands.osu.nochoke.no_choke import start_nochoke
 from modules.commands.osu.maps_skill.maps_skill import start_farm
 from modules.commands.osu.average.average import start_average_stats
 from modules.commands.osu.recent_fix.recent_fix import start_recent_fix
 from modules.commands.osu.music.beatmap_audio import start_beatmap_audio
+from modules.commands.osu.daily_challenge.v1.challenge import start_challenge
 from modules.commands.osu.compare_profile.compare_profile import start_compare_profile
 
 # fun
@@ -50,44 +50,47 @@ from modules.commands.sevice.forum_db_related.getthreads import dev_getthreads
 from modules.commands.osu.rs.callback import callback as rs_handler
 from modules.commands.osu.nochoke.callback import callback as nochoke_handler
 from modules.commands.osu.beatmaps.callback import callback as beatmaps_handler
+from modules.commands.osu.simulate.callback import callback as simulate_handler
+from modules.commands.osu.daily_challenge.v1.callback import callback as challenge_callback
 from modules.commands.osu.maps_skill.callback_level1 import farm_step_callback as ms_callback1
 from modules.commands.osu.maps_skill.callback_level2 import farm_pagination_callback as ms_callback2
-from modules.commands.osu.simulate.callback import callback as simulate_handler
+
 from modules.commands.sevice.settings.callback import callback as settings_handler
 
 
 
+# команды не начинающиеся со start_ не асинхронные.
 def register_commands(app):
     command_map = {
         # osu
-        ("mods",): start_mods,
-        ("mappers",): start_mappers,
-        ("profile", "p"): start_profile,
-        ("card", "c"): start_card,
-        ("recent_fix", "fix", "f"): start_recent_fix,
-        ("recent", "rs", "r"): start_rs,
-        ("pc",): start_compare_profile,
-        ("music",): start_beatmap_audio,
-        ("maps_skill", "ms"): start_farm,
-        ("average", "avg", "a"): start_average_stats,
-        ("nochoke", "n"): start_nochoke,
-        ("simulate", "s"): simulate,
-        ("beatmaps", "b"): beatmaps,
-        ("name", "link", "nick", "osu"): set_name,
-        ("challenge",): challenge,
+        ("mods",):                          start_mods,
+        ("mappers",):                       start_mappers,
+        ("profile", "p"):                   start_profile,
+        ("card", "c"):                      start_card,
+        ("recent_fix", "fix", "f"):         start_recent_fix,
+        ("recent", "rs", "r"):              start_rs,
+        ("pc",):                            start_compare_profile,
+        ("music",):                         start_beatmap_audio,
+        ("maps_skill", "ms"):               start_farm,
+        ("average", "avg", "a"):            start_average_stats,
+        ("nochoke", "n"):                   start_nochoke,
+        ("simulate", "s"):                  simulate,
+        ("beatmaps", "b"):                  beatmaps,
+        ("name", "link", "nick", "osu"):    set_name,
+        ("challenge",):                     start_challenge,
 
         # fun
-        ("gn",): random_image,
-        ("doubt",): doubt,
-        ("blacks",): blacks,
-        ("reminders",): reminders_command,
+        ("gn",):                            random_image,
+        ("doubt", "goon"):                  doubt,
+        ("blacks",):                        blacks,
+        ("reminders",):                     reminders_command,
 
         # service
-        ("start", "help"): start_help,
-        ("settings",): settings_cmd,
-        ("ping",): ping,
-        ("uptime",): uptime,
-        ("getthreads",): dev_getthreads,
+        ("start", "help"):                  start_help,
+        ("settings",):                      settings_cmd,
+        ("ping",):                          ping,
+        ("uptime",):                        uptime,
+        ("getthreads",):                    dev_getthreads,
     }
 
     for names, handler in command_map.items():
@@ -96,13 +99,14 @@ def register_commands(app):
 
 def register_callbacks(app):
     callbacks = [
-        (rs_handler, r"^rs_"),
-        (beatmaps_handler, r"^beatmaps_"),
-        (settings_handler, r"^settings_"),
-        (simulate_handler, r"^simulate_"),
-        (ms_callback2, r"^farm_page:"),
-        (ms_callback1, r"^farm_(skill|mod|lazer|tol):"),
-        (nochoke_handler, r"^page_\d+_\d+$"),
+        (rs_handler,            r"^rs_"),
+        (beatmaps_handler,      r"^beatmaps_"),
+        (settings_handler,      r"^settings_"),
+        (simulate_handler,      r"^simulate_"),
+        (ms_callback2,          r"^farm_page:"),
+        (ms_callback1,          r"^farm_(skill|mod|lazer|tol):"),
+        (nochoke_handler,       r"^page_\d+_\d+$"),        
+        (challenge_callback,    r"^challenge_(main|next|finish|skip|leaderboard|info)"),
     ]
 
     for handler, pattern in callbacks:

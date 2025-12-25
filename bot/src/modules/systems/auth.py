@@ -22,6 +22,10 @@ async def check_osu_verified(telegram_id: str):
     verified = await _fetch(file_v)    
     return verified.get(telegram_id, {}).get("osu_username")
 
+async def get_osu_id(telegram_id: str):
+    verified = await _fetch(file_v)    
+    return verified.get(telegram_id, {}).get("osu_id")
+
 async def verify_osu_user(text: str, telegram_id: str):    
     pending = await _fetch(file_p)
     new_verified = {}

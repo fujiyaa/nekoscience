@@ -445,13 +445,91 @@ async def get_random_beatmap_from_random_pack(max_attempts=5):
             if beatmapsets:
                 beatmapset = random.choice(beatmapsets)
                 return {
-                    "pack_tag": pack_tag,
-                    "pack_name": pack["name"],
                     "beatmapset_id": beatmapset["id"],
+
                     "artist": beatmapset["artist"],
                     "title": beatmapset["title"],
-                    "creator": beatmapset["creator"],
-                    "url": f"https://osu.ppy.sh/beatmapsets/{beatmapset['id']}"
+                    "creator": beatmapset["creator"],                    
+                    "bg_url": beatmapset['covers']['card']
                 }
 
         return None
+    
+async def check_osu_challenge_completed(user_osu_id: int, beatmapset_id: int, goal: dict) -> bool:
+    try:
+        token = await get_osu_token()
+        url = f"https://osu.ppy.sh/api/v2/users/{user_osu_id}/scores/recent?limit=1"
+        headers = {"Authorization": f"Bearer {token}"}
+        
+        print('🔻 API request (check_osu_challenge_completed)')
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, headers=headers) as resp:
+                if resp.status != 200:
+                    return False
+                scores = await resp.json()
+
+        if not scores:
+            return False
+
+        score = scores[0]
+
+        if score['beatmapset']['id'] != beatmapset_id:
+            return False
+
+        goal_type = goal.lower()
+
+        # ranks_order = ["F", "D", "C", "B", "A", "S", "SH", "SS", "SSH"]
+        player_rank = score.get("rank", "F")
+        # player_rank_index = ranks_order.index(player_rank) if player_rank in ranks_order else 0
+        acc = score.get("accuracy", 0.0) * 100
+        mods = score.get("mods", [])
+        if isinstance(mods, str):
+            mods = [mods]
+
+        if goal_type == "пройти на s (full combo)":
+            # S, SH, SS или SSH (S с FC)
+            if player_rank not in ("S", "SH", "SS", "SSH"):
+                return False
+
+        elif goal_type == "пройти на а (90%+ accuracy)":
+            if  acc <= 90:
+                return False
+
+        elif goal_type == "пройти на в (80%+ accuracy)":
+            if  acc <= 80:
+                return False
+
+        elif goal_type == "пройти на с (70%+ accuracy)":
+            if  acc <= 70:
+                return False
+
+        elif goal_type == "пройти с модом sd":
+            if "SD" not in mods:
+                return False
+
+        elif goal_type == "пройти с модом hd":
+            if "HD" not in mods:
+                return False
+
+        elif goal_type == "пройти с модом hr":
+            if "HR" not in mods:
+                return False
+
+        elif goal_type == "пройти с модом dt или hr":
+            if not ("DT" in mods or "HR" in mods):
+                return False
+
+        elif goal_type == "просто пройти карту":
+            if player_rank == "F":
+                return False
+
+        else:
+            return False
+
+        if "NF" in mods:
+            return False
+
+        return True
+    except Exception as e:
+        print(f"ошибка in check_osu_challenge_completed {e}")
+        return False

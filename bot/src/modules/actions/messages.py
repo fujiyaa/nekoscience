@@ -42,10 +42,39 @@ async def delete_user_message(update: Update, context: ContextTypes.DEFAULT_TYPE
     except Exception as e:
         print(f"Ошибка при удалении пользовательского сообщения: {e}")
 
-async def safe_send_message(update: Update, text: str, parse_mode=None):
+async def safe_send_message(
+        update: Update, 
+        text: str, 
+        parse_mode=None, 
+        reply_markup=None,
+        disable_web_page_preview=False
+    ):
     for _ in range(5):
         try:
-            return await update.message.reply_text(text, parse_mode=parse_mode)
+            if update.message:
+                return await update.message.reply_text(
+                    text=text,
+                    parse_mode=parse_mode,
+                    reply_markup=reply_markup,
+                    disable_web_page_preview=disable_web_page_preview
+                )
+
+            elif update.callback_query:
+                return await update.callback_query.message.reply_text(
+                    text=text,
+                    parse_mode=parse_mode,
+                    reply_markup=reply_markup,
+                    disable_web_page_preview=disable_web_page_preview
+                )
+
+            else:
+                return await update.effective_chat.send_message(
+                    text=text,
+                    parse_mode=parse_mode,
+                    reply_markup=reply_markup,
+                    disable_web_page_preview=disable_web_page_preview
+                )
+
         except Exception as e:
             logging.error(f"Ошибка при отправке сообщения: {e}")
             await asyncio.sleep(1)
