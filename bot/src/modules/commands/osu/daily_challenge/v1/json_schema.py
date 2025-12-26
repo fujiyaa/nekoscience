@@ -22,8 +22,8 @@ def construct_user(osu_id: int, osu_name: str, tg_id: int, tg_name: str, v1: dic
         "v1": {
             "current_tier":             int(v1.get("current_tier", 1)),
             "points": {
-                "previous_seasons":     int(v1.get("points", 0).get("previous_seasons", 0)),
-                "current_season":       int(v1.get("points", 0).get("current_season", 0))
+                "previous_seasons":     int(v1.get("points", {}).get("previous_seasons", 0)),
+                "current_season":       int(v1.get("points", {}).get("current_season", 0))
             },
             "active":                   v1.get("active", None),     # beatmapset
             "skipped":                  v1.get("skipped", {}),

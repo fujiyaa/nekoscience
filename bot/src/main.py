@@ -32,6 +32,7 @@ from modules.commands.osu.recent_fix.recent_fix import start_recent_fix
 from modules.commands.osu.music.beatmap_audio import start_beatmap_audio
 from modules.commands.osu.daily_challenge.v1.challenge import start_challenge
 from modules.commands.osu.compare_profile.compare_profile import start_compare_profile
+from modules.commands.osu.card_top5.card import start_card as start_card_top5
 
 # fun
 from modules.commands.fun.doubt.doubt import doubt
@@ -44,7 +45,7 @@ from modules.commands.sevice.ping.ping import ping
 from modules.commands.sevice.uptime.uptime import uptime
 from modules.commands.sevice.help.help import start_help
 from modules.commands.sevice.settings.settings import settings_cmd
-from modules.commands.sevice.forum_db_related.getthreads import dev_getthreads
+# from modules.commands.sevice.forum_db_related.getthreads import dev_getthreads
 
 # callback
 from modules.commands.osu.rs.callback import callback as rs_handler
@@ -67,6 +68,7 @@ def register_commands(app):
         ("mappers",):                       start_mappers,
         ("profile", "p"):                   start_profile,
         ("card", "c"):                      start_card,
+        ("cardtop", "ct"):                  start_card_top5,
         ("recent_fix", "fix", "f"):         start_recent_fix,
         ("recent", "rs", "r"):              start_rs,
         ("pc",):                            start_compare_profile,
@@ -89,8 +91,7 @@ def register_commands(app):
         ("start", "help"):                  start_help,
         ("settings",):                      settings_cmd,
         ("ping",):                          ping,
-        ("uptime",):                        uptime,
-        ("getthreads",):                    dev_getthreads,
+        ("uptime",):                        uptime
     }
 
     for names, handler in command_map.items():

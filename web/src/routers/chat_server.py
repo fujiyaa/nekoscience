@@ -251,32 +251,30 @@ async def websocket_endpoint(websocket: WebSocket):
             if msg.get("type") in ("heartbeat", "auth"):
                 continue
 
+            # подключение падает изза несовпадения данных
             if msg.get("type") in ("presence"):
-                message = msg.get("message", "")
-                if not isinstance(message, str) or len(message) > 1000:
-                    continue
-                message = sanitize_message(message)
-                input_name = sanitize_username(msg.get("username", "Unknown"))
-                real_name = await check_user_verified_cached(input_name)
-                timestamp = datetime.datetime.utcnow().isoformat()
+                # message = msg.get("message", "")
+                # if not isinstance(message, str) or len(message) > 1000:
+                #     continue
+                # message = sanitize_message(message)
+                # input_name = sanitize_username(msg.get("username", "Unknown"))
+                # real_name = await check_user_verified_cached(input_name)
+                # timestamp = datetime.datetime.utcnow().isoformat()
 
-                # name = real_name if real_name else input_name  
-                # print(msg)
-
-                match = re.search(r"/community/forums/topics/(\d+)", message)
+                # match = re.search(r"/community/forums/topics/(\d+)", message)
                 
-                topic_id = match.group(1) if match is not None else None
+                # topic_id = match.group(1) if match is not None else None
 
-                if topic_id:
-                    exists = await localapi.forum_thread_exists(topic_id)
+                # if topic_id:
+                #     exists = await localapi.forum_thread_exists(topic_id)
 
-                    if exists:
-                        continue
+                #     if exists:
+                #         continue
 
-                    else:
-                        resp = await localapi.forum_add_thread(int(topic_id), "тест тайтл", "тест автор")
+                #     else:
+                #         resp = await localapi.forum_add_thread(int(topic_id), "тест тайтл", "тест автор")
                         
-                        print(resp)
+                #         print(resp)
 
                 continue
 

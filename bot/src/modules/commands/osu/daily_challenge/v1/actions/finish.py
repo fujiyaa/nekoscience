@@ -87,7 +87,7 @@ async def finish_challenge(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
                     # прошлый челлендж не завершен и время не вышло
                     if (now - given) < TIME_LIMIT:
-                        if not await check_osu_challenge_completed(osu_id, beatmap_id, goal):
+                        if await check_osu_challenge_completed(osu_id, beatmap_id, goal):
                             completed[str(beatmap_id)] = now    
 
                             keys_to_remove = []

@@ -51,6 +51,7 @@ BEATMAPS_DIR_AUDIO = BOT_DIR / "cache/beataudio"
 GROUPS_DIR = BOT_DIR / "stats/groups"
 SCORES_DIR = BOT_DIR / "scores"
 CARDS_DIR = BOT_DIR / "cache/cards"
+TOP5_CARDS_DIR = BOT_DIR / "cache/top5cards"
 OSZ_DIR = BOT_DIR / "cache/osz"
 
 IMAGES_JSON = BOT_DIR / "images/images_data.json"
@@ -135,6 +136,7 @@ os.makedirs(COVERS_DIR, exist_ok=True)
 os.makedirs(TEMP_DIR, exist_ok=True)
 os.makedirs(AVATARS_DIR, exist_ok=True)
 os.makedirs(CARDS_DIR, exist_ok=True)
+os.makedirs(TOP5_CARDS_DIR, exist_ok=True)
 os.makedirs(OSZ_DIR, exist_ok=True)
 
 OSU_USER_REGEX = re.compile(r"osu\.ppy\.sh/users/(\d+)")

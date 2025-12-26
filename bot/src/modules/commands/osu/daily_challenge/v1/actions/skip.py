@@ -100,6 +100,8 @@ async def skip_challenge(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         penalty_points = calculate_penalty_for_tier(tier, time_taken)
                         points -= penalty_points
 
+                        tier_backup = tier
+
                         tier = min(tier + 1, 4)        
 
                         v1_new = {
@@ -125,7 +127,7 @@ async def skip_challenge(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         
                         
                         text = (
-                                f"⏭️✅ Челлендж для {osu_name} (Tier {tier}) пропущен, минус {penalty_points} очков (баланс {points})\n\n"
+                                f"⏭️✅ Челлендж для {osu_name} (Tier {tier_backup}) пропущен, минус {penalty_points} очков (баланс {points})\n\n"
                         )
                         reply_markup = get_keyboard("skip")
                     
@@ -157,76 +159,3 @@ async def skip_challenge(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
         except Exception:
             traceback.print_exc()
-    
-
-
-
-
-
-
-
-
-# async def skip_challenge(update: Update, context: ContextTypes.DEFAULT_TYPE):
-#     try:
-#         handled = await handle_challenge_topic_messages(update)
-#         if handled:
-#             return  # если сообщение было перенесено — не выполнять дальше
-        
-#         topic_id = getattr(update.effective_message, "message_thread_id", None)
-#         user_id = str(update.effective_user.id)
-#         user_file = os.path.join(CHALLENGES_DIR, f"{user_id}.json")
-
-#         menu_keyboard = [
-#             [InlineKeyboardButton("📑 Меню челленджей", callback_data="menu_challenge")]
-#         ]
-#         menu_reply_markup = InlineKeyboardMarkup(menu_keyboard)
-
-#         if not os.path.exists(user_file):
-#             await context.bot.send_message(chat_id=update.effective_chat.id, message_thread_id=topic_id, text="❌ У тебя нет активного челленджа, который можно пропустить. ", reply_markup=menu_reply_markup, parse_mode="HTML")
-#             return
-
-#         challenge_data = load_json(user_file, {})
-#         if challenge_data.get("completed"):
-#             await context.bot.send_message(chat_id=update.effective_chat.id, message_thread_id=topic_id, text="✅ Выданный челлендж уже был завершён. ", reply_markup=menu_reply_markup, parse_mode="HTML")
-#             return
-
-#         # Помечаем челлендж выполненным (принудительно)
-#         challenge_data["completed"] = True
-#         save_json(user_file, challenge_data)
-
-#         tier = challenge_data.get("tier", 1)
-
-#         # Загрузка текущих очков
-#         points_data = load_json(POINTS_FILE, {})
-#         current_points = points_data.get(user_id, 0)
-
-#         # Очки, которые забираются при пропуске, например:
-    
-#         penalty = tier_points_minus.get(tier, 5)
-
-#         new_points = max(current_points - penalty, 0)  # чтобы очки не ушли в минус
-#         points_data[user_id] = new_points
-#         save_json(POINTS_FILE, points_data)
-
-#         # Предсказываем следующий tier для сообщения (не меняем в данных)
-#         if tier < 4:
-#             predicted_next_tier = tier + 1
-#         else:
-#             predicted_next_tier = 4
-        
-#         text = (
-#             f"⏭️ Пропущен челлендж c Tier {tier}. \n\n"
-#             f"Минус {penalty} очков. \nТекущий баланс: {new_points} очков.\n"
-#             f"Следующий челлендж будет Tier {predicted_next_tier}.\n\n "
-#         )
-
-#         keyboard = [
-#             [InlineKeyboardButton("📑 Меню", callback_data="menu_challenge"),
-#             InlineKeyboardButton("➡️ Новый", callback_data="next_challenge")]
-#         ]
-#         reply_markup = InlineKeyboardMarkup(keyboard)
-
-#         await context.bot.send_message(chat_id=update.effective_chat.id, message_thread_id=topic_id, text=text, reply_markup=reply_markup, parse_mode="HTML")
-        
-#     except Exception as e:
-#         await context.bot.send_message(chat_id=update.effective_chat.id, message_thread_id=topic_id, text=f"ошибка {e}", parse_mode="HTML")

@@ -111,6 +111,9 @@ async def get_top_100_scores(username: str, token: str = None, user_id: str = No
                 "version": score.get('beatmap', {}).get('version'),
                 "title": score.get('beatmapset', {}).get('title'),
                 "lazer": lazer,
+                "rank": score.get('rank', 'D'),
+                "artist": score.get('beatmapset', {}).get('artist'),
+                "time": score.get('created_at', '')
             })
 
         return results    
