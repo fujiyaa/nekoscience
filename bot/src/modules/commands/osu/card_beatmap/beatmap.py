@@ -19,12 +19,13 @@ from ....external.osu_api import get_osu_token, get_beatmap
 from ....external.localapi import get_map_stats_neko_api
 from ....utils.osu_conversions import get_mods_info, apply_mods_to_stats
 from ....utils.text_format import format_osu_date
+from .buttons import get_keyboard
 
 from config import OSU_MAP_REGEX, COOLDOWN_CARD_COMMAND, BOT_DIR, COVERS_DIR
 
 
 
-async def start_beatmap_card(update, context, user_request=True):
+async def  start_beatmap_card(update, context, user_request=True):
     if user_request: await log_all_update(update)
     asyncio.create_task(beatmap_card(update, context, user_request))
 
@@ -236,9 +237,12 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
                 "aim": aim_raw
             }
 
-            max_val = max(values.values())
+            max_val = max(values.values(), default=0)
 
-            normalized = {k: v / max_val for k, v in values.items()}
+            if max_val == 0:
+                normalized = {k: 0 for k in values}
+            else:
+                normalized = {k: v / max_val for k, v in values.items()}
 
             speed_data = normalized["speed"]
             acc_data   = normalized["acc"]
@@ -640,8 +644,9 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
 
             with open(img_path, "rb") as f:
                 try:
+                    reply_markup = await get_keyboard(str(beatmap_id))
                     await message.reply_photo(
-                        InputFile(f),
+                        InputFile(f), reply_markup = reply_markup
                     )
                 except:
                     await message.reply_photo(
@@ -659,4 +664,3 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
                 return
   
         except Exception as e: print(e)   
-

@@ -58,6 +58,8 @@ from modules.commands.osu.maps_skill.callback_level2 import farm_pagination_call
 
 from modules.commands.sevice.settings.callback import callback as settings_handler
 
+from modules.actions.osu_chat import callback as osu_chat_callback
+
 
 
 # команды не начинающиеся со start_ не асинхронные.
@@ -108,6 +110,7 @@ def register_callbacks(app):
         (ms_callback1,          r"^farm_(skill|mod|lazer|tol):"),
         (nochoke_handler,       r"^page_\d+_\d+$"),        
         (challenge_callback,    r"^challenge_(main|next|finish|skip|leaderboard|info)"),
+        (osu_chat_callback,     r"^send_pm_with_link_to:"),
     ]
 
     for handler, pattern in callbacks:
