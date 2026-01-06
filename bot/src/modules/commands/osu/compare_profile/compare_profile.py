@@ -117,6 +117,7 @@ async def compare_profile(update: Update, context: ContextTypes.DEFAULT_TYPE, us
             table.append(row(p1['playcount'], "Playcount", p2['playcount'], higher_is_better=True, fmt="{:,}"))
             table.append(row(p1['max_count'], "PC peak", p2['max_count'], higher_is_better=True, fmt="{:,}"))
             table.append(row(p1['maps'], "Maps played", p2['maps'], higher_is_better=True, fmt="{:,}"))
+            # table.append(row(p1['anime_bg_counter'], "Anime top%", p2['anime_bg_counter'], higher_is_better=False, suffix="%", fmt="{:,}"))
             table.append(row(p1['ranked_score']/1e9, "Ranked score", p2['ranked_score']/1e9, higher_is_better=True, suffix="bn", fmt="{:.2f}"))
             table.append(row(p1['total_score']/1e9, "Total score", p2['total_score']/1e9, higher_is_better=True, suffix="bn", fmt="{:.2f}"))
             table.append(row(p1['total_hits'], "Total hits", p2['total_hits'], higher_is_better=True, fmt="{:,}"))

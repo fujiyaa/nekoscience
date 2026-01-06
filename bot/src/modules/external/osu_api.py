@@ -87,6 +87,8 @@ async def get_top_100_scores(username: str, token: str = None, user_id: str = No
             if stable:
                 lazer = False
 
+            is_anime_bg = score.get('beatmapset', {}).get('anime_cover', False)
+
             results.append({
                 'beatmap_url': score.get("beatmap", {}).get("url"),
                 "pp": score.get("pp"),
@@ -113,7 +115,8 @@ async def get_top_100_scores(username: str, token: str = None, user_id: str = No
                 "lazer": lazer,
                 "rank": score.get('rank', 'D'),
                 "artist": score.get('beatmapset', {}).get('artist'),
-                "time": score.get('created_at', '')
+                "time": score.get('created_at', ''),
+                "is_anime_bg": is_anime_bg,
             })
 
         return results    

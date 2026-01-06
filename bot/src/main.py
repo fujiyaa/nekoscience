@@ -25,6 +25,7 @@ from modules.commands.osu.beatmaps.beatmaps import beatmaps
 from modules.commands.osu.card_profile.card import start_card
 from modules.commands.osu.profile.profile import start_profile
 from modules.commands.osu.mappers.mappers import start_mappers
+from modules.commands.osu.check_for_anime.anime import start_anime
 from modules.commands.osu.nochoke.no_choke import start_nochoke
 from modules.commands.osu.maps_skill.maps_skill import start_farm
 from modules.commands.osu.average.average import start_average_stats
@@ -78,6 +79,7 @@ def register_commands(app):
         ("maps_skill", "ms"):               start_farm,
         ("average", "avg", "a"):            start_average_stats,
         ("nochoke", "n"):                   start_nochoke,
+        ("anime", "goon"):                  start_anime,
         ("simulate", "s"):                  simulate,
         ("beatmaps", "b"):                  beatmaps,
         ("name", "link", "nick", "osu"):    set_name,
@@ -85,7 +87,7 @@ def register_commands(app):
 
         # fun
         ("gn",):                            random_image,
-        ("doubt", "goon"):                  doubt,
+        ("doubt", "ban"):                  doubt,
         ("blacks",):                        blacks,
         ("reminders",):                     reminders_command,
 

@@ -86,10 +86,20 @@ def format_stats(user, best_pp):
         pp_diff = 0
         pp_avg_all = 0
 
+    anime_bg_counter = 0
+    not_anime_bg_counter = 0
+
     pp_by_month = defaultdict(list)
     for item in best_pp:
         month = item.get('date', str(best_pp.index(item)))[:7]  # YYYY-MM
         pp_by_month[month].append(item['pp'])
+
+        is_anime_bg = item.get("is_anime_bg", False)
+
+        if is_anime_bg:
+            anime_bg_counter += 1
+        else: 
+            not_anime_bg_counter +=1
 
     monthly_counts = user.get('monthly_playcounts', [])
     if monthly_counts:
@@ -128,12 +138,14 @@ def format_stats(user, best_pp):
         "pp_avg_all": pp_avg_all,
         "avg_pp_per_month": avg_pp_per_month,
         "pp_diff": pp_diff,
-        "max_count":max_count,
-        "followers":user['follower_count'],
-        "mapping":user['mapping_follower_count'],
-        "maps":user['beatmap_playcounts_count'],
-        "posts":user['post_count'],
-        "hpp":hpp,
+        "max_count": max_count,
+        "followers": user['follower_count'],
+        "mapping": user['mapping_follower_count'],
+        "maps": user['beatmap_playcounts_count'],
+        "posts": user['post_count'],
+        "hpp": hpp,
+        "anime_bg_counter": anime_bg_counter,
+        "not_anime_bg_counter": not_anime_bg_counter,
     }
 
 # async def build_beatmaps_text(caller_id: int) -> tuple[str, InlineKeyboardMarkup]:
