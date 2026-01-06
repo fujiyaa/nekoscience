@@ -83,32 +83,27 @@ async def anime(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request
             
             if isinstance(best_pp, list) and best_pp:
               
-                anime_bg_counter = 0
-                not_anime_bg_counter = 0
+                total = len(best_pp)
+                anime_bg_counter, not_anime_bg_counter = 0, 0
 
                 for score in best_pp:
-                    
-                    is_anime_bg = score.get("is_anime_bg", False)
-
-                    if is_anime_bg:
+                    if score.get("is_anime_bg", False):
                         anime_bg_counter += 1
-                    else: 
-                        not_anime_bg_counter +=1
+                    else:
+                        not_anime_bg_counter += 1
+
+                anime_percent = (anime_bg_counter / total) * 100 if total else 0
+                other_percent = (not_anime_bg_counter / total) * 100 if total else 0
 
                 entry_width = len("Anime backgrounds")
-                count_width = len("100%")
+                count_width = len("100.0%")
 
                 table_lines = [
                     f"{'Anime backgrounds':<{entry_width}} | {'top100':>{count_width}}",
-                    f"{'-'*entry_width}-+-{'-'*count_width}"
+                    f"{'-'*entry_width}-+-{'-'*count_width}",
+                    f"{'anime':<{entry_width}} | {anime_percent:>{count_width}.0f}%",
+                    f"{'other':<{entry_width}} | {other_percent:>{count_width}.0f}%"
                 ]
-                
-                table_lines.append(
-                    f"{'anime':<{entry_width}} | {anime_bg_counter:>{count_width}}%"
-                )
-                table_lines.append(
-                    f"{'other':<{entry_width}} | {not_anime_bg_counter:>{count_width}}%"
-                )
 
                 table_text = "\n".join(table_lines)
 
