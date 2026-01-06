@@ -138,7 +138,13 @@ async def anime(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request
                         parse_mode="HTML"
                     )
             else:
-                await context.bot.send_message(chat_id=update.effective_chat.id, text="Нет данных или ошибка сети")
+                await context.bot.edit_message_text(
+                    chat_id=update.effective_chat.id,
+                    message_id=temp_message.message_id,
+                    text="`Нет данных о топ100`",
+                    parse_mode="Markdown"
+                )
+                return
 
             await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=temp_message.message_id)
             return

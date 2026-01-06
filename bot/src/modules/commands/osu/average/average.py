@@ -277,7 +277,13 @@ async def average_stats(update: Update, context: ContextTypes.DEFAULT_TYPE, user
                         parse_mode="HTML"            
                 )
             else:
-                await context.bot.send_message(chat_id=update.effective_chat.id, text="Нет данных по топ-100.")
+                await context.bot.edit_message_text(
+                    chat_id=update.effective_chat.id,
+                    message_id=temp_message.message_id,
+                    text="`Нет данных о топ100`",
+                    parse_mode="Markdown"
+                )
+                return
 
             await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=temp_message.message_id)
             return

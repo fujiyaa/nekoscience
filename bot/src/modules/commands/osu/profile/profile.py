@@ -221,7 +221,13 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
                         message_authors[new_msg.message_id] = update.effective_user.id
 
             else:
-                await context.bot.send_message(chat_id=update.effective_chat.id, text="Нет данных или ошибка сети")
+                await context.bot.edit_message_text(
+                    chat_id=update.effective_chat.id,
+                    message_id=temp_message.message_id,
+                    text="`Нет данных`",
+                    parse_mode="Markdown"
+                )
+                return
 
             await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=temp_message.message_id)
             return
