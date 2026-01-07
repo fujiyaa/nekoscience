@@ -77,3 +77,93 @@ TRANSLATIONS = {
     }
     
 }
+
+CARD_PROFILE = {
+    "Accuracy": {
+        "en": "Accuracy",
+        "ru": "Точность"
+    },
+    "Max Combo": {
+        "en": "Max combo",
+        "ru": "Макс. комбо"
+    },
+    "Hits/Play": {
+        "en": "Hits/Play",
+        "ru": "Хит/Плей"
+    },
+    "Rank": {
+        "en": "Rank",
+        "ru": "Рейтинг"
+    },
+    "Peak Rank": {
+        "en": "Peak Rank",
+        "ru": "Рейтинг (лучший)"
+    },
+    "Country Rank": {
+        "en": "Country Rank",
+        "ru": "Рейтинг в стране"
+    },
+    "Playcount": {
+        "en": "Playcount",
+        "ru": "Количество игр"
+    },
+    "Playtime": {
+        "en": "Playtime",
+        "ru": "Времени в игре"
+    },
+    "Max PP": {
+        "en": "Max PP",
+        "ru": "РР-рекорд"
+    },
+    "Replays Watched": {
+        "en": "Replays Watched",
+        "ru": "Просм. реплеев"
+    },
+    "Level": {
+        "en": "Level",
+        "ru": "Уровень"
+    },
+    "Medals": {
+        "en": "Medals",
+        "ru": "Медали"
+    },
+    "team tag": {
+        "en": "team tag",
+        "ru": "командa"
+    },
+    "Joined": {
+        "en": "Joined",
+        "ru": "Регистрация"
+    },
+    "N/A": {
+        "en": "N/A",
+        "ru": "Недоступно"
+    }    
+}
+
+UTILS_TEXT_FORMAT = {
+    "years ago": {
+        "en": "years ago",
+        "ru": "лет назад"
+    },
+    "months ago": {
+        "en": "months ago",
+        "ru": "месяцев назад"
+    },
+    "days ago": {
+        "en": "days ago",
+        "ru": "дней назад"
+    },
+    "hours ago": {
+        "en": "hours ago",
+        "ru": "часов назад"
+    },
+    "less than an hour ago": {
+        "en": "less than an hour ago",
+        "ru": "меньше часа назад"
+    },
+    "N/A": {
+        "en": "N/A",
+        "ru": "Недоступно"
+    } 
+}

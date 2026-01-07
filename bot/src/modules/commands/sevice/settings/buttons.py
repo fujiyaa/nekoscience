@@ -51,22 +51,22 @@ async def get_settings_kb(user_id, user_data):
                 callback_data=f"settings_rs_bg_no:{user_id}"
             )
         ],
-        [
-            InlineKeyboardButton(
-                f"🖼 {TR['settings_card_title'][lang_code]}",
-                callback_data=f"settings_ignore:{user_id}"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                f"{TR['settings_new'][lang_code]} {new_card_flag}",
-                callback_data=f"settings_new_card:{user_id}"
-            ),           
-            InlineKeyboardButton(
-                f"{TR['settings_old'][lang_code]} {old_card_flag}",
-                callback_data=f"settings_old_card:{user_id}"
-            )
-        ],
+        # [
+        #     InlineKeyboardButton(
+        #         f"🖼 {TR['settings_card_title'][lang_code]}",
+        #         callback_data=f"settings_ignore:{user_id}"
+        #     )
+        # ],
+        # [
+        #     InlineKeyboardButton(
+        #         f"{TR['settings_new'][lang_code]} {new_card_flag}",
+        #         callback_data=f"settings_new_card:{user_id}"
+        #     ),           
+        #     InlineKeyboardButton(
+        #         f"{TR['settings_old'][lang_code]} {old_card_flag}",
+        #         callback_data=f"settings_old_card:{user_id}"
+        #     )
+        # ],
         [
             InlineKeyboardButton(
                 f"🌐 {TR['lang'][lang_code]}",

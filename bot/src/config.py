@@ -69,7 +69,7 @@ STATS_BEATMAPS = BOT_DIR / "stats/beatmaps"
 USER_SETTINGS_FILE = BOT_DIR / "settings/user_settings.json"
 OSU_ID_CACHE_FILE = BOT_DIR / "settings/osu_user_cache.json"
 
-GRAPH_PNG = BOT_DIR / 'cards/rank.png'
+GRAPH_PNG = BOT_DIR / 'cards/assets/card_profile/graph.png'
 
 MAX_CONCURRENT_REQUESTS = 10
 

@@ -12,7 +12,7 @@ from ....systems.cooldowns import check_user_cooldown
 from ....systems.auth import check_osu_verified
 from ....actions.messages import safe_send_message, safe_edit_message
 from ....external.osu_api import get_osu_token, get_user_profile, get_top_100_scores
-from ....utils.text_format import country_code_to_flag
+from ....utils.text_format import country_code_to_flag, format_osu_date2
 
 from config import COOLDOWN_STATS_COMMANDS, message_authors
 
@@ -135,41 +135,9 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
                     team_link = '✖️' 
                                 
                 peak_rank = user_data['rank_highest']['rank']
-
-                def format_osu_date(date_str: str, fmt: str = "%Y-%m-%d %H:%M:%S", flag = True) -> str:
-                    try:
-                        if date_str.endswith("Z"):
-                            dt = datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
-                        else:
-                            dt = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
-                    except Exception as e:
-                        print(f"Ошибка: {e}")
-                        return "N/A"
-
-                    formatted = dt.strftime(fmt)
-
-                    now = datetime.now(timezone.utc)
-                    delta = now - dt
-
-                    if delta.days >= 365:
-                        years = delta.days // 365
-                        ago = f"{years} years ago"
-                    elif delta.days >= 30:
-                        months = delta.days // 30
-                        ago = f"{months} months ago"
-                    elif delta.days > 0:
-                        ago = f"{delta.days} days ago"
-                    else:
-                        hours = delta.seconds // 3600
-                        ago = f"{hours} hours ago" if hours > 0 else "less than an hour ago"
-
-                    if flag:
-                        return f"{formatted} ({ago})"
-                    else:
-                        return f"({formatted})"
-                
-                peak_date = format_osu_date(user_data['rank_highest']['updated_at'], "%d.%m.%Y", flag=False)
-                joined = format_osu_date(user_data['join_date'], "%Y-%m-%d %H:%M:%S")
+                                
+                peak_date = format_osu_date2(user_data['rank_highest']['updated_at'], "%d.%m.%Y", flag=False)
+                joined = format_osu_date2(user_data['join_date'], "%Y-%m-%d %H:%M:%S")
 
                 user_id = f"https://osu.ppy.sh/users/{user_data['id']}"
                 user_link = f'<a href="{user_id}">{country_flag} <b>{rank_text}</b></a>'                 

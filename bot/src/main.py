@@ -23,11 +23,12 @@ from modules.commands.osu.mods.mods import start_mods
 from modules.commands.osu.simulate.simulate import simulate
 from modules.commands.osu.beatmaps.beatmaps import beatmaps
 from modules.commands.osu.card_profile.card import start_card
+from modules.commands.osu.card_skills.card import start_skills
 from modules.commands.osu.profile.profile import start_profile
 from modules.commands.osu.mappers.mappers import start_mappers
-from modules.commands.osu.check_for_anime.anime import start_anime
 from modules.commands.osu.nochoke.no_choke import start_nochoke
 from modules.commands.osu.maps_skill.maps_skill import start_farm
+from modules.commands.osu.check_for_anime.anime import start_anime
 from modules.commands.osu.average.average import start_average_stats
 from modules.commands.osu.recent_fix.recent_fix import start_recent_fix
 from modules.commands.osu.music.beatmap_audio import start_beatmap_audio
@@ -71,6 +72,7 @@ def register_commands(app):
         ("mappers",):                       start_mappers,
         ("profile", "p"):                   start_profile,
         ("card", "c"):                      start_card,
+        ("skills", "s"):                    start_skills,
         ("cardtop", "ct"):                  start_card_top5,
         ("recent_fix", "fix", "f"):         start_recent_fix,
         ("recent", "rs", "r"):              start_rs,
@@ -80,7 +82,7 @@ def register_commands(app):
         ("average", "avg", "a"):            start_average_stats,
         ("nochoke", "n"):                   start_nochoke,
         ("anime", "goon"):                  start_anime,
-        ("simulate", "s"):                  simulate,
+        ("simulate"):                       simulate,
         ("beatmaps", "b"):                  beatmaps,
         ("name", "link", "nick", "osu"):    set_name,
         ("challenge",):                     start_challenge,

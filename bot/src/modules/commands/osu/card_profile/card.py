@@ -1,14 +1,9 @@
 
 
 
-import io
 import os
-import json
-import aiohttp
 import asyncio
 import temp
-from datetime import datetime, timedelta
-from PIL import Image, ImageDraw
 
 from telegram import Update, InputFile
 from telegram.ext import ContextTypes
@@ -16,19 +11,14 @@ from telegram.ext import ContextTypes
 from models.score import Score 
 from ....actions.messages import safe_send_message
 from ....systems.cooldowns import check_user_cooldown
-from ....utils.osu_conversions import is_legacy_score
 from ....systems.logging import log_all_update
 from ....systems.auth import check_osu_verified
-from ....external.localapi import get_pp_parts_neko_api
 from ....external.osu_api import get_osu_token, get_user_profile 
-from ....external.osu_api import get_best_pp_by_username, get_top_100_scores
-from ....external.osu_http import fetch_txt_beatmaps
+from ....external.osu_api import get_best_pp_by_username
 from .processing_v1 import create_profile_image
-from .processing_v2 import make_card
-from .descriptoins import get_title # какого хрена только тайтл тут
 
-from config import COOLDOWN_CARD_COMMAND, USER_SETTINGS_FILE, CARDS_DIR
-from config import USERS_SKILLS_FILE, AVATARS_DIR, message_authors
+from config import COOLDOWN_CARD_COMMAND, USER_SETTINGS_FILE
+from config import message_authors
 
 
 
@@ -103,255 +93,38 @@ async def card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request)
             
             s = temp.load_json(USER_SETTINGS_FILE, default={})
             user_settings = s.get(str(user_id), {}) 
-            new_card = user_settings.get("new_card", True)   
+            new_card = user_settings.get("new_card", True)
+            user_data["lang"] = user_settings.get("lang", "ru")    
 
-            if not new_card:
-                try:
-                    best_pp = await asyncio.wait_for(get_best_pp_by_username(username, token=token), timeout=10)
-                except Exception as e:
-                    best_pp = "N/A"
-                    print(e)
+            
+            try:
+                best_pp = await asyncio.wait_for(get_best_pp_by_username(username, token=token), timeout=10)
+            except Exception as e:
+                best_pp = "N/A"
+                print(e)
 
-                img_path = await asyncio.wait_for(create_profile_image(user_data, best_pp), timeout=15)
-                if not img_path:
-                    print('err in card "not img_path"')
-                    return
-                
-                with open(img_path, "rb") as f:
-                    try:
-                        await message.reply_photo(
-                            InputFile(f),
-                        )
-                    except:
-                        await message.reply_photo(
-                            InputFile(f),
-                            )
-                try:
-                    await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=temp_message.message_id)
-                except:
-                    await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=temp_message.message_id)
-
-                os.remove(img_path)
-                return         
-
-            else:            
-        
-                try:
-                    user_id = user_data["id"]  # изменить на percent("NM") < 10: другом количестве скоров!!!
-                    best_scores = await asyncio.wait_for(get_top_100_scores(username, token, user_id, limit=30, plain=True), timeout=10)
-                except Exception as e:
-                    best_scores = "N/A"
-                    print(e)  
-
-                scores = []
-                unique_maps = set()
-                
-                maps_ids = []
-                for score in best_scores:
-                    map_id = score["beatmap"]["id"]
-                    maps_ids.append(map_id)
-
-                results, failed = await fetch_txt_beatmaps(maps_ids)
-
-                if failed:
-                    print("err loading maps (card):", failed)
-
-                for score in best_scores:
-                    map_id = score["beatmap"]["id"]
-                    path = results.get(map_id, None)
-                    unique_maps.add((map_id, tuple(score.get("mods", []))))
-                    stats = score["statistics"]
-                    count_300 = stats.get("count_300", 0)
-                    count_100 = stats.get("count_100", 0)
-                    count_50 = stats.get("count_50", 0)
-                    count_miss = stats.get("count_miss", 0)    
-                    if is_legacy_score(score): lazer = False 
-                    else: lazer = True    
-                    
-                    score["lazer"] = lazer       
-                    scores.append(Score(
-                        map_id=map_id,
-                        count_300=count_300,
-                        count_100=count_100,
-                        count_50=count_50,
-                        count_miss=count_miss,
-                        path=path,
-                        mods=score.get("mods", []), 
-                        acc=score.get("accuracy", 1.0),            
-                        max_combo=score.get("max_combo", 0),
-                        lazer=lazer
-                    ))
-
-                #neko api 
-                scores_payload = []
-                for score in best_scores:
-                    stats = score["statistics"]
-                    scores_payload.append({
-                        "map_id": score["beatmap"]["id"],
-                        "n320": stats.get("count_geki", 0),
-                        "n300": stats.get("count_300", 0),
-                        "n200": stats.get("count_katu", 0),
-                        "n100": stats.get("count_100", 0),
-                        "n50":  stats.get("count_50", 0),
-                        "misses": stats.get("count_miss", 0),
-                        "combo": score.get("max_combo"),
-                        "mods": str(score.get("mods", "")),
-                        "accuracy": float(score["accuracy"] * 100.0),
-                        "set_on_lazer": bool(score.get("lazer", True)),
-                        "large_tick_hit": stats.get("count_large_tick_hit", 0),
-                        "small_tick_hit": stats.get("count_small_tick_hit", 0),
-                        "small_tick_miss": stats.get("count_small_tick_miss", 0),
-                        "slider_tail_hit": stats.get("count_slider_tail_hit", 0),
-                    })
-
-                payload = {
-                    "mode": "Osu",
-                    "scores": scores_payload
-                }
-
-                try:
-                    skills = await get_pp_parts_neko_api(payload)
-
-                except Exception as e:
-                    print(f"error calling Rust API: {e}")
-
-                acc, aim, speed = skills["acc"], skills["aim"], skills["speed"]
-                acc_total = skills["acc_total"]
-                aim_total = skills["aim_total"]
-                speed_total = skills["speed_total"]
-               
-
-                if os.path.exists(USERS_SKILLS_FILE):
-                    with open(USERS_SKILLS_FILE, "r", encoding="utf-8") as f:
-                        users_skills = json.load(f)
-                else:
-                    users_skills = {}
-
-
-                total = acc + aim + speed 
-
-                users_skills[username] = {
-                    "kind": skills.get("kind", "Osu"),
-                    "values": {k: round(v, 2) for k, v in skills.items()},
-                    "total": round(acc_total + aim_total + speed_total, 2)
-                }
-
-                with open(USERS_SKILLS_FILE, "w", encoding="utf-8") as f:
-                    json.dump(users_skills, f, indent=4, ensure_ascii=False)
-
-                print(f"skills of {username} saved to {USERS_SKILLS_FILE}")
-
-                bg, title = (get_title(aim, speed, acc, scores)) 
-
-                username = user_data["username"]
-                stats = user_data["statistics"]
-                pp_text = f"{stats.get('pp')}" if stats.get("pp") else "0"
-                global_rank = f"{stats.get('global_rank'):,}" if stats.get("global_rank") else "N/A"
-                country_rank = f"{stats.get('country_rank'):,}" if stats.get("country_rank") else "N/A"            
-                country_code = user_data["country_code"]
-    
-                medals = len(user_data['user_achievements'])
-                
-                level_data = stats.get('level', {})
-                current = level_data.get('current', 0)
-                progress = level_data.get('progress', 0)
-
-                level = float(f"{current}.{progress}")
-
-                avatar_url = user_data["avatar_url"]
-                user_id = user_data["id"]
-                
-                now = datetime.now()
-                avatar_file = None
-                for f in os.listdir(AVATARS_DIR):
-                    if f.startswith(f"{user_id}_") and f.endswith(".png"):
-                        path = os.path.join(AVATARS_DIR, f)
-                        mtime = datetime.fromtimestamp(os.path.getmtime(path))
-                        if now - mtime < timedelta(hours=1):
-                            avatar_file = path
-                            break
-                
-                if avatar_file:
-                    extra_img = Image.open(avatar_file).convert("RGBA")
-                    avatar_path = avatar_file
-                    print("using cached avatar")
-                else:
-                    avatar_path = os.path.join(AVATARS_DIR, "default.png")
-                    extra_img = None
-                    for attempt_avatar in range(1, MAX_ATTEMPTS + 1):
-                        try:
-                            timeout = aiohttp.ClientTimeout(total=3)
-                            async with aiohttp.ClientSession(timeout=timeout) as session:
-                                async with session.get(avatar_url) as resp:
-                                    if resp.status == 200:
-                                        def add_rounded_corners(img: Image.Image, radius: int) -> Image.Image:                                            
-                                            big_size = (img.size[0]*2, img.size[1]*2)
-                                            mask = Image.new("L", big_size, 0)
-                                            draw_mask = ImageDraw.Draw(mask)
-                                            draw_mask.rounded_rectangle((0, 0, big_size[0], big_size[1]), radius*2, fill=255)
-                                            
-                                            mask = mask.resize(img.size, Image.LANCZOS)
-                                            
-                                            img.putalpha(mask)
-                                            return img
-                                        extra_img_data = await resp.read()
-                                        extra_img = Image.open(io.BytesIO(extra_img_data)).convert("RGBA")
-                                        extra_img.thumbnail((512, 512))
-                                        extra_img = add_rounded_corners(extra_img, radius=12)
-                                        avatar_filename = f"{user_id}_{now.hour}{now.minute}.png"
-                                        avatar_path = os.path.join(AVATARS_DIR, avatar_filename)
-                                        extra_img.save(avatar_path, format="PNG")
-                                        break
-                        except Exception as e:
-                            print(f"Ошибка при скачивании аватарки: {e}")
-
-                # width, height = image.size
-
-                # if width > 350:
-                #     image = image.crop((350, 0, width - 350, height))
-                # else:
-                #     pass
-
-                # avatar_path = os.path.join(AVATARS_DIR, "default.png")
-
-                img_path = make_card(
-                    title=title,
-                    bg=bg,
-                    username=username,
-                    country_code=country_code, 
-                    avatar_path=avatar_path,
-                    accuracy=acc,
-                    aim=aim,
-                    speed=speed,
-                    global_rank=global_rank,
-                    country_rank=country_rank,
-                    level=level,
-                    medals=medals,
-                    mode="Standard",########################################
-                    output=f"{CARDS_DIR}/{user_data['id']}.png",
-                    aim_total=aim_total,
-                    speed_total=speed_total,
-                    acc_total=acc_total,
-                )
-
-                        
-                with open(img_path, "rb") as f:
-                        try:
-                            await message.reply_photo(
-                                InputFile(f),
-                            )
-                        except:
-                            await message.reply_photo(
-                                InputFile(f),
-                            )
-                try:
-                    await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=temp_message.message_id)
-                except:
-                    await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=temp_message.message_id)
-
-                os.remove(img_path)
+            img_path = await asyncio.wait_for(create_profile_image(user_data, best_pp), timeout=15)
+            if not img_path:
+                print('err in card "not img_path"')
                 return
+            
+            with open(img_path, "rb") as f:
+                try:
+                    await message.reply_photo(
+                        InputFile(f),
+                    )
+                except:
+                    await message.reply_photo(
+                        InputFile(f),
+                        )
+            try:
+                await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=temp_message.message_id)
+            except:
+                await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=temp_message.message_id)
 
+            os.remove(img_path)
+            return         
+            
         except Exception as e:
             print(f"Ошибка при card (попытка {attempt}/{MAX_ATTEMPTS}): {e}")
             if attempt == MAX_ATTEMPTS:
