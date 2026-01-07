@@ -273,52 +273,38 @@ async def skills(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reques
                     except Exception as e:
                         print(f"Ошибка при скачивании аватарки: {e}")
 
-                # width, height = image.size
+            img_path = make_card(
+                title=title,
+                bg=bg,
+                username=username,
+                country_code=country_code, 
+                avatar_path=avatar_path,
+                accuracy=acc,
+                aim=aim,
+                speed=speed,
+                global_rank=global_rank,
+                country_rank=country_rank,
+                level=level,
+                medals=medals,
+                mode="Standard",########################################
+                output=f"{CARDS_DIR}/{user_data['id']}.png",
+                aim_total=aim_total,
+                speed_total=speed_total,
+                acc_total=acc_total,
+            )
 
-                # if width > 350:
-                #     image = image.crop((350, 0, width - 350, height))
-                # else:
-                #     pass
-
-                # avatar_path = os.path.join(AVATARS_DIR, "default.png")
-
-                img_path = make_card(
-                    title=title,
-                    bg=bg,
-                    username=username,
-                    country_code=country_code, 
-                    avatar_path=avatar_path,
-                    accuracy=acc,
-                    aim=aim,
-                    speed=speed,
-                    global_rank=global_rank,
-                    country_rank=country_rank,
-                    level=level,
-                    medals=medals,
-                    mode="Standard",########################################
-                    output=f"{CARDS_DIR}/{user_data['id']}.png",
-                    aim_total=aim_total,
-                    speed_total=speed_total,
-                    acc_total=acc_total,
-                )
-
-                        
-                with open(img_path, "rb") as f:
-                        try:
-                            await message.reply_photo(
-                                InputFile(f),
-                            )
-                        except:
-                            await message.reply_photo(
-                                InputFile(f),
-                            )
+                    
+            with open(img_path, "rb") as f:
                 try:
-                    await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=temp_message.message_id)
+                    await message.reply_photo(InputFile(f))
                 except:
-                    await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=temp_message.message_id)
+                    await message.reply_photo(InputFile(f))
 
+            try:
                 os.remove(img_path)
-                return
+            except Exception as e:
+                print(f"Ошибка при удалении файла {img_path}: {e}")
+            return
 
         except Exception as e:
             print(f"Ошибка при skills (попытка {attempt}/{MAX_ATTEMPTS}): {e}")
