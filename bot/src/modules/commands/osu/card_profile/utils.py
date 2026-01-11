@@ -1,6 +1,7 @@
 
 
 
+import asyncio, os
 import colorsys
 
 
@@ -24,3 +25,7 @@ def hue_to_rgba(hue, saturation=1.0, lightness=0.5, alpha=255,
         b = int(b * factor)
 
     return (r, g, b, alpha)
+
+async def delayed_remove(path, delay=5):
+    await asyncio.sleep(delay)
+    os.remove(path)

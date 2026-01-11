@@ -3,7 +3,6 @@
 
 import os
 import asyncio
-import temp
 
 from telegram import Update, InputFile
 from telegram.ext import ContextTypes
@@ -16,6 +15,8 @@ from ....systems.auth import check_osu_verified
 from ....external.osu_api import get_osu_token, get_user_profile 
 from ....external.osu_api import get_best_pp_by_username
 from .processing_v1 import create_profile_image
+from .utils import delayed_remove
+import temp
 
 from config import COOLDOWN_CARD_COMMAND, USER_SETTINGS_FILE
 from config import message_authors
@@ -122,7 +123,7 @@ async def card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request)
             except:
                 await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=temp_message.message_id)
 
-            os.remove(img_path)
+            await delayed_remove(img_path)
             return         
             
         except Exception as e:
