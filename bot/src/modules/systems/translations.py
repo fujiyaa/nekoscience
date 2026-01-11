@@ -233,8 +233,8 @@ CARD_BEATMAP = {
         "en": "speed",
         "ru": "скорость"
     },
-    "VIP": {
-        "en": "VIP",
+    "wip": {
+        "en": "WIP",
         "ru": "В разработке",
         "color": (255, 255, 102)
     },
