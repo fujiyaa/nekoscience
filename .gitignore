@@ -51,6 +51,7 @@ target/
 /bot/src/challenges/*
 /bot/src/cooldowns/*
 /bot/src/scores/*
+/bot/src/scores_v2/*
 /bot/src/images/*
 /bot/src/logs/*
 /bot/src/settings/*
