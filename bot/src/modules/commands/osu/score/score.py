@@ -42,16 +42,13 @@ async def score(update: Update, context: ContextTypes.DEFAULT_TYPE, requested_by
     try:
         token = await get_osu_token()
 
-        await get_score_by_id(score_id, token)
+        cached_entry =  await get_score_by_id(score_id, token)
 
-        cached_score = load_score_file(score_id)
-        if not cached_score:
-            await safe_send_message(update, "❌ Не удалось загрузить скор после кеша", parse_mode="Markdown")
+        if not cached_entry:
+            await safe_send_message(update, "❌ Не удалось загрузить скор", parse_mode="Markdown")
             return
 
-        final_score = cached_score["raw"]
-
-        await send_score(update, final_score, user_id, user_id, user_id, is_recent=False)
+        await send_score(update, cached_entry, user_id, user_id, user_id, is_recent=False)
 
     except Exception:
         traceback.print_exc()

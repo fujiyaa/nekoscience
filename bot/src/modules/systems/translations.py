@@ -48,8 +48,8 @@ TRANSLATIONS = {
         "ru": "Он бы даже не попал в топ100"
     },
     "settings_rs_title": {
-        "en": "Background render in /rs",
-        "ru": "Рисовать картинку для /rs?"
+        "en": "/rs - Render background?",
+        "ru": "/rs - Рисовать картинку?"
     },
     "settings_yes": {
         "en": "Sure (slow)",
@@ -74,6 +74,18 @@ TRANSLATIONS = {
     "settings_n_a": {
         "en": "Not available",
         "ru": "Недоступно"
+    },
+    "settings_rs_fails": {
+        "en": "/rs - Display fails?",
+        "ru": "/rs - Показывать фейлы?"
+    },
+    "fails_yes": {
+        "en": "Enabled",
+        "ru": "Вкл"
+    },
+    "fails_no": {
+        "en": "Disabled",
+        "ru": "Выкл"
     }
     
 }

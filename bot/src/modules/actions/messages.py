@@ -98,6 +98,8 @@ def reset_remove_timer(bot, chat_id, msg_id, delay=30, cleanup=None):
         remove_tasks[msg_id].cancel()
 
     async def delayed():
+
+        # ошибка здесь это нормально
         await asyncio.sleep(delay)
         try:
             await bot.edit_message_reply_markup(

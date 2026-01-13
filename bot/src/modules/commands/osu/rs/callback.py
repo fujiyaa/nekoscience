@@ -48,15 +48,20 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif action == "prev" and new_index > 0:
         new_index -= 1
 
-    score_id = str(session["scores"][new_index]["id"])
+    score_id = str(session["scores"][new_index]["osu_api_data"]["id"])
     entry = load_score_file(score_id)
 
-    if not entry or not entry.get("ready"):
+    if not entry:
         await safe_query_answer(query)
+        return
+    
+    if not entry['state']['enriched']:
+        await safe_query_answer(query, text="🐟 Загрузка...", show_alert=True)
         return
 
     await safe_query_answer(query)
-    img_path, caption = await process_score_and_image(entry.get('raw'), image_todo_flag=rs_bg_render)
+    rs_bg_render = False # for now ...
+    img_path, caption = await process_score_and_image(entry, image_todo_flag=rs_bg_render)
 
     total = len(session["scores"])
     buttons = [
@@ -74,7 +79,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.edit_message_media(media=media, reply_markup=keyboard)
         else:
             link_preview = LinkPreviewOptions(
-                url=entry['raw']['card2x_url'],
+                url=entry['map']['card2x_url'],
                 is_disabled=False,
                 prefer_small_media=False,
                 prefer_large_media=True,

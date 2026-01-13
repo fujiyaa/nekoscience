@@ -10,6 +10,7 @@ import zipfile
 import aiohttp
 import aiofiles
 import asyncio
+from datetime import datetime
 
 from ..systems.json_files import load_score_file, save_score_file
 
@@ -53,24 +54,34 @@ async def get_score_page(session, user_id: str, score_id: str, no_check:bool = F
 
     return None
 
-async def enrich_score_lazer(session, user_id: str, score_id: str):
-    cached_entry = load_score_file(score_id)
-    if not cached_entry:
-        return
+async def enrich_score_lazer(session, user_id: str, cached_entry: dict, preloaded_page = None):  
 
-    raw = cached_entry["raw"]
-    score_page = await get_score_page(session, user_id, score_id)
+    if not cached_entry['state']['lazer']:
+        cached_entry['state']['enriched'] = True 
+        return cached_entry
+    
+    if cached_entry['state']['ready']: 
+        return cached_entry
+    
+    if cached_entry['state']['enriched']:
 
-    if not score_page:
-        cached_entry["ready"] = True
-        save_score_file(score_id, cached_entry)
-        return
+        # сделать тут проверку, если давно то пересчитать        
+        return cached_entry
+        
+    if not preloaded_page:
+        score_page = await get_score_page(session, user_id, cached_entry['osu_api_data']['id'])
+    else: score_page = preloaded_page
 
-    lazer = True
+    # хмм есть же is legacy
+    # if not score_page:
+    #     cached_entry['state']['ready'] = True
+    #     save_score_file(score_id, cached_entry)
+    #     return
+    # lazer = True
+
     da_active = False
     speed_multiplier = None
     custom_values = {}
-    accuracy = raw.get("accuracy")
 
     mods = score_page.get("mods", [])
     for mod in mods:
@@ -90,10 +101,31 @@ async def enrich_score_lazer(session, user_id: str, score_id: str):
         for key, value in settings.items():
             if key in ["drain_rate", "circle_size", "approach_rate", "overall_difficulty"]:
                 custom_values[key] = value
+    
+    accuracy = score_page.get("accuracy")
+    rank = score_page.get("rank")
+    total_score = score_page.get("total_score")
+    ranked = score_page.get("ranked")
+    
+    _passed = score_page.get('passed', False)
+    stats = score_page.get('statistics')
+    if stats:
+        cached_entry.setdefault("osu_score", {}).update(
+            {
+                'count_100': stats.get('ok'),
+                'count_50': stats.get('meh'),
+                'count_miss': stats.get('miss'),
+                'count_300': stats.get('great'),
+                'ignore_hit': stats.get('ignore_hit'),
+                'ignore_miss': stats.get('ignore_miss'),
+                'small_bonus': stats.get('small_bonus'),
+                'large_tick_hit': stats.get('large_tick_hit'),
+                'large_tick_miss': stats.get('large_tick_miss'),
+                'slider_tail_hit': stats.get('slider_tail_hit'),
+            }
+        )
 
-    accuracy = score_page.get("accuracy", accuracy)
-
-    mods_orig = raw.get("mods", [])
+    mods_orig = cached_entry['osu_score']['mods']
 
     mods_clean = []
     if mods_orig:
@@ -111,32 +143,36 @@ async def enrich_score_lazer(session, user_id: str, score_id: str):
     if da_active:
         mods_text = mods_text + "+DA" if mods_text != "NM" else "+DA"
 
-    raw.update({
-        "lazer": lazer,
-        "DA_values": custom_values,
-        "speed_multiplier": speed_multiplier,
-        "accuracy": accuracy,
-        "mods": mods_text
-    })
+    cached_entry.setdefault("osu_score", {}).update(
+            {
+                "mods": mods_text,
+            }
+        )
+    cached_entry.setdefault("lazer_data", {}).update(
+            {
+                "DA_values": custom_values, 
+                "accuracy": accuracy, 
+                "speed_multiplier": speed_multiplier, 
+                "total_score": total_score, 
+                "rank": rank,
+                "ranked": ranked,
+            }
+        )    
+    cached_entry.setdefault("state", {}).update({"enriched": True})
+    cached_entry.setdefault("meta", {}).update({"enriched_at": datetime.now().isoformat()})
 
-    cached_entry["raw"] = raw
-    cached_entry["ready"] = True
-    save_score_file(score_id, cached_entry)
+    return cached_entry
 
-async def cache_remaining_scores(user_id: str, scores: list, username: str):
+async def cache_remaining_scores(user_id: str, scores: list):
     async with aiohttp.ClientSession() as session:
         for s in scores[1:]:
-            score_id = str(s['id'])
+            score_id = str(s['osu_api_data']['id'])
             cached_entry = load_score_file(score_id)
-            if not cached_entry:
-                cached_entry = {"raw": s, "processed": {}, "ready": False}
+
+            if not cached_entry['state']['enriched']:
+                cached_entry = await enrich_score_lazer(session, user_id, cached_entry)
                 save_score_file(score_id, cached_entry)
 
-            if not cached_entry.get("ready"):
-                await enrich_score_lazer(session, str(s['user']['id']), score_id)
-                cached_entry = load_score_file(score_id)
-                cached_entry["ready"] = True
-                save_score_file(score_id, cached_entry)
             await asyncio.sleep(LXML_TIMEOUT)
 
 async def beatmap_txt_downlaod(session: aiohttp.ClientSession, map_id: int) -> str | None:

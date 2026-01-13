@@ -11,7 +11,7 @@ async def get_settings_kb(user_id, user_data):
     user_settings = user_data.get(str(user_id), {}) 
     lang_code = user_settings.get("lang", "ru")   
     bg_code = user_settings.get("rs_bg_render", False) 
-    new_card = user_settings.get("new_card", True) 
+    display_fails = user_settings.get("display_fails", True) 
     
     if lang_code == "en":
         en_flag = "✅"
@@ -25,30 +25,46 @@ async def get_settings_kb(user_id, user_data):
         bg_n_flag = ""
     else:
         bg_y_flag = ""
-        bg_n_flag = "✅"
+        bg_n_flag = "❌"
 
-    if new_card:
-        new_card_flag = "✅"
-        old_card_flag = ""
+    if display_fails:
+        display_fails_y = "✅"
+        display_fails_n = ""
     else:
-        new_card_flag = ""
-        old_card_flag = "✅"
+        display_fails_y = ""
+        display_fails_n = "❌"
 
     keyboard = [
+        # [
+        #     InlineKeyboardButton(
+        #         f"🎨 {TR['settings_rs_title'][lang_code]}",
+        #         callback_data=f"settings_ignore:{user_id}"
+        #     )
+        # ],
+        # [
+        #     InlineKeyboardButton(
+        #         f"{TR['settings_yes'][lang_code]} {bg_y_flag}",
+        #         callback_data=f"settings_rs_bg_yes:{user_id}"
+        #     ),           
+        #     InlineKeyboardButton(
+        #         f"{TR['settings_no'][lang_code]} {bg_n_flag}",
+        #         callback_data=f"settings_rs_bg_no:{user_id}"
+        #     )
+        # ],
         [
             InlineKeyboardButton(
-                f"🎨 {TR['settings_rs_title'][lang_code]}",
+                f"{TR['settings_rs_fails'][lang_code]}",
                 callback_data=f"settings_ignore:{user_id}"
             )
         ],
         [
             InlineKeyboardButton(
-                f"{TR['settings_yes'][lang_code]} {bg_y_flag}",
-                callback_data=f"settings_rs_bg_yes:{user_id}"
+                f"{TR['fails_yes'][lang_code]} {display_fails_y}",
+                callback_data=f"settings_display_fails_y:{user_id}"
             ),           
             InlineKeyboardButton(
-                f"{TR['settings_no'][lang_code]} {bg_n_flag}",
-                callback_data=f"settings_rs_bg_no:{user_id}"
+                f"{TR['fails_no'][lang_code]} {display_fails_n}",
+                callback_data=f"settings_display_fails_n:{user_id}"
             )
         ],
         # [

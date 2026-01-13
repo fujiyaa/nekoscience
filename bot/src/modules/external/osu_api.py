@@ -8,6 +8,8 @@ import temp
 import re
 import requests
 from typing import List, Dict
+from datetime import datetime
+from collections import defaultdict
 
 from .osu_http import get_score_page, enrich_score_lazer
 from .osu_auth import get_osu_token
@@ -16,6 +18,8 @@ from modules.utils.osu_conversions import is_legacy_score
 from modules.systems.json_files import load_score_file, save_score_file
 
 from config import OSU_ID_CACHE_FILE
+
+api_limit = asyncio.Semaphore(10)
 
 
 
@@ -221,153 +225,242 @@ async def get_osu_user_additional_data(user_id: str, mode: str, token: str = Non
         print(f"Request for user_pp failed: {e}")
         return None
     
-async def get_user_scores(username: str, token: str, timeout_sec: int = 10, limit: int = 25):
+async def _get_recent_scores(
+    username: str,
+    token: str = None,
+    timeout_sec: int = 10,
+    limit: int = 25,
+    fails: int = 1,
+    mode: str = "osu"):
+
+    if token is None: token = await get_osu_token()
+
     user_id = await get_user_id(username, token)
     if not user_id:
         return None
 
     timeout = aiohttp.ClientTimeout(total=timeout_sec)
+    headers = {"Authorization": f"Bearer {token}"}
+    url_recent = f"https://osu.ppy.sh/api/v2/users/{user_id}/scores/recent?include_fails={fails}&limit={limit}&mode={mode}"
+    url_user_info = f"https://osu.ppy.sh/api/v2/users/{user_id}/{mode}"
+
     async with aiohttp.ClientSession(timeout=timeout) as session:
         try:
-            async with session.get(
-                f"https://osu.ppy.sh/api/v2/users/{user_id}/scores/recent?limit={limit}",
-                headers={"Authorization": f"Bearer {token}"}
-            ) as resp:
-                if resp.status != 200:
-                    print(f"⚠ Ошибка HTTP {resp.status} при получении скор")
-                    return None
-                data = await resp.json()
+            async def fetch(url):
+                async with api_limit:
+                    async with session.get(url, headers=headers) as resp:
+                        return resp.status, await resp.json() if resp.status == 200 else None
+
+            recent_task = fetch(url_recent)
+            user_task = fetch(url_user_info)
+
+            (status_recent, scores), (status_user, user_info) = await asyncio.gather(recent_task, user_task)
+
+            if status_recent != 200:
+                print(f"_get_recent_scores | recent failed: {status_recent}")
+                scores = []
+
+            if status_user != 200:
+                print(f"_get_recent_scores | user_info failed: {status_user}")
+                user_info = {}
+
         except (asyncio.TimeoutError, aiohttp.ClientError) as e:
-            print(f"⚠ Ошибка запроса get_user_scores: {e}")
-            return None
+            print(f"_get_recent_scores: {e}")
 
-    if not data:
-        return []
-
-    for score in data:
+    if not scores and not user_info:
+        return None
+    
+    for score in scores:
         if score.get("id", 0) == 0:
             created_at = score.get("created_at", "unknown_time")
             safe_time = re.sub(r'[^\w\-]', '_', created_at)
-            score["id"] = f"{user_id}_{safe_time}"    
+            score["id"] = f"{user_id}_{safe_time}"   
 
-    additional_data = await get_osu_user_additional_data(user_id, "osu", token)
+    return {"scores": scores, "user_info": user_info}
+
+
+    
+async def get_user_scores(
+    username: str,
+    token: str,
+    timeout_sec: int = 10,
+    limit: int = 25,
+    fails: int = 1):
+    """
+    Сохранить все скоры локально
+    
+    :param username: осу ник
+    :type username: str
+    :param token: осу токен из external.osu_auth get_osu_token
+    :type token: str
+    :param timeout_sec: обычный таймаут
+    :type timeout_sec: int
+    :param limit: макс скоров
+    :type limit: int
+    :param fails: скоры с F (1 / 0 флаг)
+    :type fails: bool
+    """
+
+    data = await _get_recent_scores(username, limit=limit, fails=fails)
+    
+    if data is None:
+        scores = []
+        user_info = {}
+    else:
+        scores = data.get('scores') or []
+        user_info = data.get('user_info') or {}
+
+    scores_sorted = sorted(scores, key=lambda s: s['created_at'])
+    count_by_map = defaultdict(int)
+
+    for s in scores_sorted:
+        map_id = s['beatmap']['id']
+        count_by_map[map_id] += 1
+        s['try'] = count_by_map[map_id]
+
+    scores_sorted.sort(key=lambda s: s['created_at'], reverse=True)
 
     results = []
     async with aiohttp.ClientSession() as session:
-        for idx, s in enumerate(data):
-            score_id = str(s["id"])
+        for i, score in enumerate(scores_sorted):
+            score_id = str(score["id"])
             cached_entry = load_score_file(score_id)
-            if not cached_entry:
-                cached_entry = {"raw": s, "processed": {}, "ready": False}
-                save_score_file(score_id, cached_entry)
+            if not cached_entry:            
+                cached_entry = await score_to_schema(score, user_info)
 
-            
-                final_score = await process_score(cached_entry["raw"], additional_data)
-
-                cached_entry["raw"] = final_score
-                cached_entry["ready"] = False
-                save_score_file(score_id, cached_entry)
-                if idx == 0 and not cached_entry.get("ready"):
-                    await enrich_score_lazer(session, str(s['user']['id']), score_id)                      
-                    cached_entry = load_score_file(score_id)   
-                    final_score = cached_entry["raw"]                
-            else:
-                final_score = cached_entry["raw"]
+                if i < 1:
+                    cached_entry = await enrich_score_lazer(session, str(score['user']['id']), cached_entry) 
                 
-            results.append(final_score)
+                save_score_file(score_id, cached_entry)
+                
+            results.append(cached_entry)
     return results
 
-async def process_score(score, additional_data):
-    raw = score
+async def score_to_schema(score, user_info):
+    """
+    создает json схему
+    
+    :param score: raw осу скор
+    :param user_info: осу профиль
 
-    beatmap = raw.get("beatmap", {})
-    beatmapset = raw.get("beatmapset", {})
-
-    score_id = str(raw.get("id"))
-    score_url = f"https://osu.ppy.sh/scores/{score_id}" if score_id else None
-    lazer = raw.get("lazer", False)
-    da_active = any(mod for mod in (raw.get("mods", []) or []) if mod == "DA")
-    speed_multiplier = raw.get("speed_multiplier")
-    custom_values = raw.get("DA_values", {})
-    accuracy = raw.get("accuracy", score.get("accuracy"))
-    mods_text = raw.get("mods", "+".join(score.get("mods", [])) if score.get("mods") else "NM")
-
-    if speed_multiplier:
-        mods_text += f" ({speed_multiplier}x)"
-    if da_active:
-        if mods_text == "NM":
-            mods_text = "+DA"
-        else:
-            mods_text += "+DA"
+    """
+    
+    beatmap = score.get("beatmap", {})
+    beatmapset = score.get("beatmapset", {})
+    mods_text = score.get("mods", "+".join(score.get("mods", [])) if score.get("mods") else "NM")
+    
+    fail = False
+    if not score.get('passed'): fail = True
 
     return {
-        "score": raw.get("score"),
-        "pp": raw.get("pp") or "N/A",
-        "rank": raw.get("rank"),
-        "mods": mods_text,
-        "date": raw.get("created_at") or raw.get("ended_at"),
-        "card2x_url": beatmapset.get('covers', {}).get('card@2x'),
-        "beatmap": beatmap,
-        "beatmapset": beatmapset,
-        "beatmap_full": f"{beatmapset.get('artist', '')} - {beatmapset.get('title', '')} [{beatmap.get('version', '')}]",
-        "accuracy": accuracy,
-        "max_combo": raw.get("max_combo"),
-        "count_miss": raw.get("statistics", {}).get("count_miss") or raw.get("statistics", {}).get("miss") or 0,
-        "bpm": beatmap.get("bpm"),
-        "url": beatmap.get("url"),
-        "hit_length": beatmap.get("hit_length"),
-        "cs": beatmap.get("cs"),
-        "ar": beatmap.get("ar"),
-        "od": beatmap.get("accuracy"),
-        "hp": beatmap.get("drain"),
-        "mapper": beatmapset.get("creator"),
-        "status": beatmap.get("status"),
-        "score_url": score_url,
-        "speed_multiplier": speed_multiplier,
-        "user": raw.get("user"),
-        "username": additional_data['username'],
-        "total_pp": additional_data['statistics']['pp'],
-        "country_rank": additional_data['statistics']['country_rank'],
-        "global_rank": additional_data['statistics']['global_rank'],
-        "country_code": additional_data['country_code'],
-        "DA_values": custom_values,
-        "lazer": lazer,
-        "score_stats": raw.get("statistics", {}),
-        "id": raw.get("id")
+        "user": {
+            "username":     user_info['username'],
+            "total_pp":     user_info['statistics']['pp'],
+            "country_rank": user_info['statistics']['country_rank'],
+            "global_rank":  user_info['statistics']['global_rank'],
+            "country_code": user_info['country_code'],
+
+            "total_pp_cache": None,     # pp на момент сохранения скора
+        },
+        "map": {
+            "card2x_url":   beatmapset.get('covers', {}).get('card@2x'),
+            "beatmap_full": f"{beatmapset.get('artist', '')} - {beatmapset.get('title', '')} [{beatmap.get('version', '')}]",            
+            "mapper":       beatmapset.get("creator"),
+            "beatmap_id":   beatmap.get("id"),
+
+            "status":       beatmap.get("status"),
+            "bpm":          beatmap.get("bpm"),
+            "url":          beatmap.get("url"),
+            "hit_length":   beatmap.get("hit_length"),
+            "cs":           beatmap.get("cs"),
+            "ar":           beatmap.get("ar"),
+            "od":           beatmap.get("accuracy"),
+            "hp":           beatmap.get("drain"),
+        },
+        "osu_api_data": {              
+            "rank_legacy":      score.get("rank"),            
+            "date":             score.get("created_at") or score.get("ended_at"),  
+            "id":               score.get("id"),
+            "best_id":          score.get("best_id")
+        },
+        "osu_score": {
+            "user_id" :         score.get("user_id", score.get("user", {}).get("id")) or None,
+            "score_legacy":     score.get("score") or 0,
+            "mods":             mods_text,
+            "accuracy_legacy":  score.get("accuracy"),
+            "max_combo":        score.get("max_combo"),            
+            "pp":               score.get("pp") or 0,
+            "count_300":        score.get("statistics", {}).get("count_300") or None,
+            "count_100":        score.get("statistics", {}).get("count_100") or None,
+            "count_50":         score.get("statistics", {}).get("count_50") or None,
+            "count_miss":       score.get("statistics", {}).get("count_miss") or None,            
+            "ignore_hit":       None,
+            "ignore_miss":      None,
+            "small_bonus":      None,
+            "large_tick_hit":   None,
+            "large_tick_miss":  None,            
+            "slider_tail_hit":  None,
+            "failed":           fail,
+            "try_count":        score.get("try", 1),      
+        },
+        "neko_api_calc": {
+            "pp":               None,
+            "no_choke_pp":      None,
+            "perfect_pp":       None,
+
+            "star_rating":      None,
+            "perfect_combo":    None,
+            "expected_bpm":     None,
+        },
+        "lazer_data": {
+            "ranked":           None,
+            "total_score":      0,
+            "accuracy":         None,
+            "rank":             None,
+            "speed_multiplier": None,            
+            "DA_values":        None,
+                                        # возможно другие
+        },
+        "state": {            
+            "lazer":            not is_legacy_score(score),
+            "mode":             "osu",
+            "calculated":       False,
+            "enriched":         False,
+            "ready":            False,
+            "error":            False,
+        },
+        "meta": {
+            "created_at":       datetime.now().isoformat(),
+            "enriched_at":      None,
+            "calculated_at":    None,
+            "version":          13012026,         # !
+        }
     }
 
 async def get_score_by_id(score_id: str, token: str, timeout_sec: int = 10):
     cached_entry = load_score_file(score_id)
 
-    if cached_entry:
-        final_score = cached_entry["raw"]
+    if not cached_entry:
+        async with api_limit:
+            async with aiohttp.ClientSession() as session:     
+                data = await get_score_page(session, score_id, score_id, no_check=True)
 
-    else:
-        async with aiohttp.ClientSession() as session:
-            data = await get_score_page(session, score_id, score_id, no_check=True)
+                if not data:
+                    return None  
 
-        if not data:
-            return None  
+                user_id = str(data["user"]["id"])
 
-        user_id = str(data["user"]["id"])
-        additional_data = await get_osu_user_additional_data(user_id, "osu", token)
+                user_info = await get_osu_user_additional_data(user_id, "osu", token)
 
-        cached_entry = {"raw": data, "processed": {}, "ready": False}
-        save_score_file(score_id, cached_entry)
+                # фикс
+                data["mods"] = ""
+                
+                cached_entry = await score_to_schema(data, user_info)
+                
+                cached_entry = await enrich_score_lazer(session, user_id, cached_entry, preloaded_page=data)
 
-        async with aiohttp.ClientSession() as session:
-            await enrich_score_lazer(session, user_id, score_id)
-
-        cached_entry = load_score_file(score_id)
-        raw = cached_entry["raw"]
-
-        final_score = await process_score(raw, additional_data)
-
-        cached_entry["raw"] = final_score
-        cached_entry["ready"] = True
-        save_score_file(score_id, cached_entry)
-
-    return final_score
+                save_score_file(score_id, cached_entry)
+    return cached_entry
 
 
 

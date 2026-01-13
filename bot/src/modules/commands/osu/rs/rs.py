@@ -14,8 +14,9 @@ from ....systems.auth import check_osu_verified
 from ....external.osu_api import get_osu_token, get_user_scores
 from ....external.osu_http import cache_remaining_scores
 from ....wrappers.score import send_score
+import temp
 
-from config import COOLDOWN_RS_COMMAND, RS_BUTTONS_TIMEOUT, user_sessions
+from config import COOLDOWN_RS_COMMAND, RS_BUTTONS_TIMEOUT, USER_SETTINGS_FILE, user_sessions
 
 
 
@@ -37,7 +38,8 @@ async def rs(update: Update, context: ContextTypes.DEFAULT_TYPE, is_button_press
     if not can_run:
         return
 
-    max_attempts = 3
+    max_attempts = 2
+    caching_reached = False
     for _ in range(max_attempts):
         try:
             if not is_button_press:          
@@ -58,11 +60,18 @@ async def rs(update: Update, context: ContextTypes.DEFAULT_TYPE, is_button_press
             if not is_button_press:
                 loading_msg = await try_send(update.message.reply_text, "`загрузка...`", parse_mode="Markdown")
 
+                s = temp.load_json(USER_SETTINGS_FILE, default={})
+                user_settings = s.get(str(user_id), {}) 
+                fails = user_settings.get("display_fails", True)
+                _lang = user_settings.get("lang", "ru") 
+                
+                if fails: fails = 1
+
                 token = await get_osu_token()
-                scores = await get_user_scores(username, token, limit=100)
+                scores = await get_user_scores(username, token, limit=100, fails=fails)
                 if not scores:
                     await safe_send_message(update, "❌ Нет последних игр", parse_mode="Markdown")
-                    return
+                    return           
 
                 score = scores[0]
                
@@ -80,8 +89,9 @@ async def rs(update: Update, context: ContextTypes.DEFAULT_TYPE, is_button_press
                 message_id = msg.message_id
                 user_sessions[message_id] = local_session
 
-                asyncio.create_task(cache_remaining_scores(str(scores[0]['user']['id']), scores, username))
-
+                if not caching_reached:
+                    asyncio.create_task(cache_remaining_scores(str(scores[0]['osu_score']['user_id']), scores))
+                    caching_reached = True
             else:
                 msg = update.callback_query.message
                 session_data = user_sessions.get(msg.message_id)

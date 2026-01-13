@@ -5,6 +5,7 @@ import io
 import html
 import temp
 import traceback
+from datetime import datetime
 from telegram import Update, InputMediaPhoto, LinkPreviewOptions
 
 from ..external import localapi
@@ -12,47 +13,62 @@ from ..utils import text_format
 from ..external.osu_http import beatmap
 from ..utils.osu_conversions import get_mods_info, apply_mods_to_stats
 from ..wrappers.beatmap import create_beatmap_image
+from modules.systems.json_files import save_score_file
 
 from config import USER_SETTINGS_FILE
 
 
 
 # универсальная для команд где нужен скор
-async def process_score_and_image(score, image_todo_flag = False, is_recent=True):       
-    mods_str = score.get("mods", "")
+async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = False, is_recent: bool = True):    
+    user =              cached_entry['user']
+    map =               cached_entry['map']
+    osu_api_data =      cached_entry['osu_api_data']
+    osu_score =         cached_entry['osu_score']
+    neko_api_calc =     cached_entry['neko_api_calc']
+    lazer_data =        cached_entry['lazer_data']
+    state =             cached_entry['state']
+    meta =              cached_entry['meta']
+
+    lazer = state.get('lazer')
+    if lazer:
+        acc = lazer_data.get('accuracy')
+    else:
+        acc = osu_score.get('accuracy_legacy')
+
+    mods_str = osu_score.get("mods", "")
+    mods_text = text_format.normalize_no_plus(mods_str)
     speed_multiplier, hr_active, ez_active = get_mods_info(mods_str)
 
-    path, base_values = await beatmap(score['beatmap']['id'])
+    map_id = map.get('beatmap_id')
+    _path, base_values = await beatmap(int(map_id))
 
-    base_values["ar"] = score.get("ar", 5) if base_values.get("ar") is None else base_values["ar"]
+    # карты без ar
+    base_values["ar"] = map.get("ar", 5) if base_values.get("ar") is None else base_values["ar"]
     
-    base_ar = score.get("DA_values", {}).get("approach_rate", base_values["ar"])
-    base_cs = score.get("DA_values", {}).get("circle_size", base_values["cs"])
-    base_od = score.get("DA_values", {}).get("overall_difficulty",base_values["od"])
-    base_hp = score.get("DA_values", {}).get("drain_rate", base_values["hp"])
+    if not isinstance(lazer_data.get("DA_values"), dict):
+        lazer_data["DA_values"] = {}
 
-    score_stats = score.get("score_stats", score.get("statistics"))
-    misses = score.get('count_miss', score.get("statistics", {}).get("count_miss", 0))
-
-    mods_text = text_format.normalize_no_plus(mods_str)
-
-    mods_str = score.get("mods", "")
-  
+    base_ar = lazer_data.get("DA_values", {}).get("approach_rate", base_values["ar"])
+    base_cs = lazer_data.get("DA_values", {}).get("circle_size", base_values["cs"])
+    base_od = lazer_data.get("DA_values", {}).get("overall_difficulty",base_values["od"])
+    base_hp = lazer_data.get("DA_values", {}).get("drain_rate", base_values["hp"])
+    
     #neko API 
     payload = {
-        "map_path": str(score['beatmap']['id']), 
+        "map_path": str(map_id), 
         
-        "n300": score_stats.get("count_300", score_stats.get("great", None)),
-        "n100": score_stats.get("count_100", score_stats.get("ok", None)),
-        "n50": score_stats.get("count_50", score_stats.get("meh", None)),
-        "misses": int(misses),                   
+        "n300": osu_score.get("count_300", None),
+        "n100": osu_score.get("count_100", None),
+        "n50": osu_score.get("count_50", None),
+        "misses": osu_score.get('count_miss'),                   
         
-        "mods": str(score.get("mods", 0)), 
-        "combo": int(score['max_combo']),      
-        "accuracy": float(score['accuracy']*100),    
+        "mods": str(osu_score.get("mods", 0)), 
+        "combo": int(osu_score['max_combo']),      
+        "accuracy": float(acc*100),    
         
-        "lazer": bool(score.get('lazer', False)),          
-        "clock_rate": float(score.get('speed_multiplier') or 1.0),  
+        "lazer": bool(lazer),          
+        "clock_rate": float(lazer_data.get('speed_multiplier') or 1.0),  
 
         "custom_ar": float(base_ar),
         "custom_cs": float(base_cs),
@@ -71,57 +87,87 @@ async def process_score_and_image(score, image_todo_flag = False, is_recent=True
         perfect_combo = pp_data.get("perfect_combo")
         expected_bpm = pp_data.get("expected_bpm")
 
+        cached_entry.update(
+            {
+                "neko_api_calc": {
+                    "pp":               pp,
+                    "no_choke_pp":      max_pp,
+                    "perfect_pp":       perfect_pp,
+
+                    "star_rating":      stars,
+                    "perfect_combo":    perfect_combo,
+                    "expected_bpm":     expected_bpm,
+                },
+            }
+        )
+        cached_entry.setdefault("state", {}).update({"calculated": True})
+        cached_entry.setdefault("meta", {}).update({"calculated_at": datetime.now().isoformat()})
+        
+        if cached_entry['state']['calculated'] and cached_entry['state']['enriched']:
+            cached_entry.setdefault("state", {}).update({"ready": True})
+        else:
+            cached_entry.setdefault("state", {}).update({"error": True})
+            
+        save_score_file(cached_entry['osu_api_data']['id'], cached_entry)
+        
     except Exception as e:
         print(f"neko API failed: {e}")
 
+    if cached_entry['state']['error']:
+        return None # ???
+    
           
     #temp pp fix
-    pp = pp if not isinstance(score.get("pp"), (int, float)) or score.get("pp") <= 0 else score.get("pp")
+    pp = pp if not isinstance(osu_score.get("pp"), (int, float)) or osu_score.get("pp") <= 0 else osu_score.get("pp")
 
 
-    accuracy = round(score['accuracy'] * 100, 2)
-    accuracy_display = (
-        f"{accuracy}%"
-        if isinstance(score['accuracy'], (int, float))
-        else "N/A"
-    )    
-    if score['lazer']:   
-        if accuracy == 100:
-            score["rank"] = 'SS'
-        elif accuracy >= 90:
-            if (misses == 0) and (accuracy >= 95):
-                score["rank"] = 'S'
-            else:
-                score["rank"] = 'A'
-        elif accuracy >= 80:
-            score["rank"] = 'B'
-        elif accuracy >= 70:
-            score["rank"] = 'C'
-        else:
-            score["rank"] = 'D'
-    
-    spacer = '\n\n'
-    user_link = ''
-    if not image_todo_flag: 
-        username = score.get("username") or score.get("user", {}).get("username")
-        pp_text = f"{score.get('total_pp')}" if score.get("pp") else "0"
-        global_rank_text = f"(#{score.get('global_rank'):,}" if score.get("global_rank") else "(#????"        
-        rank_text = f"{username}: {pp_text}pp {global_rank_text})"
-        country_flag = text_format.country_code_to_flag(country_code = score.get("country_code") or score.get("user", {}).get("country", {}).get("code"))
-        user_link = f'<a href="https://osu.ppy.sh/users/{score["user"]["id"]}">{country_flag} <b>{rank_text}</b></a>\n\n'  
-
-        beatmap_escaped = html.escape(score["beatmap_full"])
-        map_text = f'<a href="{score["url"]}">{beatmap_escaped} [{stars:.2f}★]</a>\n\n'
-        spacer = '\n'
+    if lazer:
+        accuracy = lazer_data.get('accuracy')
+        rank = lazer_data.get('rank') 
     else:
-        username = score.get("username") or score.get("user", {}).get("username")
-        pp_text = f"{score.get('total_pp')}" if score.get("pp") else "0"
-        global_rank_text = f"(#{score.get('global_rank'):,}" if score.get("global_rank") else "(#????"        
-        rank_text = f"{username}: {pp_text}pp {global_rank_text})"
-        country_flag = text_format.country_code_to_flag(country_code = score.get("country_code") or score.get("user", {}).get("country", {}).get("code"))
+        accuracy = osu_score.get('accuracy_legacy')
+        rank = osu_api_data.get('rank_legacy') 
+    accuracy_display = round(accuracy * 100, 2)
+    accuracy_display = (f"{accuracy_display}%")
+
+    # if lazer:   
+    #     if accuracy == 100:
+    #         rank = 'SS'
+    #     elif accuracy >= 90:
+    #         if (osu_score.get('count_miss') == 0) and (accuracy >= 95):
+    #             rank = 'S'
+    #         else:
+    #             rank = 'A'
+    #     elif accuracy >= 80:
+    #         rank = 'B'
+    #     elif accuracy >= 70:
+    #         rank = 'C'
+    #     else:
+    #         rank = 'D'
+    
+    username = user.get("username")
+    pp_text = user.get('total_pp', '0')
+    global_rank_text = f"(#{user.get('global_rank'):,}" if user.get("global_rank") else "(#????"        
+    rank_text = f"{username}: {pp_text}pp {global_rank_text})"
+    country_flag = text_format.country_code_to_flag(country_code = user.get("country_code")) 
+
+    beatmap_escaped = html.escape(map.get('beatmap_full'))
+    
+    try_count, _failed = osu_score.get('try_count'), osu_score.get('failed')
+    try_text = ''
+    if try_count > 1:
+        try_text = f"<i><b>- Try #{try_count}</b></i>"
+
+    if not image_todo_flag:         
+        user_link = f'<a href="https://osu.ppy.sh/users/{osu_score.get("user_id")}">{country_flag} <b>{rank_text}</b></a>\n\n'  
+
+        map_id = map.get('beatmap_id')
+        map_url = f"https://osu.ppy.sh/b/{map_id}"
+        map_text = f'<a href="{map_url}">{beatmap_escaped} [{stars:.2f}★]</a> {try_text}\n\n'
+        spacer = '\n'
+    else:        
         user_link = f''  
 
-        beatmap_escaped = html.escape(score["beatmap_full"])
         map_text = f''
         spacer = '\n'
 
@@ -129,42 +175,52 @@ async def process_score_and_image(score, image_todo_flag = False, is_recent=True
         expected_bpm, base_ar, base_od, base_cs, base_hp,
         speed_multiplier=speed_multiplier, hr=hr_active, ez=ez_active
     )
-    length = int(round(float(score['hit_length']) / speed_multiplier))
+    length = int(round(float(map.get('hit_length')) / speed_multiplier))
     
     is_cl = 'CL'
     mods_lazer = text_format.normalize_plus(mods_str)
     if str(mods_lazer) == '':
         is_cl = '+CL'   
-    if score['lazer']: 
+    if lazer: 
         is_cl = ""
     mods_text = f'{mods_lazer}{is_cl}'
-    combo_text = f'<b>{score["max_combo"]}x</b>/{perfect_combo}x'
-    map_id = score.get("beatmap", {}).get("id", 0)    
-    set_id = score.get("beatmap", {}).get("beatmapset_id", 0) 
-    pp_text = f'<b>{pp:.1f}</b>/{perfect_pp:.1f} <s>({max_pp:.1f}pp)</s>'
+    combo_text = f'<b>{osu_score.get("max_combo")}x</b>/{perfect_combo}x'
+
+    if not rank == "F":
+        pp_text = f'<b>{pp:.1f}</b>/{perfect_pp:.1f} <s>({max_pp:.1f}pp)</s>'
+    else:
+        pp_text = f'<code>Fail</code>  ~<b>{pp:.1f}pp</b> '
+    score_url = f"https://osu.ppy.sh/scores/{osu_api_data.get('id')}"
+    score_date = text_format.format_osu_date(osu_api_data.get('date'), today=is_recent)
+    map_id = map.get('beatmap_id')
+    map_url = f"https://osu.ppy.sh/b/{map_id}"
+    status = map.get('status')
+    mapper = map.get("mapper")
+
     caption = (
-                 f'{user_link}{map_text}<b><i><a href="{score["url"]}">{score["rank"]}</a></i>  {mods_text}   {accuracy_display}</b>    <code>{text_format.format_osu_date(score["date"], today=is_recent)}</code>{spacer}'
-                 f"{pp_text} • {combo_text} • <b>{score['count_miss']}</b>❌\n"
-                 f"<code>{text_format.seconds_to_hhmmss(length)} • CS:{cs} AR:{ar} OD:{od} BPM:{bpm}</code>\n\n"
-                 f'⦿ <a href="{score["url"]}">Mapset</a> by {score["mapper"]} • {score["status"].capitalize()}  <a href="https://myangelfujiya.ru/darkness/direct?id={map_id}&set_id={set_id}">🔗</a>\n'
-             )          
+        f'{user_link}{map_text}<b><i><a href="{score_url}">{rank}</a></i>  {mods_text}   {accuracy_display}</b>    <code>{score_date}</code>{spacer}'
+        f"{pp_text} • {combo_text} • <b>{osu_score.get('count_miss')}</b>❌\n"
+        f"<code>{text_format.seconds_to_hhmmss(length)} • CS:{cs:g} AR:{ar:g} OD:{od:g} BPM:{bpm:g}</code>\n\n"
+        f'⦿ <a href="{map_url}">Mapset</a> by {mapper} • {status.capitalize()}  <a href="https://myangelfujiya.ru/darkness/direct?id={map_id}">🔗</a>\n'
+        )          
+    # &set_id={set_id} вырезано из ссылки директа
 
     img_path = None
     if image_todo_flag:
-        score["sr"] = stars
-        img_path = await create_beatmap_image(score)
+        img_path = await create_beatmap_image(cached_entry)
     
     return img_path, caption
 
 
-async def send_score( update: Update, score: dict, user_id: str,  session: dict,  message_id: int, query=None,  show_buttons=True, img_path=None, is_recent=True):
+async def send_score( update: Update, cached_entry: dict, user_id: str,  session: dict,  message_id: int, query=None,  show_buttons=True, img_path=None, is_recent=True):
     s =  temp.load_json(USER_SETTINGS_FILE, default={})
     user_settings = s.get(str(update.effective_user.id), {}) 
     rs_bg_render = user_settings.get("rs_bg_render", False)  
-    img_path, caption = await process_score_and_image(score, image_todo_flag=rs_bg_render, is_recent=is_recent)
+    rs_bg_render = False # for now ...
+    img_path, caption = await process_score_and_image(cached_entry, image_todo_flag=rs_bg_render, is_recent=is_recent)
 
     link_preview = LinkPreviewOptions(
-        url=score.get('card2x_url'),
+        url=cached_entry.get('map').get('card2x_url'),
         is_disabled=False,
         prefer_small_media=False,
         prefer_large_media=True,
