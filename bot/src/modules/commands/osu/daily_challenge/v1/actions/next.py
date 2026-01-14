@@ -116,11 +116,26 @@ async def next_challenge(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # нет активного 
             else:   is_new_challenge_needed = True
 
-            if is_new_challenge_needed:
+            if is_new_challenge_needed:     
                 beatmap_info = await get_random_beatmap_from_random_pack()
                 if not beatmap_info:
                     await context.bot.safe_send_message(update, text="❌ Не удалось получить карту", parse_mode="HTML")
                     return
+                
+                now = time.time()
+
+                completed_times = list(completed.values()) or []
+                skipped_times = list(skipped.values()) or []
+
+                if not completed_times and not skipped_times:
+                    tier = 1
+                else:
+                    t_last = max(completed_times + skipped_times)
+                    delta = now - t_last
+
+                    if delta > TIME_LIMIT:
+                        tier = 1
+
                 
                 goal = html.escape(random.choice(goals))
 
