@@ -70,7 +70,10 @@ async def enrich_score_lazer(session, user_id: str, cached_entry: dict, preloade
         
     if not preloaded_page:
         score_page = await get_score_page(session, user_id, cached_entry['osu_api_data']['id'])
-    else: score_page = preloaded_page
+        mods_orig = cached_entry['osu_score']['mods']
+    else: 
+        score_page = preloaded_page
+        mods_orig = score_page.get("mods", [])
 
     # хмм есть же is legacy
     # if not score_page:
@@ -124,8 +127,6 @@ async def enrich_score_lazer(session, user_id: str, cached_entry: dict, preloade
                 'slider_tail_hit': stats.get('slider_tail_hit'),
             }
         )
-
-    mods_orig = cached_entry['osu_score']['mods']
 
     mods_clean = []
     if mods_orig:

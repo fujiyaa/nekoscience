@@ -453,9 +453,12 @@ async def get_score_by_id(score_id: str, token: str, timeout_sec: int = 10):
                 user_info = await get_osu_user_additional_data(user_id, "osu", token)
 
                 # фикс
+                preserve_mods = data["mods"]
                 data["mods"] = ""
                 
                 cached_entry = await score_to_schema(data, user_info)
+                
+                data["mods"] = preserve_mods
                 
                 cached_entry = await enrich_score_lazer(session, user_id, cached_entry, preloaded_page=data)
 
