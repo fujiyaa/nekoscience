@@ -23,9 +23,24 @@ api_limit = asyncio.Semaphore(10)
 
 
 
+async def get_user_profile_batch(usernames: list[str]) -> list[dict | None]:    
+    token = await get_osu_token()
+
+    async with api_limit:
+        async with aiohttp.ClientSession() as session:
+            print('🔻 API request (get_user_profile_batch)')
+            tasks = []            
+            for username in usernames:
+                url = f"https://osu.ppy.sh/api/v2/users/{username}/osu"
+                headers = {"Authorization": f"Bearer {token}"}
+                tasks.append(fetch_with_timeout(session, url, headers))
+
+            return await asyncio.gather(*tasks)        
+
 async def get_user_profile(username: str, token: str = None) -> dict | None:
     if token is None:
         token = await get_osu_token()
+
     url = f"https://osu.ppy.sh/api/v2/users/{username}/osu"
     headers = {"Authorization": f"Bearer {token}"}
     print('🔻 API request (get_user_profile)')
@@ -437,9 +452,11 @@ async def score_to_schema(score, user_info):
         }
     }
 
-async def get_score_by_id(score_id: str, token: str, timeout_sec: int = 10):
-    cached_entry = load_score_file(score_id)
-
+async def get_score_by_id(score_id: str, token: str, timeout_sec: int = 10, override: bool = False):
+    if not override:    
+        cached_entry = load_score_file(score_id)
+    else: cached_entry = False
+    
     if not cached_entry:
         async with api_limit:
             async with aiohttp.ClientSession() as session:     
@@ -461,6 +478,23 @@ async def get_score_by_id(score_id: str, token: str, timeout_sec: int = 10):
                 data["mods"] = preserve_mods
                 
                 cached_entry = await enrich_score_lazer(session, user_id, cached_entry, preloaded_page=data)
+
+                stats = data.get('statistics')
+                if stats:
+                    cached_entry.setdefault("osu_score", {}).update(
+                        {
+                            'count_100': stats.get('ok'),
+                            'count_50': stats.get('meh'),
+                            'count_miss': stats.get('miss'),
+                            'count_300': stats.get('great'),
+                            'ignore_hit': stats.get('ignore_hit'),
+                            'ignore_miss': stats.get('ignore_miss'),
+                            'small_bonus': stats.get('small_bonus'),
+                            'large_tick_hit': stats.get('large_tick_hit'),
+                            'large_tick_miss': stats.get('large_tick_miss'),
+                            'slider_tail_hit': stats.get('slider_tail_hit'),
+                        }
+                    )
 
                 save_score_file(score_id, cached_entry)
     return cached_entry

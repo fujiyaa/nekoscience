@@ -15,6 +15,12 @@ async def _fetch(key: str):
         data = resp.get("current", {})
         return data if isinstance(data, dict) else {}
 
+async def get_all_osu_verified_telegram_ids():
+    verified = await get_all_osu_verified()
+    if not isinstance(verified, dict):
+        return []
+    return [str(k) for k in verified.keys()]
+
 async def get_all_osu_verified():
     return await _fetch(file_v)
 

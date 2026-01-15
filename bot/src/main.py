@@ -35,6 +35,7 @@ from modules.commands.osu.music.beatmap_audio import start_beatmap_audio
 from modules.commands.osu.daily_challenge.v1.challenge import start_challenge
 from modules.commands.osu.compare_profile.compare_profile import start_compare_profile
 from modules.commands.osu.card_top5.card import start_card as start_card_top5
+from modules.commands.osu.leaderboard_chat.leaderboard import start_leaderboard_chat
 
 # fun
 from modules.commands.fun.doubt.doubt import doubt
@@ -47,6 +48,7 @@ from modules.commands.sevice.ping.ping import ping
 from modules.commands.sevice.uptime.uptime import uptime
 from modules.commands.sevice.help.help import start_help
 from modules.commands.sevice.settings.settings import settings_cmd
+from modules.commands.osu.scoreoverride.score import score as scoreoverride
 # from modules.commands.sevice.forum_db_related.getthreads import dev_getthreads
 
 # callback
@@ -57,6 +59,7 @@ from modules.commands.osu.simulate.callback import callback as simulate_handler
 from modules.commands.osu.daily_challenge.v1.callback import callback as challenge_callback
 from modules.commands.osu.maps_skill.callback_level1 import farm_step_callback as ms_callback1
 from modules.commands.osu.maps_skill.callback_level2 import farm_pagination_callback as ms_callback2
+from modules.commands.osu.leaderboard_chat.callback import callback as leaderboard_callback
 
 from modules.commands.sevice.settings.callback import callback as settings_handler
 
@@ -82,10 +85,11 @@ def register_commands(app):
         ("average", "avg", "a"):            start_average_stats,
         ("nochoke", "n"):                   start_nochoke,
         ("anime", "goon"):                  start_anime,
-        ("simulate"):                       simulate,
+        ("simulate",):                       simulate,
         ("beatmaps", "b"):                  beatmaps,
         ("name", "link", "nick", "osu"):    set_name,
         ("challenge",):                     start_challenge,
+        ("leaderboard", "topchat", "l"):    start_leaderboard_chat,
 
         # fun
         ("gn",):                            random_image,
@@ -97,7 +101,8 @@ def register_commands(app):
         ("start", "help"):                  start_help,
         ("settings",):                      settings_cmd,
         ("ping",):                          ping,
-        ("uptime",):                        uptime
+        ("uptime",):                        uptime,
+        ("scoreoverride",):                 scoreoverride
     }
 
     for names, handler in command_map.items():
@@ -115,6 +120,7 @@ def register_callbacks(app):
         (nochoke_handler,       r"^page_\d+_\d+$"),        
         (challenge_callback,    r"^challenge_(main|next|finish|skip|leaderboard|info)"),
         (osu_chat_callback,     r"^send_pm_with_link_to:"),
+        (leaderboard_callback,  r"^leaderboard_chat_"),
     ]
 
     for handler, pattern in callbacks:
