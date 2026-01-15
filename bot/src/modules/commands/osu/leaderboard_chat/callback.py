@@ -113,7 +113,9 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.edit_message_text("❌ Чужие кнопки")
             return
 
-        try:       
+        try:
+            await query.edit_message_text("<code>/topchat Загрузка...</code>", parse_mode="HTML", reply_markup=None)
+
             if data == "leaderboard_chat_total_pp":
                 await leaderboard(update, context, pp, 'pp', '', 'pp')
             elif data == "leaderboard_chat_global_rank":
