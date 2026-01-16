@@ -55,10 +55,11 @@ async def get_score_page(session, user_id: str, score_id: str, no_check:bool = F
     return None
 
 async def enrich_score_lazer(session, user_id: str, cached_entry: dict, preloaded_page = None):  
-
-    if not cached_entry['state']['lazer']:
-        cached_entry['state']['enriched'] = True 
-        return cached_entry
+    
+    if preloaded_page is None:    
+        if not cached_entry['state']['lazer']:
+            cached_entry['state']['enriched'] = True 
+            return cached_entry
     
     if cached_entry['state']['ready']: 
         return cached_entry
@@ -129,12 +130,17 @@ async def enrich_score_lazer(session, user_id: str, cached_entry: dict, preloade
         )
 
     mods_clean = []
-    if mods_orig:
+    if mods_orig:       
         if isinstance(mods_orig[0], dict):
             mods_clean = [m for m in mods_orig if m.get("acronym") != "DA"]
+            # CL
+            if preloaded_page is not None:
+                mods_clean = [m for m in mods_clean if m.get("acronym") != "CL"]
             mods_text = "+".join(m.get("acronym", "") for m in mods_clean if "acronym" in m)
         else:
             mods_clean = [m for m in mods_orig if m != "DA"]
+            if preloaded_page is not None:
+                mods_clean = [m for m in mods_clean if m != "CL"]
             mods_text = "+".join(mods_clean)
     else:
         mods_text = "NM"
@@ -143,6 +149,8 @@ async def enrich_score_lazer(session, user_id: str, cached_entry: dict, preloade
         mods_text += f" ({speed_multiplier}x)"
     if da_active:
         mods_text = mods_text + "+DA" if mods_text != "NM" else "+DA"
+
+        
 
     cached_entry.setdefault("osu_score", {}).update(
             {
@@ -159,8 +167,15 @@ async def enrich_score_lazer(session, user_id: str, cached_entry: dict, preloade
                 "ranked": ranked,
             }
         )    
-    cached_entry.setdefault("state", {}).update({"enriched": True})
+    cached_entry.setdefault("state", {}).update(
+            {
+                "enriched": True, 
+                # "lazer": is_lazer,
+            }
+        )
     cached_entry.setdefault("meta", {}).update({"enriched_at": datetime.now().isoformat()})
+
+   
 
     return cached_entry
 

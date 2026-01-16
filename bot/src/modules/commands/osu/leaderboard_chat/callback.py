@@ -155,7 +155,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             elif data == "leaderboard_chat_ss":
                 await leaderboard(update, context, ss_ranks, 'ss', '', '')
             elif data == "leaderboard_chat_s":
-                await leaderboard(update, context, s_ranks, 'ss', '', '')
+                await leaderboard(update, context, s_ranks, 's', '', '')
             elif data == "leaderboard_chat_a":
                 await leaderboard(update, context, a_ranks, 'a', '', '')
             else:
