@@ -20,7 +20,6 @@ async def get_profiles(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     now = datetime.now()
 
-    # чистка протухших
     expired = [
         tg_id for tg_id, data in _cached_profiles.items()
         if not data.get("timestamp") or (now - data["timestamp"]).total_seconds() > CACHE_TTL
@@ -31,23 +30,19 @@ async def get_profiles(update: Update, context: ContextTypes.DEFAULT_TYPE):
     all_ids = await get_all_osu_verified_telegram_ids()
     results = await check_all(context.bot, chat_id, all_ids)
 
-    # кто реально в чате сейчас
     present = [tg_id for tg_id, status in results if status]
 
     usernames_to_fetch = []
     tg_id_to_username = {}
 
-    # сначала размечаем чаты в кэше
     for tg_id in present:
         if tg_id in _cached_profiles:
             _cached_profiles[tg_id].setdefault("chats", set()).add(chat_id)
         else:
-            # надо фетчить
             username = await check_osu_verified(tg_id)
             usernames_to_fetch.append(username)
             tg_id_to_username[username] = tg_id
 
-    # фетч недостающих
     if usernames_to_fetch:
         fetched = await get_user_profile_batch(usernames_to_fetch)
         for profile in fetched:
@@ -60,7 +55,6 @@ async def get_profiles(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     "chats": {chat_id}
                 }
 
-    # выдаём только тех, кто числится и в кэше, и в этом чате
     profiles = [
         data["profile"]
         for data in _cached_profiles.values()
