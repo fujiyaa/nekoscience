@@ -162,7 +162,7 @@ async def send_score_fix(update, cached_entry, user_id, token:str = None):
         )
 
     is_cl = 'CL'
-    mods_lazer = text_format.normalize_plus(mods_str)
+    mods_lazer = text_format.normalize_no_plus(mods_str)
     if str(mods_lazer) == '':
         is_cl = '+CL'   
     if lazer: 
