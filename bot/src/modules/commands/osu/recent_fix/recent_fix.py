@@ -56,7 +56,7 @@ async def recent_fix(update: Update, context: ContextTypes.DEFAULT_TYPE, user_re
         loading_msg = await try_send(update.message.reply_text, text, parse_mode="Markdown")
 
         token = await get_osu_token()
-        scores = await get_user_scores(username, token, limit=1)
+        scores = await get_user_scores(username, token, limit=1, fails=0)
 
         if not scores:
             await safe_send_message(update, text="❌ Нет последних игр", parse_mode="Markdown")
@@ -69,4 +69,4 @@ async def recent_fix(update: Update, context: ContextTypes.DEFAULT_TYPE, user_re
         await loading_msg.delete()
 
     except Exception:
-        traceback.print_exc()
+        traceback.print_exc() 
