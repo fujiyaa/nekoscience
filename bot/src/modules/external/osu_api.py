@@ -374,8 +374,11 @@ async def score_to_schema(score, user_info):
             "country_rank": user_info['statistics']['country_rank'],
             "global_rank":  user_info['statistics']['global_rank'],
             "country_code": user_info['country_code'],
+            
+            "total_pp_cache": None,
 
-            "total_pp_cache": None,     # pp на момент сохранения скора
+            "avatar_url":   user_info.get('avatar_url'),
+            "cover_url":    user_info.get('cover_url'),
         },
         "map": {
             "card2x_url":   beatmapset.get('covers', {}).get('card@2x'),
@@ -448,7 +451,7 @@ async def score_to_schema(score, user_info):
             "created_at":       datetime.now().isoformat(),
             "enriched_at":      None,
             "calculated_at":    None,
-            "version":          13012026,         # !
+            "version":          18012026,         # !
         }
     }
 
