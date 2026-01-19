@@ -83,7 +83,7 @@ async def farm(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request)
                 await context.bot.edit_message_text(
                     chat_id=update.effective_chat.id,
                     message_id=temp_message.message_id,
-                    text=f"`Нет данных о карточке пользователя... Может быть стоит создать новую командой /card, а после этого вернуться сюда?`",
+                    text=f"`Нет данных о карточке пользователя... Может быть стоит создать новую командой /skills, а после этого вернуться сюда?`",
                     parse_mode="Markdown"
                 )
                 return

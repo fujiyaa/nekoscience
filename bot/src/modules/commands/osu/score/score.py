@@ -9,8 +9,8 @@ from telegram.ext import ContextTypes
 from ....systems.cooldowns import check_user_cooldown
 from ....actions.messages import safe_send_message
 from ....external.osu_api import get_osu_token, get_score_by_id
-from ....systems.json_files import load_score_file
 from ....wrappers.score import send_score
+from ....actions.context import set_cached_map
 
 from config import COOLDOWN_RS_COMMAND     # why
 
@@ -48,8 +48,17 @@ async def score(update: Update, context: ContextTypes.DEFAULT_TYPE, requested_by
             await safe_send_message(update, "❌ Не удалось загрузить скор", parse_mode="Markdown")
             return
 
-        await send_score(update, cached_entry, user_id, user_id, user_id, is_recent=False)
-
+        bot_msg = await send_score(update, cached_entry, user_id, user_id, user_id, is_recent=False)
+       
+        if bot_msg:
+            bot_msg_id = bot_msg.message_id
+            user_to_cache = update.effective_user.id
+            map_to_cache = cached_entry.get('map').get('beatmap_id')
+            
+            set_cached_map(bot_msg, map_to_cache, user_to_cache, bot_msg_id)
+            
     except Exception:
         traceback.print_exc()
-        await safe_send_message(update, "❌ Ошибка при получении скора", parse_mode="Markdown")
+        await safe_send_message(update, "❌ Ошибка", parse_mode="Markdown")
+
+    

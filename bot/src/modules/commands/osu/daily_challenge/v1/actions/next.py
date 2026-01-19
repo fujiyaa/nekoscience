@@ -183,7 +183,7 @@ async def next_challenge(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 text,
                 parse_mode="HTML",
                 reply_markup=reply_markup
-            )            
+            )
 
             return
         except Exception:

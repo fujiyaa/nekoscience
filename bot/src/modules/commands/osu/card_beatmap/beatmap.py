@@ -12,6 +12,7 @@ from ....systems.cooldowns import check_user_cooldown
 from ....actions.messages import delete_user_message, delete_message_after_delay
 from ....external.osu_http import fetch_txt_beatmaps
 from ....external.osu_api import get_osu_token, get_beatmap
+from ....actions.context import set_cached_map
 from .buttons import get_keyboard
 from .processing_v1 import create_beatmap_image
 from .utils import delayed_remove
@@ -96,11 +97,11 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
             with open(img_path, "rb") as f:
                 try:
                     reply_markup = await get_keyboard(str(beatmap_id))
-                    await message.reply_photo(
+                    bot_msg = await message.reply_photo(
                         InputFile(f), reply_markup = reply_markup
                     )
                 except:
-                    await message.reply_photo(
+                    bot_msg = await message.reply_photo(
                         InputFile(f),
                     )
                 if user_request:
@@ -109,6 +110,14 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
                     except:
                         await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=temp_message.message_id)
             
-            await delayed_remove(img_path)          
+            await delayed_remove(img_path)
+
+            if bot_msg:
+                bot_msg_id = bot_msg.message_id
+                user_to_cache = update.effective_user.id
+                map_to_cache = beatmap_id
+                
+                set_cached_map(bot_msg, map_to_cache, user_to_cache, bot_msg_id)
+
             return
         except Exception as e: print(e)   

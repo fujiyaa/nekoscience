@@ -11,9 +11,10 @@ from ....actions.messages import safe_send_message, try_send, reset_remove_timer
 from ....systems.cooldowns import check_user_cooldown
 from ....systems.logging import log_all_update
 from ....systems.auth import check_osu_verified
-from ....external.osu_api import get_osu_token, get_user_scores
+from ....external.osu_api import get_user_scores
 from ....external.osu_http import cache_remaining_scores
 from ....wrappers.score import send_score
+from ....actions.context import set_cached_map
 import temp
 
 from config import COOLDOWN_RS_COMMAND, RS_BUTTONS_TIMEOUT, USER_SETTINGS_FILE, user_sessions
@@ -67,8 +68,7 @@ async def rs(update: Update, context: ContextTypes.DEFAULT_TYPE, is_button_press
                 
                 if fails: fails = 1
 
-                token = await get_osu_token()
-                scores = await get_user_scores(username, token, limit=100, fails=fails)
+                scores = await get_user_scores(username, limit=100, fails=fails)
                 if not scores:
                     await safe_send_message(update, "❌ Нет последних игр", parse_mode="Markdown")
                     return           
@@ -84,6 +84,15 @@ async def rs(update: Update, context: ContextTypes.DEFAULT_TYPE, is_button_press
                 }
 
                 msg = await try_send(send_score, update, score, user_id, local_session, message_id=0)
+
+                bot_msg = msg
+                if bot_msg:
+                    bot_msg_id = bot_msg.message_id
+                    user_to_cache = update.effective_user.id
+                    map_to_cache = score.get('map').get('beatmap_id')
+                    
+                    set_cached_map(bot_msg, map_to_cache, user_to_cache, bot_msg_id)
+
                 await loading_msg.delete()
 
                 message_id = msg.message_id
@@ -99,7 +108,14 @@ async def rs(update: Update, context: ContextTypes.DEFAULT_TYPE, is_button_press
                 index = session_data["index"]
                 score = scores[index]
                 message_id = msg.message_id
-                await send_score(update, score, session_data["user_id"], session_data, message_id, query=update.callback_query)
+                bot_msg = await send_score(update, score, session_data["user_id"], session_data, message_id, query=update.callback_query)
+                
+                if bot_msg:
+                    bot_msg_id = bot_msg.message_id
+                    user_to_cache = update.effective_user.id
+                    map_to_cache = score.get('map').get('beatmap_id')
+                    
+                    set_cached_map(bot_msg, map_to_cache, user_to_cache, bot_msg_id)
 
             session = user_sessions[message_id]
             index = session["index"]
@@ -113,7 +129,10 @@ async def rs(update: Update, context: ContextTypes.DEFAULT_TYPE, is_button_press
 
             try:
                 keyboard = InlineKeyboardMarkup([buttons])
-                await try_send(msg.edit_reply_markup, reply_markup=keyboard)
+                bot_msg = await try_send(msg.edit_reply_markup, reply_markup=keyboard)
+                print("bot_msg.message_id try_send(msg.edit_reply_markup, reply_markup=keyboard)")
+                print(bot_msg.message_id)
+                
             except:
                 print('keyboard not edited (rs)')
 

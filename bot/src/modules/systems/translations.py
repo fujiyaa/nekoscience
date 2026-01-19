@@ -86,8 +86,11 @@ TRANSLATIONS = {
     "fails_no": {
         "en": "Disabled",
         "ru": "Выкл"
-    }
-    
+    },
+    "settings_sc_more_scores": {
+        "en": "/sc - Больше одного скора?",
+        "ru": "/sc - Display more scores?"
+    }    
 }
 
 CARD_PROFILE = {

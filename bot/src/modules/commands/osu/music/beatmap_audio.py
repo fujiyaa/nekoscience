@@ -12,6 +12,7 @@ from ....systems.logging import log_all_update
 from ....systems.cooldowns import check_user_cooldown
 from ....actions.messages import delete_user_message, delete_message_after_delay
 from ....external.osu_http import download_osz_async
+from ....actions.context import set_cached_map
 from .send_audio import send_audio
 from .utils import beatmap_artists_and_audio_path
 
@@ -77,7 +78,21 @@ async def beatmap_audio(update: Update, context: ContextTypes.DEFAULT_TYPE, user
     path = os.path.join(OSZ_DIR, beatmap_id, path)
     bg_path = os.path.join(OSZ_DIR, beatmap_id, bg_path)
 
-    await send_audio(update, context, path, title, artist, bg_path)
+    bot_msg = await send_audio(update, context, path, title, artist, bg_path)
+        
+    match = re.search(r"/(\d+)$", url)
+    if match:
+        map_id = match.group(1)
+        print(map_id)
+    
+    if bot_msg:
+        bot_msg_id = bot_msg.message_id
+        user_to_cache = update.effective_user.id
+        map_to_cache = int(map_id)        
+
+        set_cached_map(bot_msg, map_to_cache, user_to_cache, bot_msg_id)
+
+
     if user_request:
         asyncio.create_task(delete_message_after_delay(context, status_msg.chat_id, status_msg.message_id, 1)) 
 

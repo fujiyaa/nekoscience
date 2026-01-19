@@ -293,12 +293,121 @@ async def _get_recent_scores(
 
     return {"scores": scores, "user_info": user_info}
 
+async def _get_beatmap_scores(
+    username: str,
+    beatmap_id: str,
+    limit: int = 25,
+    fails: int = 25,
+    mode: str = "osu",    
+    timeout_sec: int = 10,):
 
+    token = await get_osu_token()
+
+    user_id = await get_user_id(username, token)
+    if not user_id:
+        return None
+
+    timeout = aiohttp.ClientTimeout(total=timeout_sec)
+    headers = {"Authorization": f"Bearer {token}"}
+    url_scores = f"https://osu.ppy.sh/api/v2/beatmaps/{beatmap_id}/scores/users/{user_id}/all?legacy_only=0&ruleset={mode}"
+    url_beatmap = f"https://osu.ppy.sh/api/v2/beatmaps/{beatmap_id}"
+    url_user_info = f"https://osu.ppy.sh/api/v2/users/{user_id}/{mode}"
+
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        try:
+            async def fetch(url):
+                async with api_limit:
+                    async with session.get(url, headers=headers) as resp:
+                        return resp.status, await resp.json() if resp.status == 200 else None
+
+            scores_task = fetch(url_scores)
+            map_task = fetch(url_beatmap)
+            user_task = fetch(url_user_info)
+
+            (status_scores, scores), (status_map, map), (status_user, user_info) = await asyncio.gather(
+                scores_task, 
+                map_task, 
+                user_task
+            )
+
+            if status_scores != 200:
+                print(f"_get_beatmap_scores | scores failed: {status_scores}")
+                scores = []
+
+            if status_map != 200:
+                print(f"_get_beatmap_scores | map failed: {status_map}")
+                map = []
+
+            if status_user != 200:
+                print(f"_get_beatmap_scores | user_info failed: {status_user}")
+                user_info = {}
+
+        except (asyncio.TimeoutError, aiohttp.ClientError) as e:
+            print(f"_get_beatmao_scores: {e}")
+
+    if not scores and not user_info and not map:
+        return None
+    
+    if isinstance(scores, dict) and "scores" in scores:
+        scores = scores["scores"]
+    
+    for score in scores:
+        if score.get("id", 0) == 0:
+            created_at = score.get("created_at", "unknown_time")
+            safe_time = re.sub(r'[^\w\-]', '_', created_at)
+            score["id"] = f"{user_id}_{safe_time}"   
+
+    return {"scores": scores, "user_info": user_info, "beatmap": map}
+
+
+async def get_user_scores_by_beatmap(
+    username: str,
+    beatmap_id: str,
+    limit: int = 25,
+    fails: int = 1):
+
+    data = await _get_beatmap_scores(username, beatmap_id, limit=limit, fails=fails)
+    
+    if data is None:
+        scores = []
+        user_info = {}
+        beatmap = []
+    else:
+        scores = data.get('scores') or []
+        user_info = data.get('user_info') or {}
+        beatmap = data.get('beatmap') or []
+        beatmapset = beatmap.pop('beatmapset')
+
+    results = []
+    async with aiohttp.ClientSession() as session:
+        for i, score in enumerate(scores):
+            score_id = str(score["id"])
+            cached_entry = load_score_file(score_id)
+            if not cached_entry:   
+                score['beatmapset'] = beatmapset                  
+                score['beatmap'] = beatmap  
+
+                # использовать если все будет enriched
+                # иначе будет скачиваниe просто так
+
+                # if cached_entry:
+                #     if cached_entry['state']['error']:
+                #         print("cached_entry state error, override")
+
+                #         cached_entry = None            
+
+                cached_entry = await score_to_schema(score, user_info)
+
+                if i < 1:
+                    cached_entry = await enrich_score_lazer(session, str(score['user_id']), cached_entry) 
+                
+                save_score_file(score_id, cached_entry)
+                
+            results.append(cached_entry)
+    return results
     
 async def get_user_scores(
     username: str,
-    token: str,
-    timeout_sec: int = 10,
     limit: int = 25,
     fails: int = 1):
     """
@@ -306,10 +415,6 @@ async def get_user_scores(
     
     :param username: осу ник
     :type username: str
-    :param token: осу токен из external.osu_auth get_osu_token
-    :type token: str
-    :param timeout_sec: обычный таймаут
-    :type timeout_sec: int
     :param limit: макс скоров
     :type limit: int
     :param fails: скоры с F (1 / 0 флаг)
@@ -340,6 +445,13 @@ async def get_user_scores(
         for i, score in enumerate(scores_sorted):
             score_id = str(score["id"])
             cached_entry = load_score_file(score_id)
+            
+            if cached_entry:
+                if cached_entry['state']['error']:
+                    print("cached_entry state error, override")
+
+                    cached_entry = None
+                
             if not cached_entry:            
                 cached_entry = await score_to_schema(score, user_info)
 

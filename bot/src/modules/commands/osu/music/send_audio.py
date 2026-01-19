@@ -47,7 +47,7 @@ async def send_audio(update: Update, context: ContextTypes.DEFAULT_TYPE, audio_f
             if artist:
                 kwargs["performer"] = artist
 
-            await update.message.reply_audio(**kwargs)
+            return await update.message.reply_audio(**kwargs)
 
     except Exception as e:
         print("Ошибка при отправке аудио:", e)

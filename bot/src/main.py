@@ -36,6 +36,7 @@ from modules.commands.osu.daily_challenge.v1.challenge import start_challenge
 from modules.commands.osu.compare_profile.compare_profile import start_compare_profile
 from modules.commands.osu.card_top5.card import start_card as start_card_top5
 from modules.commands.osu.leaderboard_chat.leaderboard import start_leaderboard_chat
+from modules.commands.osu.scores_best.scores_best import start_scores_best
 
 # fun
 from modules.commands.fun.doubt.doubt import doubt
@@ -75,7 +76,7 @@ def register_commands(app):
         ("mappers",):                       start_mappers,
         ("profile", "p"):                   start_profile,
         ("card", "c"):                      start_card,
-        ("skills", "s"):                    start_skills,
+        ("skills",):                        start_skills,
         ("cardtop", "ct"):                  start_card_top5,
         ("recent_fix", "fix", "f"):         start_recent_fix,
         ("recent", "rs", "r"):              start_rs,
@@ -85,15 +86,16 @@ def register_commands(app):
         ("average", "avg", "a"):            start_average_stats,
         ("nochoke", "n"):                   start_nochoke,
         ("anime", "goon"):                  start_anime,
-        ("simulate",):                       simulate,
+        ("simulate",):                      simulate,
         ("beatmaps", "b"):                  beatmaps,
         ("name", "link", "nick", "osu"):    set_name,
         ("challenge",):                     start_challenge,
         ("leaderboard", "topchat", "l"):    start_leaderboard_chat,
+        ("s", "sc", "score", "scores"):     start_scores_best,
 
         # fun
         ("gn",):                            random_image,
-        ("doubt", "ban"):                  doubt,
+        ("doubt", "ban"):                   doubt,
         ("blacks",):                        blacks,
         ("reminders",):                     reminders_command,
 

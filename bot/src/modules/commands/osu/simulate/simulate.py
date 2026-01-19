@@ -12,6 +12,7 @@ from .buttons import get_simulate_keyboard
 from ....external.osu_http import beatmap
 from ....external.localapi import get_map_stats_neko_api
 from ....actions.messages import delete_user_message, delete_message_after_delay
+from ....actions.context import set_cached_map
 
 from config import OSU_MAP_REGEX, PARAMS_TEMPLATE
 from config import sessions_simulate
@@ -134,4 +135,11 @@ async def simulate(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                           reply_markup=get_simulate_keyboard(user_id),
                                           parse_mode="Markdown" )
     sessions_simulate[user_id]["message_id"] = msg.message_id
+
+    if msg:
+        bot_msg_id = msg.message_id
+        user_to_cache = update.effective_user.id
+        map_to_cache = int(beatmap_id)        
+
+        set_cached_map(msg, map_to_cache, user_to_cache, bot_msg_id)
 

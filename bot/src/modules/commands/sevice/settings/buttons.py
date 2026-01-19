@@ -12,6 +12,7 @@ async def get_settings_kb(user_id, user_data):
     lang_code = user_settings.get("lang", "ru")   
     bg_code = user_settings.get("rs_bg_render", False) 
     display_fails = user_settings.get("display_fails", True) 
+    display_more_scores = user_settings.get("display_more_scores", False) 
     
     if lang_code == "en":
         en_flag = "✅"
@@ -33,6 +34,13 @@ async def get_settings_kb(user_id, user_data):
     else:
         display_fails_y = ""
         display_fails_n = "❌"
+
+    if display_more_scores:
+        display_more_scores_y = "✅"
+        display_more_scores_n = ""
+    else:
+        display_more_scores_y = ""
+        display_more_scores_n = "❌"
 
     keyboard = [
         # [
@@ -65,6 +73,22 @@ async def get_settings_kb(user_id, user_data):
             InlineKeyboardButton(
                 f"{TR['fails_no'][lang_code]} {display_fails_n}",
                 callback_data=f"settings_display_fails_n:{user_id}"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                f"{TR['settings_sc_more_scores'][lang_code]}",
+                callback_data=f"settings_ignore:{user_id}"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                f"{TR['fails_yes'][lang_code]} {display_more_scores_y}",
+                callback_data=f"settings_display_scores_y:{user_id}"
+            ),           
+            InlineKeyboardButton(
+                f"{TR['fails_no'][lang_code]} {display_more_scores_n}",
+                callback_data=f"settings_display_scores_n:{user_id}"
             )
         ],
         # [

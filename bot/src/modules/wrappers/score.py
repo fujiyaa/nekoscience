@@ -5,22 +5,20 @@ import io
 import html
 import temp
 import traceback
-from datetime import datetime
 from telegram import Update, InputMediaPhoto, LinkPreviewOptions
 
-from ..external import localapi
 from ..utils import text_format
 from ..external.osu_http import beatmap
 from ..utils.osu_conversions import get_mods_info, apply_mods_to_stats
 from ..wrappers.beatmap import create_beatmap_image
-from modules.systems.json_files import save_score_file
+from ..utils.calculate import caclulte_cached_entry
 
 from config import USER_SETTINGS_FILE
 
 
 
 # универсальная для команд где нужен скор
-async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = False, is_recent: bool = True):    
+async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = False, is_recent: bool = True): 
     user =              cached_entry['user']
     map =               cached_entry['map']
     osu_api_data =      cached_entry['osu_api_data']
@@ -28,7 +26,14 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
     neko_api_calc =     cached_entry['neko_api_calc']
     lazer_data =        cached_entry['lazer_data']
     state =             cached_entry['state']
-    meta =              cached_entry['meta']
+    meta =          cached_entry['meta']  
+
+    if not cached_entry['state']['calculated']:
+        await caclulte_cached_entry(cached_entry)
+        
+        neko_api_calc = cached_entry['neko_api_calc']
+        state =         cached_entry['state']
+        meta =          cached_entry['meta']        
 
     lazer = state.get('lazer')
     if lazer:
@@ -54,67 +59,13 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
     base_od = lazer_data.get("DA_values", {}).get("overall_difficulty",base_values["od"])
     base_hp = lazer_data.get("DA_values", {}).get("drain_rate", base_values["hp"])
     
-    #neko API 
-    payload = {
-        "map_path": str(map_id), 
-        
-        "n300": osu_score.get("count_300", None),
-        "n100": osu_score.get("count_100", None),
-        "n50": osu_score.get("count_50", None),
-        "misses": osu_score.get('count_miss'),                   
-        
-        "mods": str(osu_score.get("mods", 0)), 
-        "combo": int(osu_score['max_combo']),      
-        "accuracy": float(acc*100),    
-        
-        "lazer": bool(lazer),          
-        "clock_rate": float(lazer_data.get('speed_multiplier') or 1.0),  
+    pp = neko_api_calc.get("pp")
+    max_pp = neko_api_calc.get("no_choke_pp")
+    perfect_pp = neko_api_calc.get("perfect_pp")
 
-        "custom_ar": float(base_ar),
-        "custom_cs": float(base_cs),
-        "custom_hp": float(base_hp),
-        "custom_od": float(base_od),
-    }
-
-    try:
-        pp_data = await localapi.get_score_pp_neko_api(payload)
-
-        pp = pp_data.get("pp")
-        max_pp = pp_data.get("no_choke_pp")
-        perfect_pp = pp_data.get("perfect_pp")
-
-        stars = pp_data.get("star_rating")
-        perfect_combo = pp_data.get("perfect_combo")
-        expected_bpm = pp_data.get("expected_bpm")
-
-        cached_entry.update(
-            {
-                "neko_api_calc": {
-                    "pp":               pp,
-                    "no_choke_pp":      max_pp,
-                    "perfect_pp":       perfect_pp,
-
-                    "star_rating":      stars,
-                    "perfect_combo":    perfect_combo,
-                    "expected_bpm":     expected_bpm,
-                },
-            }
-        )
-        cached_entry.setdefault("state", {}).update({"calculated": True})
-        cached_entry.setdefault("meta", {}).update({"calculated_at": datetime.now().isoformat()})
-        
-        if cached_entry['state']['calculated'] and cached_entry['state']['enriched']:
-            cached_entry.setdefault("state", {}).update({"ready": True})
-        else:
-            cached_entry.setdefault("state", {}).update({"error": True})
-            
-        save_score_file(cached_entry['osu_api_data']['id'], cached_entry)
-        
-    except Exception as e:
-        print(f"neko API failed: {e}")
-
-    if cached_entry['state']['error']:
-        return None # ???
+    stars = neko_api_calc.get("star_rating")
+    perfect_combo = neko_api_calc.get("perfect_combo")
+    expected_bpm = neko_api_calc.get("expected_bpm")        
     
           
     #temp pp fix

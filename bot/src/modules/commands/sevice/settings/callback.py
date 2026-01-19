@@ -24,7 +24,14 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     settings = temp.load_json(USER_SETTINGS_FILE, default={})
-    user_settings = settings.get(str(user_id), {"lang": "ru", "notify": True, "rs_bg_render": False, "new_card": True})    
+    user_settings = settings.get(str(user_id), {
+            "lang": "ru", 
+            "notify": True, 
+            "rs_bg_render": False, 
+            "new_card": True,
+            "display_fails": True,
+            "display_more_scores": False,
+        })    
 
     if action == "settings_english":
         user_settings["lang"] = "en"
@@ -48,6 +55,14 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif action == "settings_display_fails_n":
         user_settings["display_fails"] = False
+        await safe_query_answer(query) 
+
+    elif action == "settings_display_scores_y":
+        user_settings["display_more_scores"] = True
+        await safe_query_answer(query) 
+
+    elif action == "settings_display_scores_n":
+        user_settings["display_more_scores"] = False
         await safe_query_answer(query) 
 
     elif action == "settings_new_card":

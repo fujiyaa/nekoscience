@@ -13,6 +13,7 @@ from telegram.ext import ContextTypes
 from ....actions.messages import reset_remove_timer, safe_query_answer
 from ....systems.json_files import load_score_file
 from ....wrappers.score import process_score_and_image
+from ....actions.context import set_cached_map
 
 from config import RS_BUTTONS_TIMEOUT, USER_SETTINGS_FILE, user_sessions
 
@@ -76,7 +77,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             with open(img_path, "rb") as f:
                 bio = io.BytesIO(f.read())
             media = InputMediaPhoto(media=bio, caption=caption, parse_mode="HTML")
-            await query.edit_message_media(media=media, reply_markup=keyboard)
+            bot_msg = await query.edit_message_media(media=media, reply_markup=keyboard)
         else:
             link_preview = LinkPreviewOptions(
                 url=entry['map']['card2x_url'],
@@ -85,7 +86,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 prefer_large_media=True,
                 show_above_text=True
             )
-            await query.edit_message_text(
+            bot_msg = await query.edit_message_text(
                 text=caption,
                 parse_mode='HTML',
                 link_preview_options=link_preview,
@@ -93,6 +94,13 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
 
         session["index"] = new_index
+
+        if bot_msg:
+            bot_msg_id = bot_msg.message_id
+            user_to_cache = update.effective_user.id
+            map_to_cache = entry.get('map').get('beatmap_id')
+            
+            set_cached_map(bot_msg, map_to_cache, user_to_cache, bot_msg_id)
 
         reset_remove_timer(
             context.bot,
