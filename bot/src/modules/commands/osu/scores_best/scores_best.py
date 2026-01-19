@@ -75,7 +75,7 @@ async def scores_best(update: Update, context: ContextTypes.DEFAULT_TYPE, user_r
         
         s = temp.load_json(USER_SETTINGS_FILE, default={})
         user_settings = s.get(str(update.effective_user.id), {}) 
-        more = user_settings.get("display_more_scores", 1) 
+        more = user_settings.get("display_more_scores", False) 
 
         limit = 1
         if more: limit = 5
