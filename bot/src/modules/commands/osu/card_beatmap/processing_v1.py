@@ -30,7 +30,7 @@ async def create_beatmap_image(map_data, beatmap_id):
     
     plays = f"{map_data['playcount']:,}"
     psc = map_data['passcount']
-    max_combo_map = f" (x{map_data['max_combo']:,})"
+    max_combo_map = map_data['max_combo']
     version = trim_text(map_data['version'],                38  )
     guest = trim_text(map_data['owners'][0]['username'],    30  ) 
     artist = trim_text(map_data['beatmapset']['artist'],    50  ) 
@@ -560,7 +560,7 @@ async def create_beatmap_image(map_data, beatmap_id):
                                     font_text=font_skill1, font_prop=font_skill2)
     
     x_right3 = create_stat_button_left(img, draw, x_right2 + gap, y_top,
-                                    text=f"{max_combo}x", prop=combo_text, overlay_transparency=200,
+                                    text=f"{max_combo_map}x", prop=combo_text, overlay_transparency=200,
                                     font_text=font_skill1, font_prop=font_skill2)
     
     x_right4 = create_stat_button_left(img, draw, x_right3 + gap, y_top,
