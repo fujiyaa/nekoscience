@@ -8,9 +8,9 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 def get_keyboard(page, total_pages, user_id):
     
     btn_back = InlineKeyboardButton("⬅️ Назад", callback_data=f"ms_page:{user_id}:{page-1}")
-    btn_next = InlineKeyboardButton("След. ➡️", callback_data=f"ms_page:{user_id}:{page+1}")
-    btn_mods = InlineKeyboardButton("🔄 Моды", callback_data=f"ms_lazer:select_mods_again")
-    btn_main = InlineKeyboardButton("♻️ Выбирать заново", callback_data=f"ms_skill:back")
+    btn_next = InlineKeyboardButton("Вперед ➡️", callback_data=f"ms_page:{user_id}:{page+1}")
+    btn_mods = InlineKeyboardButton("🔄 Изменить", callback_data=f"ms_lazer:select_mods_again")
+    btn_main = InlineKeyboardButton("♻️ Выбрать все заново", callback_data=f"ms_skill:back")
 
     if page == 0:
         if total_pages == 1:

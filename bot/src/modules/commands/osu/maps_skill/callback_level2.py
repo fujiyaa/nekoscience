@@ -48,7 +48,7 @@ async def ms_pagination_callback(update: Update, context: ContextTypes.DEFAULT_T
     lvl = (float(skill_level) / 10)
     lvl_str = f"🔎 {lvl:.1f}x"
 
-    line = f"1️⃣ Acc 2️⃣ Aim 3️⃣ Spd {lvl_str}±{percent_str} +{mods}\n"
+    line = f"1️⃣ Acc 2️⃣ Aim 3️⃣ Spd {lvl_str} ±{percent_str} +{mods}\n"
     lines.append(line)
 
     for beatmap in pages[page]:
@@ -76,7 +76,7 @@ async def ms_pagination_callback(update: Update, context: ContextTypes.DEFAULT_T
         url = f"https://osu.ppy.sh/beatmaps/{map_id}"
         url_2 = f"https://myangelfujiya.ru/darkness/direct?id={map_id}"
 
-        line = f"{total_str}pts {symbols} [ссылка]({url}) | [директ]({url_2})    +{mods}"
+        line = f"*{total_str}*pts {symbols} id`{map_id}` • [ссылка]({url}) • [direct]({url_2})"
         lines.append(line)
 
     text = "\n".join(lines)

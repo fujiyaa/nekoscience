@@ -94,9 +94,9 @@ async def maps_skill(update: Update, context: ContextTypes.DEFAULT_TYPE, user_re
                         )
                     return  
                 
-                w_skill = skills.get('weighted')
+                r_skill = skills.get('raw')
 
-                context.user_data["skills"] = w_skill
+                context.user_data["skills"] = r_skill
                 context.user_data["ms_username"] = username
                 context.user_data["ms_user_id"] = update.effective_user.id
                 context.user_data["ms_choices"] = {}
@@ -106,9 +106,9 @@ async def maps_skill(update: Update, context: ContextTypes.DEFAULT_TYPE, user_re
                 text = (
                     f'<code>maps_skill v2, поиск по нику: {username}</code>\n'
                     f'\n'
-                    f"acc: <b>{w_skill['acc']:.2f}</b> (Точность)\n"
-                    f"aim: <b>{w_skill['aim']:.2f}</b> (Аим)\n"
-                    f"spd: <b>{w_skill['speed']:.2f}</b> (Скорость)\n"
+                    f"acc: <b>{r_skill['acc']:.2f}</b> (Точность)\n"
+                    f"aim: <b>{r_skill['aim']:.2f}</b> (Аим)\n"
+                    f"spd: <b>{r_skill['speed']:.2f}</b> (Скорость)\n"
                     f'\n'
                     f'Выбери версию для поиска:'
                 )
