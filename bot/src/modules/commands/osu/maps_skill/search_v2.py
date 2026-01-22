@@ -164,7 +164,7 @@ async def generate_ms_results(update: Update, context: ContextTypes.DEFAULT_TYPE
         url = f"https://osu.ppy.sh/beatmaps/{map_id}"
         url_2 = f"https://myangelfujiya.ru/darkness/direct?id={map_id}"
 
-        line = f"{total_str}pts {symbols} [ссылка]({url}) | [директ]({url_2})"
+        line = f"*{total_str}*pts {symbols} id`{map_id}` • [ссылка]({url}) • [direct]({url_2})"
         lines.append(line)
     line = (
         f"\n"
