@@ -62,14 +62,14 @@ async def scores_best(update: Update, context: ContextTypes.DEFAULT_TYPE, user_r
             cached_map_id = cached_map["map_id"]
             # cached_user_id = cached_map["user_id"]
         if not cached_map:
-            await safe_send_message(update, text="❌ Нет карты в чате... `/help scores`", parse_mode="Markdown")
+            await safe_send_message(update, text="❌ Нет карты в чате... `/help score`", parse_mode="Markdown")
             await loading_msg.delete()
             return
 
         scores = await get_user_scores_by_beatmap(username, cached_map_id, limit=1, fails=0)
 
         if not scores:
-            await safe_send_message(update, text="❌ Нет скоров на карте... `/help scores`", parse_mode="Markdown")
+            await safe_send_message(update, text="❌ Нет скоров на карте... `/help score`", parse_mode="Markdown")
             await loading_msg.delete()
             return
         
