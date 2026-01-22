@@ -4,12 +4,26 @@
 from datetime import date
 from PIL import Image, ImageDraw, ImageFont
 
+from .descriptoins import get_title
+
 from config import BOT_DIR
 
 
 
-def make_card(title, bg, username, country_code, avatar_path, accuracy, aim, speed,
-              global_rank, country_rank, level, medals, mode, output="card.png", acc_total=None, aim_total=None, speed_total=None):
+def make_card(scores, username, country_code, avatar_path, skills,
+              global_rank, country_rank, level, medals, mode, output="card.png"):
+    
+    w_skill = skills.get('weighted')
+    r_skill = skills.get('raw')
+    
+    bg, title = (
+        get_title(
+            w_skill['aim'], 
+            w_skill['speed'], 
+            w_skill['acc'], 
+            scores                    
+        )
+    ) 
 
     bg_name = "novice" 
     if bg is not None:
@@ -120,35 +134,35 @@ def make_card(title, bg, username, country_code, avatar_path, accuracy, aim, spe
     # ACCURACY
     draw.text((x0, y0), "|", font=font_bold_med, fill="white")
     draw.text((x0 + skill_offset, y0 + 8), "ACCURACY", font=font_light_italic_med, fill="white")
-    accuracy_value = f"{accuracy:.2f}" 
+    accuracy_value = f"{w_skill['acc']:.2f}" 
     int_part, frac_part = accuracy_value.split(".") 
     draw.text((x0 + 6, y0 + 52), f"{int_part}.", font=font_bold_big, fill="white")
     bbox = draw.textbbox((x0 + 6, y0 + 52), f"{int_part}.", font=font_bold_big)
     width_int = bbox[2] - bbox[0]
     draw.text((x0 + 6 + width_int, y0 + 52), frac_part, font=font_regular_big, fill="white")
-    draw.text((x0 + 6 + width_int + total_ox, y0 + 52 + total_oy), f" ~ {acc_total:.2f}" , font=font_bold_nano_2, fill=(200, 200, 200))
+    draw.text((x0 + 6 + width_int + total_ox, y0 + 52 + total_oy), f" ~ {r_skill['acc']:.2f}" , font=font_bold_nano_2, fill=(200, 200, 200))
 
     # AIM
     draw.text((x0, y0 + line_spacing + block_spacing), "|", font=font_bold_med, fill="white")
     draw.text((x0 + skill_offset, y0 + 8 + line_spacing + block_spacing), "AIM", font=font_light_italic_med, fill="white")
-    aim_value = f"{aim:.2f}"
+    aim_value = f"{w_skill['aim']:.2f}"
     int_part, frac_part = aim_value.split(".")
     draw.text((x0 + 6, y0 + 52 + line_spacing + block_spacing), f"{int_part}.", font=font_bold_big, fill="white")
     bbox = draw.textbbox((x0 + 6, y0 + 52 + line_spacing), f"{int_part}.", font=font_bold_big)
     width_int = bbox[2] - bbox[0]
     draw.text((x0 + 6 + width_int, y0 + 52 + line_spacing + block_spacing), frac_part, font=font_regular_big, fill="white")
-    draw.text((x0 + 6 + width_int + total_ox, y0 + 52 + line_spacing + block_spacing + total_oy), f" ~ {aim_total:.2f}" , font=font_bold_nano_2, fill=(200, 200, 200))
+    draw.text((x0 + 6 + width_int + total_ox, y0 + 52 + line_spacing + block_spacing + total_oy), f" ~ {r_skill['aim']:.2f}" , font=font_bold_nano_2, fill=(200, 200, 200))
 
     # SPEED
     draw.text((x0, y0 + 2 * line_spacing+ block_spacing * 2), "|", font=font_bold_med, fill="white")
     draw.text((x0 + skill_offset, y0 + 8 + 2 * line_spacing+ block_spacing * 2), "SPEED", font=font_light_italic_med, fill="white")
-    speed_value = f"{speed:.2f}"
+    speed_value = f"{w_skill['speed']:.2f}"
     int_part, frac_part = speed_value.split(".")
     draw.text((x0 + 6, y0 + 52 + 2 * line_spacing+ block_spacing * 2), f"{int_part}.", font=font_bold_big, fill="white")
     bbox = draw.textbbox((x0 + 6, y0 + 52 + 2 * line_spacing), f"{int_part}.", font=font_bold_big)
     width_int = bbox[2] - bbox[0]
     draw.text((x0 + 6 + width_int, y0 + 52 + 2 * line_spacing+ block_spacing * 2), frac_part, font=font_regular_big, fill="white")
-    draw.text((x0 + 6 + width_int + total_ox, y0 + 52 + 2 * line_spacing+ block_spacing * 2 + total_oy), f" ~ {speed_total:.2f}" , font=font_bold_nano_2, fill=(200, 200, 200))
+    draw.text((x0 + 6 + width_int + total_ox, y0 + 52 + 2 * line_spacing+ block_spacing * 2 + total_oy), f" ~ {r_skill['speed']:.2f}" , font=font_bold_nano_2, fill=(200, 200, 200))
 
     x0, y0 = 73, 770
     x_block = x0 + 300

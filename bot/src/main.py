@@ -27,7 +27,7 @@ from modules.commands.osu.card_skills.card import start_skills
 from modules.commands.osu.profile.profile import start_profile
 from modules.commands.osu.mappers.mappers import start_mappers
 from modules.commands.osu.nochoke.no_choke import start_nochoke
-from modules.commands.osu.maps_skill.maps_skill import start_farm
+from modules.commands.osu.maps_skill.maps_skill import start_maps_skill
 from modules.commands.osu.check_for_anime.anime import start_anime
 from modules.commands.osu.average.average import start_average_stats
 from modules.commands.osu.recent_fix.recent_fix import start_recent_fix
@@ -58,8 +58,8 @@ from modules.commands.osu.nochoke.callback import callback as nochoke_handler
 from modules.commands.osu.beatmaps.callback import callback as beatmaps_handler
 from modules.commands.osu.simulate.callback import callback as simulate_handler
 from modules.commands.osu.daily_challenge.v1.callback import callback as challenge_callback
-from modules.commands.osu.maps_skill.callback_level1 import farm_step_callback as ms_callback1
-from modules.commands.osu.maps_skill.callback_level2 import farm_pagination_callback as ms_callback2
+from modules.commands.osu.maps_skill.callback_level1 import ms_step_callback as ms_callback1
+from modules.commands.osu.maps_skill.callback_level2 import ms_pagination_callback as ms_callback2
 from modules.commands.osu.leaderboard_chat.callback import callback as leaderboard_callback
 
 from modules.commands.sevice.settings.callback import callback as settings_handler
@@ -82,16 +82,16 @@ def register_commands(app):
         ("recent", "rs", "r"):              start_rs,
         ("pc",):                            start_compare_profile,
         ("music",):                         start_beatmap_audio,
-        ("maps_skill", "ms"):               start_farm,
+        ("maps_skill", "ms"):               start_maps_skill,
         ("average", "avg", "a"):            start_average_stats,
         ("nochoke", "n"):                   start_nochoke,
         ("anime", "goon"):                  start_anime,
+        ("challenge",):                     start_challenge,
+        ("leaderboard", "topchat", "l"):    start_leaderboard_chat,
+        ("s", "sc", "score", "scores"):     start_scores_best,        
         ("simulate",):                      simulate,
         ("beatmaps", "b"):                  beatmaps,
         ("name", "link", "nick", "osu"):    set_name,
-        ("challenge",):                     start_challenge,
-        ("leaderboard", "topchat", "l"):    start_leaderboard_chat,
-        ("s", "sc", "score", "scores"):     start_scores_best,
 
         # fun
         ("gn",):                            random_image,
@@ -117,8 +117,8 @@ def register_callbacks(app):
         (beatmaps_handler,      r"^beatmaps_"),
         (settings_handler,      r"^settings_"),
         (simulate_handler,      r"^simulate_"),
-        (ms_callback2,          r"^farm_page:"),
-        (ms_callback1,          r"^farm_(skill|mod|lazer|tol):"),
+        (ms_callback2,          r"^ms_page:"),
+        (ms_callback1,          r"^ms_(skill|mod|lazer|tol):"),
         (nochoke_handler,       r"^page_\d+_\d+$"),        
         (challenge_callback,    r"^challenge_(main|next|finish|skip|leaderboard|info)"),
         (osu_chat_callback,     r"^send_pm_with_link_to:"),
@@ -140,7 +140,7 @@ def setup_logging():
     logger = startup()
     logger.addHandler(ShortNetworkHandler())
 
-def main():
+def main():  
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(
@@ -150,12 +150,12 @@ def main():
     register_commands(app)
     register_callbacks(app)
     setup_logging()
-
+    
     try:
         app.run_polling()
-    except NetworkError:
-        print("NetworkError")
-
+        
+    except Exception as e:
+        print(e)
 
 if __name__ == "__main__":
     main()

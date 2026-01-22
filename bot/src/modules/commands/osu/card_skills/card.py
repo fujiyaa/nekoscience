@@ -3,7 +3,6 @@
 
 import io
 import os
-import json
 import aiohttp
 import asyncio
 import temp
@@ -19,15 +18,14 @@ from ....systems.cooldowns import check_user_cooldown
 from ....utils.osu_conversions import is_legacy_score
 from ....systems.logging import log_all_update
 from ....systems.auth import check_osu_verified
-from ....external.localapi import get_pp_parts_neko_api
 from ....external.osu_api import get_osu_token, get_user_profile 
 from ....external.osu_api import get_top_100_scores
 from ....external.osu_http import fetch_txt_beatmaps
+from ....external.local_skills import get_skills_by_scores
 from .processing_v1 import make_card
-from .descriptoins import get_title # какого хрена только тайтл тут
 
 from config import COOLDOWN_CARD_COMMAND, USER_SETTINGS_FILE, CARDS_DIR
-from config import USERS_SKILLS_FILE, AVATARS_DIR, message_authors
+from config import AVATARS_DIR, message_authors
 
 
 
@@ -102,10 +100,7 @@ async def skills(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reques
             
             s = temp.load_json(USER_SETTINGS_FILE, default={})
             user_settings = s.get(str(user_id), {}) 
-            # new_card = user_settings.get("new_card", True)
-            user_data["lang"] = user_settings.get("lang", "ru")    
-
-              
+            user_data["lang"] = user_settings.get("lang", "ru") 
         
             try:
                 user_id = user_data["id"]  # изменить на percent("NM") < 10: другом количестве скоров!!!
@@ -154,62 +149,11 @@ async def skills(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reques
                 ))
 
             #neko api 
-            scores_payload = []
-            for score in best_scores:
-                stats = score["statistics"]
-                scores_payload.append({
-                    "map_id": score["beatmap"]["id"],
-                    "n320": stats.get("count_geki", 0),
-                    "n300": stats.get("count_300", 0),
-                    "n200": stats.get("count_katu", 0),
-                    "n100": stats.get("count_100", 0),
-                    "n50":  stats.get("count_50", 0),
-                    "misses": stats.get("count_miss", 0),
-                    "combo": score.get("max_combo"),
-                    "mods": str(score.get("mods", "")),
-                    "accuracy": float(score["accuracy"] * 100.0),
-                    "set_on_lazer": bool(score.get("lazer", True)),
-                    "large_tick_hit": stats.get("count_large_tick_hit", 0),
-                    "small_tick_hit": stats.get("count_small_tick_hit", 0),
-                    "small_tick_miss": stats.get("count_small_tick_miss", 0),
-                    "slider_tail_hit": stats.get("count_slider_tail_hit", 0),
-                })
-
-            payload = {
-                "mode": "Osu",
-                "scores": scores_payload
-            }
-
-            try:
-                skills = await get_pp_parts_neko_api(payload)
-
-            except Exception as e:
-                print(f"error calling Rust API: {e}")
-
-            acc, aim, speed = skills["acc"], skills["aim"], skills["speed"]
-            acc_total = skills["acc_total"]
-            aim_total = skills["aim_total"]
-            speed_total = skills["speed_total"]
+            skills = await get_skills_by_scores(best_scores)
+            if not skills: 
+                print('Error: no skills')
+                return
             
-
-            if os.path.exists(USERS_SKILLS_FILE):
-                with open(USERS_SKILLS_FILE, "r", encoding="utf-8") as f:
-                    users_skills = json.load(f)
-            else:
-                users_skills = {}
-
-            users_skills[username] = {
-                "kind": skills.get("kind", "Osu"),
-                "values": {k: round(v, 2) for k, v in skills.items()},
-                "total": round(acc_total + aim_total + speed_total, 2)
-            }
-
-            with open(USERS_SKILLS_FILE, "w", encoding="utf-8") as f:
-                json.dump(users_skills, f, indent=4, ensure_ascii=False)
-
-            print(f"skills of {username} saved to {USERS_SKILLS_FILE}")
-
-            bg, title = (get_title(aim, speed, acc, scores)) 
 
             username = user_data["username"]
             stats = user_data["statistics"]
@@ -274,23 +218,17 @@ async def skills(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reques
                         print(f"Ошибка при скачивании аватарки: {e}")
 
             img_path = make_card(
-                title=title,
-                bg=bg,
-                username=username,
-                country_code=country_code, 
-                avatar_path=avatar_path,
-                accuracy=acc,
-                aim=aim,
-                speed=speed,
-                global_rank=global_rank,
-                country_rank=country_rank,
-                level=level,
-                medals=medals,
+                scores,
+                username,
+                country_code, 
+                avatar_path,
+                skills,
+                global_rank,
+                country_rank,
+                level,
+                medals,
                 mode="Standard",########################################
                 output=f"{CARDS_DIR}/{user_data['id']}.png",
-                aim_total=aim_total,
-                speed_total=speed_total,
-                acc_total=acc_total,
             )
 
                     
@@ -299,6 +237,11 @@ async def skills(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reques
                     await message.reply_photo(InputFile(f))
                 except:
                     await message.reply_photo(InputFile(f))
+            
+            try:
+                await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=temp_message.message_id)
+            except:
+                await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=temp_message.message_id)
 
             try:
                 os.remove(img_path)

@@ -146,4 +146,20 @@ async def safe_edit_message(message, text, parse_mode=None, reply_markup=None):
             return await message.reply_text(text, parse_mode=parse_mode, reply_markup=reply_markup)
     except Exception as e:
         print(f"safe_edit_message failed: {e}")
-        return await message.reply_text(text, parse_mode=parse_mode, reply_markup=reply_markup) 
+        return await message.reply_text(text, parse_mode=parse_mode, reply_markup=reply_markup)
+
+async def safe_edit_query(query, text, parse_mode=None, reply_markup=None, disable_web_page_preview=True):    
+    try:   
+        msg = query.message    
+       
+        if msg.text or msg.caption:
+            return await msg.edit_text(text, 
+                parse_mode=parse_mode, reply_markup=reply_markup, 
+                disable_web_page_preview=disable_web_page_preview)
+        
+        return await msg.edit_caption(text,
+            parse_mode=parse_mode, reply_markup=reply_markup, 
+            disable_web_page_preview=disable_web_page_preview)
+    
+    except Exception as e:
+        print(f"safe_edit_query failed: {e}")        

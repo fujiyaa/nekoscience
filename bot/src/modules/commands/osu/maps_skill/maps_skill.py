@@ -1,110 +1,128 @@
 
 
 
-import os
-import json
 import asyncio
 
 from telegram import Update
 from telegram.ext import ContextTypes
 
+from ....actions.messages import safe_send_message
 from ....systems.cooldowns import check_user_cooldown
 from ....systems.logging import log_all_update
 from ....systems.auth import check_osu_verified
+from ....external.osu_api import get_user_profile, get_top_100_scores
+from ....external.local_skills import get_skills_by_scores
 from .buttons_level1 import get_keyboard
 
-from config import COOLDOWN_FARM_COMMAND, USERS_SKILLS_FILE
+from config import COOLDOWN_MS_COMMAND
 
 
 
-async def start_farm(update, context, user_request=True):
+async def start_maps_skill(update, context, user_request=True):
     await log_all_update(update)
-    asyncio.create_task(farm(update, context, user_request))
-async def farm(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request):
-    query = update.callback_query
-    if query:  
-        await query.answer()
-        message = query.message
-    else:
-        message = update.message
+    asyncio.create_task(maps_skill(update, context, user_request))
 
+async def maps_skill(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request):
     can_run = await check_user_cooldown(
-            command_name="farm",
+            command_name="maps_skill",
             user_id=str(update.effective_user.id),
-            cooldown_seconds=COOLDOWN_FARM_COMMAND,           
+            cooldown_seconds=COOLDOWN_MS_COMMAND,           
             update=update,
             context=context,
-            warn_text=f"⏳ Подождите {COOLDOWN_FARM_COMMAND} секунд"
+            warn_text=f"⏳ Подождите {COOLDOWN_MS_COMMAND} секунд"
         )
     if not can_run:
         return
-    MAX_ATTEMPTS = 3
+    MAX_ATTEMPTS = 3 
 
+    user_id = str(update.message.from_user.id)
     saved_name = await check_osu_verified(str(update.effective_user.id))
 
-    if update.message:
-        temp_message = await update.message.reply_text(
-            "`Загрузка...`",
-            parse_mode="Markdown"
-        )
-
-    if not context.args:
-        if saved_name:
-            username = saved_name
-        else:       
-            await context.bot.edit_message_text(
-                    chat_id=update.effective_chat.id,
-                    message_id=temp_message.message_id,
-                    text="`Для использования этой команды должно быть сохранено имя /name`" ,
-                    parse_mode="Markdown"
-                )
-            return
-    else:
-        username = " ".join(context.args)
-
-    if saved_name is None:
-        saved_name = 'нет'
-    
     for attempt in range(1, MAX_ATTEMPTS + 1):
-        try:  
-            try: 
-                if os.path.exists(USERS_SKILLS_FILE):
-                    with open(USERS_SKILLS_FILE, "r", encoding="utf-8") as f:
-                        users_skills = json.load(f)
-                else:    
-                    users_skills = {}
-                
-                if username in users_skills:
-                    skills = users_skills[username].get("values", {})
+        try:
+            if not context.args:
+                if saved_name:
+                    username = saved_name
                 else:
-                    raise ValueError(f"Пользователь {username} не найден в JSON")        
-            except Exception as e:
-                print(e)
+                    text = (
+                        "Использование: `/maps_skill fujina123` <- никнейм\n\n\n"
+                        "⚙ *Дополнительно*\n\n"
+                        "/name – сохранить ник\n"
+                    )
+                    await safe_send_message(update, text, parse_mode="Markdown")
+                    return
+            else:
+                username = " ".join(context.args)
+
+            temp_message = await update.message.reply_text(
+                "`Загрузка...`", 
+                parse_mode="Markdown"
+            )
+            break
+
+        except: 
+            pass
+
+    for attempt in range(1, MAX_ATTEMPTS + 1):
+        try:
+            user_data = await asyncio.wait_for(get_user_profile(username), timeout=10)
+            if not user_data:
                 await context.bot.edit_message_text(
                     chat_id=update.effective_chat.id,
                     message_id=temp_message.message_id,
-                    text=f"`Нет данных о карточке пользователя... Может быть стоит создать новую командой /skills, а после этого вернуться сюда?`",
+                    text="`Игрок не найден`",
                     parse_mode="Markdown"
                 )
                 return
 
-            context.user_data["farm_user_id"] = update.effective_user.id
-            context.user_data["farm_choices"] = {}
-            context.user_data["farm_step"] = 0
-            context.user_data["farm_topic_id"] = getattr(update.effective_message, "message_thread_id", None)
+            try:
+                user_id = user_data["id"]
+                best_scores = await asyncio.wait_for(get_top_100_scores(username, None, user_id, limit=30, plain=True), timeout=10)
+            except Exception as e:
+                best_scores = "N/A"
+                print(e)            
 
-           
-            await context.bot.edit_message_text(
-                    chat_id=update.effective_chat.id,
-                    message_id=temp_message.message_id,
-                    text=f"Версия:",
-                    parse_mode="Markdown",
-                    reply_markup=get_keyboard(0)
-            )
+            if isinstance(best_scores, list) and best_scores:
+                skills = await get_skills_by_scores(best_scores)
 
-            return
+                if not skills:
+                    await context.bot.edit_message_text(
+                        chat_id=update.effective_chat.id,
+                        message_id=temp_message.message_id,
+                        text="`Неизвестная ошибка, попробуй еще раз`",
+                        parse_mode="Markdown"
+                        )
+                    return  
+                
+                w_skill = skills.get('weighted')
+
+                context.user_data["skills"] = w_skill
+                context.user_data["ms_username"] = username
+                context.user_data["ms_user_id"] = update.effective_user.id
+                context.user_data["ms_choices"] = {}
+                context.user_data["ms_step"] = 0
+                context.user_data["ms_topic_id"] = getattr(update.effective_message, "message_thread_id", None)
+
+                text = (
+                    f'<code>maps_skill v2, поиск по нику: {username}</code>\n'
+                    f'\n'
+                    f"acc: <b>{w_skill['acc']:.2f}</b> (Точность)\n"
+                    f"aim: <b>{w_skill['aim']:.2f}</b> (Аим)\n"
+                    f"spd: <b>{w_skill['speed']:.2f}</b> (Скорость)\n"
+                    f'\n'
+                    f'Выбери версию для поиска:'
+                )
+                await context.bot.edit_message_text(
+                        chat_id=update.effective_chat.id,
+                        message_id=temp_message.message_id,
+                        text=text,
+                        parse_mode="HTML",
+                        reply_markup=get_keyboard(0)
+                )
+
+                return
         except Exception as e:
-            print(f"Ошибка при farm (попытка {attempt}/{MAX_ATTEMPTS}): {e}")
+            print(f"Ошибка при maps_skill (попытка {attempt}/{MAX_ATTEMPTS}): {e}")
             if attempt == MAX_ATTEMPTS:
                 await context.bot.edit_message_text(
                     chat_id=update.effective_chat.id,

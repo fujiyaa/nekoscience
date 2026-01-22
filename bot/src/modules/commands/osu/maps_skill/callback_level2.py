@@ -1,27 +1,19 @@
 
 
 
-import os
-import json
-
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from ....systems.cooldowns import check_user_cooldown
-from ....systems.logging import log_all_update
-from ....systems.auth import check_osu_verified
 from .buttons_level2 import get_keyboard
 
-from config import USERS_SKILLS_FILE
 
 
-
-async def farm_pagination_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def ms_pagination_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     
     data = query.data.split(":")
-    action, user_id, page = data
+    _action, user_id, page = data
     user_id = int(user_id)
     page = int(page)
 
@@ -29,37 +21,36 @@ async def farm_pagination_callback(update: Update, context: ContextTypes.DEFAULT
         await query.answer("❌ Это не ваша команда", show_alert=True)
         return
 
-    pages = context.user_data.get("farm_pages", [])
+    pages = context.user_data.get("ms_pages", [])
     if not pages:
         await query.edit_message_text("❌ Ошибка: данные не найдены")
         return
+        
+    try:
+        skills = context.user_data.get("skills")
 
-    saved_name = await check_osu_verified(str(update.effective_user.id))
+        aim_base = skills.get("aim", 0)
+        speed_base = skills.get("speed", 0)
+        acc_base = skills.get("acc", 0)
+        
+    except:
+        print('Error getting skills | callback_level2')
+        return
 
-    if os.path.exists(USERS_SKILLS_FILE):
-        with open(USERS_SKILLS_FILE, "r", encoding="utf-8") as f:
-            users_skills = json.load(f)
-    else:    
-        users_skills = {}
-    
-    if saved_name in users_skills:
-        skills = users_skills[saved_name].get("values", {})
-    else:
-        raise ValueError(f"Пользователь {saved_name} не найден в JSON")
-
-    aim_base = skills.get("aim_total", 0)
-    speed_base = skills.get("speed_total", 0)
-    acc_base = skills.get("acc_total", 0)
+    choices = context.user_data.get("ms_choices", {})
+    skill_level = choices.get("skill", "low")
 
     lines = []
-    choices = context.user_data.get("farm_choices", {})
-    skill_level = choices.get("skill", "1")
-    percent = (float(choices.get("tol", 1.2)) - 1) * 100
+
+    mods = choices.get("mod", "NM")
+    percent = (float(choices.get('tol')) - 1) * 100
     percent_str = f"{percent:.0f}%"
-    lvl = (int(skill_level) -1) * 10 + 30
-    lvl_str = f"Lvl {lvl}"
-    line = f"1️⃣ Acc. 2️⃣ Aim 3️⃣ Speed 🔎{lvl_str}|±{percent_str}\n"
+    lvl = (float(skill_level) / 10)
+    lvl_str = f"🔎 {lvl:.1f}x"
+
+    line = f"1️⃣ Acc 2️⃣ Aim 3️⃣ Spd {lvl_str}±{percent_str} +{mods}\n"
     lines.append(line)
+
     for beatmap in pages[page]:
         map_id = beatmap[0]
         mods = beatmap[2]
@@ -69,9 +60,9 @@ async def farm_pagination_callback(update: Update, context: ContextTypes.DEFAULT
         total_str = f"{total:.0f}"
 
         def cmp_symbol(val, base):
-            if val > base + 15:
+            if val > base + 10:
                 return "🔼"
-            elif val < base - 15:
+            elif val < base - 10:
                 return "🔽"
             else:
                 return "🔅"
@@ -85,7 +76,7 @@ async def farm_pagination_callback(update: Update, context: ContextTypes.DEFAULT
         url = f"https://osu.ppy.sh/beatmaps/{map_id}"
         url_2 = f"https://myangelfujiya.ru/darkness/direct?id={map_id}"
 
-        line = f"{total_str}pts {symbols} [http://osu.p...]({url}) | [🔗]({url_2})   +{mods}"
+        line = f"{total_str}pts {symbols} [ссылка]({url}) | [директ]({url_2})    +{mods}"
         lines.append(line)
 
     text = "\n".join(lines)
