@@ -44,7 +44,7 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request)
                 MessageEntity(
                     type="expandable_blockquote",
                     offset=0,                     
-                    length=len(help_text)+20 # extra offset cos idk         
+                    length=len(help_text)+10 # extra offset cos idk         
                 )
             ]        
             max_attempts = 3
