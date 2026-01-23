@@ -77,7 +77,7 @@ async def _scores_to_payload(scores: dict = {}) -> dict | bool:
                 "n100": stats.get("count_100", 0),
                 "n50":  stats.get("count_50", 0),
                 "misses": stats.get("count_miss", 0),
-                "combo": score.get("combo"),
+                "combo": score.get("max_combo"),
                 "mods": str(score.get("mods", "")),
                 "accuracy": float(score["accuracy"] * 100.0),
                 "set_on_lazer": bool(score.get("lazer", True)),
