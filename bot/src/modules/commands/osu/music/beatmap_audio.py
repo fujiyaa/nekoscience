@@ -78,7 +78,7 @@ async def beatmap_audio(update: Update, context: ContextTypes.DEFAULT_TYPE, user
     path = os.path.join(OSZ_DIR, beatmap_id, path)
     bg_path = os.path.join(OSZ_DIR, beatmap_id, bg_path)
 
-    bot_msg = await send_audio(update, context, path, title, artist, bg_path)
+    bot_msg = await send_audio(update, context, path, title, artist, bg_path, beatmap_id)
         
     match = re.search(r"/(\d+)$", url)
     if match:

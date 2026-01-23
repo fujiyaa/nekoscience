@@ -411,6 +411,62 @@ async def download_osz_async(mapset_id: int, osu_session: str, save_dir: str,
     await asyncio.to_thread(_extract)
 
     return extract_dir
+
+async def download_osz_async(mapset_id: int, osu_session: str, save_dir: str, override: bool = True,
+                             connect_timeout: int = 5, read_timeout: int = 60, chunk_size: int = 8192):
+    extract_dir = os.path.join(save_dir, str(mapset_id))
+    
+    if os.path.exists(extract_dir):
+        print(f"cache {extract_dir}")
+        
+        if not override:
+            print(f"override {extract_dir}")
+            return extract_dir
+
+    os.makedirs(save_dir, exist_ok=True)
+
+    url = f"https://beatconnect.io/b/{mapset_id}"
+    cookies = {"osu_session": osu_session}
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/120.0.0.0 Safari/537.36"
+        ),
+        "Referer": f"https://osu.ppy.sh/beatmapsets/{mapset_id}"
+    }
+
+    osz_path = os.path.join(save_dir, f"{mapset_id}.osz")
+
+    timeout = aiohttp.ClientTimeout(sock_connect=connect_timeout, sock_read=read_timeout)
+
+    async with aiohttp.ClientSession(timeout=timeout, cookies=cookies, headers=headers) as session:
+        async with session.get(url) as resp:
+            if resp.status != 200:
+                raise ValueError(f"{mapset_id}{resp.status}")
+
+            content_type = resp.headers.get("Content-Type", "")
+            if "text/html" in content_type:
+                raise ValueError("HTML, not OSZ")
+
+            async with aiofiles.open(osz_path, "wb") as f:
+                async for chunk in resp.content.iter_chunked(chunk_size):
+                    if chunk:
+                        await f.write(chunk)
+
+    print(f"Скачано: {osz_path}")
+
+    os.makedirs(extract_dir, exist_ok=True)
+
+    def _extract():
+        with zipfile.ZipFile(osz_path, 'r') as zip_ref:
+            zip_ref.extractall(extract_dir)
+        os.remove(osz_path)
+
+    await asyncio.to_thread(_extract)
+
+    return extract_dir
+
 def download_osr(score_id: int, osu_session: str, save_dir: str) -> str:
     url = f"https://osu.ppy.sh/scores/{score_id}/download"
     cookies = {"osu_session": osu_session}

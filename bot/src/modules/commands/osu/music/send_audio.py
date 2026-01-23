@@ -8,15 +8,37 @@ from pathlib import Path
 from pydub import AudioSegment
 from telegram.helpers import escape_markdown
 
+from ....external.osu_http import download_osz_async
+from .utils import beatmap_artists_and_audio_path
+
 from telegram import Update, InputFile
 from telegram.ext import ContextTypes
 
+from config import OSU_SESSION, OSZ_DIR
 
 
-async def send_audio(update: Update, context: ContextTypes.DEFAULT_TYPE, audio_file_path, title=None, artist=None, bg=None):
+
+async def send_audio(update: Update, context: ContextTypes.DEFAULT_TYPE, audio_file_path, title=None, artist=None, bg=None, beatmap_id=None):
     path = Path(audio_file_path)
     if not path.is_file():
         print("Файл не найден:", audio_file_path)
+        max_attempts = 3        
+        
+        for _ in range(max_attempts):
+            try: 
+                await download_osz_async(beatmap_id, OSU_SESSION, OSZ_DIR)
+
+                path = os.path.join(OSZ_DIR, beatmap_id)
+
+                title, artist, path, bg_path = await beatmap_artists_and_audio_path(path)
+
+                path = os.path.join(OSZ_DIR, beatmap_id, path)
+                bg_path = os.path.join(OSZ_DIR, beatmap_id, bg_path)
+
+                break
+
+            except Exception as e: print(e)   
+
         return
     if os.path.getsize(audio_file_path) == 0:
         print("Файл пустой:", audio_file_path)
