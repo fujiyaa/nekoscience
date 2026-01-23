@@ -82,7 +82,7 @@ async def generate_ms_results(update: Update, context: ContextTypes.DEFAULT_TYPE
     
 
     try:
-        if lazer:
+        if not lazer:
             results = search1(
                 db_path=f"{BOT_DIR}/beatmaps.db",
                 mods=mods,
@@ -152,10 +152,15 @@ async def generate_ms_results(update: Update, context: ContextTypes.DEFAULT_TYPE
     lines.append(line)
 
     for beatmap in pages[current_page]:
-        map_id = beatmap[0]
-        lazer = beatmap[1].upper()
-        mods = beatmap[2]
-        aim, speed, acc = beatmap[3], beatmap[4], beatmap[5]
+        if not lazer:
+            map_id = beatmap[0]
+            mods = beatmap[2]
+            aim, speed, acc = beatmap[3], beatmap[4], beatmap[5]
+        else:
+            map_id = beatmap[0]
+            mods = beatmap[1]
+            aim, speed, acc = beatmap[2], beatmap[3], beatmap[4]
+
 
         total = aim + speed + acc
         total_str = f"{total:.0f}"
