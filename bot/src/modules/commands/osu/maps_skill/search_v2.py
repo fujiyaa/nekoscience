@@ -133,9 +133,9 @@ async def generate_ms_results(update: Update, context: ContextTypes.DEFAULT_TYPE
     pages = [results[i:i+PAGE_SIZE] for i in range(0, len(results), PAGE_SIZE)]
     context.user_data["ms_pages"] = pages
 
-    aim_base = skills.get("aim_total", 0)
-    speed_base = skills.get("speed_total", 0)
-    acc_base = skills.get("acc_total", 0)
+    aim_base = skills.get("aim", 0)
+    speed_base = skills.get("speed", 0)
+    acc_base = skills.get("acc", 0)
 
 
     current_page = 0
