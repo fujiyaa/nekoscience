@@ -42,6 +42,7 @@ async def ms_pagination_callback(update: Update, context: ContextTypes.DEFAULT_T
 
     lines = []
 
+    lazer = choices.get("lazer", "True")
     mods = choices.get("mod", "NM")
     percent = (float(choices.get('tol')) - 1) * 100
     percent_str = f"{percent:.0f}%"
@@ -52,9 +53,14 @@ async def ms_pagination_callback(update: Update, context: ContextTypes.DEFAULT_T
     lines.append(line)
 
     for beatmap in pages[page]:
-        map_id = beatmap[0]
-        mods = beatmap[2]
-        aim, speed, acc = beatmap[3], beatmap[4], beatmap[5]
+        if not lazer:
+            map_id = beatmap[0]
+            mods = beatmap[2]
+            aim, speed, acc = beatmap[3], beatmap[4], beatmap[5]
+        else:
+            map_id = beatmap[0]
+            mods = beatmap[1]
+            aim, speed, acc = beatmap[2], beatmap[3], beatmap[4]
 
         total = aim + speed + acc
         total_str = f"{total:.0f}"
