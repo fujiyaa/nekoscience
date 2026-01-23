@@ -8,7 +8,8 @@ from .buttons_level1 import get_keyboard as get_fallback_kb
 from .buttons_level2 import get_keyboard
 from ....actions.messages import safe_edit_query
 
-from .sql_template import search_beatmaps
+from .sql_template_v1 import search_beatmaps as search1
+from .sql_template_v2 import search_beatmaps as search2
 
 from config import BOT_DIR
 
@@ -78,15 +79,27 @@ async def generate_ms_results(update: Update, context: ContextTypes.DEFAULT_TYPE
     limit = 800
     offset = 0   
 
+    
+
     try:
-        results = search_beatmaps(
-            db_path=f"{BOT_DIR}/beatmaps.db",
-            mods=mods,
-            filters=filters,
-            limit=limit,
-            offset=offset,
-            lazer=lazer
-        )
+        if lazer:
+            results = search1(
+                db_path=f"{BOT_DIR}/beatmaps.db",
+                mods=mods,
+                filters=filters,
+                limit=limit,
+                offset=offset,
+                lazer=True
+            )
+        else:
+            results = search2(
+                db_path=f"{BOT_DIR}/beatmaps_v2.db",
+                mods=mods,
+                filters=filters,
+                limit=limit,
+                offset=offset
+                # no mode
+            )        
 
     except Exception as e:
         await safe_edit_query( 

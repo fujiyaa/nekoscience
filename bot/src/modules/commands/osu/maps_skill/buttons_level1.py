@@ -55,8 +55,8 @@ def get_keyboard(step):
     elif step == 0:
         buttons = [
             [
-                InlineKeyboardButton("Клиент Stable", callback_data="ms_lazer:False"),            
-                InlineKeyboardButton("Клиент Lazer", callback_data="ms_lazer:True"),
+                InlineKeyboardButton("v1 (старая)", callback_data="ms_lazer:False"),            
+                InlineKeyboardButton("v2 (лучше)", callback_data="ms_lazer:True"),
             ],
             # [
             #     InlineKeyboardButton("⬅️ Назад", callback_data="ms_lazer:back"),
