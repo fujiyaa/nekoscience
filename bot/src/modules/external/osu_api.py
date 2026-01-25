@@ -138,7 +138,77 @@ async def get_top_100_scores(username: str, token: str = None, user_id: str = No
                 "is_anime_bg": is_anime_bg,
             })
 
-        return results    
+        return results
+    
+async def get_recent_scores_for_average(username: str, token: str = None, user_id: str = None, limit: int = 100, plain: bool = False) -> list[dict] | None:
+    if token is None:
+        token = await try_request(get_osu_token, retries=3, delay=1)
+
+    headers = {"Authorization": f"Bearer {token}"}
+
+    async with aiohttp.ClientSession() as session:
+        if user_id is None:
+            user_url = f"https://osu.ppy.sh/api/v2/users/{username}/osu"
+            print('🔻 API request (get_top_100_scores 1/2)')
+            user_data = await try_request(fetch_with_timeout, retries=3, delay=1, session=session, url=user_url, headers=headers)
+            if not user_data or "id" not in user_data:
+                print(f"User {username} not found or request failed")
+                return None
+            user_id = user_data["id"]
+        recent_scores_url = f"https://osu.ppy.sh/api/v2/users/{user_id}/scores/recent?include_fails={0}&limit={limit}&mode=osu"
+        # best_scores_url = f"https://osu.ppy.sh/api/v2/users/{user_id}/scores/best?mode=osu&limit={limit}"
+        print('🔻 API request (get_top_100_scores 2/2)')
+        best_scores = await try_request(fetch_with_timeout, retries=3, delay=1, session=session, url=recent_scores_url, headers=headers)
+        if not best_scores:
+            print("Failed to get best scores or no scores found")
+            return None
+
+        if plain: return best_scores
+        
+        results = []
+        for score in best_scores:
+            mapper_name = score.get("beatmapset", {}).get("creator", "Unknown")
+            version = score.get("beatmap", {}).get("version", "")
+            if "'" in version:
+                mapper_name = version.split("'", 1)[0].strip()
+            lazer = True
+            stable = is_legacy_score(score)
+            if stable:
+                lazer = False
+
+            is_anime_bg = score.get('beatmapset', {}).get('anime_cover', False)
+
+            results.append({
+                'beatmap_url': score.get("beatmap", {}).get("url"),
+                "pp": score.get("pp"),
+                "weight_percent": score.get("weight", {}).get("percentage"),
+                "mods": score.get("mods", []),
+                "mapper": mapper_name,
+                "OD": score.get('beatmap', {}).get('accuracy'),
+                "AR": score.get('beatmap', {}).get('ar'),
+                "CS": score.get('beatmap', {}).get('cs'),
+                "HP": score.get('beatmap', {}).get('drain'),
+                "bpm": score.get('beatmap', {}).get('bpm'),                
+                "length": score.get('beatmap', {}).get('hit_length'),
+                "stars": score.get('beatmap', {}).get('difficulty_rating'),
+                "plays": score.get('beatmap', {}).get('passcount'),
+                "passes": score.get('beatmap', {}).get('playcount'),
+                "passes": score.get('beatmap', {}).get('playcount'),
+                "accuracy": score.get('accuracy'),
+                "misses": score.get('statistics', {}).get('count_miss'),
+                "combo": score.get('max_combo'),
+                "beatmap_id": score.get('beatmap', {}).get('id'),
+                "score_stats": score.get('statistics', {}),
+                "version": score.get('beatmap', {}).get('version'),
+                "title": score.get('beatmapset', {}).get('title'),
+                "lazer": lazer,
+                "rank": score.get('rank', 'D'),
+                "artist": score.get('beatmapset', {}).get('artist'),
+                "time": score.get('created_at', ''),
+                "is_anime_bg": is_anime_bg,
+            })
+
+        return results
     
 async def get_most_played(username: str, token: str = None) -> list[dict] | None:
     if token is None:
