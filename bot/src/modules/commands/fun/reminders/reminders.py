@@ -32,7 +32,7 @@ async def reminders_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if user_id in passwords:
         code = passwords[user_id]
-        await update.effective_message.reply_text(f"Твой пароль: `{code}` \n https://myangelfujiya.ru/darkness", parse_mode="Markdown")
+        await update.effective_message.reply_text(f"Твой пароль: `{code}` \n https://myangelfujiya.ru/darkness/reminders", parse_mode="Markdown")
         
         return
 
