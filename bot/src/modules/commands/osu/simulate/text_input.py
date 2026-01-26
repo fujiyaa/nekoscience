@@ -4,7 +4,7 @@
 import re
 import asyncio
 
-from telegram import Update
+from telegram import Update, LinkPreviewOptions
 from telegram.ext import ContextTypes
 
 from .actions import clear_s_chat
@@ -287,12 +287,22 @@ async def simulate_text_handler(update: Update, context: ContextTypes.DEFAULT_TY
         sess["params"]["Точность"] = calc_accuracy(n300, n100, n50, expected_miss)
         sess["grade"] = calculate_rank(n300, n100, n50, miss, sess["params"]["Лазер"])
 
+        link_preview = LinkPreviewOptions(
+            url=f"https://osu.ppy.sh/b/{sess['beatmap']}",
+            is_disabled=False,
+            prefer_small_media=True,
+            prefer_large_media=False,
+            show_above_text=True
+        )
+
+
         await context.bot.edit_message_text(            
             text=format_text(user_id, pp, max_pp, stars, sess["map_combo"], expected_bpm, n300, n100, n50, expected_miss),
             chat_id=sess["chat_id"],
             message_id=sess["message_id"],
             reply_markup=get_simulate_keyboard(user_id),
-            parse_mode="Markdown" 
+            parse_mode="Markdown",
+            link_preview_options=link_preview,
         )
     except Exception as e:
         print(e)

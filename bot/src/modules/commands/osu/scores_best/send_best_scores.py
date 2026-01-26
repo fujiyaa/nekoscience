@@ -3,6 +3,7 @@
 
 from telegram import LinkPreviewOptions
 
+from ....actions.messages import safe_edit_query
 from ....utils.text_format import normalize_plus, format_osu_date
 from ....utils.calculate import caclulte_cached_entry
 from ....wrappers.user import get_user_link
@@ -127,9 +128,18 @@ async def send_best_scores(update, scores: dict = [], limit: int = 5):
         prefer_large_media=True,
         show_above_text=True
     )
-       
-    return await update.message.reply_text(
-        caption,
-        parse_mode="HTML",
-        link_preview_options=link_preview
-    )
+
+    try:
+        return await safe_edit_query(
+            query=update,
+            text=caption,
+            parse_mode="HTML",
+            link_preview_options=link_preview
+        )
+
+    except:       
+        return await update.message.reply_text(
+            caption,
+            parse_mode="HTML",
+            link_preview_options=link_preview
+        )

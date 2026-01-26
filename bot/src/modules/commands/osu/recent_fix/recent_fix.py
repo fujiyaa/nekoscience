@@ -7,6 +7,7 @@ import traceback
 from telegram import Update
 from telegram.ext import ContextTypes
 
+from ....external.osu_http import get_beatmap_title_from_file, get_beatmap_creator_from_file
 from ....actions.messages import safe_send_message, try_send
 from ....systems.cooldowns import check_user_cooldown
 from ....systems.logging import log_all_update
@@ -68,11 +69,14 @@ async def recent_fix(update: Update, context: ContextTypes.DEFAULT_TYPE, user_re
         
         bot_msg = await try_send(send_score_fix, update, cached_entry, uid, token)       
 
+        map_id=cached_entry.get('map').get('beatmap_id')
         if bot_msg:
             set_message_context(
                 bot_msg, 
                 reply=False, 
-                map_id=cached_entry.get('map').get('beatmap_id'), 
+                map_id=map_id,
+                map_title=await get_beatmap_title_from_file(map_id),
+                mapper_username=await get_beatmap_creator_from_file(map_id),
                 origin_call_user_id=update.effective_user.id,
             )
 

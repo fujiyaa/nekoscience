@@ -7,6 +7,7 @@ import traceback
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 
+from ....external.osu_http import get_beatmap_title_from_file, get_beatmap_creator_from_file
 from ....actions.messages import safe_send_message, try_send, reset_remove_timer
 from ....systems.cooldowns import check_user_cooldown
 from ....systems.logging import log_all_update
@@ -85,12 +86,16 @@ async def rs(update: Update, context: ContextTypes.DEFAULT_TYPE, is_button_press
 
                 msg = await try_send(send_score, update, score, user_id, local_session, message_id=0)
 
-                bot_msg = msg
+                bot_msg = msg 
+                
+                map_id=score.get('map').get('beatmap_id')
                 if bot_msg:
                     set_message_context(
                         bot_msg, 
                         reply=False, 
-                        map_id=score.get('map').get('beatmap_id'), 
+                        map_id=map_id, 
+                        map_title=await get_beatmap_title_from_file(map_id),
+                        mapper_username=await get_beatmap_creator_from_file(map_id),
                         origin_call_user_id=update.effective_user.id,
                     )
 
@@ -111,11 +116,14 @@ async def rs(update: Update, context: ContextTypes.DEFAULT_TYPE, is_button_press
                 message_id = msg.message_id
                 bot_msg = await send_score(update, score, session_data["user_id"], session_data, message_id, query=update.callback_query)
                 
+                map_id=score.get('map').get('beatmap_id')
                 if bot_msg:
                     set_message_context(
                         bot_msg, 
                         reply=False, 
-                        map_id=score.get('map').get('beatmap_id'), 
+                        map_id=map_id, 
+                        map_title=await get_beatmap_title_from_file(map_id),
+                        mapper_username=await get_beatmap_creator_from_file(map_id),
                         origin_call_user_id=update.effective_user.id,
                     )
 

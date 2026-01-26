@@ -9,10 +9,11 @@ from telegram.ext import ContextTypes
 from ....systems.logging import log_all_update
 from .utils import calculate_rank, format_text
 from .buttons import get_simulate_keyboard
-from ....external.osu_http import beatmap
+from .context.buttons import get_context_keyboard
+from ....external.osu_http import beatmap, get_beatmap_title_from_file, get_beatmap_creator_from_file
 from ....external.localapi import get_map_stats_neko_api
-from ....actions.messages import delete_user_message, delete_message_after_delay
-from ....actions.context import set_cached_map
+from ....actions.messages import delete_user_message, delete_message_after_delay, safe_send_message
+from ....actions.context import set_message_context, get_message_context
 
 from config import OSU_MAP_REGEX, PARAMS_TEMPLATE
 from config import sessions_simulate
@@ -29,15 +30,39 @@ async def simulate(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message_text = update.message.text.strip()
     match = OSU_MAP_REGEX.search(message_text)
 
-    if not match:        
+    if not match:
+        message_context = get_message_context(update, reply=False)          
+        message_context_reply = get_message_context(update, reply=True)      
+        if message_context:
+            m1 = m2 = None
+
+            m1 = message_context["metadata"].get("map_id")
+            if message_context_reply:
+                m2 = message_context_reply["metadata"].get("map_id")
+       
+            if (m1 is not None) or (m2 is not None):
+                message_context_reply = get_message_context(update, reply=True)
+                               
+                await safe_send_message(
+                    update, 
+                    text=f"<code>Выбери карту...\n(или /simulate +ссылка)</code>", 
+                    reply_markup=get_context_keyboard(
+                        message_context,
+                        message_context_reply,
+                        update.effective_user.id,
+                    ),
+                    parse_mode="HTML"
+                )
+                return
+
         msg = await update.message.reply_text(
             "❌ Нужна ссылка на карту"
         )
         asyncio.create_task(delete_message_after_delay(context, msg.chat.id, msg.message_id, 5))
         asyncio.create_task(delete_user_message(update, context, delay=4))
         return
-
-    beatmap_id = match.group(1) if match.group(1) else match.group(2)
+    else:
+        beatmap_id = match.group(1) if match.group(1) else match.group(2)
 
     if user_id in sessions_simulate:
         try:
@@ -131,15 +156,17 @@ async def simulate(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "speed":speed,
     }
 
-    msg = await update.message.reply_text(format_text(user_id, pp, max_pp, stars, max_combo, expected_bpm, n300, n100, n50, expected_miss), 
+    bot_msg = await update.message.reply_text(format_text(user_id, pp, max_pp, stars, max_combo, expected_bpm, n300, n100, n50, expected_miss), 
                                           reply_markup=get_simulate_keyboard(user_id),
                                           parse_mode="Markdown" )
-    sessions_simulate[user_id]["message_id"] = msg.message_id
+    sessions_simulate[user_id]["message_id"] = bot_msg.message_id
 
-    if msg:
-        bot_msg_id = msg.message_id
-        user_to_cache = update.effective_user.id
-        map_to_cache = int(beatmap_id)        
-
-        set_cached_map(msg, map_to_cache, user_to_cache, bot_msg_id)
-
+    if bot_msg:
+        set_message_context(
+            bot_msg, 
+            reply=False, 
+            map_id=int(beatmap_id),
+            map_title=await get_beatmap_title_from_file(beatmap_id),
+            mapper_username=await get_beatmap_creator_from_file(beatmap_id),
+            origin_call_user_id=update.effective_user.id,
+        )

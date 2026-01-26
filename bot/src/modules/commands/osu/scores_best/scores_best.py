@@ -11,12 +11,11 @@ from ....actions.messages import safe_send_message, try_send
 from ....systems.cooldowns import check_user_cooldown
 from ....systems.logging import log_all_update
 from ....systems.auth import check_osu_verified
-from ....external.osu_api import get_user_scores_by_beatmap
-from .send_best_scores import send_best_scores
-from ....actions.context import get_cached_map, set_cached_map
+from .buttons import get_keyboard
+from ....actions.context import get_message_context
 import temp
 
-from config import COOLDOWN_RECENT_FIX_COMMAND, USER_SETTINGS_FILE
+from config import COOLDOWN_RECENT_FIX_COMMAND
 
 
 
@@ -46,9 +45,9 @@ async def scores_best(update: Update, context: ContextTypes.DEFAULT_TYPE, user_r
             username = saved_name
         else:
             text = (
-                "Использование: `/scores Fujiya` <- никнейм\n\n\n"
-                "⚙ *Дополнительно*\n\n"
-                "/name – сохранить ник\n"
+                "Использование без авторизации: `/scores Fujiya` <- ник\n"
+                "\n"
+                "авторизация: */name*"
             )
             await safe_send_message(update, text, parse_mode="Markdown")
             return
@@ -57,39 +56,31 @@ async def scores_best(update: Update, context: ContextTypes.DEFAULT_TYPE, user_r
         
         loading_msg = await try_send(update.message.reply_text, text, parse_mode="Markdown")
         
-        cached_map = get_cached_map(update)
-        if cached_map:
-            cached_map_id = cached_map["map_id"]
-            # cached_user_id = cached_map["user_id"]
-        if not cached_map:
-            await safe_send_message(update, text="❌ Нет карты в чате... `/help score`", parse_mode="Markdown")
-            await loading_msg.delete()
-            return
-
-        scores = await get_user_scores_by_beatmap(username, cached_map_id, limit=1, fails=0)
-
-        if not scores:
-            await safe_send_message(update, text="❌ Нет скоров на карте... `/help score`", parse_mode="Markdown")
-            await loading_msg.delete()
-            return
         
-        s = temp.load_json(USER_SETTINGS_FILE, default={})
-        user_settings = s.get(str(update.effective_user.id), {}) 
-        more = user_settings.get("display_more_scores", False) 
+        
+        message_context = get_message_context(update, reply=False)
+        if message_context:
+            message_context_reply = get_message_context(update, reply=True)
 
-        limit = 1
-        if more: limit = 5
-                
-        bot_msg = await try_send(send_best_scores, update, scores, limit)        
+            await safe_send_message(
+                update, 
+                text=f"<code>Ты хочешь посмотреть скор</code> <b>  {username}  </b> <code>на карте...</code>", 
+                reply_markup=get_keyboard(
+                    message_context, 
+                    message_context_reply, 
+                    origin_user_id=update.effective_user.id, 
+                    username_to_lookup=username
+                ),
+                parse_mode="HTML"
+            )
 
-        if bot_msg:
-            bot_msg_id = bot_msg.message_id
-            user_to_cache = update.effective_user.id
-            map_to_cache = cached_map_id
+            await loading_msg.delete()
+            return
             
-            set_cached_map(bot_msg, map_to_cache, user_to_cache, bot_msg_id)
-
-        await loading_msg.delete()
+        if not message_context:
+            await safe_send_message(update, text="`Нет карты в чате...`", parse_mode="Markdown")
+            await loading_msg.delete()
+            return       
 
     except Exception:
         traceback.print_exc() 

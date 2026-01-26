@@ -9,10 +9,11 @@ from telegram.ext import ContextTypes
 
 from ....systems.logging import log_all_update
 from ....systems.cooldowns import check_user_cooldown
-from ....actions.messages import delete_user_message, delete_message_after_delay
+from ....actions.messages import delete_user_message, delete_message_after_delay, safe_send_message
 from ....external.osu_http import fetch_txt_beatmaps
 from ....external.osu_api import get_osu_token, get_beatmap
-from ....actions.context import set_message_context
+from ....actions.context import set_message_context, get_message_context
+from .context.buttons import get_context_keyboard
 from .buttons import get_keyboard
 from .processing_v1 import create_beatmap_image
 from .utils import delayed_remove
@@ -29,11 +30,38 @@ async def  start_beatmap_card(update, context, user_request=True):
 
 async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request=True):    
     try:
+        map_id = None
+
         message_text = update.message.text.strip()
         match = OSU_MAP_REGEX.search(message_text)
         message = update.message
+
         if user_request:
-            if not match:        
+            if not match:
+                message_context = get_message_context(update, reply=False)          
+                message_context_reply = get_message_context(update, reply=True)      
+                if message_context:
+                    m1 = m2 = None
+                    m1 = message_context["metadata"].get("map_id")
+                    if message_context_reply:
+                        m2 = message_context_reply["metadata"].get("map_id")
+            
+                    if (m1 is not None) or (m2 is not None):
+                        message_context_reply = get_message_context(update, reply=True)
+                                    
+                        await safe_send_message(
+                            update, 
+                            text=f"<code>Выбери карту...\n(или отправь ссылку)</code>", 
+                            reply_markup=get_context_keyboard(
+                                message_context,
+                                message_context_reply,
+                                update.effective_user.id,
+                                update.effective_message.id,
+                            ),
+                            parse_mode="HTML"
+                        )
+                        return
+
                 msg = await update.message.reply_text(
                     "❌ Нужна ссылка на карту"
                 )
@@ -41,8 +69,13 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
                 asyncio.create_task(delete_user_message(update, context, delay=4))
                 return
         
-        if match is None: return
-        beatmap_id = match.group(1) if match.group(1) else match.group(2)
+        if match is None: 
+            return
+        
+        if map_id is None:
+            beatmap_id = match.group(1) if match.group(1) else match.group(2)
+        else:
+            beatmap_id = map_id
     
         if user_request: warn_text = f"⏳ Подождите {COOLDOWN_CARD_COMMAND} секунд"
         else: warn_text = None
@@ -116,7 +149,9 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
                 set_message_context(
                     bot_msg, 
                     reply=False, 
-                    map_id=beatmap_id, 
+                    map_id=beatmap_id,
+                    map_title=map_data['beatmapset']['title'], 
+                    mapper_username=map_data['owners'][0]['username'],
                     origin_call_user_id=update.effective_user.id,
                 )
 

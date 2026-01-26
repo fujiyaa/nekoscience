@@ -293,6 +293,96 @@ async def beatmap(map_id: int) -> tuple[str | None, dict]:
     parse_values(path_to_map)
     return path_to_map, base_values
 
+async def get_beatmap_title_from_file(map_id: int) -> str | None:
+    path_to_map = os.path.join(BEATMAPS_DIR, f"{map_id}.osu")
+
+    def parse_title(path: str) -> str | None:
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                in_metadata = False
+                for line in f:
+                    line = line.strip()
+
+                    if line.startswith("[Metadata]"):
+                        in_metadata = True
+                        continue
+
+                    if in_metadata:
+                        # Title:Something
+                        if line.startswith("Title:"):
+                            return line.split(":", 1)[1].strip()
+                        
+                        if line.startswith("["):
+                            break
+        except Exception as e:
+            print(f"⚠ Ошибка при парсинге .osu {map_id}: {e}")
+        return None
+
+    if os.path.exists(path_to_map):
+        file_age = time.time() - os.path.getmtime(path_to_map)
+        if file_age < CACHE_TTL:
+            return parse_title(path_to_map)
+        else:
+            os.remove(path_to_map)
+
+    base_url = "https://osu.ppy.sh/osu"
+    try:
+        response = requests.get(f"{base_url}/{map_id}", timeout=3)
+        response.raise_for_status()
+    except Exception as e:
+        print(f"Ошибка при скачивании карты {map_id}: {e}")
+        return None
+
+    with open(path_to_map, "w", encoding="utf-8") as f:
+        f.write(response.text)
+
+    return parse_title(path_to_map)
+
+async def get_beatmap_creator_from_file(map_id: int) -> str | None:
+    path_to_map = os.path.join(BEATMAPS_DIR, f"{map_id}.osu")
+
+    def parse_creator(path: str) -> str | None:
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                in_metadata = False
+                for line in f:
+                    line = line.strip()
+
+                    if line.startswith("[Metadata]"):
+                        in_metadata = True
+                        continue
+
+                    if in_metadata:
+                        # Creator:Something
+                        if line.startswith("Creator:"):
+                            return line.split(":", 1)[1].strip()
+                        
+                        if line.startswith("["):
+                            break
+        except Exception as e:
+            print(f"⚠ Ошибка при парсинге .osu {map_id}: {e}")
+        return None
+
+    if os.path.exists(path_to_map):
+        file_age = time.time() - os.path.getmtime(path_to_map)
+        if file_age < CACHE_TTL:
+            return parse_creator(path_to_map)
+        else:
+            os.remove(path_to_map)
+
+    base_url = "https://osu.ppy.sh/osu"
+    try:
+        response = requests.get(f"{base_url}/{map_id}", timeout=3)
+        response.raise_for_status()
+    except Exception as e:
+        print(f"Ошибка при скачивании карты {map_id}: {e}")
+        return None
+
+    with open(path_to_map, "w", encoding="utf-8") as f:
+        f.write(response.text)
+
+    return parse_creator(path_to_map)
+
 async def fetch_beatmap_data(beatmap_url, cache_expire_sec=3600, retries=3, timeout_sec=10):    
     beatmap_id = beatmap_url.rstrip("/").split("/")[-1]
     cache_path = f"{STATS_BEATMAPS}/{beatmap_id}.json"

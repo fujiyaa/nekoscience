@@ -6,6 +6,7 @@ import traceback
 from telegram import Update
 from telegram.ext import ContextTypes
 
+from ....external.osu_http import get_beatmap_title_from_file, get_beatmap_creator_from_file
 from ....systems.cooldowns import check_user_cooldown
 from ....actions.messages import safe_send_message
 from ....external.osu_api import get_osu_token, get_score_by_id
@@ -49,12 +50,16 @@ async def score(update: Update, context: ContextTypes.DEFAULT_TYPE, requested_by
             return
 
         bot_msg = await send_score(update, cached_entry, user_id, user_id, user_id, is_recent=False)
-       
+
+        map_id=cached_entry.get('map').get('beatmap_id')
+
         if bot_msg:
             set_message_context(
                 bot_msg, 
                 reply=False, 
-                map_id=cached_entry.get('map').get('beatmap_id'), 
+                map_id=map_id,
+                map_title=await get_beatmap_title_from_file(map_id),
+                mapper_username=await get_beatmap_creator_from_file(map_id),  
                 origin_call_user_id=update.effective_user.id,
             )
             

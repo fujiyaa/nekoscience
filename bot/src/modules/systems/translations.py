@@ -45,7 +45,7 @@ TRANSLATIONS = {
     },
     "r_fix_top100": {
         "en": " ",
-        "ru": "Он бы даже не попал в топ100"
+        "ru": "Абмициозно, но не в топ100-pp"
     },
     "settings_rs_title": {
         "en": "/rs - Render background?",
