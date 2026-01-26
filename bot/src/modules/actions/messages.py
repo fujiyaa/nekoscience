@@ -8,7 +8,7 @@ import logging
 
 from config import remove_tasks
 
-async def delete_message_after_delay(context, chat_id: int, message_id: int, delay: int):
+async def delete_message_after_delay(context, chat_id: int, message_id: int, delay: int = 10):
     await asyncio.sleep(delay)
     try:
         await context.bot.delete_message(chat_id=chat_id, message_id=message_id)
@@ -148,18 +148,26 @@ async def safe_edit_message(message, text, parse_mode=None, reply_markup=None):
         print(f"safe_edit_message failed: {e}")
         return await message.reply_text(text, parse_mode=parse_mode, reply_markup=reply_markup)
 
-async def safe_edit_query(query, text, parse_mode=None, reply_markup=None, disable_web_page_preview=True):    
-    try:   
-        msg = query.message    
-       
+async def safe_edit_query(query, text, parse_mode=None, reply_markup=None,
+                          disable_web_page_preview=True, link_preview_options=None):
+    try:
+        msg = query.message
+
+        kwargs = {
+            "parse_mode": parse_mode,
+            "reply_markup": reply_markup
+        }
+
+        if link_preview_options is not None:
+            kwargs["link_preview_options"] = link_preview_options
+        else:
+            kwargs["disable_web_page_preview"] = disable_web_page_preview
+
         if msg.text or msg.caption:
-            return await msg.edit_text(text, 
-                parse_mode=parse_mode, reply_markup=reply_markup, 
-                disable_web_page_preview=disable_web_page_preview)
-        
-        return await msg.edit_caption(text,
-            parse_mode=parse_mode, reply_markup=reply_markup, 
-            disable_web_page_preview=disable_web_page_preview)
-    
+            return await msg.edit_text(text, **kwargs)
+
+        return await msg.edit_caption(text, **kwargs)
+
     except Exception as e:
-        print(f"safe_edit_query failed: {e}")        
+        print(f"safe_edit_query failed: {e}")
+
