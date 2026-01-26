@@ -37,6 +37,7 @@ from modules.commands.osu.compare_profile.compare_profile import start_compare_p
 from modules.commands.osu.card_top5.card import start_card as start_card_top5
 from modules.commands.osu.leaderboard_chat.leaderboard import start_leaderboard_chat
 from modules.commands.osu.scores_best.scores_best import start_scores_best
+from modules.commands.osu.card_beatmap.beatmap import start_beatmap_card
 
 # fun
 from modules.commands.fun.doubt.doubt import doubt
@@ -61,6 +62,11 @@ from modules.commands.osu.daily_challenge.v1.callback import callback as challen
 from modules.commands.osu.maps_skill.callback_level1 import ms_step_callback as ms_callback1
 from modules.commands.osu.maps_skill.callback_level2 import ms_pagination_callback as ms_callback2
 from modules.commands.osu.leaderboard_chat.callback import callback as leaderboard_callback
+from modules.commands.osu.scores_best.callback import callback as scores_best_callback
+from modules.commands.osu.profile.callback import callback as profile_ctx_callback
+from modules.commands.osu.simulate.context.callback import callback as simulate_ctx_callback
+from modules.commands.osu.card_beatmap.context.callback import callback as card_map_ctx_callback
+
 
 from modules.commands.sevice.settings.callback import callback as settings_handler
 
@@ -76,6 +82,7 @@ def register_commands(app):
         ("mappers",):                       start_mappers,
         ("profile", "p"):                   start_profile,
         ("card", "c"):                      start_card,
+        ("map", "cardmap", "cm"):       start_beatmap_card,
         ("skills",):                        start_skills,
         ("cardtop", "ct"):                  start_card_top5,
         ("recent_fix", "fix", "f"):         start_recent_fix,
@@ -123,6 +130,10 @@ def register_callbacks(app):
         (challenge_callback,    r"^challenge_(main|next|finish|skip|leaderboard|info)"),
         (osu_chat_callback,     r"^send_pm_with_link_to:"),
         (leaderboard_callback,  r"^leaderboard_chat_"),
+        (scores_best_callback,  r"^score_best:(map|cancel)"),
+        (profile_ctx_callback,  r"^profile_context:(username|cancel)"),
+        (simulate_ctx_callback, r"^sim_context:(map|cancel)"),
+        (card_map_ctx_callback, r"^card_beatmap_context:(map|cancel)"),
     ]
 
     for handler, pattern in callbacks:
