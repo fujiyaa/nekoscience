@@ -74,6 +74,7 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
                     extra_name1 is not None) or (extra_name2 is not None
                     ):   
                     
+                    username = None
                     if saved_name:
                         username = saved_name  
                         
