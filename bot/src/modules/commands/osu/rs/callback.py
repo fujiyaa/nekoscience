@@ -13,7 +13,7 @@ from telegram.ext import ContextTypes
 from ....actions.messages import reset_remove_timer, safe_query_answer
 from ....systems.json_files import load_score_file
 from ....wrappers.score import process_score_and_image
-from ....actions.context import set_cached_map
+from ....actions.context import set_message_context
 
 from config import RS_BUTTONS_TIMEOUT, USER_SETTINGS_FILE, user_sessions
 
@@ -96,12 +96,13 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         session["index"] = new_index
 
         if bot_msg:
-            bot_msg_id = bot_msg.message_id
-            user_to_cache = update.effective_user.id
-            map_to_cache = entry.get('map').get('beatmap_id')
+            set_message_context(
+                        bot_msg, 
+                        reply=False, 
+                        map_id=entry.get('map').get('beatmap_id'), 
+                        origin_call_user_id=update.effective_user.id,
+                    )
             
-            set_cached_map(bot_msg, map_to_cache, user_to_cache, bot_msg_id)
-
         reset_remove_timer(
             context.bot,
             query.message.chat.id,

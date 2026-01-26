@@ -12,7 +12,7 @@ from ....systems.cooldowns import check_user_cooldown
 from ....actions.messages import delete_user_message, delete_message_after_delay
 from ....external.osu_http import fetch_txt_beatmaps
 from ....external.osu_api import get_osu_token, get_beatmap
-from ....actions.context import set_cached_map
+from ....actions.context import set_message_context
 from .buttons import get_keyboard
 from .processing_v1 import create_beatmap_image
 from .utils import delayed_remove
@@ -113,11 +113,12 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
             await delayed_remove(img_path)
 
             if bot_msg:
-                bot_msg_id = bot_msg.message_id
-                user_to_cache = update.effective_user.id
-                map_to_cache = beatmap_id
-                
-                set_cached_map(bot_msg, map_to_cache, user_to_cache, bot_msg_id)
+                set_message_context(
+                    bot_msg, 
+                    reply=False, 
+                    map_id=beatmap_id, 
+                    origin_call_user_id=update.effective_user.id,
+                )
 
             return
         except Exception as e: print(e)   

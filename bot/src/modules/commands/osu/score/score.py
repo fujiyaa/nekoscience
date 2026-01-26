@@ -10,7 +10,7 @@ from ....systems.cooldowns import check_user_cooldown
 from ....actions.messages import safe_send_message
 from ....external.osu_api import get_osu_token, get_score_by_id
 from ....wrappers.score import send_score
-from ....actions.context import set_cached_map
+from ....actions.context import set_message_context
 
 from config import COOLDOWN_RS_COMMAND     # why
 
@@ -51,11 +51,12 @@ async def score(update: Update, context: ContextTypes.DEFAULT_TYPE, requested_by
         bot_msg = await send_score(update, cached_entry, user_id, user_id, user_id, is_recent=False)
        
         if bot_msg:
-            bot_msg_id = bot_msg.message_id
-            user_to_cache = update.effective_user.id
-            map_to_cache = cached_entry.get('map').get('beatmap_id')
-            
-            set_cached_map(bot_msg, map_to_cache, user_to_cache, bot_msg_id)
+            set_message_context(
+                bot_msg, 
+                reply=False, 
+                map_id=cached_entry.get('map').get('beatmap_id'), 
+                origin_call_user_id=update.effective_user.id,
+            )
             
     except Exception:
         traceback.print_exc()

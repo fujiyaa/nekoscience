@@ -12,7 +12,7 @@ from ....systems.cooldowns import check_user_cooldown
 from ....systems.logging import log_all_update
 from ....systems.auth import check_osu_verified
 from ....external.osu_api import get_osu_token, get_user_scores
-from ....actions.context import set_cached_map
+from ....actions.context import set_message_context
 from .send_score_fix import send_score_fix
 
 from config import COOLDOWN_RECENT_FIX_COMMAND
@@ -69,11 +69,13 @@ async def recent_fix(update: Update, context: ContextTypes.DEFAULT_TYPE, user_re
         bot_msg = await try_send(send_score_fix, update, cached_entry, uid, token)       
 
         if bot_msg:
-            bot_msg_id = bot_msg.message_id
-            user_to_cache = update.effective_user.id
-            map_to_cache = cached_entry.get('map').get('beatmap_id')
-            
-            set_cached_map(bot_msg, map_to_cache, user_to_cache, bot_msg_id)
+            set_message_context(
+                bot_msg, 
+                reply=False, 
+                map_id=cached_entry.get('map').get('beatmap_id'), 
+                origin_call_user_id=update.effective_user.id,
+            )
+
 
         await loading_msg.delete()
 

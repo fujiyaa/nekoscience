@@ -14,7 +14,7 @@ from ....systems.auth import check_osu_verified
 from ....external.osu_api import get_user_scores
 from ....external.osu_http import cache_remaining_scores
 from ....wrappers.score import send_score
-from ....actions.context import set_cached_map
+from ....actions.context import set_message_context
 import temp
 
 from config import COOLDOWN_RS_COMMAND, RS_BUTTONS_TIMEOUT, USER_SETTINGS_FILE, user_sessions
@@ -87,11 +87,12 @@ async def rs(update: Update, context: ContextTypes.DEFAULT_TYPE, is_button_press
 
                 bot_msg = msg
                 if bot_msg:
-                    bot_msg_id = bot_msg.message_id
-                    user_to_cache = update.effective_user.id
-                    map_to_cache = score.get('map').get('beatmap_id')
-                    
-                    set_cached_map(bot_msg, map_to_cache, user_to_cache, bot_msg_id)
+                    set_message_context(
+                        bot_msg, 
+                        reply=False, 
+                        map_id=score.get('map').get('beatmap_id'), 
+                        origin_call_user_id=update.effective_user.id,
+                    )
 
                 await loading_msg.delete()
 
@@ -111,11 +112,12 @@ async def rs(update: Update, context: ContextTypes.DEFAULT_TYPE, is_button_press
                 bot_msg = await send_score(update, score, session_data["user_id"], session_data, message_id, query=update.callback_query)
                 
                 if bot_msg:
-                    bot_msg_id = bot_msg.message_id
-                    user_to_cache = update.effective_user.id
-                    map_to_cache = score.get('map').get('beatmap_id')
-                    
-                    set_cached_map(bot_msg, map_to_cache, user_to_cache, bot_msg_id)
+                    set_message_context(
+                        bot_msg, 
+                        reply=False, 
+                        map_id=score.get('map').get('beatmap_id'), 
+                        origin_call_user_id=update.effective_user.id,
+                    )
 
             session = user_sessions[message_id]
             index = session["index"]
