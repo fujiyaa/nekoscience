@@ -46,12 +46,12 @@ from modules.commands.fun.reminders.reminders import reminders_command
 from modules.commands.fun.random_image.random_image import random_image
 
 # service
-from modules.commands.sevice.ping.ping import ping
-from modules.commands.sevice.uptime.uptime import uptime
-from modules.commands.sevice.help.help import start_help
-from modules.commands.sevice.settings.settings import settings_cmd
+from modules.commands.service.ping.ping import ping
+from modules.commands.service.uptime.uptime import uptime
+from modules.commands.service.help.help import start_help
+from modules.commands.service.settings.settings import settings_cmd
 from modules.commands.osu.scoreoverride.score import score as scoreoverride
-# from modules.commands.sevice.forum_db_related.getthreads import dev_getthreads
+# from modules.commands.service.forum_db_related.getthreads import dev_getthreads
 
 # callback
 from modules.commands.osu.rs.callback import callback as rs_handler
@@ -68,7 +68,7 @@ from modules.commands.osu.simulate.context.callback import callback as simulate_
 from modules.commands.osu.card_beatmap.context.callback import callback as card_map_ctx_callback
 
 
-from modules.commands.sevice.settings.callback import callback as settings_handler
+from modules.commands.service.settings.callback import callback as settings_handler
 
 from modules.actions.osu_chat import callback as osu_chat_callback
 
