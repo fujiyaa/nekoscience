@@ -39,8 +39,10 @@ pub struct PpResponse {
 pub async fn calculate_score_pp(
     AxumJson(payload): AxumJson<PpRequest>
 ) -> Json<PpResponse> {
-    let base_folder = std::env::var("BEATMAP_CACHE_PATH")
-    .expect("BEATMAP_CACHE_PATH is not set");
+    // let base_folder = std::env::var("BEATMAP_CACHE_PATH")
+    // .expect("BEATMAP_CACHE_PATH is not set");
+
+    let base_folder = r"E:\fa\nekoscience\bot\src\cache\beatmaps";
 
     let mut map_path = PathBuf::from(base_folder);
     map_path.push(format!("{}.osu", payload.map_path));
@@ -89,8 +91,8 @@ pub async fn calculate_score_pp(
     let max_combo = diff_attrs.max_combo();
 
     // Calculate performance attributes
-    let mut performance = rosu_pp::Performance::new(diff_attrs)
-    
+    let mut performance = rosu_pp::Performance::new(diff_attrs.clone())
+    .mods(mods)
     .lazer(lazer)
     .combo(payload.combo.unwrap_or(max_combo))
     .misses(payload.misses.unwrap_or(0))
@@ -105,6 +107,7 @@ pub async fn calculate_score_pp(
     let pp = perf_attrs.pp();
 
     let mut perfect_performance = perf_attrs.clone().performance()
+        .mods(mods)
         .lazer(lazer);
 
     if clock_rate != 1.0 {
@@ -114,13 +117,18 @@ pub async fn calculate_score_pp(
     let perfect_pp = perfect_performance.calculate().pp();
 
   
-    let mut no_choke_performance = perf_attrs.performance()
-        .mods(mods)        
+    let mut no_choke_performance = rosu_pp::Performance::new(diff_attrs)
         .lazer(lazer)
+        .mods(mods)
         .n300(payload.n300.unwrap_or(0) + payload.misses.unwrap_or(0))
         .n100(payload.n100.unwrap_or(0))
         .n50(payload.n50.unwrap_or(0))
+        .combo(max_combo)
         .misses(0);
+
+    if let Some(acc) = payload.accuracy {
+        no_choke_performance = no_choke_performance.accuracy(acc);
+    }
 
     if clock_rate != 1.0 {
         no_choke_performance = no_choke_performance.clock_rate(clock_rate);
@@ -130,8 +138,6 @@ pub async fn calculate_score_pp(
 
     let perfect_combo = max_combo;
     let expected_bpm = map.bpm() as f64;
-
-    // println!("Lazer: {:?}", lazer);
 
     Json(PpResponse {
         pp: pp,
@@ -151,20 +157,20 @@ mod tests {
     #[tokio::test]
     async fn test_calculate_choke_pp_direct() {
         let payload = PpRequest {
-            map_path: "4905829".to_string(),
-            n300: Some(171),
-            n100: Some(2),
-            n50: Some(0),
-            misses: Some(3),
-            combo: Some(0),
-            mods: Some("HR".to_string()),
-            accuracy: Some(97.73),
+            map_path: "827803".to_string(),
+            n300: Some(1200),
+            n100: Some(10),
+            n50: Some(2),
+            misses: Some(7),
+            combo:  Some(479),
+            mods: Some("DT, RX".to_string()),
+            accuracy: Some(98.50),
             lazer: Some(true),
-            clock_rate: Some(1.0),
-            custom_ar: Some(9.7),
-            custom_cs: Some(3.2),
-            custom_hp: Some(4.5),
-            custom_od: Some(9.4),
+            clock_rate: Some(1.5),
+            custom_ar: Some(9.3),
+            custom_cs: Some(4.0),
+            custom_hp: Some(6.0),
+            custom_od: Some(9.0),
         };
 
         let response = calculate_score_pp(axum::Json(payload)).await;
