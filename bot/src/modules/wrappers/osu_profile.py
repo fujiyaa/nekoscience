@@ -28,7 +28,7 @@ def get_profile_text(user_data, best_pp):
         current = level_data.get('current', 0)
         progress = level_data.get('progress', 0)
 
-        level = float(f"{current}.{progress}")
+        level = current + progress / 100
 
         try:
             team = user_data['team']['short_name']
