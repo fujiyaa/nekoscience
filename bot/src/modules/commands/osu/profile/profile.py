@@ -44,11 +44,20 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
         # check verified by reply
         msg = update.effective_message
 
-        is_reply_to_user = (
-            msg.reply_to_message
-            and msg.reply_to_message.from_user
-            and not msg.reply_to_message.from_user.is_bot
-        )
+        is_reply_to_user = False
+
+        try:            
+            is_reply = (
+                msg.reply_to_message
+                and msg.reply_to_message.from_user
+                and not msg.reply_to_message.from_user.is_bot
+            )
+            if is_reply:
+                is_reply_to_user = (
+                    msg.reply_to_message.message_id != msg.message_thread_id
+                )
+        except:
+            pass
 
         if is_reply_to_user:
             username = await check_osu_verified(str(msg.reply_to_message.from_user.id))
