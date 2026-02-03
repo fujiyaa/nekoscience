@@ -1,42 +1,18 @@
-from telegram.error import NetworkError, BadRequest
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters, CallbackQueryHandler
-from telegram import InputFile, Update, InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto, LinkPreviewOptions
-from telegram.constants import ChatAction
-from PIL import Image, ImageDraw, ImageFont, ImageFilter
-from datetime import datetime, timedelta, timezone
-from collections import Counter, defaultdict
-from io import BytesIO
-import traceback
-import io, time, html, json, lxml.html, glob, random, logging, tempfile, asyncio, aiohttp, aiofiles, colorsys, atexit, requests
+
+
+
+import time, tempfile, asyncio
 import os, re, tempfile
-from telegram import MessageEntity, InputTextMessageContent
-from telegram.helpers import escape_markdown
-from datetime import date
 from dotenv import load_dotenv
  
-import sys
-
-
-from decimal import Decimal, getcontext
-from statistics import mean
-import zipfile
-import subprocess
-from osrparse import Replay
-from typing import List, Dict
-from typing import Optional
-
-from pydub import AudioSegment  
+from decimal import getcontext
 from pathlib import Path    
-
-import sqlite3
 
 load_dotenv()
 
 dev_flag = "1"
 
 from pathlib import Path
-
-
 from longtext import *
 
 
@@ -49,7 +25,7 @@ AVATARS_DIR = BOT_DIR / "cache/avatars"
 BEATMAPS_DIR = BOT_DIR / "cache/beatmaps"
 BEATMAPS_DIR_AUDIO = BOT_DIR / "cache/beataudio"
 GROUPS_DIR = BOT_DIR / "stats/groups"
-SCORES_DIR = BOT_DIR / "scores_v2"
+SCORES_DIR = BOT_DIR / "scores_v3"
 CARDS_DIR = BOT_DIR / "cache/cards"
 TOP5_CARDS_DIR = BOT_DIR / "cache/top5cards"
 OSZ_DIR = BOT_DIR / "cache/osz"
