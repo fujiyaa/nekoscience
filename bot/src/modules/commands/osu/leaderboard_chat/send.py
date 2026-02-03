@@ -24,11 +24,14 @@ async def send(update: Update, stats_batch: dict = None, caption: str = ''):
         return
     
     try:
+        def tg_len(text: str) -> int:
+            return len(text.encode("utf-16-le")) // 2
+        
         entities = [
             MessageEntity(
                 type="expandable_blockquote",
                 offset=0,                     
-                length=len(caption)+4     
+                length=tg_len(caption)    
             )
         ]        
         
