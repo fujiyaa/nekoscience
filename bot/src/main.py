@@ -82,7 +82,7 @@ def register_commands(app):
         ("mappers",):                       start_mappers,
         ("profile", "p"):                   start_profile,
         ("card", "c"):                      start_card,
-        ("map", "cardmap", "cm"):       start_beatmap_card,
+        ("map", "cardmap", "cm"):           start_beatmap_card,
         ("skills",):                        start_skills,
         ("cardtop", "ct"):                  start_card_top5,
         ("recent_fix", "fix", "f"):         start_recent_fix,
