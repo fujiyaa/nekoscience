@@ -5,7 +5,7 @@ from collections import defaultdict
 
 
 def format_caption(i, country_code, name, prop_value, prop_pre, prop_post):
-    return f"{i}. {country_code} <b>{name}</b> - {prop_pre}{prop_value}{prop_post}"
+    return f"{i}. {country_code} {name} - {prop_pre}{prop_value}{prop_post}"
 
 def format_stats(user):
     stats = user["statistics"]

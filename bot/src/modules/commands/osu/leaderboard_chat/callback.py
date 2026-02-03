@@ -160,7 +160,5 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await leaderboard(update, context, a_ranks, 'a', '', '')
             else:
                 await query.edit_message_text("Неизвестная кнопка!")
-
-            await query.edit_message_text("<code>/topchat</code>", parse_mode="HTML", reply_markup=None)
             return
         except Exception as e: print (e)

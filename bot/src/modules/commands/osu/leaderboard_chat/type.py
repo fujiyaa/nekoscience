@@ -34,7 +34,7 @@ async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE,
     # if update.effective_chat.is_direct_messages:
     #     chat_name = ''
 
-    text = f"Chat Leaderboard: <b>{caption}</b>\n\n"
+    text = f"Chat Leaderboard: {caption}\n\n"
 
     for i, item in enumerate(stats_batch[:top_n], start=1):
         value = value_formatter(item.get(prop))
