@@ -1,4 +1,10 @@
-from config import *
+
+
+
+import os
+import json
+
+from config import IMAGES_JSON, IMAGES_DIR
 
 #вся эта хрень скоро будет удалена
 
