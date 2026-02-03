@@ -10,7 +10,7 @@ async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE,
                       caption: str, 
                       prop: str, 
                       prop_pre: str, prop_post: str, 
-                      top_n: int = 10,
+                      top_n: int = 100,
                       value_formatter=lambda x: x):
 
     profiles = await get_profiles(update, context)
