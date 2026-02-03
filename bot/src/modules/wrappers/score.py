@@ -36,10 +36,8 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
         meta =          cached_entry['meta']        
 
     lazer = state.get('lazer')
-    if lazer:
-        acc = lazer_data.get('accuracy')
-    else:
-        acc = osu_score.get('accuracy_legacy')
+    
+    acc = osu_score.get('accuracy')
 
     mods_str = osu_score.get("mods", "")
     mods_text = text_format.normalize_no_plus(mods_str)
@@ -70,14 +68,15 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
           
     #temp pp fix
     pp = pp if not isinstance(osu_score.get("pp"), (int, float)) or osu_score.get("pp") <= 0 else osu_score.get("pp")
-
+    
+    
+    accuracy = osu_score.get('accuracy')
 
     if lazer:
-        accuracy = lazer_data.get('accuracy')
         rank = lazer_data.get('rank') 
-    else:
-        accuracy = osu_score.get('accuracy_legacy')
+    else:        
         rank = osu_api_data.get('rank_legacy') 
+
     accuracy_display = round(accuracy * 100, 2)
     accuracy_display = (f"{accuracy_display}%")
 

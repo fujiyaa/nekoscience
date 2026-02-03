@@ -24,7 +24,7 @@ semaphore = asyncio.Semaphore(MAX_CONCURRENT_REQUESTS)
 async def get_score_page(session, user_id: str, score_id: str, no_check:bool = False) -> dict | None:  
     url = f"https://osu.ppy.sh/scores/{score_id}"
     try:
-        print(f'🔻 lxml request ({score_id})')
+        print(f'🔻 lxml request ({score_id}) get_score_page')
         async with semaphore:
             async with session.get(url) as resp:
                 if resp.status == 200:
@@ -37,10 +37,6 @@ async def get_score_page(session, user_id: str, score_id: str, no_check:bool = F
                             if not no_check:
                                 if not str(data['user_id']) == str(user_id):
                                     return None
-                            # cached_entry = {"raw": data, "processed": {}, "ready": False}
-                            # save_score_file(score_id, cached_entry)
-
-                            # я не знаю почему оно закомментировано но не надо трогать
 
                             return data
                         except json.JSONDecodeError:
@@ -53,143 +49,7 @@ async def get_score_page(session, user_id: str, score_id: str, no_check:bool = F
         print(f"⚠ Ошибка при загрузке score {score_id}: {e}")
 
     return None
-
-async def enrich_score_lazer(session, user_id: str, cached_entry: dict, preloaded_page = None):  
-    
-    if preloaded_page is None:    
-        if not cached_entry['state']['lazer']:
-            cached_entry['state']['enriched'] = True 
-            return cached_entry
-    
-    if cached_entry['state']['ready']: 
-        return cached_entry
-    
-    if cached_entry['state']['enriched']:
-
-        # сделать тут проверку, если давно то пересчитать        
-        return cached_entry
         
-    if not preloaded_page:
-        score_page = await get_score_page(session, user_id, cached_entry['osu_api_data']['id'])
-        mods_orig = cached_entry['osu_score']['mods']
-    else: 
-        score_page = preloaded_page
-        mods_orig = score_page.get("mods", [])
-
-    # хмм есть же is legacy
-    # if not score_page:
-    #     cached_entry['state']['ready'] = True
-    #     save_score_file(score_id, cached_entry)
-    #     return
-    # lazer = True
-
-    da_active = False
-    speed_multiplier = None
-    custom_values = {}
-
-    mods = score_page.get("mods", [])
-    for mod in mods:
-        if isinstance(mod, dict):
-            acronym = mod.get("acronym", "").upper()
-            settings = mod.get("settings", {})
-        else:
-            acronym = str(mod).upper()
-            settings = {}
-
-        if acronym == "DA":
-            da_active = True
-
-        if "speed_change" in settings:
-            speed_multiplier = settings["speed_change"]
-
-        for key, value in settings.items():
-            if key in ["drain_rate", "circle_size", "approach_rate", "overall_difficulty"]:
-                custom_values[key] = value
-    
-    accuracy = score_page.get("accuracy")
-    rank = score_page.get("rank")
-    total_score = score_page.get("total_score")
-    ranked = score_page.get("ranked")
-    
-    _passed = score_page.get('passed', False)
-    stats = score_page.get('statistics')
-    if stats:
-        cached_entry.setdefault("osu_score", {}).update(
-            {
-                'count_100': stats.get('ok'),
-                'count_50': stats.get('meh'),
-                'count_miss': stats.get('miss'),
-                'count_300': stats.get('great'),
-                'ignore_hit': stats.get('ignore_hit'),
-                'ignore_miss': stats.get('ignore_miss'),
-                'small_bonus': stats.get('small_bonus'),
-                'large_tick_hit': stats.get('large_tick_hit'),
-                'large_tick_miss': stats.get('large_tick_miss'),
-                'slider_tail_hit': stats.get('slider_tail_hit'),
-            }
-        )
-
-    mods_clean = []
-    if mods_orig:       
-        if isinstance(mods_orig[0], dict):
-            mods_clean = [m for m in mods_orig if m.get("acronym") != "DA"]
-            # CL
-            if preloaded_page is not None:
-                mods_clean = [m for m in mods_clean if m.get("acronym") != "CL"]
-            mods_text = "+".join(m.get("acronym", "") for m in mods_clean if "acronym" in m)
-        else:
-            mods_clean = [m for m in mods_orig if m != "DA"]
-            if preloaded_page is not None:
-                mods_clean = [m for m in mods_clean if m != "CL"]
-            mods_text = "+".join(mods_clean)
-    else:
-        mods_text = "NM"
-
-    if speed_multiplier:
-        mods_text += f" ({speed_multiplier}x)"
-    if da_active:
-        mods_text = mods_text + "+DA" if mods_text != "NM" else "+DA"
-
-        
-
-    cached_entry.setdefault("osu_score", {}).update(
-            {
-                "mods": mods_text,
-            }
-        )
-    cached_entry.setdefault("lazer_data", {}).update(
-            {
-                "DA_values": custom_values, 
-                "accuracy": accuracy, 
-                "speed_multiplier": speed_multiplier, 
-                "total_score": total_score, 
-                "rank": rank,
-                "ranked": ranked,
-            }
-        )    
-    cached_entry.setdefault("state", {}).update(
-            {
-                "enriched": True, 
-                # "lazer": is_lazer,
-            }
-        )
-    cached_entry.setdefault("meta", {}).update({"enriched_at": datetime.now().isoformat()})
-
-   
-
-    return cached_entry
-
-async def cache_remaining_scores(user_id: str, scores: list):
-    async with aiohttp.ClientSession() as session:
-        for s in scores[1:]:
-            score_id = str(s['osu_api_data']['id'])
-            cached_entry = load_score_file(score_id)
-
-            if not cached_entry['state']['enriched']:
-                cached_entry = await enrich_score_lazer(session, user_id, cached_entry)
-                save_score_file(score_id, cached_entry)
-
-            await asyncio.sleep(LXML_TIMEOUT)
 
 async def beatmap_txt_downlaod(session: aiohttp.ClientSession, map_id: int) -> str | None:
     path_to_map = os.path.join(BEATMAPS_DIR, f"{map_id}.osu")

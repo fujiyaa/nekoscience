@@ -11,7 +11,7 @@ from typing import List, Dict
 from datetime import datetime
 from collections import defaultdict
 
-from .osu_http import get_score_page, enrich_score_lazer
+from .osu_http import get_score_page
 from .osu_auth import get_osu_token
 from modules.utils.network import fetch_with_timeout, post_with_timeout, try_request
 from modules.utils.osu_conversions import is_legacy_score
@@ -316,6 +316,7 @@ async def _get_recent_scores(
     timeout_sec: int = 10,
     limit: int = 25,
     fails: int = 1,
+    offset: int = 0,
     mode: str = "osu"):
 
     if token is None: token = await get_osu_token()
@@ -325,8 +326,12 @@ async def _get_recent_scores(
         return None
 
     timeout = aiohttp.ClientTimeout(total=timeout_sec)
-    headers = {"Authorization": f"Bearer {token}"}
-    url_recent = f"https://osu.ppy.sh/api/v2/users/{user_id}/scores/recent?include_fails={fails}&limit={limit}&mode={mode}"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "x-api-version": "20240529",
+        "Accept": "application/json",
+        }
+    url_recent = f"https://osu.ppy.sh/api/v2/users/{user_id}/scores/recent?include_fails={fails}&limit={limit}&mode={mode}&offset={offset}"
     url_user_info = f"https://osu.ppy.sh/api/v2/users/{user_id}/{mode}"
 
     async with aiohttp.ClientSession(timeout=timeout) as session:
@@ -456,21 +461,9 @@ async def get_user_scores_by_beatmap(
             if not cached_entry:   
                 score['beatmapset'] = beatmapset                  
                 score['beatmap'] = beatmap  
-
-                # использовать если все будет enriched
-                # иначе будет скачиваниe просто так
-
-                # if cached_entry:
-                #     if cached_entry['state']['error']:
-                #         print("cached_entry state error, override")
-
-                #         cached_entry = None            
-
+        
                 cached_entry = await score_to_schema(score, user_info)
 
-                if i < 1:
-                    cached_entry = await enrich_score_lazer(session, str(score['user_id']), cached_entry) 
-                
                 save_score_file(score_id, cached_entry)
                 
             results.append(cached_entry)
@@ -500,7 +493,8 @@ async def get_user_scores(
         scores = data.get('scores') or []
         user_info = data.get('user_info') or {}
 
-    scores_sorted = sorted(scores, key=lambda s: s['created_at'])
+
+    scores_sorted = sorted(scores, key=lambda s: s['ended_at'])
     count_by_map = defaultdict(int)
 
     for s in scores_sorted:
@@ -508,7 +502,7 @@ async def get_user_scores(
         count_by_map[map_id] += 1
         s['try'] = count_by_map[map_id]
 
-    scores_sorted.sort(key=lambda s: s['created_at'], reverse=True)
+    scores_sorted.sort(key=lambda s: s['ended_at'], reverse=True)
 
     results = []
     async with aiohttp.ClientSession() as session:
@@ -524,10 +518,7 @@ async def get_user_scores(
                 
             if not cached_entry:            
                 cached_entry = await score_to_schema(score, user_info)
-
-                if i < 1:
-                    cached_entry = await enrich_score_lazer(session, str(score['user']['id']), cached_entry) 
-                
+              
                 save_score_file(score_id, cached_entry)
                 
             results.append(cached_entry)
@@ -544,11 +535,55 @@ async def score_to_schema(score, user_info):
     
     beatmap = score.get("beatmap", {})
     beatmapset = score.get("beatmapset", {})
-    mods_text = score.get("mods", "+".join(score.get("mods", [])) if score.get("mods") else "NM")
+    
+    da_active = False
+    speed_multiplier = None
+    custom_values = {}
+    mods_orig = score.get("mods", [])
+
+    mods = score.get("mods", [])
+    for mod in mods:
+        if isinstance(mod, dict):
+            acronym = mod.get("acronym", "").upper()
+            settings = mod.get("settings", {})
+        else:
+            acronym = str(mod).upper()
+            settings = {}
+
+        if acronym == "DA":
+            da_active = True
+
+        if "speed_change" in settings:
+            speed_multiplier = settings["speed_change"]
+
+        for key, value in settings.items():
+            if key in ["drain_rate", "circle_size", "approach_rate", "overall_difficulty"]:
+                custom_values[key] = value
+    
+    mods_clean = []
+    if mods_orig:       
+        if isinstance(mods_orig[0], dict):
+            mods_clean = [m for m in mods_orig if m.get("acronym") != "DA"]
+            mods_text = "+".join(m.get("acronym", "") for m in mods_clean if "acronym" in m)
+        else:
+            mods_clean = [m for m in mods_orig if m != "DA"]
+            mods_text = "+".join(mods_clean)
+    else:
+        mods_text = "NM"
+
+    if speed_multiplier:
+        mods_text += f" ({speed_multiplier}x)"
+    if da_active:
+        mods_text = mods_text + "+DA" if mods_text != "NM" else "+DA"
+
+    # mods_text = score.get("mods", "+".join(score.get("mods", [])) if score.get("mods") else "NM")
     
     fail = False
     if not score.get('passed'): fail = True
 
+    statistics = score.get('statistics', {})
+    maximum_statistics = score.get('maximum_statistics', {})
+    
     return {
         "user": {
             "username":     user_info['username'],
@@ -586,20 +621,21 @@ async def score_to_schema(score, user_info):
         "osu_score": {
             "user_id" :         score.get("user_id", score.get("user", {}).get("id")) or None,
             "score_legacy":     score.get("score") or 0,
+            "score_lazer":      score.get("score") or 0,
             "mods":             mods_text,
-            "accuracy_legacy":  score.get("accuracy"),
+            "accuracy":         score.get("accuracy"),
             "max_combo":        score.get("max_combo"),            
             "pp":               score.get("pp") or 0,
-            "count_300":        score.get("statistics", {}).get("count_300") or None,
-            "count_100":        score.get("statistics", {}).get("count_100") or None,
-            "count_50":         score.get("statistics", {}).get("count_50") or None,
-            "count_miss":       score.get("statistics", {}).get("count_miss") or None,            
-            "ignore_hit":       None,
-            "ignore_miss":      None,
-            "small_bonus":      None,
-            "large_tick_hit":   None,
-            "large_tick_miss":  None,            
-            "slider_tail_hit":  None,
+            "count_300":        statistics.get("great") or None,
+            "count_100":        statistics.get("ok") or None,
+            "count_50":         statistics.get("meh") or None,
+            "count_miss":       statistics.get("miss") or None,           
+            "ignore_hit":       statistics.get("ignore_hit") or None,
+            "ignore_miss":      statistics.get("ignore_miss") or None,
+            "small_bonus":      statistics.get("small_bonus") or None,
+            "large_tick_hit":   statistics.get("large_tick_hit") or None,
+            "large_tick_miss":  statistics.get("large_tick_miss") or None,            
+            "slider_tail_hit":  statistics.get("slider_tail_hit") or None,
             "failed":           fail,
             "try_count":        score.get("try", 1),      
         },
@@ -615,56 +651,50 @@ async def score_to_schema(score, user_info):
         "lazer_data": {
             "ranked":           None,
             "total_score":      0,
-            "accuracy":         None,
-            "rank":             None,
-            "speed_multiplier": None,            
-            "DA_values":        None,
+            "rank":             score.get("rank"),
+            "speed_multiplier": speed_multiplier,            
+            "DA_values":        custom_values,
                                         # возможно другие
+        },
+        'osu_statistics_max': {
+            'great':            maximum_statistics.get('great', 0),
+            'ignore_hit':       maximum_statistics.get('ignore_hit', 0),
+            'large_tick_hit':   maximum_statistics.get('large_tick_hit', 0),
+            'slider_tail_hit':  maximum_statistics.get('slider_tail_hit', 0),
         },
         "state": {            
             "lazer":            not is_legacy_score(score),
             "mode":             "osu",
             "calculated":       False,
-            "enriched":         False,
             "ready":            False,
             "error":            False,
         },
         "meta": {
             "created_at":       datetime.now().isoformat(),
-            "enriched_at":      None,
             "calculated_at":    None,
-            "version":          18012026,         # !
+            "version":          "03022026",         # !
         }
     }
 
 async def get_score_by_id(score_id: str, token: str, timeout_sec: int = 10, override: bool = False):
     if not override:    
         cached_entry = load_score_file(score_id)
-    else: cached_entry = False
+    else: 
+        cached_entry = False
     
     if not cached_entry:
         async with api_limit:
-            async with aiohttp.ClientSession() as session:     
+            async with aiohttp.ClientSession() as session:    
+
                 data = await get_score_page(session, score_id, score_id, no_check=True)
-
                 if not data:
-                    return None  
+                    return None
 
-                user_id = str(data["user"]["id"])
-
-                user_info = await get_osu_user_additional_data(user_id, "osu", token)
-
-                # фикс
-                preserve_mods = data["mods"]
-                data["mods"] = ""
-                
+                user_info = await get_osu_user_additional_data(str(data["user"]["id"]), "osu", token)                
                 cached_entry = await score_to_schema(data, user_info)
-                
-                data["mods"] = preserve_mods
-                
-                cached_entry = await enrich_score_lazer(session, user_id, cached_entry, preloaded_page=data)
-               
+
                 save_score_file(score_id, cached_entry)
+
     return cached_entry
 
 

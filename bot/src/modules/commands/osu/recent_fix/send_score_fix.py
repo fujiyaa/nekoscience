@@ -31,10 +31,8 @@ async def send_score_fix(update, cached_entry, user_id, token:str = None):
     meta =              cached_entry['meta']
     
     lazer = state.get('lazer')
-    if lazer:
-        acc = lazer_data.get('accuracy')
-    else:
-        acc = osu_score.get('accuracy_legacy')
+    
+    acc = osu_score.get('accuracy')
 
     mods_str = osu_score.get("mods", "")
     mods_text = text_format.normalize_no_plus(mods_str)
@@ -103,7 +101,7 @@ async def send_score_fix(update, cached_entry, user_id, token:str = None):
         cached_entry.setdefault("state", {}).update({"calculated": True})
         cached_entry.setdefault("meta", {}).update({"calculated_at": datetime.now().isoformat()})
         
-        if cached_entry['state']['calculated'] and cached_entry['state']['enriched']:
+        if cached_entry['state']['calculated']:
             cached_entry.setdefault("state", {}).update({"ready": True})
         else:
             cached_entry.setdefault("state", {}).update({"error": True})

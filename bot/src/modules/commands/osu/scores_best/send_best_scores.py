@@ -41,20 +41,12 @@ async def send_best_scores(update, scores: dict = [], limit: int = 5):
     
 
         lazer = state.get('lazer')
-
-        if state['enriched']:
-            if lazer:
-                accuracy = lazer_data.get('accuracy')
-                rank = lazer_data.get('rank') 
-                # score = osu_score.get('score_legacy')
-            else:
-                accuracy = osu_score.get('accuracy_legacy')
-                rank = osu_api_data.get('rank_legacy') 
-                # score = lazer_data.get('total_score')
-        else: 
-            accuracy = osu_score.get('accuracy_legacy')
-            rank = osu_api_data.get('rank_legacy') 
-            # score = lazer_data.get('total_score')
+        accuracy = osu_score.get('accuracy')
+        
+        if lazer:                
+            rank = lazer_data.get('rank') 
+        else:            
+            rank = osu_api_data.get('rank_legacy')     
 
         accuracy_display = round(accuracy * 100, 2)
         accuracy_display = (f"{accuracy_display}%")

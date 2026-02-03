@@ -249,7 +249,7 @@ print(asyncio.run(create_score_compare_image(
             "user_id": 11596989,
             "score_legacy": 0,
             "mods": "DT+RX (1.1x)",
-            "accuracy_legacy": 0.9318365695792881,
+            "accuracy": 0.9318365695792881,
             "max_combo": 246,
             "pp": 0,
             "count_300": 758,
@@ -276,7 +276,6 @@ print(asyncio.run(create_score_compare_image(
         "lazer_data": {
             "ranked": False,
             "total_score": 41772,
-            "accuracy": 0.899965,
             "rank": "B",
             "speed_multiplier": 1.1,
             "DA_values": {}
@@ -285,7 +284,6 @@ print(asyncio.run(create_score_compare_image(
             "lazer": True,
             "mode": "osu",
             "calculated": True,
-            "enriched": True,
             "ready": True,
             "error": False
         } 
@@ -325,7 +323,7 @@ print(asyncio.run(create_score_compare_image(
             "user_id": 1189,
             "score_legacy": 0,
             "mods": "DT+RX (1.1x)",
-            "accuracy_legacy": 0.899965,
+            "accuracy": 0.899965,
             "max_combo": 246,
             "pp": 0,
             "count_300": 758,
@@ -352,7 +350,6 @@ print(asyncio.run(create_score_compare_image(
         "lazer_data": {
             "ranked": False,
             "total_score": 41772,
-            "accuracy": 0.899965,
             "rank": "B",
             "speed_multiplier": 1.1,
             "DA_values": {}
@@ -361,7 +358,6 @@ print(asyncio.run(create_score_compare_image(
             "lazer": True,
             "mode": "osu",
             "calculated": True,
-            "enriched": True,
             "ready": True,
             "error": False
         },

@@ -57,10 +57,6 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await safe_query_answer(query)
         return
     
-    if not entry['state']['enriched']:
-        await safe_query_answer(query, text="🐟 Загрузка...", show_alert=True)
-        return
-
     await safe_query_answer(query)
     rs_bg_render = False # for now ...
     img_path, caption = await process_score_and_image(entry, image_todo_flag=rs_bg_render)

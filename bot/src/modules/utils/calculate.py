@@ -16,16 +16,7 @@ async def caclulte_cached_entry(cached_entry: dict):
     state =             cached_entry['state']
 
     lazer = state.get('lazer')
-
-    if state['enriched']:
-        if lazer:        
-            acc = lazer_data.get('accuracy')
-        else:
-            acc = osu_score.get('accuracy_legacy')
-    else:
-        # временно для scores_best
-        print("Warn: cached_entry isnt enriched, but caclulate was called.")
-        return None
+    acc = osu_score.get('accuracy')    
 
     map_id = map.get('beatmap_id')
     _path, base_values = await beatmap(int(map_id))
@@ -90,7 +81,7 @@ async def caclulte_cached_entry(cached_entry: dict):
         cached_entry.setdefault("state", {}).update({"calculated": True})
         cached_entry.setdefault("meta", {}).update({"calculated_at": datetime.now().isoformat()})
         
-        if cached_entry['state']['calculated'] and cached_entry['state']['enriched']:
+        if cached_entry['state']['calculated']:
             cached_entry.setdefault("state", {}).update({"ready": True})
         else:
             cached_entry.setdefault("state", {}).update({"error": True})

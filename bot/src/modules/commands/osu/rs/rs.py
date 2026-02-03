@@ -13,7 +13,6 @@ from ....systems.cooldowns import check_user_cooldown
 from ....systems.logging import log_all_update
 from ....systems.auth import check_osu_verified
 from ....external.osu_api import get_user_scores
-from ....external.osu_http import cache_remaining_scores
 from ....wrappers.score import send_score
 from ....actions.context import set_message_context
 import temp
@@ -41,7 +40,6 @@ async def rs(update: Update, context: ContextTypes.DEFAULT_TYPE, is_button_press
         return
 
     max_attempts = 2
-    caching_reached = False
     for _ in range(max_attempts):
         try:
             if not is_button_press:          
@@ -104,9 +102,6 @@ async def rs(update: Update, context: ContextTypes.DEFAULT_TYPE, is_button_press
                 message_id = msg.message_id
                 user_sessions[message_id] = local_session
 
-                if not caching_reached:
-                    asyncio.create_task(cache_remaining_scores(str(scores[0]['osu_score']['user_id']), scores))
-                    caching_reached = True
             else:
                 msg = update.callback_query.message
                 session_data = user_sessions.get(msg.message_id)
