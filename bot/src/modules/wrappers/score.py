@@ -25,8 +25,9 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
     osu_score =         cached_entry['osu_score']
     neko_api_calc =     cached_entry['neko_api_calc']
     lazer_data =        cached_entry['lazer_data']
+    osu_statistics_max= cached_entry['osu_statistics_max']
     state =             cached_entry['state']
-    meta =          cached_entry['meta']  
+    meta =              cached_entry['meta']    
 
     if not cached_entry['state']['calculated']:
         await caclulte_cached_entry(cached_entry)
@@ -126,20 +127,32 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
         speed_multiplier=speed_multiplier, hr=hr_active, ez=ez_active
     )
     length = int(round(float(map.get('hit_length')) / speed_multiplier))
-    
-    is_cl = 'CL'
-    mods_lazer = text_format.normalize_plus(mods_str)
-    if str(mods_lazer) == '':
-        is_cl = '+CL'   
+        
+
     if lazer: 
-        is_cl = ""
-    mods_text = f'{mods_lazer}{is_cl}'
+        is_stable_client = ""
+    else:
+        is_stable_client = "(Stable)"        
+
+    mods_lazer = text_format.normalize_plus(mods_str)
+
+    mods_text = f'{mods_lazer}{is_stable_client}'
     combo_text = f'<b>{osu_score.get("max_combo")}x</b>/{perfect_combo}x'
 
     if not rank == "F":
         pp_text = f'<b>{pp:.1f}</b>/{perfect_pp:.1f} <s>({max_pp:.1f}pp)</s>'
     else:
-        pp_text = f'<code>Fail</code>  ~<b>{pp:.1f}pp</b> '
+        hit300 = osu_score.get("count_300") or 0
+        hit100 = osu_score.get("count_100") or 0
+        hit50 = osu_score.get("count_50") or 0
+        hit_miss = osu_score.get('count_miss') or 0
+        max_hits = osu_statistics_max['great']
+
+        hits = hit300 + hit100 + hit50 + hit_miss
+
+        progress = (hits / max_hits) * 100 if max_hits else 0
+
+        pp_text = f'<code>Fail ({progress:.0f}%)</code>  ~<b>{pp:.1f}pp</b> '
     score_url = f"https://osu.ppy.sh/scores/{osu_api_data.get('id')}"
     score_date = text_format.format_osu_date(osu_api_data.get('date'), today=is_recent)
     map_id = map.get('beatmap_id')

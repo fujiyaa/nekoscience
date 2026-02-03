@@ -11,9 +11,8 @@ from ....actions.messages import safe_send_message, try_send
 from ....systems.cooldowns import check_user_cooldown
 from ....systems.logging import log_all_update
 from ....systems.auth import check_osu_verified
-from .buttons import get_keyboard
 from ....actions.context import get_message_context
-import temp
+from .buttons import get_keyboard
 
 from config import COOLDOWN_RECENT_FIX_COMMAND
 

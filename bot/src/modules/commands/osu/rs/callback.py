@@ -92,7 +92,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         session["index"] = new_index
 
-        map_id=entry.get('map').get('beatmap_id'),
+        map_id=entry.get('map').get('beatmap_id')
 
         if bot_msg:
             set_message_context(

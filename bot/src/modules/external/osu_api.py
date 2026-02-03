@@ -330,7 +330,7 @@ async def _get_recent_scores(
         "Authorization": f"Bearer {token}",
         "x-api-version": "20240529",
         "Accept": "application/json",
-        }
+    }
     url_recent = f"https://osu.ppy.sh/api/v2/users/{user_id}/scores/recent?include_fails={fails}&limit={limit}&mode={mode}&offset={offset}"
     url_user_info = f"https://osu.ppy.sh/api/v2/users/{user_id}/{mode}"
 
@@ -383,7 +383,11 @@ async def _get_beatmap_scores(
         return None
 
     timeout = aiohttp.ClientTimeout(total=timeout_sec)
-    headers = {"Authorization": f"Bearer {token}"}
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "x-api-version": "20240529",
+        "Accept": "application/json",
+    }
     url_scores = f"https://osu.ppy.sh/api/v2/beatmaps/{beatmap_id}/scores/users/{user_id}/all?legacy_only=0&ruleset={mode}"
     url_beatmap = f"https://osu.ppy.sh/api/v2/beatmaps/{beatmap_id}"
     url_user_info = f"https://osu.ppy.sh/api/v2/users/{user_id}/{mode}"

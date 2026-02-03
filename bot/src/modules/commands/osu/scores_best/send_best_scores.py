@@ -54,12 +54,13 @@ async def send_best_scores(update, scores: dict = [], limit: int = 5):
         mods_str = osu_score.get("mods", "")
         mods_text = normalize_plus(mods_str)
       
-        is_cl = 'CL'
-        mods_lazer = normalize_plus(mods_str)
-        if str(mods_lazer) == '':
-            is_cl = '+CL'
+          
         if lazer: 
             is_cl = ""
+        else:
+            is_cl = '(Stable)'
+        
+        mods_lazer = normalize_plus(mods_str)
         mods_text = f'{mods_lazer}{is_cl}'
         
         if perfect_combo and i == 0:
@@ -70,7 +71,7 @@ async def send_best_scores(update, scores: dict = [], limit: int = 5):
         if perfect_pp and i == 0:
             pp_text = f'• <b>{pp:.1f}</b>/{perfect_pp:.1f} <s>({max_pp:.1f}pp)</s>  • '
         else: 
-            pp_text = ' '
+            pp_text = f'• <b>{pp:.1f}pp</b> • '
 
         score_url = f"https://osu.ppy.sh/scores/{osu_api_data.get('id')}"
         score_date = format_osu_date(osu_api_data.get('date'), today=is_recent)        
@@ -90,9 +91,8 @@ async def send_best_scores(update, scores: dict = [], limit: int = 5):
         
         else:
             text += f'<code>#{i+1}</code>  '
-            text += f'<a href="{score_url}"><b>{rank} {mods_text} </b>({accuracy_display})</a> '
-            text += f" {pp_text}{combo_text}{miss_text} "
-            text += f'  <code>{score_date}</code>\n'
+            text += f'<a href="{score_url}"><b>{rank} {mods_text} </b>({accuracy_display})</a> {combo_text}{miss_text}\n'
+            text += f'<code>{pp_text}{score_date}</code>\n'
                             
         scores_text += text
 
