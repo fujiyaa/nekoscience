@@ -53,5 +53,5 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request)
                 return
         
     except Exception as e:
-        print(f"Ошибка при doubt: {e}")
+        print(f"Ошибка при help: {e}")
 
