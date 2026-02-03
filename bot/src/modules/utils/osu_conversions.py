@@ -111,6 +111,9 @@ def is_legacy_score(score: dict) -> bool:
     if not score_id or score_id == 0:
         if legacy_score_id or score_val:
             return True
+        
+    if legacy_score_id is not None:
+        return True
     return False
 
 

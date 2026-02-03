@@ -104,7 +104,7 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
 
     beatmap_escaped = html.escape(map.get('beatmap_full'))
     
-    try_count, _failed = osu_score.get('try_count'), osu_score.get('failed')
+    try_count, failed = osu_score.get('try_count'), osu_score.get('failed')
     try_text = ''
     if try_count > 1:
         try_text = f"<i><b>- Try #{try_count}</b></i>"
@@ -139,20 +139,24 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
     mods_text = f'{mods_lazer}{is_stable_client}'
     combo_text = f'<b>{osu_score.get("max_combo")}x</b>/{perfect_combo}x'
 
-    if not rank == "F":
+    if not rank == "F" and not failed:
         pp_text = f'<b>{pp:.1f}</b>/{perfect_pp:.1f} <s>({max_pp:.1f}pp)</s>'
     else:
-        hit300 = osu_score.get("count_300") or 0
-        hit100 = osu_score.get("count_100") or 0
-        hit50 = osu_score.get("count_50") or 0
-        hit_miss = osu_score.get('count_miss') or 0
-        max_hits = osu_statistics_max['great']
+        if lazer:
+            hit300 = osu_score.get("count_300") or 0
+            hit100 = osu_score.get("count_100") or 0
+            hit50 = osu_score.get("count_50") or 0
+            hit_miss = osu_score.get('count_miss') or 0
+            max_hits = osu_statistics_max['great']
 
-        hits = hit300 + hit100 + hit50 + hit_miss
+            hits = hit300 + hit100 + hit50 + hit_miss
 
-        progress = (hits / max_hits) * 100 if max_hits else 0
+            progress = (hits / max_hits) * 100 if max_hits else 0
+            pp_text = f'<code>Fail ({progress:.0f}%)</code>  ~<b>{pp:.1f}pp</b> '
+        else:
+            rank = "F"
+            pp_text = f'<code>Fail ~{pp:.1f}pp </code>'
 
-        pp_text = f'<code>Fail ({progress:.0f}%)</code>  ~<b>{pp:.1f}pp</b> '
     score_url = f"https://osu.ppy.sh/scores/{osu_api_data.get('id')}"
     score_date = text_format.format_osu_date(osu_api_data.get('date'), today=is_recent)
     map_id = map.get('beatmap_id')
