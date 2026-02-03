@@ -149,12 +149,12 @@ async def safe_edit_message(message, text, parse_mode=None, reply_markup=None):
         return await message.reply_text(text, parse_mode=parse_mode, reply_markup=reply_markup)
 
 async def safe_edit_query(query, text, parse_mode=None, reply_markup=None,
-                          disable_web_page_preview=True, link_preview_options=None):
+                          disable_web_page_preview=True, link_preview_options=None,
+                          entities=None):
     try:
         msg = query.message
 
         kwargs = {
-            "parse_mode": parse_mode,
             "reply_markup": reply_markup
         }
 
@@ -162,6 +162,11 @@ async def safe_edit_query(query, text, parse_mode=None, reply_markup=None,
             kwargs["link_preview_options"] = link_preview_options
         else:
             kwargs["disable_web_page_preview"] = disable_web_page_preview
+
+        if entities is not None:
+            kwargs["entities"] = entities
+        else:
+            kwargs["parse_mode"] = parse_mode
 
         if msg.text or msg.caption:
             return await msg.edit_text(text, **kwargs)
