@@ -11,12 +11,12 @@ from ....actions.messages import safe_send_message
 from ....systems.cooldowns import check_user_cooldown
 from ....systems.logging import log_all_update
 from ....external.osu_http import fetch_txt_beatmaps
-from ....external.osu_api import get_osu_token, get_user_profile, get_user_scores
+from ....external.osu_api import get_user_scores
 from ....systems.auth import check_osu_verified
 from ....utils.osu_conversions import apply_mods_to_stats, get_mods_info
 from ....wrappers.average_table import get_average_table
 from ....wrappers.user import get_user_link
-from ....utils.calculate import caclulte_cached_entry
+from ....utils.calculate import caclulte_cached_entry, calculate_beatmap_attr
 import temp
 
 from config import COOLDOWN_STATS_COMMANDS, USER_SETTINGS_FILE
@@ -111,28 +111,25 @@ async def average_recent(update: Update, context: ContextTypes.DEFAULT_TYPE, use
 
                      #temp pp fix
                     pp = pp if not isinstance(osu_score.get("pp"), (int, float)) or osu_score.get("pp") <= 0 else osu_score.get("pp")
-                    
+                          
+                    base_values = await calculate_beatmap_attr(cached_entry)
+
+                    bpm = (map.get("bpm", 0.0))
+                    length = (map.get("hit_length", 0))                    
+                    mods_str = osu_score.get("mods", "")
+                    speed_multiplier, hr_active, ez_active = get_mods_info(mods_str)                    
+                    length = int(round(float(length) / speed_multiplier))
+                   
+                    bpm, ar, od, cs, hp = apply_mods_to_stats(
+                        bpm, base_values[0], base_values[2], base_values[1], base_values[3],
+                        speed_multiplier=speed_multiplier, hr=hr_active, ez=ez_active
+                    )
+
                     pps.append(pp)
                     accs.append(osu_score.get('accuracy', 0.0) * 100)
                     combos.append(osu_score.get("max_combo", 0))
                     misses.append(osu_score.get("count_miss", 0))                    
-                    stars.append(neko_api_calc.get("star_rating") or 0)
-                    ar = (map.get("ar", 0.0))
-                    cs = (map.get("cs", 0.0))
-                    hp = (map.get("hp", 0.0))
-                    od = (map.get("od", 0.0))
-                    bpm = (map.get("bpm", 0.0))
-                    length = (map.get("hit_length", 0))
-                    
-                    mods_str = osu_score.get("mods", "")
-                    speed_multiplier, hr_active, ez_active = get_mods_info(mods_str)
-                   
-                    bpm, ar, od, cs, hp = apply_mods_to_stats(
-                        bpm, ar, od, cs, hp,
-                        speed_multiplier=speed_multiplier, hr=hr_active, ez=ez_active
-                    )
-                    length = int(round(float(length) / speed_multiplier))
-
+                    stars.append(neko_api_calc.get("star_rating") or 0) 
                     ars.append(ar)
                     css.append(cs)
                     hps.append(hp)

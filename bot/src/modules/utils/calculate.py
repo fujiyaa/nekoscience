@@ -17,20 +17,8 @@ async def caclulte_cached_entry(cached_entry: dict):
 
     lazer = state.get('lazer')
     acc = osu_score.get('accuracy')    
-
-    map_id = map.get('beatmap_id')
-    _path, base_values = await beatmap(int(map_id))
-
-    # карты без ar
-    base_values["ar"] = map.get("ar", 5) if base_values.get("ar") is None else base_values["ar"]
-    
-    if not isinstance(lazer_data.get("DA_values"), dict):
-        lazer_data["DA_values"] = {}
-
-    base_ar = lazer_data.get("DA_values", {}).get("approach_rate", base_values["ar"])
-    base_cs = lazer_data.get("DA_values", {}).get("circle_size", base_values["cs"])
-    base_od = lazer_data.get("DA_values", {}).get("overall_difficulty",base_values["od"])
-    base_hp = lazer_data.get("DA_values", {}).get("drain_rate", base_values["hp"])
+    map_id = map.get('beatmap_id')    
+    base_values = await calculate_beatmap_attr(cached_entry)
     
     #neko API 
     payload = {
@@ -48,10 +36,10 @@ async def caclulte_cached_entry(cached_entry: dict):
         "lazer": bool(lazer),          
         "clock_rate": float(lazer_data.get('speed_multiplier') or 1.0),  
 
-        "custom_ar": float(base_ar),
-        "custom_cs": float(base_cs),
-        "custom_hp": float(base_hp),
-        "custom_od": float(base_od),
+        "custom_ar": float(base_values[0]),
+        "custom_cs": float(base_values[1]),        
+        "custom_od": float(base_values[2]),
+        "custom_hp": float(base_values[3]),
     }
 
     try:
@@ -97,3 +85,25 @@ async def caclulte_cached_entry(cached_entry: dict):
         return None
     
     return cached_entry          
+
+async def calculate_beatmap_attr(cached_entry: dict) -> tuple[float, float, float, float]:
+    map =               cached_entry['map']
+    lazer_data =        cached_entry['lazer_data']
+
+    map_id = map.get('beatmap_id')
+    _path, base_values = await beatmap(int(map_id))
+
+    # карты без ar
+    base_values["ar"] = map.get("ar", 5) if base_values.get("ar") is None else base_values["ar"]
+    
+    if not isinstance(lazer_data.get("DA_values"), dict):
+        lazer_data["DA_values"] = {}
+
+    base_ar = lazer_data.get("DA_values", {}).get("approach_rate", base_values["ar"])
+    base_cs = lazer_data.get("DA_values", {}).get("circle_size", base_values["cs"])
+    base_od = lazer_data.get("DA_values", {}).get("overall_difficulty",base_values["od"])
+    base_hp = lazer_data.get("DA_values", {}).get("drain_rate", base_values["hp"])
+
+    adjusted_values = float(base_ar), float(base_cs), float(base_od), float(base_hp)
+    
+    return adjusted_values
