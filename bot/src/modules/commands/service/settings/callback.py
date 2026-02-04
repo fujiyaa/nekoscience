@@ -55,6 +55,14 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif action == "settings_display_fails_n":
         user_settings["display_fails"] = False
+        await safe_query_answer(query)
+
+    elif action == "settings_display_fails_ar_y":
+        user_settings["display_fails_average_recent"] = True
+        await safe_query_answer(query) 
+
+    elif action == "settings_display_fails_ar_n":
+        user_settings["display_fails_average_recent"] = False
         await safe_query_answer(query) 
 
     elif action == "settings_display_scores_y":

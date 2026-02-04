@@ -79,6 +79,10 @@ TRANSLATIONS = {
         "en": "/rs - Display fails?",
         "ru": "/rs - Показывать фейлы?"
     },
+    "settings_ar_fails": {
+        "en": "/reaverage - Disp. fails?",
+        "ru": "/reaverage - Показ. фейлы?"
+    },
     "fails_yes": {
         "en": "Enabled",
         "ru": "Вкл"
@@ -88,8 +92,8 @@ TRANSLATIONS = {
         "ru": "Выкл"
     },
     "settings_sc_more_scores": {
-        "en": "/sc - Больше одного скора?",
-        "ru": "/sc - Display more scores?"
+        "en": "/sc - Display more scores?",
+        "ru": "/sc - Больше одного скора?"
     }    
 }
 

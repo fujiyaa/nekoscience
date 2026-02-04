@@ -38,6 +38,7 @@ from modules.commands.osu.card_top5.card import start_card as start_card_top5
 from modules.commands.osu.leaderboard_chat.leaderboard import start_leaderboard_chat
 from modules.commands.osu.scores_best.scores_best import start_scores_best
 from modules.commands.osu.card_beatmap.beatmap import start_beatmap_card
+from modules.commands.osu.average_recent.average_recent import start_average_recent
 
 # fun
 from modules.commands.fun.doubt.doubt import doubt
@@ -91,6 +92,7 @@ def register_commands(app):
         ("music",):                         start_beatmap_audio,
         ("maps_skill", "ms"):               start_maps_skill,
         ("average", "avg", "a"):            start_average_stats,
+        ("reaverage", "reavg", "rea"):      start_average_recent,
         ("nochoke", "n"):                   start_nochoke,
         ("anime", "goon"):                  start_anime,
         ("challenge",):                     start_challenge,

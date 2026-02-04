@@ -11,7 +11,8 @@ async def get_settings_kb(user_id, user_data):
     user_settings = user_data.get(str(user_id), {}) 
     lang_code = user_settings.get("lang", "ru")   
     bg_code = user_settings.get("rs_bg_render", False) 
-    display_fails = user_settings.get("display_fails", True) 
+    display_fails = user_settings.get("display_fails", True)
+    display_fails_average_recent = user_settings.get("display_fails_average_recent", True) 
     display_more_scores = user_settings.get("display_more_scores", False) 
     
     if lang_code == "en":
@@ -34,6 +35,13 @@ async def get_settings_kb(user_id, user_data):
     else:
         display_fails_y = ""
         display_fails_n = "❌"
+    
+    if display_fails_average_recent:
+        display_fails_ar_y = "✅"
+        display_fails_ar_n = ""
+    else:
+        display_fails_ar_y = ""
+        display_fails_ar_n = "❌"
 
     if display_more_scores:
         display_more_scores_y = "✅"
@@ -73,6 +81,22 @@ async def get_settings_kb(user_id, user_data):
             InlineKeyboardButton(
                 f"{TR['fails_no'][lang_code]} {display_fails_n}",
                 callback_data=f"settings_display_fails_n:{user_id}"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                f"{TR['settings_ar_fails'][lang_code]}",
+                callback_data=f"settings_ignore:{user_id}"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                f"{TR['fails_yes'][lang_code]} {display_fails_ar_y}",
+                callback_data=f"settings_display_fails_ar_y:{user_id}"
+            ),           
+            InlineKeyboardButton(
+                f"{TR['fails_no'][lang_code]} {display_fails_ar_n}",
+                callback_data=f"settings_display_fails_ar_n:{user_id}"
             )
         ],
         [

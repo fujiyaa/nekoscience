@@ -38,8 +38,6 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
 
     lazer = state.get('lazer')
     
-    acc = osu_score.get('accuracy')
-
     mods_str = osu_score.get("mods", "")
     mods_text = text_format.normalize_no_plus(mods_str)
     speed_multiplier, hr_active, ez_active = get_mods_info(mods_str)

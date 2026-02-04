@@ -16,6 +16,7 @@ from ....external.localapi import get_map_stats_neko_api
 from ....systems.auth import check_osu_verified
 from ....utils.text_format import country_code_to_flag
 from ....utils.osu_conversions import apply_mods_to_stats, get_mods_info
+from ....wrappers.average_table import get_average_table
 
 from config import COOLDOWN_STATS_COMMANDS
 
@@ -83,16 +84,7 @@ async def average_stats(update: Update, context: ContextTypes.DEFAULT_TYPE, user
                 print(e)
             
 
-            if isinstance(best_scores, list) and best_scores:
-                def format_value(val, is_time=False):
-                    if is_time:
-                        minutes = int(val // 60)
-                        seconds = int(val % 60)
-                        return f"{minutes}:{seconds:02d}"
-                    if isinstance(val, float):
-                        return f"{val:.2f}"
-                    return str(val)
-
+            if isinstance(best_scores, list) and best_scores: 
                 accs, combos, misses, pps = [], [], [], []
                 stars, ars, css, hps, ods, bpms, lengths = [], [], [], [], [], [], []
 
@@ -111,17 +103,16 @@ async def average_stats(update: Update, context: ContextTypes.DEFAULT_TYPE, user
                     map_id = score['beatmap_id']
                     maps_ids.append(map_id)
 
-                results, failed = await fetch_txt_beatmaps(maps_ids)
+                _results, failed = await fetch_txt_beatmaps(maps_ids)
 
                 if failed:
                     print("err loading maps (average_stats):", failed)
 
                 for i, score in enumerate(best_scores):
-                    accs.append(score.get("accuracy", 0.0) * 100)  # accuracy в %
+                    accs.append(score.get("accuracy", 0.0) * 100)
                     combos.append(score.get("combo", 0))
                     misses.append(score.get("misses", 0))
                     pps.append(score.get("pp", 0.0))
-                    # stars = (score.get("stars", 0.0))
                     ar = (score.get("AR", 0.0))
                     cs = (score.get("CS", 0.0))
                     hp = (score.get("HP", 0.0))
@@ -159,12 +150,12 @@ async def average_stats(update: Update, context: ContextTypes.DEFAULT_TYPE, user
 
                         map_stars = pp_data.get("star_rating")                     
                         
-                        if map_stars > 8.0: 
-                            print(score['beatmap_id'])
                     except Exception as e:
                         print(f"neko API failed: {e}")
 
                     stars.append(map_stars)
+
+                    # print(map_stars, str(score.get('beatmap_id', "0")))
 
                     bpm, ar, od, cs, hp = apply_mods_to_stats(
                         bpm, ar, od, cs, hp,
@@ -178,22 +169,12 @@ async def average_stats(update: Update, context: ContextTypes.DEFAULT_TYPE, user
                     ods.append(od)
                     bpms.append(bpm)
                     lengths.append(length)
-
                                     
                 def calc_stats(values):
                     numeric_values = [v for v in values if isinstance(v, (int, float))]
                     if not numeric_values:
                         return ("-", "-", "-")
-                    return (min(numeric_values), mean(numeric_values), max(numeric_values))
-
-                def format_time(seconds):
-                    if isinstance(seconds, str):
-                        return seconds
-                    m, s = divmod(int(round(seconds)), 60)
-                    h, m = divmod(m, 60)
-                    if h > 0:
-                        return f"{h}:{m:02d}:{s:02d}"
-                    return f"{m}:{s:02d}"
+                    return (min(numeric_values), mean(numeric_values), max(numeric_values))                
 
                 table_data = {
                     "Accuracy": calc_stats(accs),
@@ -209,57 +190,16 @@ async def average_stats(update: Update, context: ContextTypes.DEFAULT_TYPE, user
                     "Length": calc_stats(lengths),
                 }
 
-                formatted_table_data = {}
-                for key, values in table_data.items():
-                    formatted_values = []
-                    for v in values:
-                        if isinstance(v, str):
-                            formatted_values.append(v)
-                        elif key == "Length":
-                            formatted_values.append(format_time(v))
-                        elif isinstance(v, float):
-                            formatted_values.append(f"{v:.2f}")
-                        else:
-                            formatted_values.append(str(v))
-                    formatted_table_data[key] = formatted_values
+                # user_link = get_user_link(recent_scores[0])
+                table = get_average_table(table_data)     
 
-                headers = ["", "Minimum", "Average", "Maximum"]
-                rows = [[key, *values] for key, values in formatted_table_data.items()]
-
-                col_widths = [
-                    max(len(str(headers[i])), max(len(str(row[i])) for row in rows))
-                    for i in range(len(headers))
-                ]
-
-                def fmt_row(row):
-                    return " | ".join(
-                        str(row[i]).ljust(col_widths[i]) if i == 0 else str(row[i]).center(col_widths[i])
-                        for i in range(len(row))
-                    )
-
-                header_line = fmt_row(headers)
-                sep_line = "-+-".join("-" * w for w in col_widths)
-                table_lines = [header_line, sep_line] + [fmt_row(row) for row in rows]
-
-                table_str = "\n".join(table_lines)
-
-                username = user_data["username"]
-                stats = user_data["statistics"]
-
-                pp_text = f"{stats.get('pp')}" if stats.get("pp") else "0"
-                global_rank_text = f"(#{stats.get('global_rank'):,}" if stats.get("global_rank") else "(#????"
-                country_rank_text = (
-                    f"  {user_data['country_code']}#{stats.get('country_rank'):,})"
-                    if stats.get("country_rank") else f"  {user_data['country_code']}#???)"
-                )
-
-                rank_text = f"{username}: {pp_text}pp {global_rank_text}{country_rank_text}"
-                country_flag = country_code_to_flag(user_data["country_code"])
-
-                user_id = f"https://osu.ppy.sh/users/{user_data['id']}"
-                user_link = f'<a href="{user_id}">{country_flag} <b>{rank_text}</b></a>'
-
-                text = f"{user_link}\n\n<pre>{table_str}</pre>"
+                text=(
+                    # f'{user_link}\n'
+                    # f'\n'
+                    # f'<code>Из последних</code>  <b>{len(recent_scores)}</b>  <code>игр:</code>\n'
+                    # f'\n'
+                    f'<pre>{table}</pre>'
+                )              
 
 
                 try:

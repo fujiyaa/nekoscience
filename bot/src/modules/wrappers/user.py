@@ -5,7 +5,7 @@ from ..utils.text_format import country_code_to_flag
 
 
 
-async def get_user_link(cached_entry: dict = None):
+def get_user_link(cached_entry: dict = None):
     user = cached_entry.get('user')
     user_id = cached_entry.get('osu_score', []).get("user_id")
     username = user.get("username")

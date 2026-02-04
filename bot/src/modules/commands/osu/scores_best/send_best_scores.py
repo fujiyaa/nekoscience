@@ -13,7 +13,7 @@ from ....wrappers.mapset import get_map_text, get_mapset_link
 
 async def send_best_scores(update, scores: dict = [], limit: int = 5):   
     
-    user_link = await get_user_link(scores[0])
+    user_link = get_user_link(scores[0])
     scores_text = ""
     
     is_recent = False
