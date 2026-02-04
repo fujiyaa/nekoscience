@@ -47,7 +47,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     prefix, allowed_user_id = data.split(":")
     
     if str(query.from_user.id) != allowed_user_id:
-        await query.edit_message_text("❌ Чужие кнопки")
+        # await query.edit_message_text("❌ Чужие кнопки")
         return
     
     if prefix.startswith("leaderboard_chat_back"):
