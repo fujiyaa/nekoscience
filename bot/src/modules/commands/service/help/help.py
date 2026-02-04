@@ -44,7 +44,7 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request)
                 MessageEntity(
                     type="expandable_blockquote",
                     offset=0,                     
-                    length=len(help_text)+12 # extra offset cos idk         
+                    length=tg_len(help_text)
                 )
             ]        
             max_attempts = 3
@@ -55,3 +55,5 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request)
     except Exception as e:
         print(f"Ошибка при help: {e}")
 
+def tg_len(text: str) -> int:
+            return len(text.encode("utf-16-le")) // 2
