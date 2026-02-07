@@ -8,6 +8,7 @@ from .utils import iso_to_DaysMonthYear
 from .fetch import fetch_cover
 from ....utils.calculate import calculate_beatmap_attr
 from ....external.localapi import get_map_stats_neko_api
+from ....utils.osu_conversions import apply_mods_to_stats, get_mods_info
 
 from ....systems.translations import CARD_GUESS as T
 from config import BOT_DIR, BG_SCORE_COMPARE_DIR
@@ -53,11 +54,23 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
         uid = osu_score["user_id"]
 
         try:
-            values = await calculate_beatmap_attr(data)
-            values = {'hp': values[3], 'cs': values[1], 'od': values[2], 'ar': values[0]}
+            values = await calculate_beatmap_attr(data)            
+
+            bpm = (map_data.get("bpm", 0.0))
+            length = (map_data.get("hit_length", 0))                    
+            mods_str = osu_score.get("mods", "")
+            speed_multiplier, hr_active, ez_active = get_mods_info(mods_str)                    
+            length = int(round(float(length) / speed_multiplier))
+            
+            bpm, values0, values2, values1, values3 = apply_mods_to_stats(
+                bpm, values[0], values[2], values[1], values[3],
+                speed_multiplier=speed_multiplier, hr=hr_active, ez=ez_active
+            )
+
+            values = {'hp': values3, 'cs': values1, 'od': values2, 'ar': values0}
         except:
             values = {'hp': 10.33, 'cs': 10.33, 'od': 10.33, 'ar': 10.33}
-        
+                   
         #neko API 
         payload = {
             "map_path": str(beatmap_id), 
