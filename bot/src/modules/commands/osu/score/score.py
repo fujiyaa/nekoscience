@@ -12,9 +12,12 @@ from ....actions.messages import safe_send_message
 from ....external.osu_api import get_osu_token, get_score_by_id
 from ....wrappers.score import send_score
 from ....actions.context import set_message_context
+from .processing_v1 import create_score_compare_image
+import temp
 
 from config import COOLDOWN_RS_COMMAND     # why
-
+from config import USER_SETTINGS_FILE
+from ....systems.translations import SCORE_CAPTION as T
 
 
 # не асинхронная потому что вызывается только из асинхронной обертки start_osu_link_handler
@@ -48,8 +51,44 @@ async def score(update: Update, context: ContextTypes.DEFAULT_TYPE, requested_by
         if not cached_entry:
             await safe_send_message(update, "❌ Не удалось загрузить скор", parse_mode="Markdown")
             return
+        
+        s = temp.load_json(USER_SETTINGS_FILE, default={})
+        user_settings = s.get(str(user_id), {}) 
+        render_card = user_settings.get("settings_score_card", False)
+        l = user_settings.get("lang", "ru")
 
-        bot_msg = await send_score(update, cached_entry, user_id, user_id, user_id, is_recent=False)
+        if not render_card:
+            bot_msg = await send_score(update, cached_entry, user_id, user_id, user_id, is_recent=False)
+        else:
+            scores = []
+            scores.append(cached_entry)
+            img_path = await create_score_compare_image(scores, language=l)
+            
+            osu_api_data = cached_entry.get('osu_api_data', {})
+            score_url = f"https://osu.ppy.sh/scores/{osu_api_data.get('id')}"
+            map_id = cached_entry.get('map', {}).get('beatmap_id')
+            map_url = f"https://osu.ppy.sh/b/{map_id}"
+            username = cached_entry.get('user', {}).get('username')
+            profile_url = f"https://osu.ppy.sh/u/{username}"
+
+            caption = (
+                f"<b><a href='{profile_url}'>{T.get('Profile')[l]}</a></b>  •   "
+                f"<b><a href='{score_url}'>{T.get('Score')[l]}</a></b>   •   "          
+                f"<b><a href='{map_url}'>{T.get('Beatmap')[l]}</a></b>   •   "
+                f"id<code>{map_id}</code>"
+                )            
+
+            try:     
+                if img_path:
+                    bot_msg = await update.message.reply_photo(
+                        photo=open(img_path, "rb"),
+                        caption=caption,
+                        parse_mode="HTML"    
+                    )
+                else:
+                    raise()
+            except Exception:
+                traceback.print_exc()            
 
         map_id=cached_entry.get('map').get('beatmap_id')
 

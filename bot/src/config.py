@@ -31,6 +31,7 @@ TOP5_CARDS_DIR = BOT_DIR / "cache/top5cards"
 OSZ_DIR = BOT_DIR / "cache/osz"
 BG_LIST_DIR = BOT_DIR / "cache/card_beatmap/list"
 BG_CARD_DIR = BOT_DIR / "cache/card_beatmap/card"
+BG_SCORE_COMPARE_DIR = BOT_DIR / "cache/card_score_compare"
 
 IMAGES_JSON = BOT_DIR / "images/images_data.json"
 DELETED_MESSAGES_LOG = BOT_DIR / "logs/deleted_messages.log"
@@ -121,6 +122,7 @@ os.makedirs(TOP5_CARDS_DIR, exist_ok=True)
 os.makedirs(OSZ_DIR, exist_ok=True)
 os.makedirs(BG_CARD_DIR, exist_ok=True)
 os.makedirs(BG_LIST_DIR, exist_ok=True)
+os.makedirs(BG_SCORE_COMPARE_DIR, exist_ok=True)
 
 OSU_USER_REGEX = re.compile(r"osu\.ppy\.sh/users/(\d+)")
 OSU_SCORE_REGEX = re.compile(r"osu\.ppy\.sh/scores/(\d+)")

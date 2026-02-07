@@ -123,7 +123,7 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
             s = temp.load_json(USER_SETTINGS_FILE, default={})
             user_settings = s.get(str(user_id), {}) 
             _new_card = user_settings.get("new_card", True)
-            map_data["lang"] = user_settings.get("lang", "ru") 
+            map_data["lang"] = user_settings.get("lang", "ru")
 
             img_path = await create_beatmap_image(map_data, beatmap_id)             
 

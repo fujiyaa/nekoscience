@@ -31,6 +31,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "new_card": True,
             "display_fails": True,
             "display_more_scores": False,
+            "settings_score_card": False,
         })    
 
     if action == "settings_english":
@@ -72,6 +73,12 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif action == "settings_display_scores_n":
         user_settings["display_more_scores"] = False
         await safe_query_answer(query) 
+
+    elif action == "settings_score_card_y":
+        user_settings["settings_score_card"] = True
+
+    elif action == "settings_score_card_n":
+        user_settings["settings_score_card"] = False
 
     elif action == "settings_new_card":
         user_settings["new_card"] = True

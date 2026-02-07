@@ -1,29 +1,18 @@
 
 
 
-# from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance
-
-# from ....external.osu_http import beatmap
-# from ....external.localapi import get_map_stats_neko_api
-# from .image_utils import create_stat_button_left, create_stat_button_right, draw_text_with_shadow
-# from .utils import format_length, iso_to_DaysMonthYear, stars_to_prop, trim_text
-# from .fetch import fetch_cover
-
-# from ....systems.translations import CARD_BEATMAP as T
-# from config import BOT_DIR, BG_LIST_DIR, BG_CARD_DIR
-
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance, ImageOps
 
-# from ....external.osu_http import beatmap
-# from ....external.localapi import get_map_stats_neko_api
-from image_utils import create_stat_button_left, draw_text_with_shadow, add_rounded_corners, draw_multiline_text_with_shadow, create_stat_button_right
-from utils import iso_to_DaysMonthYear
-from fetch import fetch_cover
+from .image_utils import create_stat_button_left, draw_text_with_shadow, add_rounded_corners, draw_multiline_text_with_shadow, create_stat_button_right
+from .utils import iso_to_DaysMonthYear
+from .fetch import fetch_cover
+from ....utils.calculate import calculate_beatmap_attr
+from ....external.localapi import get_map_stats_neko_api
 
-from translations import CARD_GUESS as T
-BOT_DIR = "E:/fa/nekoscience/bot/src"
+from ....systems.translations import CARD_GUESS as T
+from config import BOT_DIR, BG_SCORE_COMPARE_DIR
 
-BG_SCORE_COMPARE_DIR = f"{BOT_DIR}/cache/card_score_compare"
+
 
 async def create_score_compare_image(scores: list[dict], hide_values = None, language = 'ru'):
     l = language
@@ -36,7 +25,7 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
     draw = ImageDraw.Draw(img)
 
     f1 = "cards/assets/fonts/PlaypenSans"
-    s1, s2, s3, s4, _, s6, _, _ = "ExtraBold", "Bold", "SemiBold", "Medium", "Regular", "Light", "ExtraLight", "Thin"
+    s1, s2, _, _, _, _, _, _ = "ExtraBold", "Bold", "SemiBold", "Medium", "Regular", "Light", "ExtraLight", "Thin"
 
     font_extra_big = ImageFont.truetype(f"{BOT_DIR}/{f1}-{s2}.ttf", 50)
     font_big = ImageFont.truetype(f"{BOT_DIR}/{f1}-{s2}.ttf", 30)
@@ -249,7 +238,7 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
             shadowcolor=(0,0,0),
             align='right',
             max_width=500,            
-            max_lines=1            
+            max_lines=1
         )
         
         draw_multiline_text_with_shadow(
@@ -373,7 +362,7 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
 
         if hide_values is not None:
             if 'pp' in hide_values:
-                pp = '?'                
+                pp = '?'
                 
 
         rows = [
@@ -422,268 +411,7 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
             ) + stat_gap
 
 
-    img_path = f"{BOT_DIR}/cache/compare_{len(scores)}.png"
+    img_path = f"{BOT_DIR}/cache/compare_{len(scores)}{beatmap_id}{uid}.png"
     img.convert("RGB").save(img_path)
 
     return img_path
-
-
-import asyncio
-
-score1_data={
-    "user": {
-        "username": "Fujiya",
-        "total_pp": 7376.3,
-        "country_rank": 2556,
-        "global_rank": 27670,
-        "country_code": "RU",
-        "total_pp_cache": None,
-        "avatar_url": "https://a.ppy.sh/11596989?1752685709.png",
-        "cover_url": "https://assets.ppy.sh/user-profile-covers/11596989/a7db9837872a1828665ab0c92803df78ac5c8d43cc1b67304087320d59b7d439.png"
-    },
-    "map": {
-        "card2x_url": "https://assets.ppy.sh/beatmaps/1143817/covers/card@2x.jpg?1641124856",
-        "beatmap_full": "Zekk - Duplication [Parallelism]",
-        "mapper": "Molang",
-        "beatmap_id": 2395150,
-        "status": "graveyard",
-        "bpm": 202,
-        "url": "https://osu.ppy.sh/beatmaps/2395150",
-        "hit_length": 135,
-        "cs": 4,
-        "ar": 9.6,
-        "od": 9,
-        "hp": 4.4
-    },
-    "osu_api_data": {
-        "rank_legacy": "A",
-        "date": "2026-01-17T17:17:46Z",
-        "id": 6072717533,
-        "best_id": None
-    },
-    "osu_score": {
-        "user_id": 11596989,
-        "score_legacy": 0,
-        "mods": "DT(1.1x)",
-        "accuracy": 0.9318365695792881,
-        "max_combo": 246,
-        "pp": 0,
-        "count_300": 758,
-        "count_100": 29,
-        "count_50": 1,
-        "count_miss": 36,
-        "ignore_hit": 410,
-        "ignore_miss": 125,
-        "small_bonus": 4,
-        "large_tick_hit": 52,
-        "large_tick_miss": 1,
-        "slider_tail_hit": 339,
-        "failed": False,
-        "try_count": 1
-    },
-    "neko_api_calc": {
-        "pp": 93.79572634180653,
-        "no_choke_pp": 162.32436597042934,
-        "perfect_pp": 440.146357333443,
-        "star_rating": 6.695425159091508,
-        "perfect_combo": 1313,
-        "expected_bpm": 201.99979800020202
-    },
-    "lazer_data": {
-        "ranked": False,
-        "total_score": 41772,
-        "rank": "B",
-        "speed_multiplier": 1.1,
-        "DA_values": {}
-    },
-    "state": {
-        "lazer": True,
-        "mode": "osu",
-        "calculated": True,
-        "ready": True,
-        "error": False
-    } 
-}
-score2_data={
-    "user": {
-    "username": "Flick_Head_",
-    "total_pp": 7861.71,
-    "country_rank": 1958,
-    "global_rank": 21641,
-    "country_code": "RU",
-    "total_pp_cache": None,
-    "avatar_url": "https://a.ppy.sh/31854829?1769868256.jpeg",
-    "cover_url": "https://assets.ppy.sh/user-profile-covers/31854829/3d75110328b651bea6a08bf16a3a8acea7c3a914fe9d5f19402930f5b9e16bf8.png"
-    },
-    "map": {
-        "card2x_url": "https://assets.ppy.sh/beatmaps/2288047/covers/card@2x.jpg?1743146640",
-        "beatmap_full": "Nanahoshi Kangengakudan - Rubik's Cube [Love x Hate x Indifference]",
-        "mapper": "Heilia",
-        "beatmap_id": 4881932,
-        "status": "ranked",
-        "bpm": 174,
-        "url": "https://osu.ppy.sh/beatmaps/4881932",
-        "hit_length": 184,
-        "cs": 3.1,
-        "ar": 9.8,
-        "od": 10,
-        "hp": 4
-    },
-    "osu_api_data": {
-        "rank_legacy": "C",
-        "date": "2026-02-07T14:25:34Z",
-        "id": 6182194130,
-        "best_id": None
-    },
-    "osu_score": {
-        "user_id": 31854829,
-        "score_legacy": 0,
-        "score_lazer": 0,
-        "mods": "CL",
-        "accuracy": 0.757035,
-        "max_combo": 96,
-        "pp": 113.123,
-        "count_300": 430,
-        "count_100": 91,
-        "count_50": 36,
-        "count_miss": 59,
-        "ignore_hit": None,
-        "ignore_miss": None,
-        "small_bonus": None,
-        "large_tick_hit": None,
-        "large_tick_miss": None,
-        "slider_tail_hit": None,
-        "failed": True,
-        "try_count": 1
-    },
-    "neko_api_calc": {
-        "pp": None,
-        "no_choke_pp": None,
-        "perfect_pp": None,
-        "star_rating": None,
-        "perfect_combo": None,
-        "expected_bpm": None
-    },
-    "lazer_data": {
-        "ranked": None,
-        "total_score": 0,
-        "rank": "C",
-        "speed_multiplier": None,
-        "DA_values": {}
-    },
-    "osu_statistics_max": {
-        "great": 616,
-        "ignore_hit": 0,
-        "large_tick_hit": 0,
-        "slider_tail_hit": 0
-    },
-    "state": {
-        "lazer": False,
-        "mode": "osu",
-        "calculated": False,
-        "ready": False,
-        "error": False
-    },
-    "meta": {
-        "created_at": "2026-02-07T17:57:26.871099",
-        "calculated_at": None,
-        "version": "03022026"
-    }
-}
-score3_data={
-    "user": {
-    "username": "Flick_Head_",
-    "total_pp": 7861.71,
-    "country_rank": 1958,
-    "global_rank": 21641,
-    "country_code": "RU",
-    "total_pp_cache": None,
-    "avatar_url": "https://a.ppy.sh/31854829?1769868256.jpeg",
-    "cover_url": "https://assets.ppy.sh/user-profile-covers/31854829/3d75110328b651bea6a08bf16a3a8acea7c3a914fe9d5f19402930f5b9e16bf8.png"
-    },
-    "map": {
-        "card2x_url": "https://assets.ppy.sh/beatmaps/2288047/covers/card@2x.jpg?1743146640",
-        "beatmap_full": "Nanahoshi Kangengakudan - Rubik's Cube [Love x Hate x Indifference]",
-        "mapper": "Heilia",
-        "beatmap_id": 4881932,
-        "status": "ranked",
-        "bpm": 174,
-        "url": "https://osu.ppy.sh/beatmaps/4881932",
-        "hit_length": 184,
-        "cs": 3.1,
-        "ar": 9.8,
-        "od": 10,
-        "hp": 4
-    },
-    "osu_api_data": {
-        "rank_legacy": "C",
-        "date": "2026-02-07T14:25:34Z",
-        "id": 6182194130,
-        "best_id": None
-    },
-    "osu_score": {
-        "user_id": 31854829,
-        "score_legacy": 0,
-        "score_lazer": 0,
-        "mods": "CL",
-        "accuracy": 0.757035,
-        "max_combo": 96,
-        "pp": 0,
-        "count_300": 430,
-        "count_100": 91,
-        "count_50": 36,
-        "count_miss": 59,
-        "ignore_hit": None,
-        "ignore_miss": None,
-        "small_bonus": None,
-        "large_tick_hit": None,
-        "large_tick_miss": None,
-        "slider_tail_hit": None,
-        "failed": True,
-        "try_count": 1
-    },
-    "neko_api_calc": {
-        "pp": None,
-        "no_choke_pp": None,
-        "perfect_pp": None,
-        "star_rating": None,
-        "perfect_combo": None,
-        "expected_bpm": None
-    },
-    "lazer_data": {
-        "ranked": None,
-        "total_score": 0,
-        "rank": "C",
-        "speed_multiplier": None,
-        "DA_values": {}
-    },
-    "osu_statistics_max": {
-        "great": 616,
-        "ignore_hit": 0,
-        "large_tick_hit": 0,
-        "slider_tail_hit": 0
-    },
-    "state": {
-        "lazer": False,
-        "mode": "osu",
-        "calculated": False,
-        "ready": False,
-        "error": False
-    },
-    "meta": {
-        "created_at": "2026-02-07T17:57:26.871099",
-        "calculated_at": None,
-        "version": "03022026"
-    }
-}
-
-scores = []
-scores.append(score1_data)
-# scores.append(score2_data)
-# scores.append(score3_data)
-
-print(asyncio.run(create_score_compare_image(
-    scores, 
-    hide_values=('pp'),
-    language='ru'
-)))

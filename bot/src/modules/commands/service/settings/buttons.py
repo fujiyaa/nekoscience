@@ -14,6 +14,7 @@ async def get_settings_kb(user_id, user_data):
     display_fails = user_settings.get("display_fails", True)
     display_fails_average_recent = user_settings.get("display_fails_average_recent", True) 
     display_more_scores = user_settings.get("display_more_scores", False) 
+    settings_score_card = user_settings.get("settings_score_card", False)
     
     if lang_code == "en":
         en_flag = "✅"
@@ -49,6 +50,13 @@ async def get_settings_kb(user_id, user_data):
     else:
         display_more_scores_y = ""
         display_more_scores_n = "❌"
+
+    if settings_score_card:
+        settings_score_card_y = "✅"
+        settings_score_card_n = ""
+    else:
+        settings_score_card_y = ""
+        settings_score_card_n = "❌"
 
     keyboard = [
         # [
@@ -113,6 +121,22 @@ async def get_settings_kb(user_id, user_data):
             InlineKeyboardButton(
                 f"{TR['fails_no'][lang_code]} {display_more_scores_n}",
                 callback_data=f"settings_display_scores_n:{user_id}"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                f"{TR['settings_score_card'][lang_code]}",
+                callback_data=f"settings_ignore:{user_id}"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                f"{TR['settings_score_card_y'][lang_code]} {settings_score_card_y}",
+                callback_data=f"settings_score_card_y:{user_id}"
+            ),           
+            InlineKeyboardButton(
+                f"{TR['settings_score_card_n'][lang_code]} {settings_score_card_n}",
+                callback_data=f"settings_score_card_n:{user_id}"
             )
         ],
         # [

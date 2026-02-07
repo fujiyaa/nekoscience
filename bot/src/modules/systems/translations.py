@@ -94,7 +94,19 @@ TRANSLATIONS = {
     "settings_sc_more_scores": {
         "en": "/sc - Display more scores?",
         "ru": "/sc - Больше одного скора?"
-    }    
+    },
+    "settings_score_card": {
+        "en": "Old score (card)",
+        "ru": "Старый скор (карточка)"
+    },
+    "settings_score_card_y": {
+        "en": "Enabled",
+        "ru": "Вкл"
+    },
+    "settings_score_card_n": {
+        "en": "Disabled",
+        "ru": "Выкл"
+    }, 
 }
 
 CARD_PROFILE = {
@@ -342,5 +354,91 @@ UTILS_ISO_TO_DAYSMONTHSYEAR = {
     "Dec": {
         "en": "Dec",
         "ru": "Декабря"
+    },
+}
+
+CARD_GUESS = {    
+    "CS": {
+        "en": "CS",
+        "ru": "РК"
+    },
+    "HP": {
+        "en": "HP",
+        "ru": "ОЗ"
+    },
+    "OD": {
+        "en": "OD",
+        "ru": "ОС"
+    },
+    "AR": {
+        "en": "AR",
+        "ru": "СП"
+    },
+    "Combo": {
+        "en": "Combo",
+        "ru": "Комбо"
+    },
+    "Accuracy": {
+        "en": "Accuracy",
+        "ru": "Точность"
+    },
+    "Rank": {
+        "en": "Rank",
+        "ru": "Ранк"
+    },
+    "wip": {
+        "en": "WIP",
+        "ru": "В разработке",
+        "color": (255, 255, 102)
+    },
+    "pending": {
+        "en": "Pending",
+        "ru": "На рассмотрении",
+        "color": (255, 255, 102)
+    },
+    "qualified": {
+        "en": "Qualified",
+        "ru": "На рассмотрении",
+        "color": (51, 255, 255)
+    },
+    "ranked": {
+        "en": "Ranked",
+        "ru": "Рейтинговая",
+        "color": (102, 255, 102)
+    },
+    "loved": {
+        "en": "Loved",
+        "ru": "Любимая",
+        "color": (255, 102, 178)
+    },
+    "graveyard": {
+        "en": "Graveyard",
+        "ru": "Заброшенная",
+        "color": (26, 26, 26)
+    },
+    "approved": {
+        "en": "approved",
+        "ru": "Подтвержденная",
+        "color": (102, 255, 102)
+    },
+    "unknown": {
+        "en": "Unknown",
+        "ru": "Неизвестно",
+        "color": (26, 26, 26)
+    }
+}
+
+SCORE_CAPTION = {    
+    "Profile": {
+        "en": "Profile",
+        "ru": "Профиль"
+    },
+    "Beatmap": {
+        "en": "Beatmap",
+        "ru": "Битмап"
+    },
+    "Score": {
+        "en": "Score",
+        "ru": "Скор"
     },
 }
