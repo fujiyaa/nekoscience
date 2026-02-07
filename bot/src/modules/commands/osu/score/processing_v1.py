@@ -9,6 +9,7 @@ from .fetch import fetch_cover
 from ....utils.calculate import calculate_beatmap_attr
 from ....external.localapi import get_map_stats_neko_api
 from ....utils.osu_conversions import apply_mods_to_stats, get_mods_info
+from ....utils.calculate import caclulte_cached_entry
 
 from ....systems.translations import CARD_GUESS as T
 from config import BOT_DIR, BG_SCORE_COMPARE_DIR
@@ -39,22 +40,28 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
     gap = 25
     left_offset = 20
 
-    for i, data in enumerate(scores):
+    for i, cached_entry in enumerate(scores):
         y_base = i * row_height        
 
-        map_data = data["map"]
-        osu_score = data["osu_score"]
-        osu_api_data = data["osu_api_data"]
-        lazer_data = data["lazer_data"]
-        user = data["user"]
-        state = data["state"]
+        map_data = cached_entry["map"]
+        osu_score = cached_entry["osu_score"]
+        osu_api_data = cached_entry["osu_api_data"]
+        lazer_data = cached_entry["lazer_data"]
+        user = cached_entry["user"]
+        state = cached_entry["state"]
+
+        if not cached_entry['state']['calculated']:
+            await caclulte_cached_entry(cached_entry)
+            
+        neko_api_calc = cached_entry['neko_api_calc']
+        state =         cached_entry['state']
 
         lazer = state.get('lazer')
         beatmap_id = map_data["beatmap_id"]
         uid = osu_score["user_id"]
 
         try:
-            values = await calculate_beatmap_attr(data)            
+            values = await calculate_beatmap_attr(cached_entry)            
 
             bpm = (map_data.get("bpm", 0.0))
             length = (map_data.get("hit_length", 0))                    
@@ -70,83 +77,12 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
             values = {'hp': values3, 'cs': values1, 'od': values2, 'ar': values0}
         except:
             values = {'hp': 10.33, 'cs': 10.33, 'od': 10.33, 'ar': 10.33}
-                   
-        #neko API 
-        payload = {
-            "map_path": str(beatmap_id), 
-            
-            "n300": 0,
-            "n100": 0,
-            "n50": 0,
-            "misses": 0,                   
-            
-            "mods": str(""), 
-            "combo": int(0),      
-            "accuracy": float(100),    
-            
-            "lazer": bool(True),          
-            "clock_rate": float(1.0),  
-
-            "custom_ar": values.get("ar"),
-            "custom_cs": values.get("cs"),
-            "custom_hp": values.get("hp"),
-            "custom_od": values.get("od"),
-        }
-
-        try:
-            pp_data = await get_map_stats_neko_api(payload)
-
-            pp = pp_data.get("pp")
-            # _choke = pp_data.get("no_choke_pp")
-            # _max_pp = pp_data.get("perfect_pp")
-
-            stars = pp_data.get("star_rating")
-            # _max_combo = pp_data.get("perfect_combo")
-            # _expected_bpm = pp_data.get("expected_bpm")
-
-            # _n300 = pp_data.get("n300")
-            # _n100 = pp_data.get("n100") 
-            # _n50 = pp_data.get("n50")
-            # _expected_miss = pp_data.get("misses")
-
-            # _aim = pp_data.get("aim")
-            # _acc = pp_data.get("acc")
-            # _speed = pp_data.get("speed")
+                  
         
-        except Exception as e:
-            print(f"neko API failed: {e}")
-
-            pp_data = {
-                'pp': 10.0, 
-                'no_choke_pp': 0.0, 
-                'perfect_pp': 0.0, 
-                'star_rating': 10.10, 
-                'perfect_combo': 0, 
-                'expected_bpm': 0.0, 
-                'n300': 0, 'n100': 0, 'n50': 0, 'misses': 0, 
-                'aim': 0.0, 'acc': 0.0, 'speed': 0.0
-            }
-
-            pp = pp_data.get("pp")
-            # _choke = pp_data.get("no_choke_pp")
-            # _max_pp = pp_data.get("perfect_pp")
-
-            stars = pp_data.get("star_rating")
-            # _max_combo = pp_data.get("perfect_combo")
-            # _expected_bpm = pp_data.get("expected_bpm")
-
-            # _n300 = pp_data.get("n300")
-            # _n100 = pp_data.get("n100") 
-            # _n50 = pp_data.get("n50")
-            # _expected_miss = pp_data.get("misses")
-
-            # _aim = pp_data.get("aim")
-            # _acc = pp_data.get("acc")
-            # _speed = pp_data.get("speed")
-
         #temp pp fix
+        pp = neko_api_calc.get('pp') 
         pp = pp if not isinstance(osu_score.get("pp"), (int, float)) or osu_score.get("pp") <= 0 else osu_score.get("pp")
-    
+        stars = neko_api_calc.get('star_rating', 0)
 
         user_avatar = await fetch_cover(
             user["avatar_url"],
@@ -200,9 +136,6 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
 
         img.paste(asset, (gap*2, y_base + 280 + int(row_height / 6)), asset)
 
-
-
-        
 
         if i != 0:
             draw.line((0, y_base, img_w, y_base), (line_color), 4)
@@ -409,7 +342,7 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
                     font_prop=font_small
                 ) + stat_gap
     
-    for i, data in enumerate(scores):
+    for i, cached_entry in enumerate(scores):
         y_base = i * row_height
 
         if i+1 != len(scores):
