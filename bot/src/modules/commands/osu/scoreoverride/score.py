@@ -22,7 +22,6 @@ from config import COOLDOWN_RS_COMMAND
 
 async def score(update: Update, context: ContextTypes.DEFAULT_TYPE, requested_by_user = True):
     user_id = str(update.effective_user.id)
-    print('async def score')
 
     if requested_by_user:
         can_run = await check_user_cooldown(

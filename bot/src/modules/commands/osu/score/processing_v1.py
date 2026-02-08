@@ -309,20 +309,20 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
         if hide_values is not None:
             if 'pp' in hide_values:
                 pp = '?'
-                
+
 
         rows = [
             [   
                 (f"{lazer_data.get('rank', '?')}", rank_text, (255, 255, 255, 1), alpha1),             
-                (f"{osu_score.get('accuracy', 0)*100:.2f}%", accuracy_text, (201, 201, 201, 1), alpha1),
-                (f"{osu_score.get('max_combo', 0)}x", combo_text, (201, 201, 201, 1), alpha1),
+                (f"{(osu_score.get('accuracy') or 0)*100:.2f}%", accuracy_text, (201, 201, 201, 1), alpha1),
+                (f"{osu_score.get('max_combo') or 0}x", combo_text, (201, 201, 201, 1), alpha1),
                 (pp, pp_text, (201, 201, 201, 1), alpha1),
             ],
             [
-                (osu_score.get("count_300", 0), great_text, (83, 179, 255, 1), alpha2),
-                (osu_score.get("count_100", 0), ok_text, (84, 255, 105, 1), alpha2),
-                (osu_score.get("count_50", 0), meh_text, (245, 255, 84, 1), alpha2),
-                (osu_score.get("count_miss", 0), miss_text, (255, 84, 84, 1), alpha2),
+                (osu_score.get("count_300") or 0, great_text, (83, 179, 255, 1), alpha2),
+                (osu_score.get("count_100") or 0, ok_text, (84, 255, 105, 1), alpha2),
+                (osu_score.get("count_50") or 0, meh_text, (245, 255, 84, 1), alpha2),
+                (osu_score.get("count_miss") or 0, miss_text, (255, 84, 84, 1), alpha2),
             ],            
         ]
 
