@@ -54,6 +54,9 @@ from modules.commands.service.settings.settings import settings_cmd
 from modules.commands.osu.scoreoverride.score import score as scoreoverride
 # from modules.commands.service.forum_db_related.getthreads import dev_getthreads
 
+#osu_games
+from modules.commands.osu_games.higherlower.higherlower import higherlower
+
 # callback
 from modules.commands.osu.rs.callback import callback as rs_handler
 from modules.commands.osu.nochoke.callback import callback as nochoke_handler
@@ -101,6 +104,7 @@ def register_commands(app):
         ("simulate",):                      simulate,
         ("beatmaps", "b"):                  beatmaps,
         ("name", "link", "nick", "osu"):    set_name,
+        ("h",):                             higherlower,
 
         # fun
         ("gn",):                            random_image,
