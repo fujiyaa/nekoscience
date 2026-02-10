@@ -6,6 +6,7 @@ from datetime import datetime
 from ..external import localapi
 from ..external.osu_http import beatmap
 from modules.systems.json_files import save_score_file
+from ..systems import scores_state_db as db
 
 
 
@@ -75,6 +76,9 @@ async def caclulte_cached_entry(cached_entry: dict):
             cached_entry.setdefault("state", {}).update({"error": True})
             
         save_score_file(cached_entry['osu_api_data']['id'], cached_entry)
+
+        # база для миниигр со скорами
+        db.add_score(cached_entry)
         
     except Exception as e:
         print(f"neko API failed: {e}")

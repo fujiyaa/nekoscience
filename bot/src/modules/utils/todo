@@ -1,1 +1,4 @@
 build_beatmaps_text в text_format, там чтото слишком много всего
+
+!!!! calculate - нужно переписать api запрос в стандартые cached entry в best scores, 
+чтобы использовать neko api через utils.calculate а не копипастить в разные файлы
