@@ -28,7 +28,7 @@ def init_db():
                 sr REAL,
                 miss_count INTEGER,
                 combo_count INTEGER,
-                pass_flag INTEGER,
+                fail_flag INTEGER,
                 ranked_flag INTEGER,
                 schema_version INTEGER,
                 user_id INTEGER,
@@ -38,22 +38,22 @@ def init_db():
 
             cur.execute("""
             CREATE INDEX IF NOT EXISTS idx_pp
-            ON scores_state(schema_version, mode, ranked_flag, pass_flag, pp DESC);
+            ON scores_state(schema_version, mode, ranked_flag, fail_flag, pp DESC);
             """)
 
             cur.execute("""
             CREATE INDEX IF NOT EXISTS idx_sr
-            ON scores_state(schema_version, mode, ranked_flag, pass_flag, sr DESC);
+            ON scores_state(schema_version, mode, ranked_flag, fail_flag, sr DESC);
             """)
 
             cur.execute("""
             CREATE INDEX IF NOT EXISTS idx_combo
-            ON scores_state(schema_version, mode, ranked_flag, pass_flag, combo_count DESC);
+            ON scores_state(schema_version, mode, ranked_flag, fail_flag, combo_count DESC);
             """)
 
             cur.execute("""
             CREATE INDEX IF NOT EXISTS idx_miss
-            ON scores_state(schema_version, mode, ranked_flag, pass_flag, miss_count ASC);
+            ON scores_state(schema_version, mode, ranked_flag, fail_flag, miss_count ASC);
             """)
 
     except Exception as e:
@@ -81,7 +81,7 @@ def add_score(cached_entry: dict) -> bool:
             cur.execute("""
             INSERT INTO scores_state (
                 id, mode, pp, sr, miss_count, combo_count,
-                pass_flag, ranked_flag, schema_version, user_id
+                fail_flag, ranked_flag, schema_version, user_id
             )
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(schema_version, id, user_id)
@@ -91,7 +91,7 @@ def add_score(cached_entry: dict) -> bool:
                 sr=excluded.sr,
                 miss_count=excluded.miss_count,
                 combo_count=excluded.combo_count,
-                pass_flag=excluded.pass_flag,
+                fail_flag=excluded.fail_flag,
                 ranked_flag=excluded.ranked_flag
             """, (
                 id,
@@ -116,7 +116,7 @@ def find_scores(
     version: int,
     mode: str,
     ranked: int,
-    passed: int,
+    failed: int,
     sort_by: str = "pp",
     descending: bool = True,
     limit: int = 50,
@@ -135,7 +135,7 @@ def find_scores(
         schema_version = ?
         AND mode = ?
         AND ranked_flag = ?
-        AND pass_flag = ?
+        AND fail_flag = ?
     ORDER BY {column} {order}
     LIMIT ?
     """
@@ -144,22 +144,18 @@ def find_scores(
         conn.row_factory = sqlite3.Row
         cur = conn.execute(
             sql,
-            (version, mode, ranked, passed, limit),
+            (version, mode, ranked, failed, limit),
         )
         rows = cur.fetchall()
 
     return [dict(r) for r in rows]
-
-import sqlite3
-from typing import List, Dict, Any
-import random
 
 def find_random_scores(
     *,
     version: int,
     mode: str,
     ranked: int,
-    passed: int,
+    failed: int,
     ignore_ids: List[int] = None,
     sort_by: str = "pp",
     max_diff: float = None,
@@ -167,10 +163,8 @@ def find_random_scores(
     sample_size: int = 1000
 ) -> List[Dict[str, Any]]:
     """
-    Быстрый поиск случайных скорoв с фильтром по версии, ранкед/pass,
-    игнорируя ignore_ids, ограничивая max_diff по sort_by.
-
-    sample_size - сколько строк выбрать из БД перед случайной выборкой.
+    Поиск случайных скорoв с фильтром по версии, ранкед/fail,
+    игнорируя ignore_ids, ограничивая max_diff по sort_by
     """
     if sort_by not in ALLOWED_SORTS:
         raise ValueError(f"Unsupported sort field: {sort_by}")
@@ -182,9 +176,9 @@ def find_random_scores(
         "schema_version = ?",
         "mode = ?",
         "ranked_flag = ?",
-        "pass_flag = ?"
+        "fail_flag = ?"
     ]
-    params = [version, mode, ranked, passed]
+    params = [version, mode, ranked, failed]
 
     if ignore_ids:
         placeholders = ",".join("?" for _ in ignore_ids)

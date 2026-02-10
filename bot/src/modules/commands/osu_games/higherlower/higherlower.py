@@ -58,8 +58,8 @@ async def higherlower(update: Update, context: ContextTypes.DEFAULT_TYPE, reques
         random_scores = db.find_random_scores(
             version = 3022026,
             mode = 'osu',
-            ranked = False,
-            passed = True,
+            ranked = False, # пока не существует
+            failed = False,
             ignore_ids = None,
             sort_by = "pp",
             max_diff = 50,
@@ -83,7 +83,7 @@ async def higherlower(update: Update, context: ContextTypes.DEFAULT_TYPE, reques
             hide_values='pp'
         )
 
-        captions = '[debug]\n'
+        captions = '[тестовая версия]\n'
         for cached_entry in cached_entries:
 
             osu_api_data = cached_entry.get('osu_api_data', {})
