@@ -23,7 +23,6 @@ from ....systems.translations import SCORE_CAPTION as T
 # не асинхронная потому что вызывается только из асинхронной обертки start_osu_link_handler
 async def score(update: Update, context: ContextTypes.DEFAULT_TYPE, requested_by_user = True):
     user_id = str(update.effective_user.id)
-    print('async def score')
 
     if requested_by_user:
         can_run = await check_user_cooldown(

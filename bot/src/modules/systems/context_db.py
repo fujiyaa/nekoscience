@@ -11,10 +11,6 @@ DB_PATH = "message_cache.db"
 
 
 def init_db():
-    """
-    Инициализация таблицы и индексов.
-    Таблица хранит все сообщения с TTL и metadata в JSON.
-    """
     with sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
         cur.execute("""
@@ -30,13 +26,11 @@ def init_db():
         )
         """)
 
-        # индекс по чату и топику для быстрого поиска последних сообщений
         cur.execute("""
         CREATE INDEX IF NOT EXISTS idx_cache_chat_topic_time
         ON message_cache(chat_id, topic_id, timestamp);
         """)
 
-        # индекс для обычных чатов без топика
         cur.execute("""
         CREATE INDEX IF NOT EXISTS idx_cache_chat_time_no_topic
         ON message_cache(chat_id, timestamp);
@@ -54,9 +48,6 @@ def cache_message(
     ttl: int = 30 * 24 * 3600,
     timestamp: Optional[int] = None
 ):
-    """
-    Сохраняет сообщение в кеш с TTL.
-    """
     if timestamp is None:
         timestamp = int(time.time())
 
@@ -84,9 +75,6 @@ def find_recent(
     chat_id: int,
     topic_id: Optional[int] = None
 ) -> Optional[Dict[str, Any]]:
-    """
-    Ищет последнее сообщение в этом чате/топике, игнорируя TTL.
-    """
     with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
@@ -122,9 +110,6 @@ def find_recent(
 
 
 def find_by_message_id(message_id: int) -> Optional[Dict[str, Any]]:
-    """
-    Ищет сообщение по message_id, игнорируя TTL.
-    """
     with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
@@ -149,9 +134,6 @@ def find_by_message_id(message_id: int) -> Optional[Dict[str, Any]]:
 
 
 def cleanup_expired():
-    """
-    Удаляет все сообщения, срок действия которых истёк.
-    """
     now = int(time.time())
     with sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
