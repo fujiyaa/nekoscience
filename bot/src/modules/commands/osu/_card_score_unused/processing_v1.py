@@ -134,7 +134,7 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
         asset = Image.open(map_cover).convert("RGBA")
         asset = ImageOps.fit(asset, target_size, Image.LANCZOS)
         asset = asset.filter(ImageFilter.GaussianBlur(bg_blur_amount))
-        asset = ImageEnhance.Brightness(asset).enhance(darkness_amount)
+        asset = ImageEnhance.Brightness(asset).enhance(darkness_amount - 0.2)
         asset = add_rounded_corners(asset, corner_radius)
 
         img.paste(asset, (0 + gap*2, y_base + 280), asset)
@@ -143,7 +143,7 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
         target_size = (int(img_w*0.25), int(row_height / 6))
         asset = Image.open(map_cover).convert("RGBA")
         asset = ImageOps.fit(asset, target_size, Image.LANCZOS)
-        asset = ImageEnhance.Brightness(asset).enhance(darkness_amount)
+        # asset = ImageEnhance.Brightness(asset).enhance(darkness_amount)
         asset = add_rounded_corners(asset, corner_radius, skip_corners=["tl", "br"])
 
         img.paste(asset, (gap*2, y_base + 280 + int(row_height / 6)), asset)
