@@ -366,7 +366,7 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
                     fisrst_pad1, second_pad1,
                 ),             
                 (
-                    f"{(osu_score.get('accuracy') or 0)*100:.2f}%",
+                    f"{((osu_score.get('accuracy') or 0)*100):.2f}".rstrip("0").rstrip(".") + "%",
                     accuracy_text, 
                     default_btn_color, 
                     alpha1, 

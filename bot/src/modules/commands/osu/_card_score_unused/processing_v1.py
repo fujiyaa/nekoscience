@@ -375,7 +375,7 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
                     fisrst_pad1, second_pad1,
                 ),             
                 (
-                    f"{(osu_score.get('accuracy') or 0)*100:.2f}%",
+                    f"{((osu_score.get('accuracy') or 0)*100):.2f}".rstrip("0").rstrip(".") + "%",
                     accuracy_text, 
                     default_btn_color, 
                     alpha1, 
@@ -593,7 +593,7 @@ score2_data={
     "score_legacy": 0,
     "score_lazer": 0,
     "mods": "DT+RX",
-    "accuracy": 0.974265,
+    "accuracy": 0.970005,
     "max_combo": 508,
     "pp": 0,
     "count_300": 660,
@@ -733,7 +733,7 @@ score3_data={
 scores = []
 # scores.append(score1_data)
 scores.append(score2_data)
-scores.append(score3_data)
+# scores.append(score3_data)
 
 print(asyncio.run(create_score_compare_image(
     scores, 
