@@ -31,7 +31,8 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
     img_w = 1000
     img_h = row_height * len(scores)
     corner_radius = 30
-    default_btn_color = (180, 180, 180, 1)
+    default_key = 50
+    default_btn_color = (default_key, default_key, default_key, 1)
 
     img = Image.new("RGBA", (img_w, img_h), (40, 40, 40, 255))
     draw = ImageDraw.Draw(img)
@@ -49,7 +50,6 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
     line_color = (80, 80, 80)
 
     gap = 25
-    left_offset = 20
 
     for i, cached_entry in enumerate(scores):
         y_base = i * row_height        
@@ -343,10 +343,10 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
             # return color if (osu_score.get(key) or 0) > 0 else inactive
             return color if (osu_score.get(key) or 0) > 0 else color
 
-        count_300_color  = pick("count_300",  (83, 179, 255, 1))
-        count_100_color  = pick("count_100",  (84, 255, 105, 1))
-        count_50_color   = pick("count_50",   (245, 255, 84, 1))
-        count_miss_color = pick("count_miss", (255, 84, 84, 1))
+        count_300_color  = pick("count_300",  (55, 120, 255, 1))
+        count_100_color  = pick("count_100",  (50, 255, 50, 1))
+        count_50_color   = pick("count_50",   (255, 255, 50, 1))
+        count_miss_color = pick("count_miss", (255, 50, 50, 1))
 
         pp = f"{pp:.2f}"
 
@@ -361,7 +361,7 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
         base_y += 20
         row_step = 90
         stat_gap = 8
-        alpha1, alpha2 = 200, 170
+        alpha1, alpha2 = 100, 100
 
         rows = [
             [   
@@ -456,7 +456,7 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
                     overlay_color=color,
                     font_text=font1,
                     font_prop=font_small,
-                    btn_text_shadow_offset=1,
+                    btn_text_shadow_offset=2,
                     btn_h=btn_h,                    
                     letter_fisrst_pad_y=fisrst_pad,
                     letter_second_pad_y=second_pad,
@@ -731,7 +731,7 @@ score3_data={
 }
 
 scores = []
-scores.append(score1_data)
+# scores.append(score1_data)
 scores.append(score2_data)
 scores.append(score3_data)
 
