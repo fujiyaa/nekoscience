@@ -95,7 +95,9 @@ def create_stat_button_left(img, draw, x_left, y_top, text, prop,
                             overlay_color=(20, 20, 20),
                             btn_text_color=(255,255,255,255),
                             btn_text_shadow_color=(80,80,80,255),
-                            btn_text_shadow_offset=2):
+                            btn_text_shadow_offset=2,
+                            letter_fisrst_pad_y=0,
+                            letter_second_pad_y=46):
     # Считаем размер текста
     bbox1 = draw.textbbox((0,0), text, font=font_text)
     bbox2 = draw.textbbox((0,0), prop, font=font_prop)
@@ -117,10 +119,10 @@ def create_stat_button_left(img, draw, x_left, y_top, text, prop,
     img.paste(btn, (btn_x, btn_y_pos), btn_mask)
 
     text1_x = btn_x + (btn_w - bbox1[2]) / 2
-    text1_y = btn_y_pos + 0
+    text1_y = btn_y_pos + letter_fisrst_pad_y
 
     text2_x = btn_x + (btn_w - bbox2[2]) / 2
-    text2_y = btn_y_pos + 46
+    text2_y = btn_y_pos + letter_second_pad_y
 
     draw_text_with_shadow(draw, (text1_x, text1_y), text, font_text,
                           btn_text_color, btn_text_shadow_color, btn_text_shadow_offset)

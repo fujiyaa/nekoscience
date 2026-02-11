@@ -7,7 +7,7 @@ import aiohttp
 from datetime import datetime, timedelta
 from PIL import Image, ImageOps
 
-from image_utils import add_rounded_corners
+from .image_utils import add_rounded_corners
 
 
 
