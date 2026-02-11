@@ -362,6 +362,9 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
         row_step = 90
         stat_gap = 8
         alpha1, alpha2 = 100, 100
+        
+        shadow_color1 = (80, 80, 80, 255)
+        shadow_color2 = (200, 200, 200, 255)
 
         rows = [
             [   
@@ -373,6 +376,7 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
                     font_medium_big,
                     btn_h1,
                     fisrst_pad1, second_pad1,
+                    shadow_color1,
                 ),             
                 (
                     f"{((osu_score.get('accuracy') or 0)*100):.2f}".rstrip("0").rstrip(".") + "%",
@@ -382,6 +386,7 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
                     font_medium_big,
                     btn_h1,
                     fisrst_pad1, second_pad1,
+                    shadow_color1,
                 ),
                 (
                     f"{osu_score.get('max_combo') or 0}x", 
@@ -391,6 +396,7 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
                     font_medium_big,
                     btn_h1,
                     fisrst_pad1, second_pad1,
+                    shadow_color1,
                 ),
                 (
                     pp, 
@@ -400,6 +406,7 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
                     font_medium_big,
                     btn_h1,
                     fisrst_pad1, second_pad1,
+                    shadow_color1,
                 ),
             ],
             [
@@ -411,6 +418,7 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
                     font_big,
                     btn_h2,
                     fisrst_pad2, second_pad2,
+                    shadow_color2,
                 ),
                 (
                     count_100, 
@@ -420,6 +428,7 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
                     font_big,
                     btn_h2,
                     fisrst_pad2, second_pad2,
+                    shadow_color2,
                 ),
                 (
                     count_50, 
@@ -429,6 +438,7 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
                     font_big,
                     btn_h2,
                     fisrst_pad2, second_pad2,
+                    shadow_color2,
                 ),
                 (
                     miss_count, 
@@ -438,6 +448,7 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
                     font_big,
                     btn_h2,
                     fisrst_pad2, second_pad2,
+                    shadow_color2,
                 ),
             ],            
         ]
@@ -446,7 +457,7 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
             y = base_y + row_index * row_step
             x = x_left
 
-            for value, label, color, alpha, font1, btn_h, fisrst_pad, second_pad in row:
+            for value, label, color, alpha, font1, btn_h, fisrst_pad, second_pad, shadow_color in row:
                 x = create_stat_button_left(
                     img, draw, x, y,
                     text=str(value),
@@ -456,7 +467,8 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
                     overlay_color=color,
                     font_text=font1,
                     font_prop=font_small,
-                    btn_text_shadow_offset=2,
+                    btn_text_shadow_color=shadow_color,
+                    btn_text_shadow_offset=1,
                     btn_h=btn_h,                    
                     letter_fisrst_pad_y=fisrst_pad,
                     letter_second_pad_y=second_pad,
