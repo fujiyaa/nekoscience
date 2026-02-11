@@ -30,15 +30,17 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
     row_height = 500
     img_w = 1000
     img_h = row_height * len(scores)
-    corner_radius = 40
+    corner_radius = 30
+    default_btn_color = (180, 180, 180, 1)
 
     img = Image.new("RGBA", (img_w, img_h), (40, 40, 40, 255))
     draw = ImageDraw.Draw(img)
 
     f1 = "cards/assets/fonts/PlaypenSans"
-    s1, s2, s3, s4, _, s6, _, _ = "ExtraBold", "Bold", "SemiBold", "Medium", "Regular", "Light", "ExtraLight", "Thin"
+    s1, s2, _, _, _, _, _, _ = "ExtraBold", "Bold", "SemiBold", "Medium", "Regular", "Light", "ExtraLight", "Thin"
 
     font_extra_big = ImageFont.truetype(f"{BOT_DIR}/{f1}-{s2}.ttf", 50)
+    font_medium_big = ImageFont.truetype(f"{BOT_DIR}/{f1}-{s2}.ttf", 42)
     font_big = ImageFont.truetype(f"{BOT_DIR}/{f1}-{s2}.ttf", 30)
     font_small = ImageFont.truetype(f"{BOT_DIR}/{f1}-{s1}.ttf", 20)
 
@@ -49,102 +51,50 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
     gap = 25
     left_offset = 20
 
-    for i, data in enumerate(scores):
+    for i, cached_entry in enumerate(scores):
         y_base = i * row_height        
 
-        map_data = data["map"]
-        osu_score = data["osu_score"]
-        osu_api_data = data["osu_api_data"]
-        lazer_data = data["lazer_data"]
-        user = data["user"]
-        state = data["state"]
+        map_data = cached_entry["map"]
+        osu_score = cached_entry["osu_score"]
+        osu_api_data = cached_entry["osu_api_data"]
+        lazer_data = cached_entry["lazer_data"]
+        user = cached_entry["user"]
+        state = cached_entry["state"]
+
+        if not cached_entry['state']['calculated']:
+            await caclulte_cached_entry(cached_entry)
+            
+        neko_api_calc = cached_entry['neko_api_calc']
+        state =         cached_entry['state']
 
         lazer = state.get('lazer')
         beatmap_id = map_data["beatmap_id"]
         uid = osu_score["user_id"]
 
         try:
-            values = await calculate_beatmap_attr(data)
-            values = {'hp': values[3], 'cs': values[1], 'od': values[2], 'ar': values[0]}
+            values = await calculate_beatmap_attr(cached_entry)            
+
+            bpm = (map_data.get("bpm", 0.0))
+            length = (map_data.get("hit_length", 0))                    
+            mods_str = osu_score.get("mods", "")
+            speed_multiplier, hr_active, ez_active = get_mods_info(mods_str)                    
+            length = int(round(float(length) / speed_multiplier))
+            
+            bpm, values0, values2, values1, values3 = apply_mods_to_stats(
+                bpm, values[0], values[2], values[1], values[3],
+                speed_multiplier=speed_multiplier, hr=hr_active, ez=ez_active
+            )
+
+            values = {'hp': values3, 'cs': values1, 'od': values2, 'ar': values0}
         except:
             values = {'hp': 10.33, 'cs': 10.33, 'od': 10.33, 'ar': 10.33}
+            bpm = 333.001
+                              
         
-        #neko API 
-        payload = {
-            "map_path": str(beatmap_id), 
-            
-            "n300": 0,
-            "n100": 0,
-            "n50": 0,
-            "misses": 0,                   
-            
-            "mods": str(""), 
-            "combo": int(0),      
-            "accuracy": float(100),    
-            
-            "lazer": bool(True),          
-            "clock_rate": float(1.0),  
-
-            "custom_ar": values.get("ar"),
-            "custom_cs": values.get("cs"),
-            "custom_hp": values.get("hp"),
-            "custom_od": values.get("od"),
-        }
-
-        try:
-            pp_data = await get_map_stats_neko_api(payload)
-
-            pp = pp_data.get("pp")
-            # _choke = pp_data.get("no_choke_pp")
-            # _max_pp = pp_data.get("perfect_pp")
-
-            stars = pp_data.get("star_rating")
-            # _max_combo = pp_data.get("perfect_combo")
-            # _expected_bpm = pp_data.get("expected_bpm")
-
-            # _n300 = pp_data.get("n300")
-            # _n100 = pp_data.get("n100") 
-            # _n50 = pp_data.get("n50")
-            # _expected_miss = pp_data.get("misses")
-
-            # _aim = pp_data.get("aim")
-            # _acc = pp_data.get("acc")
-            # _speed = pp_data.get("speed")
-        
-        except Exception as e:
-            print(f"neko API failed: {e}")
-
-            pp_data = {
-                'pp': 10.0, 
-                'no_choke_pp': 0.0, 
-                'perfect_pp': 0.0, 
-                'star_rating': 10.10, 
-                'perfect_combo': 0, 
-                'expected_bpm': 0.0, 
-                'n300': 0, 'n100': 0, 'n50': 0, 'misses': 0, 
-                'aim': 0.0, 'acc': 0.0, 'speed': 0.0
-            }
-
-            pp = pp_data.get("pp")
-            # _choke = pp_data.get("no_choke_pp")
-            # _max_pp = pp_data.get("perfect_pp")
-
-            stars = pp_data.get("star_rating")
-            # _max_combo = pp_data.get("perfect_combo")
-            # _expected_bpm = pp_data.get("expected_bpm")
-
-            # _n300 = pp_data.get("n300")
-            # _n100 = pp_data.get("n100") 
-            # _n50 = pp_data.get("n50")
-            # _expected_miss = pp_data.get("misses")
-
-            # _aim = pp_data.get("aim")
-            # _acc = pp_data.get("acc")
-            # _speed = pp_data.get("speed")
-
         #temp pp fix
+        pp = neko_api_calc.get('pp') 
         pp = pp if not isinstance(osu_score.get("pp"), (int, float)) or osu_score.get("pp") <= 0 else osu_score.get("pp")
-    
+        stars = neko_api_calc.get('star_rating', 0)
 
         user_avatar = await fetch_cover(
             user["avatar_url"],
@@ -171,7 +121,7 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
         )
 
 
-        target_size = (img_w, row_height)
+        target_size = (img_w, row_height + 0)
         asset = Image.open(user_cover).convert("RGBA")
         asset = ImageOps.fit(asset, target_size, Image.LANCZOS)
         asset = asset.filter(ImageFilter.GaussianBlur(bg_blur_amount))
@@ -199,21 +149,14 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
         img.paste(asset, (gap*2, y_base + 280 + int(row_height / 6)), asset)
 
 
-
-        
-
         if i != 0:
             draw.line((0, y_base, img_w, y_base), (line_color), 4)
 
         resize = int(row_height * 0.55 - gap * 2)
         ava = Image.open(user_avatar).convert("RGBA").resize((resize, resize))
-        img.paste(ava, (gap + left_offset, y_base + gap), ava)
+        img.paste(ava, (gap*2, y_base + gap), ava)
 
-        x_left = 300
-        base_y = y_base + 90
-        row_step = 90
-        stat_gap = 10
-        alpha1, alpha2 = 200, 100
+        x_left = 300        
 
         lazer = state.get('lazer')
         username_text = user.get('username', f'Unnamed player {i+1}')        
@@ -228,11 +171,11 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
         draw_text_with_shadow(draw, 
             (x_left, y_base + 26), 
             username_text, 
-            font_big,
+            font_medium_big,
             (255, 255, 255), 
             (10, 10, 10), 2)        
         
-        bbox1 = draw.textbbox((0, 0), username_text, font=font_big)        
+        bbox1 = draw.textbbox((0, 0), username_text, font=font_medium_big)        
         draw_text_with_shadow(draw, 
             (x_left + 16 + (bbox1[2] - bbox1[0]), y_base + 36), 
             timestamp_text, 
@@ -249,7 +192,7 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
             shadowcolor=(0,0,0),
             align='right',
             max_width=500,            
-            max_lines=1            
+            max_lines=1
         )
         
         draw_multiline_text_with_shadow(
@@ -259,6 +202,7 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
             font=font_small,
             fill=(255,255,255),
             shadowcolor=(0,0,0),
+            shadow_offset=0,
             max_width=img_w - int(mods_width) - gap*6,
             max_lines=2,
             font_big=font_big
@@ -266,14 +210,11 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
 
         x_right = img_w + gap - gap *3 + 10
         y_top = y_base + 344
-        gap_map = -32
+        gap_map = -46
 
         cs, hp = f"{T.get('CS')[l]}", f"{T.get('HP')[l]}"
         od, ar = f"{T.get('OD')[l]}", f"{T.get('AR')[l]}"
-
-        # stars_text = f"{T.get('stars')[l]}"
-        # drain_text = f"{T.get('drain')[l]}"
-        # bpm_text = f"{T.get('bpm')[l]}"
+        bpm_prop =  f"{T.get('BPM')[l]}"
         
         map_args = {
             "btn_h":70, 
@@ -283,8 +224,8 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
             "overlay_transparency":0,
             "font_text":font_big, 
             "font_prop":font_small,
+            "btn_text_shadow_offset":0
         }
-
         x_left_map = create_stat_button_right(
             img, draw, x_right, y_top,
             btn_h=60, btn_min_w=0,
@@ -311,9 +252,15 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
             **map_args
         )
         
-        _x_left5_map = create_stat_button_right(
+        x_left5_map = create_stat_button_right(
             img, draw, x_left4_map - gap_map, y_top,                                
             text=str(values.get("cs")), prop=cs,
+            **map_args
+        )
+
+        _x_left6_map = create_stat_button_right(
+            img, draw, x_left5_map - gap_map, y_top,                                
+            text=f"{bpm:.1f}", prop=bpm_prop,
             **map_args
         )
 
@@ -325,6 +272,8 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
             status_text = f"{T.get('unknown')[l]}"    
             status_color = f"{T.get('unknown')['color']}"
         status_color = tuple(map(int, status_color.strip("()").split(",")))
+
+        base_y = y_base + 90
 
         overlay_x, overlay_y = img_w - gap, base_y + 380
         asset_transparency = 185
@@ -363,31 +312,133 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
         rank_text = f"{T.get('Rank')[l]}"
         accuracy_text = f"{T.get('Accuracy')[l]}"
         combo_text = f"{T.get('Combo')[l]}"
+
+        miss = str(osu_score.get("count_miss") or 0)
+        sb = str(osu_score.get("count_miss") or 0)
+        sb_text = ''
+        
+        # if sb != 0:
+        #     sb_text = f" +{sb}sb"    
+
+        miss_count = f"{miss}{sb_text}"
+
         pp_text = 'PP'
         great_text = '300'
         ok_text = '100'
         meh_text = '50'
         miss_text = 'X'
+        great_text = ''
+        ok_text = ''
+        meh_text = ''
+        miss_text = ''
+
+        count_miss = osu_score.get("count_miss") or 0
+        count_300 = osu_score.get("count_300") or 0
+        count_100 = osu_score.get("count_100") or 0
+        count_50 = osu_score.get("count_50") or 0
+
+        inactive = default_btn_color
+
+        def pick(key, color):
+            # return color if (osu_score.get(key) or 0) > 0 else inactive
+            return color if (osu_score.get(key) or 0) > 0 else color
+
+        count_300_color  = pick("count_300",  (83, 179, 255, 1))
+        count_100_color  = pick("count_100",  (84, 255, 105, 1))
+        count_50_color   = pick("count_50",   (245, 255, 84, 1))
+        count_miss_color = pick("count_miss", (255, 84, 84, 1))
 
         pp = f"{pp:.2f}"
 
         if hide_values is not None:
             if 'pp' in hide_values:
-                pp = '?'                
-                
+                pp = '?'
+
+        btn_h1, btn_h2 = 50, 46
+        fisrst_pad1, second_pad1 = -10, 50
+        fisrst_pad2, second_pad2 = 0, 46
+        
+        base_y += 20
+        row_step = 90
+        stat_gap = 8
+        alpha1, alpha2 = 200, 170
 
         rows = [
             [   
-                (f"{lazer_data.get('rank', '?')}", rank_text, (255, 255, 255, 1), alpha1),             
-                (f"{osu_score.get('accuracy', 0)*100:.2f}%", accuracy_text, (201, 201, 201, 1), alpha1),
-                (f"{osu_score.get('max_combo', 0)}x", combo_text, (201, 201, 201, 1), alpha1),
-                (pp, pp_text, (201, 201, 201, 1), alpha1),
+                (
+                    f"{lazer_data.get('rank', '?')}", 
+                    rank_text, 
+                    default_btn_color, 
+                    alpha1, 
+                    font_medium_big,
+                    btn_h1,
+                    fisrst_pad1, second_pad1,
+                ),             
+                (
+                    f"{(osu_score.get('accuracy') or 0)*100:.2f}%",
+                    accuracy_text, 
+                    default_btn_color, 
+                    alpha1, 
+                    font_medium_big,
+                    btn_h1,
+                    fisrst_pad1, second_pad1,
+                ),
+                (
+                    f"{osu_score.get('max_combo') or 0}x", 
+                    combo_text, 
+                    default_btn_color, 
+                    alpha1, 
+                    font_medium_big,
+                    btn_h1,
+                    fisrst_pad1, second_pad1,
+                ),
+                (
+                    pp, 
+                    pp_text, 
+                    default_btn_color, 
+                    alpha1, 
+                    font_medium_big,
+                    btn_h1,
+                    fisrst_pad1, second_pad1,
+                ),
             ],
             [
-                (osu_score.get("count_300", 0), great_text, (83, 179, 255, 1), alpha2),
-                (osu_score.get("count_100", 0), ok_text, (84, 255, 105, 1), alpha2),
-                (osu_score.get("count_50", 0), meh_text, (245, 255, 84, 1), alpha2),
-                (osu_score.get("count_miss", 0), miss_text, (255, 84, 84, 1), alpha2),
+                (
+                    count_300, 
+                    great_text, 
+                    count_300_color, 
+                    alpha2, 
+                    font_big,
+                    btn_h2,
+                    fisrst_pad2, second_pad2,
+                ),
+                (
+                    count_100, 
+                    ok_text, 
+                    count_100_color, 
+                    alpha2, 
+                    font_big,
+                    btn_h2,
+                    fisrst_pad2, second_pad2,
+                ),
+                (
+                    count_50, 
+                    meh_text, 
+                    count_50_color, 
+                    alpha2, 
+                    font_big,
+                    btn_h2,
+                    fisrst_pad2, second_pad2,
+                ),
+                (
+                    miss_count, 
+                    miss_text, 
+                    count_miss_color, 
+                    alpha2, 
+                    font_big,
+                    btn_h2,
+                    fisrst_pad2, second_pad2,
+                ),
             ],            
         ]
 
@@ -395,19 +446,23 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
             y = base_y + row_index * row_step
             x = x_left
 
-            for value, label, color, alpha in row:
+            for value, label, color, alpha, font1, btn_h, fisrst_pad, second_pad in row:
                 x = create_stat_button_left(
                     img, draw, x, y,
                     text=str(value),
                     prop=label,
-                    letter_pad=32,
+                    letter_pad=38,
                     overlay_transparency=alpha,
                     overlay_color=color,
-                    font_text=font_big,
-                    font_prop=font_small
+                    font_text=font1,
+                    font_prop=font_small,
+                    btn_text_shadow_offset=1,
+                    btn_h=btn_h,                    
+                    letter_fisrst_pad_y=fisrst_pad,
+                    letter_second_pad_y=second_pad,
                 ) + stat_gap
     
-    for i, data in enumerate(scores):
+    for i, cached_entry in enumerate(scores):
         y_base = i * row_height
 
         if i+1 != len(scores):
@@ -418,16 +473,14 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
                 overlay_transparency=255,
                 overlay_color=line_color,
                 font_text=font_big,
-                font_prop=font_small
+                font_prop=font_small,
             ) + stat_gap
 
 
-    img_path = f"{BOT_DIR}/cache/compare_{len(scores)}.png"
+    img_path = f"{BOT_DIR}/cache/compare_1.png"
     img.convert("RGB").save(img_path)
 
     return img_path
-
-
 import asyncio
 
 score1_data={
@@ -505,185 +558,185 @@ score1_data={
     } 
 }
 score2_data={
-    "user": {
-    "username": "Flick_Head_",
-    "total_pp": 7861.71,
-    "country_rank": 1958,
-    "global_rank": 21641,
+  "user": {
+    "username": "Fujiya",
+    "total_pp": 7376.63,
+    "country_rank": 2611,
+    "global_rank": 28075,
     "country_code": "RU",
     "total_pp_cache": None,
-    "avatar_url": "https://a.ppy.sh/31854829?1769868256.jpeg",
-    "cover_url": "https://assets.ppy.sh/user-profile-covers/31854829/3d75110328b651bea6a08bf16a3a8acea7c3a914fe9d5f19402930f5b9e16bf8.png"
-    },
-    "map": {
-        "card2x_url": "https://assets.ppy.sh/beatmaps/2288047/covers/card@2x.jpg?1743146640",
-        "beatmap_full": "Nanahoshi Kangengakudan - Rubik's Cube [Love x Hate x Indifference]",
-        "mapper": "Heilia",
-        "beatmap_id": 4881932,
-        "status": "ranked",
-        "bpm": 174,
-        "url": "https://osu.ppy.sh/beatmaps/4881932",
-        "hit_length": 184,
-        "cs": 3.1,
-        "ar": 9.8,
-        "od": 10,
-        "hp": 4
-    },
-    "osu_api_data": {
-        "rank_legacy": "C",
-        "date": "2026-02-07T14:25:34Z",
-        "id": 6182194130,
-        "best_id": None
-    },
-    "osu_score": {
-        "user_id": 31854829,
-        "score_legacy": 0,
-        "score_lazer": 0,
-        "mods": "CL",
-        "accuracy": 0.757035,
-        "max_combo": 96,
-        "pp": 113.123,
-        "count_300": 430,
-        "count_100": 91,
-        "count_50": 36,
-        "count_miss": 59,
-        "ignore_hit": None,
-        "ignore_miss": None,
-        "small_bonus": None,
-        "large_tick_hit": None,
-        "large_tick_miss": None,
-        "slider_tail_hit": None,
-        "failed": True,
-        "try_count": 1
-    },
-    "neko_api_calc": {
-        "pp": None,
-        "no_choke_pp": None,
-        "perfect_pp": None,
-        "star_rating": None,
-        "perfect_combo": None,
-        "expected_bpm": None
-    },
-    "lazer_data": {
-        "ranked": None,
-        "total_score": 0,
-        "rank": "C",
-        "speed_multiplier": None,
-        "DA_values": {}
-    },
-    "osu_statistics_max": {
-        "great": 616,
-        "ignore_hit": 0,
-        "large_tick_hit": 0,
-        "slider_tail_hit": 0
-    },
-    "state": {
-        "lazer": False,
-        "mode": "osu",
-        "calculated": False,
-        "ready": False,
-        "error": False
-    },
-    "meta": {
-        "created_at": "2026-02-07T17:57:26.871099",
-        "calculated_at": None,
-        "version": "03022026"
-    }
+    "avatar_url": "https://a.ppy.sh/11596989?1752685709.png",
+    "cover_url": "https://assets.ppy.sh/user-profile-covers/11596989/a7db9837872a1828665ab0c92803df78ac5c8d43cc1b67304087320d59b7d439.png"
+  },
+  "map": {
+    "card2x_url": "https://assets.ppy.sh/beatmaps/117269/covers/card@2x.jpg?1650619047",
+    "beatmap_full": "Jeff Williams - This Will Be the Day (feat. Casey Lee Williams) [Insane]",
+    "mapper": "ampzz",
+    "beatmap_id": 302238,
+    "status": "ranked",
+    "bpm": 190,
+    "url": "https://osu.ppy.sh/beatmaps/302238",
+    "hit_length": 177,
+    "cs": 4,
+    "ar": 9,
+    "od": 9,
+    "hp": 9
+  },
+  "osu_api_data": {
+    "rank_legacy": "A",
+    "date": "2026-02-10T16:05:20Z",
+    "id": 6198487683,
+    "best_id": None
+  },
+  "osu_score": {
+    "user_id": 11596989,
+    "score_legacy": 0,
+    "score_lazer": 0,
+    "mods": "DT+RX",
+    "accuracy": 0.974265,
+    "max_combo": 508,
+    "pp": 0,
+    "count_300": 660,
+    "count_100": 28,
+    "count_50": None,
+    "count_miss": 3,
+    "ignore_hit": 293,
+    "ignore_miss": 10,
+    "small_bonus": 17,
+    "large_tick_hit": 120,
+    "large_tick_miss": 2,
+    "slider_tail_hit": 293,
+    "failed": False,
+    "try_count": 7
+  },
+  "neko_api_calc": {
+    "pp": 89.3278745594294,
+    "no_choke_pp": 100.53410503020208,
+    "perfect_pp": 167.29830362580375,
+    "star_rating": 5.512670785590803,
+    "perfect_combo": 1106,
+    "expected_bpm": 190.0002850004275
+  },
+  "lazer_data": {
+    "ranked": None,
+    "total_score": 0,
+    "rank": "A",
+    "speed_multiplier": None,
+    "DA_values": {}
+  },
+  "osu_statistics_max": {
+    "great": 691,
+    "ignore_hit": 293,
+    "large_tick_hit": 122,
+    "slider_tail_hit": 293
+  },
+  "state": {
+    "lazer": True,
+    "mode": "osu",
+    "calculated": True,
+    "ready": True,
+    "error": False
+  },
+  "meta": {
+    "created_at": "2026-02-11T00:48:18.251835",
+    "calculated_at": "2026-02-11T00:48:19.505198",
+    "version": "03022026"
+  }
 }
 score3_data={
-    "user": {
-    "username": "Flick_Head_",
-    "total_pp": 7861.71,
-    "country_rank": 1958,
-    "global_rank": 21641,
+  "user": {
+    "username": "lironick",
+    "total_pp": 5754.8,
+    "country_rank": 6439,
+    "global_rank": 67224,
     "country_code": "RU",
     "total_pp_cache": None,
-    "avatar_url": "https://a.ppy.sh/31854829?1769868256.jpeg",
-    "cover_url": "https://assets.ppy.sh/user-profile-covers/31854829/3d75110328b651bea6a08bf16a3a8acea7c3a914fe9d5f19402930f5b9e16bf8.png"
-    },
-    "map": {
-        "card2x_url": "https://assets.ppy.sh/beatmaps/2288047/covers/card@2x.jpg?1743146640",
-        "beatmap_full": "Nanahoshi Kangengakudan - Rubik's Cube [Love x Hate x Indifference]",
-        "mapper": "Heilia",
-        "beatmap_id": 4881932,
-        "status": "ranked",
-        "bpm": 174,
-        "url": "https://osu.ppy.sh/beatmaps/4881932",
-        "hit_length": 184,
-        "cs": 3.1,
-        "ar": 9.8,
-        "od": 10,
-        "hp": 4
-    },
-    "osu_api_data": {
-        "rank_legacy": "C",
-        "date": "2026-02-07T14:25:34Z",
-        "id": 6182194130,
-        "best_id": None
-    },
-    "osu_score": {
-        "user_id": 31854829,
-        "score_legacy": 0,
-        "score_lazer": 0,
-        "mods": "CL",
-        "accuracy": 0.757035,
-        "max_combo": 96,
-        "pp": 0,
-        "count_300": 430,
-        "count_100": 91,
-        "count_50": 36,
-        "count_miss": 59,
-        "ignore_hit": None,
-        "ignore_miss": None,
-        "small_bonus": None,
-        "large_tick_hit": None,
-        "large_tick_miss": None,
-        "slider_tail_hit": None,
-        "failed": True,
-        "try_count": 1
-    },
-    "neko_api_calc": {
-        "pp": None,
-        "no_choke_pp": None,
-        "perfect_pp": None,
-        "star_rating": None,
-        "perfect_combo": None,
-        "expected_bpm": None
-    },
-    "lazer_data": {
-        "ranked": None,
-        "total_score": 0,
-        "rank": "C",
-        "speed_multiplier": None,
-        "DA_values": {}
-    },
-    "osu_statistics_max": {
-        "great": 616,
-        "ignore_hit": 0,
-        "large_tick_hit": 0,
-        "slider_tail_hit": 0
-    },
-    "state": {
-        "lazer": False,
-        "mode": "osu",
-        "calculated": False,
-        "ready": False,
-        "error": False
-    },
-    "meta": {
-        "created_at": "2026-02-07T17:57:26.871099",
-        "calculated_at": None,
-        "version": "03022026"
-    }
+    "avatar_url": "https://a.ppy.sh/26197609?1770299156.jpeg",
+    "cover_url": "https://assets.ppy.sh/user-profile-covers/26197609/49ffde9a3e986da938d11bd29e2a7ab7a2c8705cf14a9c158ae5a1c5cfb55f90.png"
+  },
+  "map": {
+    "card2x_url": "https://assets.ppy.sh/beatmaps/384772/covers/card@2x.jpg?1650716263",
+    "beatmap_full": "Yuaru - Asu no Yozora Shoukaihan [Insane]",
+    "mapper": "Akitoshi",
+    "beatmap_id": 853926,
+    "status": "ranked",
+    "bpm": 185,
+    "url": "https://osu.ppy.sh/beatmaps/853926",
+    "hit_length": 159,
+    "cs": 4,
+    "ar": 9,
+    "od": 7,
+    "hp": 6
+  },
+  "osu_api_data": {
+    "rank_legacy": "A",
+    "date": "2025-11-03T09:41:52Z",
+    "id": 5693830786,
+    "best_id": None
+  },
+  "osu_score": {
+    "user_id": 26197609,
+    "score_legacy": 8809241,
+    "score_lazer": 0,
+    "mods": "DT+CL",
+    "accuracy": 0.960072,
+    "max_combo": 392,
+    "pp": 228.583,
+    "count_300": 609,
+    "count_100": 36,
+    "count_50": 1,
+    "count_miss": 1,
+    "ignore_hit": None,
+    "ignore_miss": None,
+    "small_bonus": None,
+    "large_tick_hit": None,
+    "large_tick_miss": None,
+    "slider_tail_hit": None,
+    "failed": False,
+    "try_count": 1
+  },
+  "neko_api_calc": {
+    "pp": 262.9123379655913,
+    "no_choke_pp": 336.1798530481123,
+    "perfect_pp": 457.72381997069016,
+    "star_rating": 7.147648706194119,
+    "perfect_combo": 1133,
+    "expected_bpm": 185.00018500018498
+  },
+  "lazer_data": {
+    "ranked": None,
+    "total_score": 641414,
+    "rank": "A",
+    "speed_multiplier": None,
+    "DA_values": {}
+  },
+  "osu_statistics_max": {
+    "great": 647,
+    "ignore_hit": 0,
+    "large_tick_hit": 0,
+    "slider_tail_hit": 0
+  },
+  "state": {
+    "lazer": False,
+    "mode": "osu",
+    "calculated": True,
+    "ready": True,
+    "error": False
+  },
+  "meta": {
+    "created_at": "2026-02-11T14:46:01.978155",
+    "calculated_at": "2026-02-11T14:46:04.054638",
+    "version": "03022026"
+  }
 }
 
 scores = []
 scores.append(score1_data)
-# scores.append(score2_data)
-# scores.append(score3_data)
+scores.append(score2_data)
+scores.append(score3_data)
 
 print(asyncio.run(create_score_compare_image(
     scores, 
     hide_values=('pp'),
-    language='ru'
+    language='en'
 )))

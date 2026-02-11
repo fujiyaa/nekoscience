@@ -554,7 +554,7 @@ async def score_to_schema(score, user_info):
         },
         "osu_score": {
             "user_id" :         score.get("user_id", score.get("user", {}).get("id")) or None,
-            "score_legacy":     score.get("score") or 0,
+            "score_legacy":     score.get("classic_total_score") or score.get("legacy_total_score") or 0,
             "score_lazer":      score.get("score") or 0,
             "mods":             mods_text,
             "accuracy":         score.get("accuracy"),
@@ -584,7 +584,7 @@ async def score_to_schema(score, user_info):
         },
         "lazer_data": {
             "ranked":           None,
-            "total_score":      0,
+            "total_score":      score.get("total_score"),
             "rank":             score.get("rank"),
             "speed_multiplier": speed_multiplier,            
             "DA_values":        custom_values,

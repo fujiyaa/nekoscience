@@ -5,7 +5,7 @@ import io
 import os
 import aiohttp
 from datetime import datetime, timedelta
-from PIL import Image
+from PIL import Image, ImageOps
 
 from image_utils import add_rounded_corners
 
@@ -56,15 +56,7 @@ async def fetch_cover(
                         img = Image.open(io.BytesIO(data)).convert("RGBA")
 
                         if thumb_size:
-                            w, h = img.size
-                            target_w, target_h = thumb_size
-
-                            left = (w - target_w) // 2
-                            top = (h - target_h) // 2
-                            right = left + target_w
-                            bottom = top + target_h
-
-                            img = img.crop((left, top, right, bottom))
+                            img = ImageOps.fit(img, thumb_size, Image.LANCZOS)
 
                         if radius:
                             img = add_rounded_corners(img, radius=radius)

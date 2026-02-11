@@ -218,19 +218,19 @@ CARD_BEATMAP = {
     },
     "CS": {
         "en": "CS",
-        "ru": "РК"
+        "ru": "КС"
     },
     "HP": {
         "en": "HP",
-        "ru": "ОЗ"
+        "ru": "ХП"
     },
     "OD": {
         "en": "OD",
-        "ru": "ОС"
+        "ru": "ОД"
     },
     "AR": {
         "en": "AR",
-        "ru": "СП"
+        "ru": "АР"
     },
     "stars": {
         "en": "Star Rating",
@@ -360,19 +360,23 @@ UTILS_ISO_TO_DAYSMONTHSYEAR = {
 CARD_GUESS = {    
     "CS": {
         "en": "CS",
-        "ru": "РК"
+        "ru": "КС"
     },
     "HP": {
         "en": "HP",
-        "ru": "ОЗ"
+        "ru": "ХП"
     },
     "OD": {
         "en": "OD",
-        "ru": "ОС"
+        "ru": "ОД"
     },
     "AR": {
         "en": "AR",
-        "ru": "СП"
+        "ru": "АР"
+    },
+    "BPM": {
+        "en": "BPM",
+        "ru": "БПМ"
     },
     "Combo": {
         "en": "Combo",

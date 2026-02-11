@@ -21,7 +21,8 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
     row_height = 500
     img_w = 1000
     img_h = row_height * len(scores)
-    corner_radius = 40
+    corner_radius = 30
+    default_btn_color = (180, 180, 180, 1)
 
     img = Image.new("RGBA", (img_w, img_h), (40, 40, 40, 255))
     draw = ImageDraw.Draw(img)
@@ -30,6 +31,7 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
     s1, s2, _, _, _, _, _, _ = "ExtraBold", "Bold", "SemiBold", "Medium", "Regular", "Light", "ExtraLight", "Thin"
 
     font_extra_big = ImageFont.truetype(f"{BOT_DIR}/{f1}-{s2}.ttf", 50)
+    font_medium_big = ImageFont.truetype(f"{BOT_DIR}/{f1}-{s2}.ttf", 42)
     font_big = ImageFont.truetype(f"{BOT_DIR}/{f1}-{s2}.ttf", 30)
     font_small = ImageFont.truetype(f"{BOT_DIR}/{f1}-{s1}.ttf", 20)
 
@@ -77,7 +79,8 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
             values = {'hp': values3, 'cs': values1, 'od': values2, 'ar': values0}
         except:
             values = {'hp': 10.33, 'cs': 10.33, 'od': 10.33, 'ar': 10.33}
-                  
+            bpm = 333.001
+                              
         
         #temp pp fix
         pp = neko_api_calc.get('pp') 
@@ -109,7 +112,7 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
         )
 
 
-        target_size = (img_w, row_height)
+        target_size = (img_w, row_height + 0)
         asset = Image.open(user_cover).convert("RGBA")
         asset = ImageOps.fit(asset, target_size, Image.LANCZOS)
         asset = asset.filter(ImageFilter.GaussianBlur(bg_blur_amount))
@@ -142,13 +145,9 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
 
         resize = int(row_height * 0.55 - gap * 2)
         ava = Image.open(user_avatar).convert("RGBA").resize((resize, resize))
-        img.paste(ava, (gap + left_offset, y_base + gap), ava)
+        img.paste(ava, (gap*2, y_base + gap), ava)
 
-        x_left = 300
-        base_y = y_base + 90
-        row_step = 90
-        stat_gap = 10
-        alpha1, alpha2 = 200, 100
+        x_left = 300        
 
         lazer = state.get('lazer')
         username_text = user.get('username', f'Unnamed player {i+1}')        
@@ -163,11 +162,11 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
         draw_text_with_shadow(draw, 
             (x_left, y_base + 26), 
             username_text, 
-            font_big,
+            font_medium_big,
             (255, 255, 255), 
             (10, 10, 10), 2)        
         
-        bbox1 = draw.textbbox((0, 0), username_text, font=font_big)        
+        bbox1 = draw.textbbox((0, 0), username_text, font=font_medium_big)        
         draw_text_with_shadow(draw, 
             (x_left + 16 + (bbox1[2] - bbox1[0]), y_base + 36), 
             timestamp_text, 
@@ -194,6 +193,7 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
             font=font_small,
             fill=(255,255,255),
             shadowcolor=(0,0,0),
+            shadow_offset=0,
             max_width=img_w - int(mods_width) - gap*6,
             max_lines=2,
             font_big=font_big
@@ -201,14 +201,11 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
 
         x_right = img_w + gap - gap *3 + 10
         y_top = y_base + 344
-        gap_map = -32
+        gap_map = -46
 
         cs, hp = f"{T.get('CS')[l]}", f"{T.get('HP')[l]}"
         od, ar = f"{T.get('OD')[l]}", f"{T.get('AR')[l]}"
-
-        # stars_text = f"{T.get('stars')[l]}"
-        # drain_text = f"{T.get('drain')[l]}"
-        # bpm_text = f"{T.get('bpm')[l]}"
+        bpm_prop =  f"{T.get('BPM')[l]}"
         
         map_args = {
             "btn_h":70, 
@@ -218,8 +215,8 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
             "overlay_transparency":0,
             "font_text":font_big, 
             "font_prop":font_small,
+            "btn_text_shadow_offset":0
         }
-
         x_left_map = create_stat_button_right(
             img, draw, x_right, y_top,
             btn_h=60, btn_min_w=0,
@@ -246,9 +243,15 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
             **map_args
         )
         
-        _x_left5_map = create_stat_button_right(
+        x_left5_map = create_stat_button_right(
             img, draw, x_left4_map - gap_map, y_top,                                
             text=str(values.get("cs")), prop=cs,
+            **map_args
+        )
+
+        _x_left6_map = create_stat_button_right(
+            img, draw, x_left5_map - gap_map, y_top,                                
+            text=f"{bpm:.1f}", prop=bpm_prop,
             **map_args
         )
 
@@ -260,6 +263,8 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
             status_text = f"{T.get('unknown')[l]}"    
             status_color = f"{T.get('unknown')['color']}"
         status_color = tuple(map(int, status_color.strip("()").split(",")))
+
+        base_y = y_base + 90
 
         overlay_x, overlay_y = img_w - gap, base_y + 380
         asset_transparency = 185
@@ -298,11 +303,41 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
         rank_text = f"{T.get('Rank')[l]}"
         accuracy_text = f"{T.get('Accuracy')[l]}"
         combo_text = f"{T.get('Combo')[l]}"
+
+        miss = str(osu_score.get("count_miss") or 0)
+        sb = str(osu_score.get("count_miss") or 0)
+        sb_text = ''
+        
+        # if sb != 0:
+        #     sb_text = f" +{sb}sb"    
+
+        miss_count = f"{miss}{sb_text}"
+
         pp_text = 'PP'
         great_text = '300'
         ok_text = '100'
         meh_text = '50'
         miss_text = 'X'
+        great_text = ''
+        ok_text = ''
+        meh_text = ''
+        miss_text = ''
+
+        count_miss = osu_score.get("count_miss") or 0
+        count_300 = osu_score.get("count_300") or 0
+        count_100 = osu_score.get("count_100") or 0
+        count_50 = osu_score.get("count_50") or 0
+
+        inactive = default_btn_color
+
+        def pick(key, color):
+            # return color if (osu_score.get(key) or 0) > 0 else inactive
+            return color if (osu_score.get(key) or 0) > 0 else color
+
+        count_300_color  = pick("count_300",  (83, 179, 255, 1))
+        count_100_color  = pick("count_100",  (84, 255, 105, 1))
+        count_50_color   = pick("count_50",   (245, 255, 84, 1))
+        count_miss_color = pick("count_miss", (255, 84, 84, 1))
 
         pp = f"{pp:.2f}"
 
@@ -310,19 +345,91 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
             if 'pp' in hide_values:
                 pp = '?'
 
+        btn_h1, btn_h2 = 50, 46
+        fisrst_pad1, second_pad1 = -10, 50
+        fisrst_pad2, second_pad2 = 0, 46
+        
+        base_y += 20
+        row_step = 90
+        stat_gap = 8
+        alpha1, alpha2 = 200, 170
 
         rows = [
             [   
-                (f"{lazer_data.get('rank', '?')}", rank_text, (255, 255, 255, 1), alpha1),             
-                (f"{(osu_score.get('accuracy') or 0)*100:.2f}%", accuracy_text, (201, 201, 201, 1), alpha1),
-                (f"{osu_score.get('max_combo') or 0}x", combo_text, (201, 201, 201, 1), alpha1),
-                (pp, pp_text, (201, 201, 201, 1), alpha1),
+                (
+                    f"{lazer_data.get('rank', '?')}", 
+                    rank_text, 
+                    default_btn_color, 
+                    alpha1, 
+                    font_medium_big,
+                    btn_h1,
+                    fisrst_pad1, second_pad1,
+                ),             
+                (
+                    f"{(osu_score.get('accuracy') or 0)*100:.2f}%",
+                    accuracy_text, 
+                    default_btn_color, 
+                    alpha1, 
+                    font_medium_big,
+                    btn_h1,
+                    fisrst_pad1, second_pad1,
+                ),
+                (
+                    f"{osu_score.get('max_combo') or 0}x", 
+                    combo_text, 
+                    default_btn_color, 
+                    alpha1, 
+                    font_medium_big,
+                    btn_h1,
+                    fisrst_pad1, second_pad1,
+                ),
+                (
+                    pp, 
+                    pp_text, 
+                    default_btn_color, 
+                    alpha1, 
+                    font_medium_big,
+                    btn_h1,
+                    fisrst_pad1, second_pad1,
+                ),
             ],
             [
-                (osu_score.get("count_300") or 0, great_text, (83, 179, 255, 1), alpha2),
-                (osu_score.get("count_100") or 0, ok_text, (84, 255, 105, 1), alpha2),
-                (osu_score.get("count_50") or 0, meh_text, (245, 255, 84, 1), alpha2),
-                (osu_score.get("count_miss") or 0, miss_text, (255, 84, 84, 1), alpha2),
+                (
+                    count_300, 
+                    great_text, 
+                    count_300_color, 
+                    alpha2, 
+                    font_big,
+                    btn_h2,
+                    fisrst_pad2, second_pad2,
+                ),
+                (
+                    count_100, 
+                    ok_text, 
+                    count_100_color, 
+                    alpha2, 
+                    font_big,
+                    btn_h2,
+                    fisrst_pad2, second_pad2,
+                ),
+                (
+                    count_50, 
+                    meh_text, 
+                    count_50_color, 
+                    alpha2, 
+                    font_big,
+                    btn_h2,
+                    fisrst_pad2, second_pad2,
+                ),
+                (
+                    miss_count, 
+                    miss_text, 
+                    count_miss_color, 
+                    alpha2, 
+                    font_big,
+                    btn_h2,
+                    fisrst_pad2, second_pad2,
+                ),
             ],            
         ]
 
@@ -330,16 +437,20 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
             y = base_y + row_index * row_step
             x = x_left
 
-            for value, label, color, alpha in row:
+            for value, label, color, alpha, font1, btn_h, fisrst_pad, second_pad in row:
                 x = create_stat_button_left(
                     img, draw, x, y,
                     text=str(value),
                     prop=label,
-                    letter_pad=32,
+                    letter_pad=38,
                     overlay_transparency=alpha,
                     overlay_color=color,
-                    font_text=font_big,
-                    font_prop=font_small
+                    font_text=font1,
+                    font_prop=font_small,
+                    btn_text_shadow_offset=1,
+                    btn_h=btn_h,                    
+                    letter_fisrst_pad_y=fisrst_pad,
+                    letter_second_pad_y=second_pad,
                 ) + stat_gap
     
     for i, cached_entry in enumerate(scores):
@@ -353,8 +464,9 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
                 overlay_transparency=255,
                 overlay_color=line_color,
                 font_text=font_big,
-                font_prop=font_small
+                font_prop=font_small,
             ) + stat_gap
+
 
 
     img_path = f"{BOT_DIR}/cache/compare_{len(scores)}{beatmap_id}{uid}.png"

@@ -94,6 +94,10 @@ CARD_GUESS = {
         "en": "AR",
         "ru": "СП"
     },
+    "BPM": {
+        "en": "BPM",
+        "ru": "БПМ"
+    },
     "Combo": {
         "en": "Combo",
         "ru": "Комбо"
