@@ -10,6 +10,7 @@ from ..systems import scores_state_db as db
 
 
 
+# опечатка каклюльт
 async def caclulte_cached_entry(cached_entry: dict): 
     map =               cached_entry['map']
     osu_score =         cached_entry['osu_score']

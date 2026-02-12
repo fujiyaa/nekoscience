@@ -1,6 +1,7 @@
 
 
 
+import os
 import asyncio
 from collections import defaultdict
 
@@ -13,10 +14,12 @@ from ....systems.logging import log_all_update
 from ....external.osu_api import get_osu_token, get_user_profile, get_top_100_scores
 from ....systems.auth import check_osu_verified
 from ....utils.text_format import country_code_to_flag
+from ....systems.json_files import load_score_file
+from ....utils.calculate import caclulte_cached_entry
 
-from config import COOLDOWN_STATS_COMMANDS
+from config import COOLDOWN_STATS_COMMANDS, SCORES_DIR
 
-
+calculated = False
 
 async def start_anime(update, context, user_request=True):
     await log_all_update(update)
@@ -59,6 +62,22 @@ async def anime(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request
     temp_message = await update.message.reply_text(
         "`Загрузка...`", parse_mode="Markdown"
     )
+
+    if not calculated:
+        files = [
+            f for f in os.listdir(SCORES_DIR)
+            if os.path.isfile(os.path.join(SCORES_DIR, f)) and f.endswith(".json")
+        ]
+
+        for i, file in enumerate(files):
+            file_id, _ = os.path.splitext(file)
+            entry = load_score_file(file_id)
+
+            if entry.get('version') == 3022026:
+                await caclulte_cached_entry(entry)
+                print('calculated', i)
+
+        calculated = True
 
     for attempt in range(1, MAX_ATTEMPTS + 1):
         try:
