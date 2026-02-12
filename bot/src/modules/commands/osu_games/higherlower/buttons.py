@@ -28,7 +28,7 @@ def get_keyboard(keyboard_type: str, scores_quantity: int = 2):
         keyboard = [[
             InlineKeyboardButton(
                 emoji,
-                callback_data=f"osugamehl_finish_{i-1}"
+                callback_data=f"osugamehl_finish_{i}"
             )
             for i, emoji in enumerate(EMOJIS[:count], start=1)
         ]]

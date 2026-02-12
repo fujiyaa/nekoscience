@@ -113,16 +113,35 @@ async def finish_game(update: Update, context: ContextTypes.DEFAULT_TYPE, score_
                 stat = active.get("value_to_guess", "")
 
                 def is_highest(entries, selected_index, stat):
-                    values = [
-                        entry.get("neko_api_calc", {}).get(stat, 0)
-                        for entry in entries
-                    ]
+                    values = []
+                    for entry in entries:
+                        neko = entry.get("neko_api_calc", {})
+                        osu_score = entry.get("osu_score", {})
 
-                    selected_value = values[selected_index]
+                        if stat == "pp":
+                            osu_pp = osu_score.get("pp")
+
+                            if isinstance(osu_pp, (int, float)) and osu_pp > 0:
+                                value = osu_pp
+                            else:
+                                value = neko.get("pp", 0)
+                        else:
+                            value = neko.get(stat, 0)
+
+                        values.append(value)
+
+                        print(values)
+
+                    selected_value = values[selected_index-1]
                     return selected_value == max(values)
                 
                 now = time.time()                
                 bonus_text = ''
+
+                print(cached_entries[0]['neko_api_calc']['pp'])
+                print(cached_entries[1]['neko_api_calc']['pp'])
+                print(score_selected, is_highest(cached_entries, score_selected, stat))
+
                 if is_highest(cached_entries, score_selected, stat):  
 
                     average_score += 1
