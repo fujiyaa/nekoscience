@@ -144,9 +144,10 @@ async def finish_game(update: Update, context: ContextTypes.DEFAULT_TYPE, score_
 
                     average_score += 1
                     current_score += 1 # score
-                    current_health += 1
 
-                    bonus_text = '+1'
+                    if random.random() < 0.50:  # 50%
+                        current_health += 1
+                        bonus_text = '+1'
 
                     if best_score < current_score:
                         best_score = current_score
