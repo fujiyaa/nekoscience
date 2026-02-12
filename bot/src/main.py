@@ -55,7 +55,7 @@ from modules.commands.osu.scoreoverride.score import score as scoreoverride
 # from modules.commands.service.forum_db_related.getthreads import dev_getthreads
 
 #osu_games
-from modules.commands.osu_games.higherlower.higherlower import higherlower
+from modules.commands.osu_games.higherlower.higherlower import start_higherlower_game
 
 # callback
 from modules.commands.osu.rs.callback import callback as rs_handler
@@ -70,7 +70,7 @@ from modules.commands.osu.scores_best.callback import callback as scores_best_ca
 from modules.commands.osu.profile.callback import callback as profile_ctx_callback
 from modules.commands.osu.simulate.context.callback import callback as simulate_ctx_callback
 from modules.commands.osu.card_beatmap.context.callback import callback as card_map_ctx_callback
-
+from modules.commands.osu_games.higherlower.callback import callback as osugamehl_callback
 
 from modules.commands.service.settings.callback import callback as settings_handler
 
@@ -104,7 +104,7 @@ def register_commands(app):
         ("simulate",):                      simulate,
         ("beatmaps", "b"):                  beatmaps,
         ("name", "link", "nick", "osu"):    set_name,
-        ("h",):                             higherlower,
+        ("higherlower", "hl"):              start_higherlower_game,
 
         # fun
         ("gn",):                            random_image,
@@ -140,6 +140,7 @@ def register_callbacks(app):
         (profile_ctx_callback,  r"^profile_context:(username|cancel)"),
         (simulate_ctx_callback, r"^sim_context:(map|cancel)"),
         (card_map_ctx_callback, r"^card_beatmap_context:(map|cancel)"),
+        (osugamehl_callback,    r"^osugamehl_(main|next|finish|\d+)"),
     ]
 
     for handler, pattern in callbacks:

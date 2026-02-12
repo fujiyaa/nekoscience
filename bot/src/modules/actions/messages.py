@@ -5,6 +5,7 @@ import asyncio
 from telegram import Update
 from telegram.ext import ContextTypes
 import logging
+import os
 
 from config import remove_tasks
 
@@ -117,7 +118,9 @@ def reset_remove_timer(bot, chat_id, msg_id, delay=30, cleanup=None):
     task = asyncio.create_task(delayed())
     remove_tasks[msg_id] = task
 
-
+async def delayed_remove(path, delay=5):
+    await asyncio.sleep(delay)
+    os.remove(path)
 
 
 #retries

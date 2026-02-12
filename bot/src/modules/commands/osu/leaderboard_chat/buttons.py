@@ -3,11 +3,12 @@
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
-profile = "Профиль"
-ranks = "Ранки"
-plays = "Игры"
-score = "Очки"
-social = "Социальная хрень"
+profile = "👤 Профиль"
+ranks = "📊 Ранки"
+plays = "🎮 Игры"
+score = "🧮 Очки"
+social = "👥 Социальная хрень"
+botgames = "✴️ Игры бота"
 
 def get_keyboard(keyboard_type: str, user_id: int):
     if keyboard_type == "select_group":
@@ -29,6 +30,10 @@ def get_keyboard(keyboard_type: str, user_id: int):
             [
                 InlineKeyboardButton(social, 
                 callback_data=f"leaderboard_chat_group_social:{user_id}")
+            ],
+            [
+                InlineKeyboardButton(botgames, 
+                callback_data=f"leaderboard_chat_group_botgames:{user_id}")
             ],            
         ]    
 

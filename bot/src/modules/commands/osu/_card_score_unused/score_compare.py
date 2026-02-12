@@ -109,6 +109,6 @@ async def score_compare(update: Update, context: ContextTypes.DEFAULT_TYPE, user
                     except:
                         await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=temp_message.message_id)
             
-            await delayed_remove(img_path)          
+            asyncio.create_task(delayed_remove(img_path))
             return
         except Exception as e: print(e)   

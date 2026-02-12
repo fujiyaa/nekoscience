@@ -105,7 +105,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 )
             
             await query.delete_message()              
-            await delayed_remove(img_path)
+            asyncio.create_task(delayed_remove(img_path))
 
         except Exception:
             traceback.print_exc() 

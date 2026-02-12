@@ -6,7 +6,7 @@ from telegram.ext import ContextTypes
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 from .buttons import get_keyboard
-from .type import leaderboard
+from .type import leaderboard, leaderboard_with_json
 
 
 
@@ -37,6 +37,9 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ss_ranks = "SS-ranks"
     s_ranks = "S-ranks"
     a_ranks = "A-ranks"
+
+    daily = "⚔️ Дейли челлендж"
+    higherlower = "🔰 Higher-Lower"
 
 
     data = query.data
@@ -90,6 +93,11 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 [InlineKeyboardButton(total_score, callback_data=f"leaderboard_chat_total_score:{allowed_user_id}")],
                 [InlineKeyboardButton(ranked_score, callback_data=f"leaderboard_chat_ranked_score:{allowed_user_id}")],                
                 [InlineKeyboardButton(total_hits, callback_data=f"leaderboard_chat_total_hits:{allowed_user_id}")], 
+            ]
+        elif group == "botgames":
+            keyboard = [
+                [InlineKeyboardButton(daily, callback_data=f"leaderboard_chat_daily:{allowed_user_id}")],
+                [InlineKeyboardButton(higherlower, callback_data=f"leaderboard_chat_higherlower:{allowed_user_id}")],
             ]
         else:
             await query.edit_message_text("❌ Неизвестная группа")
@@ -158,6 +166,10 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await leaderboard(update, context, s_ranks, 's', '', '')
             elif data == "leaderboard_chat_a":
                 await leaderboard(update, context, a_ranks, 'a', '', '')
+            elif data == "leaderboard_chat_daily":
+                await leaderboard_with_json(update, context, "Daily challenge Leaderboard", "file_daily_challenge")
+            elif data == "leaderboard_chat_higherlower":
+                await leaderboard_with_json(update, context, "Higher-Lower game Leaderboard", "file_osugames_higherlower")
             else:
                 await query.edit_message_text("Неизвестная кнопка!")
             return
