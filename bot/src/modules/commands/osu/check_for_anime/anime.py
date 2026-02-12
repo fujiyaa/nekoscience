@@ -73,9 +73,12 @@ async def anime(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request
         file_id, _ = os.path.splitext(file)
         entry = load_score_file(file_id)
 
-        if entry.get('version') == 3022026:
-            await caclulte_cached_entry(entry)
-            print('calculated', i)
+        if entry.get('meta', {}).get('version') == '03022026':
+            if entry.get('state', {}).get('calculated') != True: 
+                await caclulte_cached_entry(entry)
+                print('calc', i)
+            else:
+                print('skip', i)
 
 
     for attempt in range(1, MAX_ATTEMPTS + 1):
