@@ -5,7 +5,7 @@ import random
 import time
 import traceback
 import asyncio
-from telegram import Update
+from telegram import Update, InputMediaPhoto
 from telegram.ext import ContextTypes
 
 from .....actions.messages import safe_send_message
@@ -53,9 +53,6 @@ async def finish_game(update: Update, context: ContextTypes.DEFAULT_TYPE, score_
         try:                   
             osu_name = await check_osu_verified(user_id)
             if not osu_name:
-                await safe_send_message(
-                    update, "⚠ Не сохранен ник, это делается командой /name", 
-                    parse_mode="Markdown")
                 return            
             
             osu_id = await get_osu_id(user_id)
@@ -208,15 +205,30 @@ async def finish_game(update: Update, context: ContextTypes.DEFAULT_TYPE, score_
                 reply_markup = get_keyboard(f"finish_{next_scores_quantity}")
 
                 if img_path:
-                    _bot_msg = await update.effective_message.reply_photo(
-                        photo=open(img_path, "rb"),
-                        caption=captions,
-                        reply_markup=reply_markup,
-                        parse_mode="HTML"    
-                    )
+                    if update.callback_query.message.message_id:
+                        media = InputMediaPhoto(
+                            media=open(img_path, "rb"),
+                            caption=captions,
+                            parse_mode="HTML"
+                        )
+
+                        await context.bot.edit_message_media(
+                            chat_id=update.effective_chat.id,
+                            message_id=update.callback_query.message.message_id,
+                            media=media,
+                            reply_markup=reply_markup
+                        )
+                    else:
+                        await update.effective_message.reply_photo(
+                            photo=open(img_path, "rb"),
+                            caption=captions,
+                            reply_markup=reply_markup,
+                            parse_mode="HTML"    
+                        )
+
                     asyncio.create_task(delayed_remove(img_path))
                 else:
-                    raise()           
+                    raise()
                 
 
                 # 2. потом редактировать файлы

@@ -1,9 +1,8 @@
 
 
 
-import traceback
 import asyncio
-from telegram import Update
+from telegram import Update, InputMediaPhoto
 from telegram.ext import ContextTypes
 
 from .....actions.messages import safe_send_message
@@ -31,6 +30,7 @@ d_file = "file_osugames_higherlower"
 
 async def send_score_compare(
     update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
     cached_entries: list,
     tg_name: str,
     current_score: int,
@@ -63,15 +63,30 @@ async def send_score_compare(
     reply_markup = get_keyboard(f"next_{scores_quantity}")
 
     if img_path:
-        await update.effective_message.reply_photo(
-            photo=open(img_path, "rb"),
-            caption=captions,
-            reply_markup=reply_markup,
-            parse_mode="HTML"
-        )
+        if update.callback_query.message.message_id:
+            media = InputMediaPhoto(
+                media=open(img_path, "rb"),
+                caption=captions,
+                parse_mode="HTML"
+            )
+
+            await context.bot.edit_message_media(
+                chat_id=update.effective_chat.id,
+                message_id=update.callback_query.message.message_id,
+                media=media,
+                reply_markup=reply_markup
+            )
+        else:
+            await update.effective_message.reply_photo(
+                photo=open(img_path, "rb"),
+                caption=captions,
+                reply_markup=reply_markup,
+                parse_mode="HTML"    
+            )
+            
         asyncio.create_task(delayed_remove(img_path))
     else:
-        raise RuntimeError("Ошибка изображения")
+        raise()
 
 async def next_game(update: Update, context: ContextTypes.DEFAULT_TYPE, scores_quantity:int = 2):
     user_id = str(update.effective_user.id)
@@ -126,7 +141,7 @@ async def next_game(update: Update, context: ContextTypes.DEFAULT_TYPE, scores_q
         if not cached_entries:
             await safe_send_message(update, "❌ Ошибка, попробуй еще раз", parse_mode="HTML")
             return
-        await send_score_compare(update, cached_entries, tg_name, current_score, current_health, scores_quantity, best_score, user_id)
+        await send_score_compare(update, context, cached_entries, tg_name, current_score, current_health, scores_quantity, best_score, user_id)
     
     else:
         if current_health == 0:
@@ -152,7 +167,7 @@ async def next_game(update: Update, context: ContextTypes.DEFAULT_TYPE, scores_q
             await safe_send_message(update, "❌ Ошибка, попробуй еще раз", parse_mode="HTML")
             return
 
-        await send_score_compare(update, cached_entries, tg_name, current_score, current_health, scores_quantity, best_score, user_id)
+        await send_score_compare(update, context, cached_entries, tg_name, current_score, current_health, scores_quantity, best_score, user_id)
 
         scores_active = construct_active(cached_entries, 'pp', 0, 0)
         await remove_from_file_neko(d_file, [osu_id])
