@@ -25,6 +25,7 @@ from config import COOLDOWN_HLGAME_COMMANDS, USER_SETTINGS_FILE
 from .....systems.translations import SCORE_CAPTION as T
 
 MAX_ATTEMPTS = 1
+MAX_HEALTH = 5
 
 d_file = "file_osugames_higherlower"
 
@@ -173,8 +174,12 @@ async def finish_game(update: Update, context: ContextTypes.DEFAULT_TYPE, score_
                         f"❌ @{tg_name}, неправильно...\n"
                     )
 
+                if current_health > MAX_HEALTH: 
+                    current_health = MAX_HEALTH
+                    bonus_text = ''
+
                 health_text = "🤍" * current_health
-                    
+                                   
                 captions += (
                     f"Текущая игра: <b>{current_score}</b> угадано, рекорд: <b>{best_score}</b>\n"
                     f"<b>HP</b>: {health_text} <code>{bonus_text}</code>\n\n"        

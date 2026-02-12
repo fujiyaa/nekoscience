@@ -23,6 +23,7 @@ from config import COOLDOWN_HLGAME_COMMANDS, USER_SETTINGS_FILE
 from .....systems.translations import SCORE_CAPTION as T
 
 MAX_ATTEMPTS = 1
+MAX_HEALTH = 5
 
 d_file = "file_osugames_higherlower"
 
@@ -145,7 +146,7 @@ async def next_game(update: Update, context: ContextTypes.DEFAULT_TYPE, scores_q
     
     else:
         if current_health == 0:
-            current_health = 3
+            current_health = MAX_HEALTH
             current_score = 0
 
         MAX_SEARCH_ATTEMPTS = 5
