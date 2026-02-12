@@ -64,21 +64,21 @@ async def anime(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request
     )
 
     
-    files = [
-        f for f in os.listdir(SCORES_DIR)
-        if os.path.isfile(os.path.join(SCORES_DIR, f)) and f.endswith(".json")
-    ]
+    # files = [
+    #     f for f in os.listdir(SCORES_DIR)
+    #     if os.path.isfile(os.path.join(SCORES_DIR, f)) and f.endswith(".json")
+    # ]
 
-    for i, file in enumerate(files):
-        file_id, _ = os.path.splitext(file)
-        entry = load_score_file(file_id)
+    # for i, file in enumerate(files):
+    #     file_id, _ = os.path.splitext(file)
+    #     entry = load_score_file(file_id)
 
-        if entry.get('meta', {}).get('version') == '03022026':
-            if entry.get('state', {}).get('calculated') != True: 
-                await caclulte_cached_entry(entry)
-                print('calc', i)
-            else:
-                print('skip', i)
+    #     if entry.get('meta', {}).get('version') == '03022026':
+    #         if entry.get('state', {}).get('calculated') != True: 
+    #             await caclulte_cached_entry(entry)
+    #             print('calc', i)
+    #         else:
+    #             print('skip', i)
 
 
     for attempt in range(1, MAX_ATTEMPTS + 1):
