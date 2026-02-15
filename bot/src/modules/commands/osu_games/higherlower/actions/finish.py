@@ -14,9 +14,9 @@ from .....systems.auth import check_osu_verified, get_osu_id
 from .....external.localapi import read_file_neko, insert_to_file_neko, remove_from_file_neko
 from .....systems.json_files import load_score_file
 from .....systems.images import delayed_remove
-from ..processing_v1 import create_score_compare_image
+from .....image_processing.workflows.score_adaptive.processing_v1 import create_score_compare_image
 from ..buttons import get_keyboard
-from ..json_schema import construct_user, construct_active
+from ..json_schema import construct_user
 # from .filter import filter_other_topics
 from .....systems import scores_state_db as db
 import temp

@@ -3,11 +3,10 @@
 
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance, ImageOps
 
-from .image_utils import create_stat_button_left, draw_text_with_shadow, add_rounded_corners, draw_multiline_text_with_shadow, create_stat_button_right
-from .utils import iso_to_DaysMonthYear
-from .fetch import fetch_cover
+from ...elements.image_utils import create_stat_button_left, draw_text_with_shadow, add_rounded_corners, draw_multiline_text_with_shadow, create_stat_button_right
+from ...utils.format_text import iso_to_DaysMonthYear
+from ...network.fetch import fetch_image
 from ....utils.calculate import calculate_beatmap_attr
-from ....external.localapi import get_map_stats_neko_api
 from ....utils.osu_conversions import apply_mods_to_stats, get_mods_info
 from ....utils.calculate import caclulte_cached_entry
 
@@ -87,7 +86,7 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
         pp = pp if not isinstance(osu_score.get("pp"), (int, float)) or osu_score.get("pp") <= 0 else osu_score.get("pp")
         stars = neko_api_calc.get('star_rating', 0)
 
-        user_avatar = await fetch_cover(
+        user_avatar = await fetch_image(
             user["avatar_url"],
             f"{uid}a",
             BG_SCORE_COMPARE_DIR,
@@ -95,7 +94,7 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
             radius=corner_radius
         )
 
-        user_cover = await fetch_cover(
+        user_cover = await fetch_image(
             user["cover_url"],
             f"{uid}c",
             BG_SCORE_COMPARE_DIR,
@@ -103,7 +102,7 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
             radius=0
         )
 
-        map_cover = await fetch_cover(
+        map_cover = await fetch_image(
             map_data["card2x_url"],
             f"{beatmap_id}c",
             BG_SCORE_COMPARE_DIR,

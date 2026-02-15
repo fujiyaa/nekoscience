@@ -7,11 +7,11 @@ import aiohttp
 from datetime import datetime, timedelta
 from PIL import Image, ImageOps
 
-from .image_utils import add_rounded_corners
+from ..elements.image_utils import add_rounded_corners
 
 
 
-async def fetch_cover(
+async def fetch_image(
     url,
     beatmap_id,
     cache_dir,
