@@ -247,7 +247,8 @@ async def _get_recent_scores(
     limit: int = 25,
     fails: int = 1,
     offset: int = 0,
-    mode: str = "osu"):
+    mode: str = 'osu',
+    select: str = 'recent'):
 
     if token is None: token = await get_osu_token()
 
@@ -261,7 +262,7 @@ async def _get_recent_scores(
         "x-api-version": "20240529",
         "Accept": "application/json",
     }
-    url_recent = f"https://osu.ppy.sh/api/v2/users/{user_id}/scores/recent?include_fails={fails}&limit={limit}&mode={mode}&offset={offset}"
+    url_recent = f"https://osu.ppy.sh/api/v2/users/{user_id}/scores/{select}?include_fails={fails}&limit={limit}&mode={mode}&offset={offset}"
     url_user_info = f"https://osu.ppy.sh/api/v2/users/{user_id}/{mode}"
 
     async with aiohttp.ClientSession(timeout=timeout) as session:
@@ -404,21 +405,13 @@ async def get_user_scores_by_beatmap(
     return results
     
 async def get_user_scores(
-    username: str,
-    limit: int = 25,
-    fails: int = 1):
-    """
-    Сохранить все скоры локально
-    
-    :param username: осу ник
-    :type username: str
-    :param limit: макс скоров
-    :type limit: int
-    :param fails: скоры с F (1 / 0 флаг)
-    :type fails: bool
-    """
+        username: str,
+        limit: int = 25,
+        fails: int = 1,
+        select: str = 'recent'
+    ):
 
-    data = await _get_recent_scores(username, limit=limit, fails=fails)
+    data = await _get_recent_scores(username, limit=limit, fails=fails, select=select)
     
     if data is None:
         scores = []

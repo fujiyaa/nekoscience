@@ -1,3 +1,59 @@
+
+
+
+DEFAULT_COMMAND_TEMPLATE = {
+    "Loading...": {
+        "en": "Loading...",
+        "ru": "Загрузка..."
+    },
+    "Error...": {
+        "en": "Error...",
+        "ru": "Ошибка..."
+    },
+    "No data...": {
+        "en": "No data...",
+        "ru": "Нет данных..."
+    },    
+    "Select...": {
+        "en": "Select...",
+        "ru": "Выбери..."
+    },
+    "Canceled...": {
+        "en": "Canceled...",
+        "ru": "Отменено..."
+    },
+    "DEFAULT_HELP": {
+        "en": "Something went wrong... Help - /help",
+        "ru": "Что-то пошло не так... Помощь - /help"
+    },
+    "DEFAULT_INVALID_BUTTON_ORIGIN": {
+        "en": "Not your buttons...",
+        "ru": "Не твои кнопки..."
+    },
+}
+
+DEFAULT_SCORES_TYPES = {
+    "Recent": {
+        "en": "🕐 Recent",
+        "ru": "🕐 Последние"
+    },
+    "Best": {
+        "en": "🏆 Best",
+        "ru": "🏆 Лучшие"
+    },
+    "Pinned": {
+        "en": "📌 Pinned",
+        "ru": "📌 Закреп."
+    }
+}
+
+DEFAULT_BUTTON_TYPES = {
+    "Cancel": {
+        "en": "✖️ Cancel",
+        "ru": "✖️ Отмена"
+    }
+}
+
 TRANSLATIONS = {
     "lang": {
         "en": "Language",
@@ -445,4 +501,24 @@ SCORE_CAPTION = {
         "en": "Score",
         "ru": "Скор"
     },
+}
+
+COMMAND_AVERAGE = {
+    # ключи нужны для определения из SELECT_TYPE
+    "recent": {
+        "en": "Recent",
+        "ru": "Из последних"
+    },
+    "best": {
+        "en": "Best",
+        "ru": "Из лучших"
+    },
+    "pinned": {
+        "en": "Pinned",
+        "ru": "Из закрепленных"
+    },
+    "plays": {
+        "en": "plays",
+        "ru": "игр"
+    }
 }

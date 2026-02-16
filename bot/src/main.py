@@ -18,9 +18,6 @@ from modules.commands.every_message.check_message import check_message
 # osu
 from modules.commands.osu import (
 
-    # average
-    start_average_stats, start_average_recent,
-
     # beatmaps
     start_maps_skill, start_beatmap_audio,
     beatmaps, simulate,    
@@ -37,9 +34,9 @@ from modules.commands.osu import (
     callback_lb,
 
     # profile
-    start_compare_profile, start_profile, 
+    start_compare_profile, start_profile, start_average,
     start_mappers, start_mods, start_anime,
-    callback_prf_ctx,
+    callback_avg, callback_prf_ctx,
 
     # scores
     start_rs, start_nochoke, start_recent_fix, start_scores_best,
@@ -73,12 +70,9 @@ from modules.actions.osu_chat import callback as osu_chat_callback
 # команды не начинающиеся со start_ не асинхронные.
 def register_commands(app):
     command_map = {
+
         # osu
-
-        # average
-        ("average", "avg", "a"):            start_average_stats,
-        ("reaverage", "reavg", "rea"):      start_average_recent,
-
+       
         # beatmaps
         ("maps_skill", "ms"):               start_maps_skill,
         ("music",):                         start_beatmap_audio,
@@ -97,6 +91,7 @@ def register_commands(app):
         # profile
         ("pc",):                            start_compare_profile,
         ("profile", "p"):                   start_profile,
+        ("average", "avg", "a"):            start_average,
         ("mappers",):                       start_mappers,
         ("mods",):                          start_mods,
         ("anime", "goon"):                  start_anime,
@@ -149,7 +144,7 @@ def register_callbacks(app):
 
         # profile
         (callback_prf_ctx,  r"^profile_context:(username|cancel)"),
-
+        (callback_avg,      r"^average1:(u|c)"),
         # scores
         (callback_rs,       r"^rs_"),
         (callback_scb,      r"^score_best:(map|cancel)"),

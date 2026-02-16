@@ -1,79 +1,94 @@
 
 
 
+import traceback
 import asyncio
 from statistics import mean
 
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from .....actions.messages import safe_send_message
-from .....systems.cooldowns import check_user_cooldown
-from .....systems.logging import log_all_update
+from .....actions.messages import safe_query_answer, safe_edit_query
 from .....external.osu_http import fetch_txt_beatmaps
 from .....external.osu_api import get_user_scores
-from .....systems.auth import check_osu_verified
 from .....utils.osu_conversions import apply_mods_to_stats, get_mods_info
 from .....wrappers.average_table import get_average_table
 from .....wrappers.user import get_user_link
 from .....utils.calculate import caclulte_cached_entry, calculate_beatmap_attr
 import temp
 
-from config import COOLDOWN_STATS_COMMANDS, USER_SETTINGS_FILE
+from config import USER_SETTINGS_FILE
+from .....systems.translations import (
+    DEFAULT_COMMAND_TEMPLATE as T,
+    COMMAND_AVERAGE as AT,
+)
 
 
 
-async def start_average_recent(update, context, user_request=True):
-    await log_all_update(update)
-    asyncio.create_task(average_recent(update, context, user_request))
-async def average_recent(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request):
-    can_run = await check_user_cooldown(
-            command_name="average_stats",
-            user_id=str(update.effective_user.id),
-            cooldown_seconds=COOLDOWN_STATS_COMMANDS,           
-            update=update,
-            context=context,
-            warn_text=f"⏳ Подождите {COOLDOWN_STATS_COMMANDS} секунд"
-        )
-    if not can_run:
-        return
-    MAX_ATTEMPTS = 3 
+async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        query = update.callback_query
+        uid_click = query.from_user.id
+        
+        parts = query.data.split(":")
+        # average_select_type   :   u|c    :   {osu_username}  :   {value} :   osu
+        action =        str(parts[1])
+        origin_uid =    int(parts[2])        
+        osu_username =  str(parts[3])
+        scores_type =   str(parts[4])
 
-    saved_name = await check_osu_verified(str(update.effective_user.id))
 
-    if not context.args:
-        if saved_name:
-            username = saved_name
-        else:
-            text = (
-                "Использование: `/average_recent fujina123` <- никнейм\n\n\n"
-                "⚙ *Дополнительно*\n\n"
-                "/name – сохранить ник\n"
+        s = temp.load_json(USER_SETTINGS_FILE, default={})
+        user_settings = s.get(str(update.effective_user.id), {})
+        lang = user_settings.get("lang", "ru")
+                
+
+        if uid_click != origin_uid:
+                await safe_query_answer(
+                    query, 
+                    text = f"`{T.get('DEFAULT_INVALID_BUTTON_ORIGIN')[lang]}`",)
+                
+                return            
+        await safe_query_answer(query, show_alert=False)    
+
+
+        if action == "c":
+            await safe_edit_query(
+                query, 
+                text = f"`{T.get('Canceled...')[lang]}`", 
+                parse_mode = "Markdown"
             )
-            await safe_send_message(update, text, parse_mode="Markdown")
-            return
-    else:
-        username = " ".join(context.args)
 
-    if saved_name is None:
-        saved_name = 'нет'
-
-    temp_message = await update.message.reply_text(
-        "`Загрузка...`", 
-        parse_mode="Markdown"
-    )
-
-    for attempt in range(1, MAX_ATTEMPTS + 1):
-        try:
-            s = temp.load_json(USER_SETTINGS_FILE, default={})
-            user_settings = s.get(str(update.effective_user.id), {}) 
-            fails = user_settings.get("display_fails_average_recent", True)
-            _lang = user_settings.get("lang", "ru") 
+            # await delete_message_after_delay(
+            #         context, 
+            #         update.effective_chat.id, 
+            #         update.effective_message.id, 
+            #         delay = 5
+            #     )
             
+            return
+        
+        elif action == "u":                 
+            await safe_edit_query(
+                query, 
+                text=f"`{T.get('Loading...')[lang]}`", 
+                parse_mode="Markdown"
+            )                         
+            
+            fails = user_settings.get("display_fails_average_recent", True)
             if fails: fails = 1
 
-            recent_scores = await asyncio.wait_for(get_user_scores(username, limit=100, fails=fails), timeout=10)
-                  
+            recent_scores = await asyncio.wait_for(
+                get_user_scores(
+                    username = osu_username, 
+                    limit = 100, 
+                    fails = fails,
+                    select = scores_type
+                ),
+                    
+                timeout=10
+            )
+                
             if isinstance(recent_scores, list) and recent_scores: 
                 accs, combos, misses, pps = [], [], [], []
                 stars, ars, css, hps, ods, bpms, lengths = [], [], [], [], [], [], []
@@ -106,12 +121,12 @@ async def average_recent(update: Update, context: ContextTypes.DEFAULT_TYPE, use
                         await caclulte_cached_entry(cached_entry)
                         
                         neko_api_calc = cached_entry['neko_api_calc']
-                     
+                    
                     pp = neko_api_calc.get("pp")
 
-                     #temp pp fix
+                    #temp pp fix
                     pp = pp if not isinstance(osu_score.get("pp"), (int, float)) or osu_score.get("pp") <= 0 else osu_score.get("pp")
-                          
+                        
                     base_values = await calculate_beatmap_attr(cached_entry)
 
                     bpm = (map.get("bpm", 0.0))
@@ -119,7 +134,7 @@ async def average_recent(update: Update, context: ContextTypes.DEFAULT_TYPE, use
                     mods_str = osu_score.get("mods", "")
                     speed_multiplier, hr_active, ez_active = get_mods_info(mods_str)                    
                     length = int(round(float(length) / speed_multiplier))
-                   
+                
                     bpm, ar, od, cs, hp = apply_mods_to_stats(
                         bpm, base_values[0], base_values[2], base_values[1], base_values[3],
                         speed_multiplier=speed_multiplier, hr=hr_active, ez=ez_active
@@ -158,21 +173,22 @@ async def average_recent(update: Update, context: ContextTypes.DEFAULT_TYPE, use
                 }
 
                 user_link = get_user_link(recent_scores[0])
-                table = get_average_table(table_data)     
+                table = get_average_table(table_data)
+
 
                 text=(
                     f'{user_link}\n'
                     f'\n'
-                    f'<code>Из последних</code>  <b>{len(recent_scores)}</b>  <code>игр:</code>\n'
+                    f'<code>{AT.get(scores_type)[lang]}</code>  <b>{len(recent_scores)}</b>  '  
+                    f'<code>{AT.get("plays")[lang]}:</code>\n'
                     f'\n'
                     f'<pre>{table}</pre>'
                 )          
 
                 try:
-                    await context.bot.edit_message_text(
-                        chat_id=update.effective_chat.id,
-                        message_id=temp_message.message_id,
-                        text=text,
+                    await safe_edit_query(
+                        query, 
+                        text=text, 
                         parse_mode="HTML"
                     )
                     return
@@ -183,23 +199,12 @@ async def average_recent(update: Update, context: ContextTypes.DEFAULT_TYPE, use
                         parse_mode="HTML"            
                 )
             else:
-                await context.bot.edit_message_text(
-                    chat_id=update.effective_chat.id,
-                    message_id=temp_message.message_id,
-                    text="`Нет данных`",
+                await safe_edit_query(
+                    query, 
+                    text=f"`{T.get('No data...')[lang]}`", 
                     parse_mode="Markdown"
                 )
                 return
-
-            await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=temp_message.message_id)
-            return
-
-        except Exception as e:
-            print(f"Ошибка при average_recent (попытка {attempt}/{MAX_ATTEMPTS}): {e}")
-            if attempt == MAX_ATTEMPTS:
-                await context.bot.edit_message_text(
-                    chat_id=update.effective_chat.id,
-                    message_id=temp_message.message_id,
-                    text=f"`Ошибка после {MAX_ATTEMPTS} попыток...`",
-                    parse_mode="Markdown"
-                )
+            
+    except Exception:
+        traceback.print_exc() 

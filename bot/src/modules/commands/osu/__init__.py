@@ -1,11 +1,6 @@
 
 
 
-from .average import (
-    start_average_stats, start_average_recent
-) 
-
-
 from .beatmap import (
     start_maps_skill, start_beatmap_audio,
 
@@ -32,17 +27,15 @@ from .leaderboard import (
 
 
 from .profile import (
-    start_compare_profile, start_profile, 
+    start_compare_profile, start_profile, start_average, 
     start_mappers, start_mods, start_anime,
 
-    callback_prf_ctx
+    callback_avg, callback_prf_ctx
 ) 
 
 
 from .score import (
     start_rs, start_nochoke, start_recent_fix, start_scores_best,
-
-    score_override,
 
     callback_rs, callback_scb, callback_nch
 )
