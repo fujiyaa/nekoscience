@@ -64,7 +64,8 @@ async def average(update: Update, context: ContextTypes.DEFAULT_TYPE):
             origin_user_id = update.effective_user.id,
             osu_username = username,
             ruleset = 'osu',
-            keyboard_type = SELECT_TYPE
+            keyboard_type = SELECT_TYPE,
+            language = lang
         )
 
         if reply_markup is None:

@@ -21,6 +21,7 @@ from config import USER_SETTINGS_FILE
 from .....systems.translations import (
     DEFAULT_COMMAND_TEMPLATE as T,
     COMMAND_AVERAGE as AT,
+    DEFAULT_SCORES_PROP as SP
 )
 
 
@@ -158,22 +159,22 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         return ("-", "-", "-")
                     return (min(numeric_values), mean(numeric_values), max(numeric_values))                
 
-                table_data = {
-                    "Accuracy": calc_stats(accs),
-                    "Combo": calc_stats(combos),
-                    "Misses": calc_stats(misses),
-                    "Stars": calc_stats(stars),
-                    "PP": calc_stats(pps),
-                    "AR": calc_stats(ars),
-                    "CS": calc_stats(css),
-                    "HP": calc_stats(hps),
-                    "OD": calc_stats(ods),
-                    "BPM": calc_stats(bpms),
-                    "Length": calc_stats(lengths),
+                table_data = {                    
+                    SP.get('Accuracy')[lang]:   calc_stats(accs),
+                    SP.get('Combo')[lang]:      calc_stats(combos),
+                    SP.get('Misses')[lang]:     calc_stats(misses),
+                    SP.get('Stars')[lang]:      calc_stats(stars),
+                    SP.get('PP')[lang]:         calc_stats(pps),
+                    SP.get('AR')[lang]:         calc_stats(ars),
+                    SP.get('CS')[lang]:         calc_stats(css),
+                    SP.get('HP')[lang]:         calc_stats(hps),
+                    SP.get('OD')[lang]:         calc_stats(ods),
+                    SP.get('BPM')[lang]:        calc_stats(bpms),
+                    SP.get('Length')[lang]:     calc_stats(lengths),
                 }
 
                 user_link = get_user_link(recent_scores[0])
-                table = get_average_table(table_data)
+                table = get_average_table(table_data, lang)
 
 
                 text=(

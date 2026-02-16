@@ -1,7 +1,11 @@
 
 
 
-def get_average_table(table_data):
+from ..systems.translations import DEFAULT_SCORES_PROP as SP
+
+
+
+def get_average_table(table_data, lang):
     formatted_table_data = {}
     for key, values in table_data.items():
         formatted_values = []
@@ -16,7 +20,12 @@ def get_average_table(table_data):
                 formatted_values.append(str(v))
         formatted_table_data[key] = formatted_values
 
-    headers = ["", "Minimum", "Average", "Maximum"]
+    headers = [
+        "", 
+        SP.get('Minimum')[lang], 
+        SP.get('Average')[lang], 
+        SP.get('Maximum')[lang]
+    ]
     rows = [[key, *values] for key, values in formatted_table_data.items()]
 
     col_widths = [

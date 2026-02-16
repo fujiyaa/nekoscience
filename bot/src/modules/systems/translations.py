@@ -47,6 +47,65 @@ DEFAULT_SCORES_TYPES = {
     }
 }
 
+DEFAULT_SCORES_PROP = {
+    "Minimum": {
+        "en": "Minimum",
+        "ru": "Минимум"
+    },
+    "Average": {
+        "en": "Average",
+        "ru": "Среднее"
+    },
+    "Maximum": {
+        "en": "Maximum",
+        "ru": "Максимум"
+    },
+    "Accuracy": {
+        "en": "Accuracy",
+        "ru": "Точность"
+    },
+    "Combo": {
+        "en": "Combo",
+        "ru": "Комбо"
+    },
+    "Misses": {
+        "en": "Misses",
+        "ru": "Миссы"
+    },
+    "Stars": {
+        "en": "Stars",
+        "ru": "Звезды"
+    },
+    "PP": {
+        "en": "PP",
+        "ru": "PP"
+    },
+    "AR": {
+        "en": "AR",
+        "ru": "АР"
+    },
+    "CS": {
+        "en": "CS",
+        "ru": "КС"
+    },
+    "HP": {
+        "en": "HP",
+        "ru": "ХП"
+    },
+    "OD": {
+        "en": "OD",
+        "ru": "ОД"
+    },
+    "BPM": {
+        "en": "BPM",
+        "ru": "БПМ"
+    },
+    "Length": {
+        "en": "Length",
+        "ru": "Длина"
+    }
+}
+
 DEFAULT_BUTTON_TYPES = {
     "Cancel": {
         "en": "✖️ Cancel",
