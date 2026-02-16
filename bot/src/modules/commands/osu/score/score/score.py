@@ -46,7 +46,7 @@ async def score(update: Update, context: ContextTypes.DEFAULT_TYPE, requested_by
     try:
         token = await get_osu_token()
 
-        cached_entry =  await get_score_by_id(score_id, token)
+        cached_entry =  await get_score_by_id(score_id, token, override = True)
 
         if not cached_entry:
             await safe_send_message(update, "❌ Не удалось загрузить скор", parse_mode="Markdown")
