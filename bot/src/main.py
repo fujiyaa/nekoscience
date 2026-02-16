@@ -43,7 +43,6 @@ from modules.commands.osu import (
 
     # scores
     start_rs, start_nochoke, start_recent_fix, start_scores_best,
-    score_override,
     callback_rs, callback_scb, callback_nch
 )
 
@@ -75,30 +74,43 @@ from modules.actions.osu_chat import callback as osu_chat_callback
 def register_commands(app):
     command_map = {
         # osu
-        ("mods",):                          start_mods,
-        ("mappers",):                       start_mappers,
-        ("profile", "p"):                   start_profile,
-        ("card", "c"):                      start_card,
-        ("map", "cardmap", "cm"):           start_beatmap_card,
-        ("skills",):                        start_skills,
-        ("cardtop", "ct"):                  start_card_top5,
-        ("recent_fix", "fix", "f"):         start_recent_fix,
-        ("recent", "rs", "r"):              start_rs,
-        ("pc",):                            start_compare_profile,
-        ("music",):                         start_beatmap_audio,
-        ("maps_skill", "ms"):               start_maps_skill,
+
+        # average
         ("average", "avg", "a"):            start_average_stats,
         ("reaverage", "reavg", "rea"):      start_average_recent,
-        ("nochoke", "n"):                   start_nochoke,
-        ("anime", "goon"):                  start_anime,
-        ("challenge",):                     start_challenge,
-        ("leaderboard", "topchat", "l"):    start_leaderboard_chat,
-        ("s", "sc", "score", "scores"):     start_scores_best,        
-        ("simulate",):                      simulate,
-        ("beatmaps", "b"):                  beatmaps,
-        ("name", "link", "nick", "osu"):    set_name,
-        ("higherlower", "hl"):              start_higherlower_game,
 
+        # beatmaps
+        ("maps_skill", "ms"):               start_maps_skill,
+        ("music",):                         start_beatmap_audio,
+        ("beatmaps", "b"):                  beatmaps,
+        ("simulate",):                      simulate,
+
+        # cards
+        ("card", "c"):                      start_card,
+        ("skills",):                        start_skills,
+        ("cardtop", "ct"):                  start_card_top5,
+        ("map", "cardmap", "cm"):           start_beatmap_card,
+
+        # leaderboard
+        ("leaderboard", "topchat", "l"):    start_leaderboard_chat,
+
+        # profile
+        ("pc",):                            start_compare_profile,
+        ("profile", "p"):                   start_profile,
+        ("mappers",):                       start_mappers,
+        ("mods",):                          start_mods,
+        ("anime", "goon"):                  start_anime,
+        
+        # scores
+        ("recent", "rs", "r"):              start_rs,
+        ("nochoke", "n"):                   start_nochoke,
+        ("recent_fix", "fix", "f"):         start_recent_fix,
+        ("s", "sc", "score", "scores"):     start_scores_best,  
+              
+        # osu_games
+        ("challenge",):                     start_challenge,
+        ("higherlower", "hl"):              start_higherlower_game,
+      
         # fun
         ("gn",):                            random_image,
         ("doubt", "ban"):                   doubt,
@@ -106,11 +118,11 @@ def register_commands(app):
         ("reminders",):                     reminders_command,
 
         # service
-        ("start", "help"):                  start_help,
+        ("start", "help"):                  start_help, 
+        ("name", "link", "nick", "osu"):    set_name,
         ("settings",):                      settings_cmd,
         ("ping",):                          ping,
-        ("uptime",):                        uptime,
-        ("scoreoverride",):                 score_override
+        ("uptime",):                        uptime
     }
 
     for names, handler in command_map.items():
