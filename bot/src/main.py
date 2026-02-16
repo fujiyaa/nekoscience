@@ -136,32 +136,32 @@ def register_callbacks(app):
 
         # beatmaps
         (callback_bms,      r"^beatmaps_"),
-        (callback_msk1,          r"^ms_(skill|mod|lazer|tol):"),
-        (callback_msk2,          r"^ms_page:"),
+        (callback_msk1,     r"^ms_(skill|mod|lazer|tol):"),
+        (callback_msk2,     r"^ms_page:"),
         (callback_sim,      r"^simulate_"),
-        (callback_sim_ctx, r"^sim_context:(map|cancel)"),
+        (callback_sim_ctx,  r"^sim_context:(map|cancel)"),
 
         # cards
-        (callback_map_ctx, r"^card_beatmap_context:(map|cancel)"),
+        (callback_map_ctx,  r"^card_beatmap_context:(map|cancel)"),
 
         # leaderboard
-        (callback_lb,  r"^leaderboard_chat_"),
+        (callback_lb,       r"^leaderboard_chat_"),
 
         # profile
         (callback_prf_ctx,  r"^profile_context:(username|cancel)"),
 
         # scores
-        (callback_rs,            r"^rs_"),
-        (callback_scb,  r"^score_best:(map|cancel)"),
-        (callback_nch,       r"^page_\d+_\d+$"),
+        (callback_rs,       r"^rs_"),
+        (callback_scb,      r"^score_best:(map|cancel)"),
+        (callback_nch,      r"^page_\d+_\d+$"),
         
         # osu_games
-        (callback_day,    r"^challenge_(main|next|finish|skip|leaderboard|info)"),
-        (callback_hl,    r"^osugamehl_(main|next|finish|\d+)"),
+        (callback_day,      r"^challenge_(main|next|finish|skip|leaderboard|info)"),
+        (callback_hl,       r"^osugamehl_(main|next|finish|\d+)"),
 
         # service
-        (settings_handler,      r"^settings_"),                    
-        (osu_chat_callback,     r"^send_pm_with_link_to:"),        
+        (settings_handler,  r"^settings_"),                    
+        (osu_chat_callback, r"^send_pm_with_link_to:"),        
     ]
 
     for handler, pattern in callbacks:
