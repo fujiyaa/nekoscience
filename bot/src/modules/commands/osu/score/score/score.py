@@ -1,8 +1,8 @@
 
 
 
+import asyncio
 import traceback
-
 from telegram import Update
 from telegram.ext import ContextTypes
 
@@ -12,7 +12,8 @@ from .....actions.messages import safe_send_message
 from .....external.osu_api import get_osu_token, get_score_by_id
 from .....wrappers.score import send_score
 from .....actions.context import set_message_context
-from .processing_v1 import create_score_compare_image
+from .....systems.images import delayed_remove
+from .....image_processing.workflows.score_adaptive.processing_v1 import create_score_compare_image
 import temp
 
 from config import COOLDOWN_RS_COMMAND     # why
@@ -84,8 +85,11 @@ async def score(update: Update, context: ContextTypes.DEFAULT_TYPE, requested_by
                         caption=caption,
                         parse_mode="HTML"    
                     )
+                
+                    asyncio.create_task(delayed_remove(img_path))
+
                 else:
-                    raise()
+                    raise() 
             except Exception:
                 traceback.print_exc()            
 
