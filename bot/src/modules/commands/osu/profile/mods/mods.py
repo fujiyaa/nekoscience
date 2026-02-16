@@ -1,0 +1,120 @@
+
+
+
+import asyncio
+
+from telegram import Update
+from telegram.ext import ContextTypes
+
+from .....actions.messages import safe_send_message
+from .....systems.cooldowns import check_user_cooldown
+from .....systems.logging import log_all_update
+from .....external.osu_api import get_osu_token, get_user_profile, get_top_100_scores
+from .....systems.auth import check_osu_verified
+from .....wrappers.mods_top import get_mods_top
+
+from config import COOLDOWN_STATS_COMMANDS
+
+
+
+async def start_mods(update, context, user_request=True):
+    await log_all_update(update)
+    asyncio.create_task(mods(update, context, user_request)) 
+
+async def mods(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request):
+    can_run = await check_user_cooldown(
+            command_name="mods",
+            user_id=str(update.effective_user.id),
+            cooldown_seconds=COOLDOWN_STATS_COMMANDS,           
+            update=update,
+            context=context,
+            warn_text=f"⏳ Подождите {COOLDOWN_STATS_COMMANDS} секунд"
+        )
+    if not can_run:
+        return
+    MAX_ATTEMPTS = 3
+
+    user_id = str(update.message.from_user.id)
+    saved_name = await check_osu_verified(str(update.effective_user.id))
+
+    if not context.args:
+        if saved_name:
+            username = saved_name
+        else:
+            text = (
+                "Использование: `/mods fujina123` <- никнейм\n\n\n"
+                "⚙ *Дополнительно*\n\n"
+                "/name – сохранить ник\n"
+            )
+            await safe_send_message(update, text, parse_mode="Markdown")
+            return
+    else:
+        username = " ".join(context.args)
+
+    if saved_name is None:
+        saved_name = 'нет'
+
+    temp_message = await update.message.reply_text(
+        "`Загрузка...`", parse_mode="Markdown"
+    )
+
+    for attempt in range(1, MAX_ATTEMPTS + 1):
+        try:
+            token = await get_osu_token()
+            user_data = await asyncio.wait_for(get_user_profile(username, token=token), timeout=10)
+            if not user_data:
+                await context.bot.edit_message_text(
+                    chat_id=update.effective_chat.id,
+                    message_id=temp_message.message_id,
+                    text="`Игрок не найден`",
+                    parse_mode="Markdown"
+                )
+                return
+
+            try:
+                user_id = user_data["id"]
+                best_pp = await asyncio.wait_for(get_top_100_scores(username, token, user_id), timeout=10)
+            except Exception as e:
+                best_pp = "N/A"
+                print(e)
+
+
+            if isinstance(best_pp, list) and best_pp:
+
+                text = get_mods_top(user_data, best_pp)                
+
+                try:
+                    await context.bot.edit_message_text(
+                        chat_id=update.effective_chat.id,
+                        message_id=temp_message.message_id,
+                        text=text,
+                        parse_mode="HTML"
+                    )
+                    return
+                except:
+                    await context.bot.send_message(
+                        chat_id=update.effective_chat.id,
+                        text=text,
+                        parse_mode="HTML"            
+                )
+            else:
+                await context.bot.edit_message_text(
+                    chat_id=update.effective_chat.id,
+                    message_id=temp_message.message_id,
+                    text="`Нет данных о топ100`",
+                    parse_mode="Markdown"
+                )
+                return
+
+            await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=temp_message.message_id)
+            return
+
+        except Exception as e:
+            print(f"Ошибка при mods (попытка {attempt}/{MAX_ATTEMPTS}): {e}")
+            if attempt == MAX_ATTEMPTS:
+                await context.bot.edit_message_text(
+                    chat_id=update.effective_chat.id,
+                    message_id=temp_message.message_id,
+                    text=f"`Ошибка после {MAX_ATTEMPTS} попыток...`",
+                    parse_mode="Markdown"
+                )

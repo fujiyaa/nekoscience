@@ -4,8 +4,8 @@
 import asyncio, os
 from datetime import datetime
 
-from ...systems.translations import UTILS_ISO_TO_DAYSMONTHSYEAR as T
-
+from .....systems.translations import UTILS_ISO_TO_DAYSMONTHSYEAR as T
+# from translations import UTILS_ISO_TO_DAYSMONTHSYEAR as T
 
 
 def format_length(seconds: int) -> str:
@@ -16,17 +16,14 @@ def format_length(seconds: int) -> str:
                 return f"{m}:{s:02}"
 
 def iso_to_DaysMonthYear(iso_str: str, lang: str) -> str:
-    try:
-        dt = datetime.fromisoformat(iso_str.replace("Z", "+00:00"))
+    dt = datetime.fromisoformat(iso_str.replace("Z", "+00:00"))
 
-        d, m, y = dt.strftime("%d"), dt.strftime("%b"), dt.strftime("%Y")
 
-        m = T.get(str(m), m)[lang]
-        
-        return f"{d} {m} {y}"
+    d, m, y = dt.strftime("%d"), dt.strftime("%b"), dt.strftime("%Y")
+
+    m = T.get(str(m), m)[lang]
     
-    except:
-        return '???'
+    return f"{d} {m} {y}"
 
 def stars_to_prop(stars, max_stars=10):
     stars = int(max(0, min(stars, max_stars)))
@@ -49,15 +46,8 @@ def trim_text(text: str, max_len: int) -> str:
     if len(trimmed) < max_len // 2:
         trimmed = text[:max_len - 3]
 
-    return trimmed + "...."
+    return trimmed + "..."
 
-def calculate_max_diff(current_score, target_score=100, max_val=150, min_val=10, power=0.3):
-    
-    t = min(current_score / target_score, 1.0)
-    
-    max_diff = min_val + (max_val - min_val) * (1 - t**power)
-
-    return max_diff
-
-# for score in range(0, 101, 10):
-#     print(score, calculate_max_diff(score))
+async def delayed_remove(path, delay=5):
+    await asyncio.sleep(delay)
+    os.remove(path)

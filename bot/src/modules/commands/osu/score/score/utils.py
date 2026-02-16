@@ -4,7 +4,7 @@
 import asyncio, os
 from datetime import datetime
 
-from ...systems.translations import UTILS_ISO_TO_DAYSMONTHSYEAR as T
+from .....systems.translations import UTILS_ISO_TO_DAYSMONTHSYEAR as T
 
 
 
@@ -51,13 +51,6 @@ def trim_text(text: str, max_len: int) -> str:
 
     return trimmed + "...."
 
-def calculate_max_diff(current_score, target_score=100, max_val=150, min_val=10, power=0.3):
-    
-    t = min(current_score / target_score, 1.0)
-    
-    max_diff = min_val + (max_val - min_val) * (1 - t**power)
-
-    return max_diff
-
-# for score in range(0, 101, 10):
-#     print(score, calculate_max_diff(score))
+async def delayed_remove(path, delay=5):
+    await asyncio.sleep(delay)
+    os.remove(path)

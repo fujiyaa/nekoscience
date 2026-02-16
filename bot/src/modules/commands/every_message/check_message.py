@@ -12,8 +12,8 @@ from ...systems.logging import log_all_update
 from ...systems.auth import verify_osu_user
 from ...systems.logging import log_deleted_message
 from ..fun.reminders.reminders import start_check_reminders
-from ..osu.simulate.text_input import start_simulate_text_handler
-from ..osu.card_beatmap.beatmap import start_beatmap_card
+from modules.commands.osu.beatmap.simulate.text_input import start_simulate_text_handler
+from modules.commands.osu.card.beatmap.card import start_beatmap_card
 from .start_something import start_osu_link_handler
 
 from .blacklist import blacklist
