@@ -142,9 +142,9 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     )
 
                     pps.append(pp)
-                    accs.append(osu_score.get('accuracy', 0.0) * 100)
-                    combos.append(osu_score.get("max_combo", 0))
-                    misses.append(osu_score.get("count_miss", 0))                    
+                    accs.append((osu_score.get('accuracy') or 0) * 100)
+                    combos.append(osu_score.get("max_combo") or 0)
+                    misses.append(osu_score.get("count_miss") or 0)                    
                     stars.append(neko_api_calc.get("star_rating") or 0) 
                     ars.append(ar)
                     css.append(cs)
