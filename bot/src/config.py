@@ -47,6 +47,7 @@ FLAG_FILE = BOT_DIR / "stats/flags/worker_running.flag"
 STATS_BEATMAPS = BOT_DIR / "stats/beatmaps"
 USER_SETTINGS_FILE = BOT_DIR / "settings/user_settings.json"
 OSU_ID_CACHE_FILE = BOT_DIR / "settings/osu_user_cache.json"
+USAGE_FILE = BOT_DIR / "cooldowns/cooldowns_v2.json"
 
 GRAPH_PNG = BOT_DIR / 'cards/assets/card_profile/graph.png'
 
@@ -70,6 +71,14 @@ COOLDOWN_HLGAME_COMMANDS = 5
 RS_BUTTONS_TIMEOUT = 30
 URL_SCAN_TIMEOUT = 2
 LXML_TIMEOUT = 0.3
+
+DEFAULT_COOLDOWN_V2 = 5
+ACTIONS_COOLDOWNS = {
+    'telegram_bot': {
+        'default': 5,
+        'average': 10
+    }
+}
 
 OSU_CLIENT_ID = os.getenv("OSU_CLIENT_ID")
 OSU_CLIENT_SECRET = os.getenv("OSU_CLIENT_SECRET")
