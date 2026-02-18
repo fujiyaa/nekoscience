@@ -140,7 +140,7 @@ def register_callbacks(app):
         (callback_lb,       r"^leaderboard_chat_"),
 
         # profile
-        (callback_prf_ctx,  r"^profile_context:(username|cancel)"),
+        (callback_prf_ctx,  r"^ctx1:"),
         (callback_avg,      r"^average1:(u|c)"),
 
         # scores

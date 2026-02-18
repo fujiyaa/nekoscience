@@ -8,10 +8,12 @@ from .....systems.auth import check_osu_verified
 
 
 async def get_keyboard(
-        message_context,
-        message_context_reply, 
-        current_username,
-        origin_user_id) -> InlineKeyboardMarkup:
+    message_context,
+    message_context_reply, 
+    current_username,
+    origin_user_id,
+    action: str
+) -> InlineKeyboardMarkup:
     
     keyboard = []
 
@@ -62,12 +64,13 @@ async def get_keyboard(
     osu_username1, osu_username2, current_username, origin_username1, origin_username2 = usernames
     mapper_username1, mapper_username2 = mappers
 
+    good_action = f"ctx1:{action}:u"
 
     if current_username:
         keyboard.append([
             InlineKeyboardButton(
                 f"{current_username} (свой профиль)",
-                callback_data=f"profile_context:username:{current_username}:{origin_user_id}"
+                callback_data=f"{good_action}:{current_username}:{origin_user_id}"
             )
         ])
 
@@ -75,7 +78,7 @@ async def get_keyboard(
         keyboard.append([
             InlineKeyboardButton(
                 f"{origin_username1} (запрос команды)",
-                callback_data=f"profile_context:username:{origin_username1}:{origin_user_id}"
+                callback_data=f"{good_action}:{origin_username1}:{origin_user_id}"
             )
         ])
 
@@ -83,7 +86,7 @@ async def get_keyboard(
         keyboard.append([
             InlineKeyboardButton(
                 f"{origin_username2} (запрос команды)",
-                callback_data=f"profile_context:username:{origin_username2}:{origin_user_id}"
+                callback_data=f"{good_action}:{origin_username2}:{origin_user_id}"
             )
         ])
 
@@ -91,7 +94,7 @@ async def get_keyboard(
         keyboard.append([
             InlineKeyboardButton(
                 f"{osu_username1} (последний профиль)",
-                callback_data=f"profile_context:username:{osu_username1}:{origin_user_id}"
+                callback_data=f"{good_action}:{osu_username1}:{origin_user_id}"
             )
         ])
 
@@ -99,7 +102,7 @@ async def get_keyboard(
         keyboard.append([
             InlineKeyboardButton(
                 f"{osu_username2} (последний профиль)",
-                callback_data=f"profile_context:username:{osu_username2}:{origin_user_id}"
+                callback_data=f"{good_action}:{osu_username2}:{origin_user_id}"
             )
         ])
 
@@ -107,7 +110,7 @@ async def get_keyboard(
         keyboard.append([
             InlineKeyboardButton(
                 f"{mapper_username1} (маппер {map_title1})",
-                callback_data=f"profile_context:username:{mapper_username1}:{origin_user_id}"
+                callback_data=f"{good_action}:{mapper_username1}:{origin_user_id}"
             )
         ])
 
@@ -115,14 +118,14 @@ async def get_keyboard(
         keyboard.append([
             InlineKeyboardButton(
                 f"{mapper_username2} (маппер {map_title2})",
-                callback_data=f"profile_context:username:{mapper_username2}:{origin_user_id}"
+                callback_data=f"{good_action}:{mapper_username2}:{origin_user_id}"
             )
         ])
 
     keyboard.append([
         InlineKeyboardButton(
             "✖️ Отмена",
-            callback_data=f"profile_context:cancel:x:{origin_user_id}"
+            callback_data=f"ctx1:action:c:username:{origin_user_id}"
         )
     ])
 

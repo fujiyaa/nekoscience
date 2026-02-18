@@ -8,7 +8,7 @@ from telegram.ext import ContextTypes
 
 from ...systems.cooldowns import is_on_cooldown, update_cooldown
 from ..osu.score.score.score import score
-from ..osu.profile.profile.profile import start_profile
+from ..osu.profile.complex.router import start_profile
 
 from config import COOLDOWN_LINKS_IN_CHAT, OSU_USER_REGEX, OSU_SCORE_REGEX
 

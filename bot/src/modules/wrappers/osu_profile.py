@@ -5,9 +5,9 @@ from ..utils.text_format import country_code_to_flag, format_osu_date2
 
 
 
-def get_profile_text(user_data, best_pp):
+def get_profile_text(user_data):
     
-    if isinstance(best_pp, list) and best_pp:                
+    if isinstance(user_data, dict):                
         username = user_data["username"]
         stats = user_data["statistics"]
         pp_text = f"{stats.get('pp')}" if stats.get("pp") else "0"

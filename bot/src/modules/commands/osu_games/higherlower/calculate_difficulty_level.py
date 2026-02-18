@@ -9,5 +9,5 @@ def calculate_max_diff(current_score, target_score=200, max_val=300, min_val=10,
 
     return max_diff
 
-for score in range(0, 201, 10):
-    print(score, calculate_max_diff(score))
+# for score in range(0, 201, 10):
+#     print(score, calculate_max_diff(score))
