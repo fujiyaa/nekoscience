@@ -126,9 +126,6 @@ def register_commands(app):
 
 def register_callbacks(app):
     callbacks = [
-        # average
-        # ...
-
         # beatmaps
         (callback_bms,      r"^beatmaps_"),
         (callback_msk1,     r"^ms_(skill|mod|lazer|tol):"),
@@ -145,6 +142,7 @@ def register_callbacks(app):
         # profile
         (callback_prf_ctx,  r"^profile_context:(username|cancel)"),
         (callback_avg,      r"^average1:(u|c)"),
+
         # scores
         (callback_rs,       r"^rs_"),
         (callback_scb,      r"^score_best:(map|cancel)"),

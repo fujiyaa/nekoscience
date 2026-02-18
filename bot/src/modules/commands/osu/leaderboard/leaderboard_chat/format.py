@@ -1,21 +1,68 @@
 
 
 
-from collections import defaultdict
+import math
 
+
+
+def format_dynamic(value, max_significant=2):
+    if value == 0:
+        return "0"
+
+    abs_val = abs(value)
+
+    if abs_val >= 1:
+        formatted = f"{value:,.2f}"
+    else:
+        # считаем сколько нулей после точки
+        zeros = int(-math.floor(math.log10(abs_val)))
+        precision = zeros + max_significant - 1
+        formatted = f"{value:.{precision}f}"
+
+    return formatted.rstrip("0").rstrip(".")
 
 def format_caption(i, country_code, name, prop_value, prop_pre, prop_post):
-    return f"{i}. {country_code} {name} - {prop_pre}{prop_value}{prop_post}"
+    if isinstance(prop_value, float):
+        value = format_dynamic(prop_value)
+    else:
+        value = f"{prop_value:,}"
+    return f"{i}. {country_code} {name} - {prop_pre}{value}{prop_post}"
 
 def format_stats(user):
     stats = user["statistics"]
     level = float(f"{stats['level']['current']}.{stats['level']['progress']}")
     hours = stats["play_time"] // 3600
+    playcount = stats.get("play_count", 0)
     medals = len(user["user_achievements"])
+    
+    ssh_count = stats.get("grade_counts", {}).get("ssh", 0)
     ss_count = stats.get("grade_counts", {}).get("ss", 0)
+    sh_count = stats.get("grade_counts", {}).get("sh", 0)
     s_count = stats.get("grade_counts", {}).get("s", 0)
     a_count = stats.get("grade_counts", {}).get("a", 0)
+
     monthly = user.get('monthly_playcounts', [])
+
+    total_hits = stats.get("total_hits", 0)
+    count_300 = stats.get("count_300", 0)
+    count_100 = stats.get("count_100", 0)
+    count_50 = stats.get("count_50", 0)
+    count_miss = stats.get("count_miss", 0)
+    miss_ratio = 0
+
+    if count_miss > 0 and total_hits > 0:
+        miss_ratio = total_hits / count_miss
+
+    if playcount > 0 and hours > 0:
+        minutes_per_play = (hours * 60) / playcount
+    else:
+        minutes_per_play = 0
+
+    if hours > 0:
+        hits_per_hour = total_hits / hours
+    else:
+        hits_per_hour = 0
+
 
     if monthly:
         max_count = max(item['count'] for item in monthly)
@@ -61,19 +108,22 @@ def format_stats(user):
     return {
         "name": user["username"],
         "rank": stats.get("global_rank") or 0,
+        "rank_perc": stats.get("global_rank_percent") or 0,
         "country_rank": stats.get("country_rank") or 0,
         "peak_rank": user["rank_highest"]["rank"] if user.get("rank_highest") else 0,
         "pp": stats.get("pp", 0),
         "acc": stats.get("hit_accuracy", 0),
         "level": level,
         "hours": hours,
-        "playcount": stats.get("play_count", 0),
+        "playcount": playcount,
         "avg_count_per_month": avg_count_per_month,
         # "ranked_score": user['statistics']['ranked_score'],
         "ranked_score": stats.get("ranked_score", 0),
         "total_score": stats.get("total_score", 0),
-        "total_hits": stats.get("total_hits", 0),
+        "total_hits": total_hits,
+        "ssh": ssh_count,
         "ss": ss_count,
+        "sh": sh_count,
         "s": s_count,
         "a": a_count,
         "max_combo": stats.get("maximum_combo", 0),
@@ -94,4 +144,13 @@ def format_stats(user):
         # "not_anime_bg_counter": not_anime_bg_counter,
 
         "country_code": user['country_code'],
+
+        "count_300": count_300,
+        "count_100": count_100,
+        "count_50": count_50,
+        "count_miss": count_miss,
+        "miss_ratio": miss_ratio,
+
+        "hits_per_hour": hits_per_hour,
+        "minutes_per_play": minutes_per_play        
     }
