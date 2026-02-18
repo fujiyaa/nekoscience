@@ -203,10 +203,12 @@ async def finish_game(update: Update, context: ContextTypes.DEFAULT_TYPE, score_
                         f"\n"
                         )       
 
-                if current_score < 75:
+                if current_score < 90:
                     next_scores_quantity = 2
+                elif current_score < 170:
+                    next_scores_quantity = 3
                 else:
-                    next_scores_quantity = 3                
+                    next_scores_quantity = 4           
                                  
                 reply_markup = get_keyboard(f"finish_{next_scores_quantity}")
 
