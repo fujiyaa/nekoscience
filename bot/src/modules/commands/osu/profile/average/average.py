@@ -4,7 +4,7 @@
 import traceback
 from telegram import Update
 
-from .....actions.messages import safe_edit_query
+from .....actions.messages import safe_edit_query, safe_edit_message
 from .buttons import get_keyboard
 
 from .....systems.translations import DEFAULT_COMMAND_TEMPLATE as T
@@ -33,13 +33,21 @@ async def average(
                 f'reply_markup is None'
             )
         
-        await safe_edit_query(
-            query,
-            text=f"`{T.get('Select...')[language]}`",
-            parse_mode="Markdown",
-            reply_markup=reply_markup,
-            disable_web_page_preview=False,
-        )
+        if query is not None:        
+            await safe_edit_query(
+                query,
+                text=f"`{T.get('Select...')[language]}`",
+                parse_mode="Markdown",
+                reply_markup=reply_markup,
+                disable_web_page_preview=False,
+            )
+        else:
+            await safe_edit_message(
+                update.effective_message,
+                text=f"`{T.get('Select...')[language]}`",
+                parse_mode="Markdown",
+                reply_markup=reply_markup
+            )
 
     except Exception:
         traceback.print_exc() 
