@@ -41,7 +41,7 @@ async def callback(update: Update, _context: ContextTypes.DEFAULT_TYPE):
             return
 
         if proceed_or_cancel == "u":                 
-            await safe_edit_query(query, text="`Загрузка...`", parse_mode="Markdown")             
+            await safe_edit_query(query, text="`Загрузка!!!...`", parse_mode="Markdown")             
         
         await send_query(
             update, 

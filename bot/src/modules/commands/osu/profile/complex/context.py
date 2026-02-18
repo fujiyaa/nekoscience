@@ -95,8 +95,10 @@ async def context_lookup(
     else:
         username = " ".join(context.args)
 
-    if saved_name is None:
-        saved_name = 'нет'
+    
+    if action == 'average':
+        return update.effective_message, username
+    
 
     if update.message:
         temp_message = await update.message.reply_text(
