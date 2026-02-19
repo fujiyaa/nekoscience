@@ -41,6 +41,9 @@ help_text = """Darkness
 │  │         аниме фоны в топ100
 │  │
 │  ├─ 🗺 Карты
+│  │   ├─  @fujiyaosubot map ...📖
+│  │   │    искать карты
+│  │   │
 │  │   ├─  /simulate
 │  │   │    посчитать рр карты
 │  │   │
@@ -172,6 +175,12 @@ HELP_TEXTS = {
 
     Лидерборд:
     в команде /topchat
+""","inline": """
+📖
+    @fujiyaosubot | map
+    <b>поиск карт</b>
+
+    <code>@fujiyaosubot map The Big Black</code> — найти биг блек        
 """
 }
 

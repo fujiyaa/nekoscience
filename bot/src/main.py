@@ -8,6 +8,7 @@ from telegram.ext import (
     CommandHandler,
     MessageHandler,
     CallbackQueryHandler,
+    InlineQueryHandler,
     filters,
 )
 
@@ -63,9 +64,15 @@ from modules.commands.service import (
     uptime, ping
 )
 
+# inline
+from modules.inline import (
+    inline_osu_search
+)
+
 # other callbacks
 from modules.commands.service.settings.callback import callback as settings_handler
 from modules.actions.osu_chat import callback as osu_chat_callback
+# from modules.inline import callback as settings_handler
 
 # команды не начинающиеся со start_ не асинхронные.
 def register_commands(app):
@@ -176,7 +183,11 @@ def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(
-        MessageHandler(filters.ALL & ~filters.COMMAND, check_message)
+        MessageHandler(filters.ALL & ~filters.COMMAND, check_message)        
+    )
+
+    app.add_handler(
+        InlineQueryHandler(inline_osu_search)
     )
 
     register_commands(app)
