@@ -182,9 +182,10 @@ async def get_beatmap(beatmap_id: int, token: str, timeout_sec: int = 10):
         timeout = aiohttp.ClientTimeout(total=timeout_sec)
         print('🔻 API request (beatmap)')
         async with aiohttp.ClientSession() as session:
-            async with session.get(url, headers=headers, timeout=timeout) as resp:
-                resp.raise_for_status()
-                return await resp.json()
+            async with api_limit:
+                async with session.get(url, headers=headers, timeout=timeout) as resp:
+                    resp.raise_for_status()
+                    return await resp.json()
     except (asyncio.TimeoutError, aiohttp.ClientError) as e:
         print(f"Request for beatmap_id '{beatmap_id}' failed: {e}")
         return None
@@ -201,9 +202,10 @@ async def get_beatmapset(beatmapset_id: int):
         timeout = aiohttp.ClientTimeout(total=TIMEOUT)
         print('🔻 API request (get beatmapsets)')
         async with aiohttp.ClientSession() as session:
-            async with session.get(url, headers=headers, timeout=timeout) as resp:
-                resp.raise_for_status()
-                return await resp.json()
+            async with api_limit:
+                async with session.get(url, headers=headers, timeout=timeout) as resp:
+                    resp.raise_for_status()
+                    return await resp.json()
     except (asyncio.TimeoutError, aiohttp.ClientError) as e:
         print(f"Request for '{beatmapset_id}' failed: {e}")
         return None
@@ -224,9 +226,10 @@ async def search_beatmapsets(text: str, cursor: str = None):
         timeout = aiohttp.ClientTimeout(total=TIMEOUT)
         print('🔻 API request (search beatmapsets)')
         async with aiohttp.ClientSession() as session:
-            async with session.get(url, headers=headers, params=params, timeout=timeout) as resp:
-                resp.raise_for_status()
-                return await resp.json()
+            async with api_limit:
+                async with session.get(url, headers=headers, params=params, timeout=timeout) as resp:
+                    resp.raise_for_status()
+                    return await resp.json()
     except (asyncio.TimeoutError, aiohttp.ClientError) as e:
         print(f"Request for '{text}' failed: {e}")
         return None
@@ -243,19 +246,20 @@ async def get_user_id(username: str, token: str = None, timeout_sec: int = 10):
         timeout = aiohttp.ClientTimeout(total=timeout_sec)
         print('🔻 API request (get_user_id)')
         async with aiohttp.ClientSession() as session:
-            async with session.get(
-                f"https://osu.ppy.sh/api/v2/users/{username}/osu",
-                headers={"Authorization": f"Bearer {token}"},
-                timeout=timeout
-            ) as resp:
-                if resp.status != 200:
-                    return None
-                data = await resp.json()
-                user_id = data.get("id")
-                if user_id:
-                    user_cache[username] = user_id
-                    temp.save_json(OSU_ID_CACHE_FILE, user_cache)
-                return user_id
+            async with api_limit:
+                async with session.get(
+                    f"https://osu.ppy.sh/api/v2/users/{username}/osu",
+                    headers={"Authorization": f"Bearer {token}"},
+                    timeout=timeout
+                ) as resp:
+                    if resp.status != 200:
+                        return None
+                    data = await resp.json()
+                    user_id = data.get("id")
+                    if user_id:
+                        user_cache[username] = user_id
+                        temp.save_json(OSU_ID_CACHE_FILE, user_cache)
+                    return user_id
     except (asyncio.TimeoutError, aiohttp.ClientError) as e:
         print(f"Request for user_id '{username}' failed: {e}")
         return None
@@ -273,13 +277,14 @@ async def get_osu_user_additional_data(user_id: str, mode: str, token: str = Non
         timeout = aiohttp.ClientTimeout(total=timeout_sec)
         print('🔻 API request (get_osu_user_additional_data)')
         async with aiohttp.ClientSession() as session:
-            async with session.get(url, headers=headers, timeout=timeout) as resp:
-                if resp.status == 200:
-                    data = await resp.json()
-                    return data
-                else:
-                    print("Error:", resp.status)
-                    return None
+            async with api_limit:
+                async with session.get(url, headers=headers, timeout=timeout) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        return data
+                    else:
+                        print("Error:", resp.status)
+                        return None
     except (asyncio.TimeoutError, aiohttp.ClientError) as e:
         print(f"Request for user_pp failed: {e}")
         return None
@@ -725,40 +730,41 @@ async def get_random_beatmap_from_random_pack(max_attempts=5):
         packs_url = "https://osu.ppy.sh/api/v2/beatmaps/packs?type=standard"
         headers = {"Authorization": f"Bearer {token}"}
         print('🔻 API request (get_random_beatmap_from_random_pack 1/2)')
-        async with session.get(packs_url, headers=headers) as resp:
-            data = await resp.json()
+        async with api_limit:
+            async with session.get(packs_url, headers=headers) as resp:
+                data = await resp.json()
 
-        packs = data.get("beatmap_packs", [])
-        # ruleset_id == 0
-        packs = [p for p in packs if p.get("ruleset_id") == None]
-
-        if not packs:
-            return None
-
-        for _ in range(max_attempts):
-            pack = random.choice(packs)
-            pack_tag = pack["tag"]
-
-            pack_detail_url = f"https://osu.ppy.sh/api/v2/beatmaps/packs/{pack_tag}"
-            print('🔻 API request (get_random_beatmap_from_random_pack 2/2)')
-            async with session.get(pack_detail_url, headers=headers) as resp:
-                pack_detail = await resp.json()
-
+            packs = data.get("beatmap_packs", [])
             # ruleset_id == 0
-            beatmapsets =  pack_detail.get("beatmapsets", [])
+            packs = [p for p in packs if p.get("ruleset_id") == None]
 
-            if beatmapsets:
-                beatmapset = random.choice(beatmapsets)
-                return {
-                    "beatmapset_id": beatmapset["id"],
+            if not packs:
+                return None
 
-                    "artist": beatmapset["artist"],
-                    "title": beatmapset["title"],
-                    "creator": beatmapset["creator"],                    
-                    "bg_url": beatmapset['covers']['card']
-                }
+            for _ in range(max_attempts):
+                pack = random.choice(packs)
+                pack_tag = pack["tag"]
 
-        return None
+                pack_detail_url = f"https://osu.ppy.sh/api/v2/beatmaps/packs/{pack_tag}"
+                print('🔻 API request (get_random_beatmap_from_random_pack 2/2)')
+                async with session.get(pack_detail_url, headers=headers) as resp:
+                    pack_detail = await resp.json()
+
+                # ruleset_id == 0
+                beatmapsets =  pack_detail.get("beatmapsets", [])
+
+                if beatmapsets:
+                    beatmapset = random.choice(beatmapsets)
+                    return {
+                        "beatmapset_id": beatmapset["id"],
+
+                        "artist": beatmapset["artist"],
+                        "title": beatmapset["title"],
+                        "creator": beatmapset["creator"],                    
+                        "bg_url": beatmapset['covers']['card']
+                    }
+
+            return None
     
 async def check_osu_challenge_completed(user_osu_id: int, beatmapset_id: int, goal: dict) -> bool:
     try:
@@ -768,10 +774,11 @@ async def check_osu_challenge_completed(user_osu_id: int, beatmapset_id: int, go
         
         print('🔻 API request (check_osu_challenge_completed)')
         async with aiohttp.ClientSession() as session:
-            async with session.get(url, headers=headers) as resp:
-                if resp.status != 200:
-                    return False
-                scores = await resp.json()
+            async with api_limit:
+                async with session.get(url, headers=headers) as resp:
+                    if resp.status != 200:
+                        return False
+                    scores = await resp.json()
 
         if not scores:
             return False
