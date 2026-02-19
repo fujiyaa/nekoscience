@@ -62,8 +62,6 @@ async def get_keyboard(message_context, message_context_reply,
         if map_ids:
             map_titles.append((map_title, map_ids, map_diffs))
 
-    keyboard = []
-
     for title, ids, diffs in map_titles:
         keyboard.append([
             InlineKeyboardButton(
