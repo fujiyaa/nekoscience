@@ -17,89 +17,64 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     user_id = str(query.from_user.id)
     name = str(query.from_user.name)
-    action, owner_id = query.data.split(":")
 
-    if user_id != owner_id:
-        await safe_query_answer(query, "Чужая кнопка") 
+    # Разбираем callback_data
+    parts = query.data.split(":")
+    if len(parts) < 2:
+        await query.answer("Неверная кнопка")
         return
 
+    setting_key = parts[0]
+    user_id_in_data = parts[-1]
+
+    if user_id != user_id_in_data:
+        await query.answer("Чужая кнопка")
+        return
+
+    # Загружаем настройки
     settings = temp.load_json(USER_SETTINGS_FILE, default={})
-    user_settings = settings.get(str(user_id), {
-            "lang": "ru", 
-            "notify": True, 
-            "rs_bg_render": False, 
-            "new_card": True,
-            "display_fails": True,
-            "display_more_scores": False,
-            "settings_score_card": False,
-        })    
+    user_settings = settings.get(user_id, {
+        "lang": "ru", 
+        "notify": True, 
+        "rs_bg_render": False, 
+        "new_card": True,
+        "display_fails": True,
+        "display_fails_average_recent": True,
+        "display_more_scores": False,
+        "settings_score_card": False,
+    })
 
-    if action == "settings_english":
-        user_settings["lang"] = "en"
-        await safe_query_answer(query) 
+    # Обработка булевых настроек
+    bool_settings_map = {
+        "settings_score_card": "settings_score_card",
+        "settings_sc_more_scores": "display_more_scores",
+        "settings_rs_fails": "display_fails",
+        "settings_ar_fails": "display_fails_average_recent",
+    }
 
-    elif action == "settings_russian":
-        user_settings["lang"] = "ru"
-        await safe_query_answer(query) 
-
-    elif action == "settings_rs_bg_yes":
-        user_settings["rs_bg_render"] = True
-        await safe_query_answer(query) 
-
-    elif action == "settings_rs_bg_no":
-        user_settings["rs_bg_render"] = False
-        await safe_query_answer(query) 
-
-    elif action == "settings_display_fails_y":
-        user_settings["display_fails"] = True
-        await safe_query_answer(query) 
-
-    elif action == "settings_display_fails_n":
-        user_settings["display_fails"] = False
+    if setting_key in bool_settings_map:
+        # инвертируем текущее значение
+        field = bool_settings_map[setting_key]
+        user_settings[field] = not user_settings.get(field, False)
         await safe_query_answer(query)
 
-    elif action == "settings_display_fails_ar_y":
-        user_settings["display_fails_average_recent"] = True
-        await safe_query_answer(query) 
+    elif setting_key == "settings_english":
+        user_settings["lang"] = "en"
+        await safe_query_answer(query)
 
-    elif action == "settings_display_fails_ar_n":
-        user_settings["display_fails_average_recent"] = False
-        await safe_query_answer(query) 
+    elif setting_key == "settings_russian":
+        user_settings["lang"] = "ru"
+        await safe_query_answer(query)
 
-    elif action == "settings_display_scores_y":
-        user_settings["display_more_scores"] = True
-        await safe_query_answer(query) 
-
-    elif action == "settings_display_scores_n":
-        user_settings["display_more_scores"] = False
-        await safe_query_answer(query) 
-
-    elif action == "settings_score_card_y":
-        user_settings["settings_score_card"] = True
-
-    elif action == "settings_score_card_n":
-        user_settings["settings_score_card"] = False
-
-    elif action == "settings_new_card":
-        user_settings["new_card"] = True
-        await safe_query_answer(query) 
-
-    elif action == "settings_old_card":
-        user_settings["new_card"] = False
-        await safe_query_answer(query) 
-
-    elif action == "settings_ignore":
-        await safe_query_answer(query) 
-
+    # Сохраняем и обновляем клавиатуру
     settings[user_id] = user_settings
     temp.save_json(USER_SETTINGS_FILE, settings)
 
     kb, text = await get_settings_kb(user_id, settings)
-
     try:
         await query.edit_message_text(
             f'{text} {name}',
             reply_markup=InlineKeyboardMarkup(kb)
         )
-    except Exception as e:
+    except Exception:
         await query.answer()

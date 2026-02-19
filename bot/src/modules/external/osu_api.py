@@ -226,10 +226,10 @@ async def search_beatmapsets(text: str, cursor: str = None):
         timeout = aiohttp.ClientTimeout(total=TIMEOUT)
         print('🔻 API request (search beatmapsets)')
         async with aiohttp.ClientSession() as session:
-            # async with api_limit:
-            async with session.get(url, headers=headers, params=params, timeout=timeout) as resp:
-                resp.raise_for_status()
-                return await resp.json()
+            async with api_limit:
+                async with session.get(url, headers=headers, params=params, timeout=timeout) as resp:
+                    resp.raise_for_status()
+                    return await resp.json()
     except (asyncio.TimeoutError, aiohttp.ClientError) as e:
         print(f"Request for '{text}' failed: {e}")
         return None

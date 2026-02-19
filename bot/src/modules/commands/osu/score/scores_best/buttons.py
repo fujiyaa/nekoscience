@@ -70,7 +70,6 @@ async def get_keyboard(message_context, message_context_reply,
             )
         ])
 
-        # 2️⃣ Кнопки со сложностями, максимум 4 в ряд
         row = []
         for map_id, diff in zip(ids, diffs):
             row.append(
@@ -79,10 +78,10 @@ async def get_keyboard(message_context, message_context_reply,
                     callback_data=f"score_best:map:{map_id}:{origin_user_id}:{username_to_lookup}"
                 )
             )
-            if len(row) == 4:
+            if len(row) == 3:
                 keyboard.append(row)
                 row = []
-        if row:  # остаток кнопок
+        if row:
             keyboard.append(row)
 
 

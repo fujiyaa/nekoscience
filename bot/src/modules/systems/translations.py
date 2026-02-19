@@ -191,12 +191,12 @@ TRANSLATIONS = {
         "ru": "Недоступно"
     },
     "settings_rs_fails": {
-        "en": "/rs - Display fails?",
-        "ru": "/rs - Показывать фейлы?"
+        "en": "/rs   •   Fails",
+        "ru": "/rs   •   Фейлы"
     },
     "settings_ar_fails": {
-        "en": "/reaverage - Disp. fails?",
-        "ru": "/reaverage - Показ. фейлы?"
+        "en": "/average  •  Fails",
+        "ru": "/average  •  Фейлы"
     },
     "fails_yes": {
         "en": "Enabled",
@@ -207,12 +207,12 @@ TRANSLATIONS = {
         "ru": "Выкл"
     },
     "settings_sc_more_scores": {
-        "en": "/sc - Display more scores?",
-        "ru": "/sc - Больше одного скора?"
+        "en": "/score  •  More scores",
+        "ru": "/score  •  Больше скоров"
     },
     "settings_score_card": {
-        "en": "Old score (card)",
-        "ru": "Старый скор (карточка)"
+        "en": "Link >> Score card",
+        "ru": "Ссылка >> Карточка скора"
     },
     "settings_score_card_y": {
         "en": "Enabled",
