@@ -1,7 +1,11 @@
 
 
 
+import time
+import traceback
 import uuid
+import asyncio
+
 from telegram import (
     Update,
     InlineKeyboardMarkup,
@@ -15,103 +19,161 @@ from telegram.ext import ContextTypes
 from ..utils.text_format import format_osu_date
 from ..external.osu_api import search_beatmapsets
 
+MAX_RESULTS = 100
+SEARCH_CACHE = {}
+CACHE_TTL = 30
+
+ACTIVE_SEARCH_TASKS: dict[int, asyncio.Task] = {}
+
+
+
+async def search_beatmapsets_cached(query_key: str, text: str, cursor: str | None):
+    now = time.time()
+
+    if query_key in SEARCH_CACHE:
+        cached_data, timestamp = SEARCH_CACHE[query_key]
+        if now - timestamp < CACHE_TTL:
+            return cached_data
+
+    result = await search_beatmapsets(text, cursor)
+
+    SEARCH_CACHE[query_key] = (result, now)
+    return result
 
 
 async def inline_osu_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.inline_query
-    user = query.from_user
-    user_id = str(user.id)
-    q = query.query.strip()
-    offset = query.offset
-    if offset:
-        cursor = offset
-    else:
-        cursor = None
+    try:
+        query = update.inline_query
+        q = query.query.strip()
+        cursor = query.offset or None
 
-    if not q:
-        result = InlineQueryResultArticle(
-            id=str(uuid.uuid4()),
-            title="@fujiyaosubot map My Love",
-            description=f"Поиск карт, пример",
-            input_message_content=InputTextMessageContent(
-                "помощь: <code>/help inline</code>",
-                parse_mode = 'HTML',
+        if not q:
+            result = InlineQueryResultArticle(
+                id=str(uuid.uuid4()),
+                title="@fujiyaosubot map My Love",
+                description="Пример поиска",
+                input_message_content=InputTextMessageContent(
+                    "Помощь: <code>/help inline</code>",
+                    parse_mode='HTML',
+                )
             )
-        )
 
-        await query.answer(
-            results=[result],
-            cache_time=0,
-            is_personal=True
-        )
-        return
-
-
-    search_term = q
-    if q.lower().startswith("map "):
-        search_term = search_term[4:].strip()
-
-        if not search_term:
+            await query.answer(
+                results=[result],
+                cache_time=1,
+                is_personal=True
+            )
             return
-        
-        beatmapsets = await search_beatmapsets(search_term, cursor=cursor)
+
+        if not q.lower().startswith("map "):
+            await query.answer([], cache_time=1, is_personal=True)
+            return
+
+        search_term = q[4:].strip()
+        if not search_term:
+            await query.answer([], cache_time=1, is_personal=True)
+            return
+
+        user_id = query.from_user.id
+
+        old_task = ACTIVE_SEARCH_TASKS.get(user_id)
+        if old_task and not old_task.done():
+            old_task.cancel()
+
+        task = asyncio.create_task(
+            search_beatmapsets_cached(q, search_term, cursor)
+        )
+
+        ACTIVE_SEARCH_TASKS[user_id] = task
+
+        try:
+            beatmapsets = await task
+        except asyncio.CancelledError:
+            return
+
+        if ACTIVE_SEARCH_TASKS.get(user_id) is not task:
+            return
+
+        ACTIVE_SEARCH_TASKS.pop(user_id, None)
+
+        if not beatmapsets:
+            await query.answer([], cache_time=1, is_personal=True)
+            return
+
         total = beatmapsets.get('total', 0)
-        next_cursor = beatmapsets.get('cursor_string', None) if total > 100 else None
+        next_cursor = beatmapsets.get('cursor_string') if total > MAX_RESULTS else None
 
         results = []
-       
-        for i, beatmapset in enumerate(beatmapsets.get('beatmapsets', [])):
+
+        for beatmapset in beatmapsets.get('beatmapsets', [])[:MAX_RESULTS]:
+
             title = beatmapset.get("title", "Unknown")
             artist = beatmapset.get("artist", "Unknown")
-            creator_text = f'mapper: {beatmapset.get("creator", "Unknown")}'
-            # playcount_text = f'{beatmapset.get("play_count", "0")} plays'
+            creator = beatmapset.get("creator", "Unknown")
             status = beatmapset.get("status", "Unknown").capitalize()
-            bpm_text = f'{beatmapset.get("bpm", "0"):.1f} bpm'
-            last_updated = format_osu_date(beatmapset.get("last_updated", "?"), today=False)
 
-            difficulty_ratings = [b['difficulty_rating'] for b in beatmapset.get("beatmaps", [])]
+            bpm = beatmapset.get("bpm")
+            bpm_text = f"{float(bpm):.1f} bpm" if bpm else "?"
 
-            diff_text = ''
+            last_updated = format_osu_date(
+                beatmapset.get("last_updated", "?"),
+                today=False
+            )
+
+            beatmaps = beatmapset.get("beatmaps", [])
+            difficulty_ratings = [
+                b.get('difficulty_rating')
+                for b in beatmaps
+                if b.get('difficulty_rating') is not None
+            ]
+
+            diff_text = ""
             if difficulty_ratings:
                 min_diff = min(difficulty_ratings)
                 max_diff = max(difficulty_ratings)
 
-                if (max_diff - min_diff) < 0.01:
-                    diff_text = f'{max_diff:.2f}*'
+                if abs(max_diff - min_diff) < 0.01:
+                    diff_text = f"{max_diff:.2f}★"
                 else:
-                    diff_text = f'{min_diff:.2f} - {max_diff:.2f}*'
-            
-            status_emoji = ''
-            if status == 'Ranked':
-                status_emoji = '🔺'
-            elif status == 'Loved':
-                status_emoji = '🔹'
-            elif status == 'Pending':
-                status_emoji = '🔸'     
+                    diff_text = f"{min_diff:.2f} - {max_diff:.2f}★"
 
-            
+            status_emoji = {
+                "Approved": "🔺",
+                "Ranked": "🔺",
+                "Loved": "🔹",
+                "Pending": "🔸"
+            }.get(status, "")
+
             mapset_id = beatmapset.get('id')
-            url = f"https://osu.ppy.sh/beatmapsets/{mapset_id}"
-            diffs = [b.get("version", "Unknown") for b in beatmapset.get("beatmaps", [])]
-            diff_str = ", ".join(diffs[:3])
-            
-            cover_url = beatmapset.get("covers", {}).get("cover", None)
-            if not cover_url:
-                cover_url = "https://osu.ppy.sh/images/layout/card-404.png"
-            
-            direct_url = f'https://myangelfujiya.ru/darkness/direct?id={mapset_id}'
-            beatconnect_url = f'https://beatconnect.io/b/{mapset_id}'
-            kb = [
+            mapset_url = f"https://osu.ppy.sh/beatmapsets/{mapset_id}"
+
+            cover_url = (
+                beatmapset.get("covers", {}).get("cover")
+                or "https://osu.ppy.sh/images/layout/card-404.png"
+            )
+
+            direct_url = f"https://myangelfujiya.ru/darkness/direct?id={mapset_id}"
+            beatconnect_url = f"https://beatconnect.io/b/{mapset_id}"
+
+            kb = InlineKeyboardMarkup([
                 [
                     InlineKeyboardButton("🔗 Direct", url=direct_url),
                     InlineKeyboardButton("🍥 Mirror", url=beatconnect_url),
-                    InlineKeyboardButton("🔄 Поиск", switch_inline_query_current_chat=f'map {search_term}'),
+                    InlineKeyboardButton(
+                        "🔄 Поиск",
+                        switch_inline_query_current_chat=f"map {search_term}"
+                    ),
                 ]
-            ]            
-            
-            mapset_url = f"https://osu.ppy.sh/beatmapsets/{mapset_id}"
-            mapset_text = f'@{query.from_user.username}  •  <a href="{mapset_url}"><b>Mapset</b></a>  •  id<code>{mapset_id}</code>'
-            
+            ])
+
+            username = query.from_user.username or "user"
+
+            mapset_text = (
+                f"@{username}  •  "
+                f"<a href=\"{mapset_url}\"><b>Mapset</b></a>  •  "
+                f"id<code>{mapset_id}</code>"
+            )
+
             link_preview = LinkPreviewOptions(
                 url=mapset_url,
                 is_disabled=False,
@@ -123,13 +185,19 @@ async def inline_osu_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 InlineQueryResultArticle(
                     id=str(uuid.uuid4()),
                     title=f"{artist} - {title}",
-                    description=f"{status_emoji} {status} • {diff_text} • {bpm_text} • {creator_text} • {last_updated}",
+                    description=(
+                        f"{status_emoji} {status} • "
+                        f"{diff_text} • "
+                        f"{bpm_text} • "
+                        f"mapper: {creator} • "
+                        f"{last_updated}"
+                    ),
                     input_message_content=InputTextMessageContent(
-                        message_text = mapset_text,
-                        parse_mode = 'HTML',
+                        message_text=mapset_text,
+                        parse_mode='HTML',
                         link_preview_options=link_preview
                     ),
-                    reply_markup=InlineKeyboardMarkup(kb),
+                    reply_markup=kb,
                     thumbnail_url=cover_url
                 )
             )
@@ -140,14 +208,17 @@ async def inline_osu_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     id="notfound",
                     title="Ничего не найдено",
                     input_message_content=InputTextMessageContent(
-                        f"{search_term}' - Нет результатов"
+                        f"{search_term} — нет результатов"
                     )
                 )
             )
 
         await query.answer(
-            results, 
-            cache_time=0,
+            results=results,
+            cache_time=1,
             is_personal=True,
             next_offset=next_cursor or ""
         )
+
+    except Exception:
+        traceback.print_exc()
