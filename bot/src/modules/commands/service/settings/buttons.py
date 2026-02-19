@@ -1,13 +1,17 @@
+
+
+
 from telegram import InlineKeyboardButton
 from ....systems.translations import TRANSLATIONS as T
 
-FIGURE_SPACE = "\u2007"  # фиксированная ширина
+FIGURE_SPACE = "\u2007"
+
+
 
 async def get_settings_kb(user_id, user_data):
     user_settings = user_data.get(str(user_id), {})
     l = user_settings.get("lang", "ru")
 
-    # Булевы настройки: (ключ в user_settings, ключ в TRANSLATIONS)
     bool_settings = [
         ("display_fails", "settings_rs_fails"),
         ("display_fails_average_recent", "settings_ar_fails"),
@@ -18,7 +22,6 @@ async def get_settings_kb(user_id, user_data):
     def mark(value: bool) -> str:
         return "☑️" if value else "❌"
 
-    # Находим максимальную длину текста
     max_len = max(len(T[tr_key][l]) for _, tr_key in bool_settings)
 
     keyboard = []

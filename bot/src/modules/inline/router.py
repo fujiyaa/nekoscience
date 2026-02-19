@@ -47,13 +47,49 @@ async def inline_osu_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
         q = query.query.strip()
         cursor = query.offset or None
 
+        help_text = 'Нужна помощь? Используй команду <code>/help inline</code>'
+
         if not q:
+            results_help = []
+
+            results_help.append(
+                InlineQueryResultArticle(
+                    id=str(uuid.uuid4()),
+                    title="☑️ продолжай вводить команду...",
+                    description="не нажимай на кнопки этого меню",
+                    input_message_content=InputTextMessageContent(
+                        help_text,
+                        parse_mode='HTML',
+                    )
+                )
+            )
+
+            results_help.append(
+                InlineQueryResultArticle(
+                    id=str(uuid.uuid4()),
+                    title="map 〰️ поиск карт по названию",
+                    description="пример: @fujiyaosubot map KOTOKO",
+                    input_message_content=InputTextMessageContent(
+                        help_text,
+                        parse_mode='HTML',
+                    )
+                )
+            )
+
+            await query.answer(
+                results=results_help,
+                cache_time=1,
+                is_personal=True
+            )
+            return
+
+        if not q.lower().startswith("map ") and len(q)>3:
             result = InlineQueryResultArticle(
                 id=str(uuid.uuid4()),
-                title="@fujiyaosubot map My Love",
-                description="Пример поиска",
+                title=f"❗️команды {q.lower()} не существует",
+                description="есть такая команда: map",
                 input_message_content=InputTextMessageContent(
-                    "Помощь: <code>/help inline</code>",
+                    help_text,
                     parse_mode='HTML',
                 )
             )
@@ -64,9 +100,23 @@ async def inline_osu_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 is_personal=True
             )
             return
+        
+        if q.lower() == ("map") or q.lower() == ("map "):
+            result = InlineQueryResultArticle(
+                id=str(uuid.uuid4()),
+                title=f"☑️ теперь вводи название карты...",
+                description="🎶",
+                input_message_content=InputTextMessageContent(
+                    "Нужна помощь? Используй команду <code>/help inline</code>",
+                    parse_mode='HTML',
+                )
+            )
 
-        if not q.lower().startswith("map "):
-            await query.answer([], cache_time=1, is_personal=True)
+            await query.answer(
+                results=[result],
+                cache_time=1,
+                is_personal=True
+            )
             return
 
         search_term = q[4:].strip()

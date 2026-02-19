@@ -63,10 +63,14 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
                         return
 
                 msg = await update.message.reply_text(
-                    "❌ Нужна ссылка на карту"
+                    text = (
+                        f"✖️ Для карточки нужна ссылка на карту\n\n"
+                        f"<i>Ищешь поиск карт? <code>/help inline</code></i>\n"
+                    ),                    
+                    parse_mode = "HTML"
                 )
                 asyncio.create_task(delete_message_after_delay(context, msg.chat.id, msg.message_id, 5))
-                asyncio.create_task(delete_user_message(update, context, delay=4))
+                asyncio.create_task(delete_user_message(update, context, delay=10))
                 return
         
         if match is None: 

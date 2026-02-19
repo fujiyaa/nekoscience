@@ -18,7 +18,6 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(query.from_user.id)
     name = str(query.from_user.name)
 
-    # Разбираем callback_data
     parts = query.data.split(":")
     if len(parts) < 2:
         await query.answer("Неверная кнопка")
@@ -31,7 +30,6 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.answer("Чужая кнопка")
         return
 
-    # Загружаем настройки
     settings = temp.load_json(USER_SETTINGS_FILE, default={})
     user_settings = settings.get(user_id, {
         "lang": "ru", 
@@ -44,7 +42,6 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "settings_score_card": False,
     })
 
-    # Обработка булевых настроек
     bool_settings_map = {
         "settings_score_card": "settings_score_card",
         "settings_sc_more_scores": "display_more_scores",
@@ -53,7 +50,6 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     }
 
     if setting_key in bool_settings_map:
-        # инвертируем текущее значение
         field = bool_settings_map[setting_key]
         user_settings[field] = not user_settings.get(field, False)
         await safe_query_answer(query)
@@ -66,7 +62,6 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_settings["lang"] = "ru"
         await safe_query_answer(query)
 
-    # Сохраняем и обновляем клавиатуру
     settings[user_id] = user_settings
     temp.save_json(USER_SETTINGS_FILE, settings)
 
