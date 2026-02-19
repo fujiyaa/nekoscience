@@ -30,13 +30,18 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     if uid_click != origin_uid:
             await safe_query_answer(query, text="Не твои кнопки")
-            return
-        
-    await safe_query_answer(query, show_alert=False)
+            return        
   
     if action == "cancel":
         await safe_edit_query(query, text="`Отменено`", parse_mode="Markdown")
         return
+    
+    elif action == "ignore":
+        await safe_query_answer(query, text="Это название карты, ее сложности это кнопки ниже...")
+        return
+    
+    
+    await safe_query_answer(query, show_alert=False)
 
     if action == "map":   
         try:                    

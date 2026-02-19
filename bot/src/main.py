@@ -152,7 +152,7 @@ def register_callbacks(app):
 
         # scores
         (callback_rs,       r"^rs_"),
-        (callback_scb,      r"^score_best:(map|cancel)"),
+        (callback_scb,      r"^score_best:(map|cancel|ignore)"),
         (callback_nch,      r"^page_\d+_\d+$"),
         
         # osu_games

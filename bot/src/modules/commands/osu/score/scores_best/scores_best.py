@@ -64,7 +64,7 @@ async def scores_best(update: Update, context: ContextTypes.DEFAULT_TYPE, user_r
             await safe_send_message(
                 update, 
                 text=f"<code>Ты хочешь посмотреть скор</code> <b>  {username}  </b> <code>на карте...</code>", 
-                reply_markup=get_keyboard(
+                reply_markup=await get_keyboard(
                     message_context, 
                     message_context_reply, 
                     origin_user_id=update.effective_user.id, 

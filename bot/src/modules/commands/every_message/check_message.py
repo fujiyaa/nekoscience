@@ -15,6 +15,7 @@ from ..fun.reminders.reminders import start_check_reminders
 from modules.commands.osu.beatmap.simulate.text_input import start_simulate_text_handler
 from modules.commands.osu.card.beatmap.card import start_beatmap_card
 from .start_something import start_osu_link_handler
+from ...actions.context import set_message_context
 
 from .blacklist import blacklist
 from config import SOURCE_TOPIC_ID, TARGET_CHAT_ID, TARGET_FORWARD_TOPIC_ID
@@ -59,6 +60,20 @@ async def check_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             pass
             
         text_to_check = (update.effective_message.text or update.effective_message.caption or "").lower()
+        if "mapset" in text_to_check:            
+            match = re.search(r'id(\d+)', text_to_check)
+            if match:
+                mapset_id = int(match.group(1))
+                
+                set_message_context(
+                    update, 
+                    reply=False, 
+                    mapset_id=mapset_id,
+                    origin_call_user_id=update.effective_user.id,
+                )
+                
+
+
         if any(bad_word in text_to_check for bad_word in blacklist):
             try:
                 await update.effective_message.delete()

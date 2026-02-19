@@ -189,6 +189,25 @@ async def get_beatmap(beatmap_id: int, token: str, timeout_sec: int = 10):
         print(f"Request for beatmap_id '{beatmap_id}' failed: {e}")
         return None
     
+async def get_beatmapset(beatmapset_id: int):
+    url = f"https://osu.ppy.sh/api/v2/beatmapsets/{beatmapset_id}"
+    token = await get_osu_token()
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "x-api-version": "20240529",
+        "Accept": "application/json"
+    }
+    try:
+        timeout = aiohttp.ClientTimeout(total=TIMEOUT)
+        print('🔻 API request (get beatmapsets)')
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, headers=headers, timeout=timeout) as resp:
+                resp.raise_for_status()
+                return await resp.json()
+    except (asyncio.TimeoutError, aiohttp.ClientError) as e:
+        print(f"Request for '{beatmapset_id}' failed: {e}")
+        return None
+    
 async def search_beatmapsets(text: str, cursor: str = None):
     params = {"q": text}
     if cursor:
@@ -203,13 +222,13 @@ async def search_beatmapsets(text: str, cursor: str = None):
     }
     try:
         timeout = aiohttp.ClientTimeout(total=TIMEOUT)
-        print('🔻 API request (beatmapsets)')
+        print('🔻 API request (search beatmapsets)')
         async with aiohttp.ClientSession() as session:
             async with session.get(url, headers=headers, params=params, timeout=timeout) as resp:
                 resp.raise_for_status()
                 return await resp.json()
     except (asyncio.TimeoutError, aiohttp.ClientError) as e:
-        print(f"Request for  '{text}' failed: {e}")
+        print(f"Request for '{text}' failed: {e}")
         return None
     
 async def get_user_id(username: str, token: str = None, timeout_sec: int = 10):
