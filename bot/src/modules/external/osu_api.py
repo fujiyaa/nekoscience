@@ -234,6 +234,41 @@ async def search_beatmapsets(text: str, cursor: str = None):
         print(f"Request for '{text}' failed: {e}")
         return None
     
+async def search_profiles(text: str, page: int = 1):
+    params = {
+        "query": text,
+        "mode": "user",
+        "page": page
+    }
+
+    url = "https://osu.ppy.sh/api/v2/search"
+    token = await get_osu_token()
+
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "x-api-version": "20240529",
+        "Accept": "application/json"
+    }
+
+    try:
+        timeout = aiohttp.ClientTimeout(total=TIMEOUT)
+        print(f'🔻 API request (search profiles) page={page}')
+
+        async with aiohttp.ClientSession() as session:
+            async with api_limit:
+                async with session.get(
+                    url,
+                    headers=headers,
+                    params=params,
+                    timeout=timeout
+                ) as resp:
+                    resp.raise_for_status()
+                    return await resp.json()
+
+    except (asyncio.TimeoutError, aiohttp.ClientError) as e:
+        print(f"Profile search for '{text}' failed: {e}")
+        return None
+    
 async def get_user_id(username: str, token: str = None, timeout_sec: int = 10):
     user_cache = temp.load_json(OSU_ID_CACHE_FILE, {})
 

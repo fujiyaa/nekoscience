@@ -71,7 +71,17 @@ async def check_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     mapset_id=mapset_id,
                     origin_call_user_id=update.effective_user.id,
                 )
+        elif "profile" in text_to_check:            
+            match = re.search(r'id(\d+)', text_to_check)
+            if match:
+                username_text = int(match.group(1))
                 
+                set_message_context(
+                    update, 
+                    reply=False, 
+                    profile_player_username=username_text,
+                    origin_call_user_id=update.effective_user.id,
+                )
 
 
         if any(bad_word in text_to_check for bad_word in blacklist):
