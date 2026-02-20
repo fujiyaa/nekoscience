@@ -69,7 +69,7 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
                     ),                    
                     parse_mode = "HTML"
                 )
-                asyncio.create_task(delete_message_after_delay(context, msg.chat.id, msg.message_id, 5))
+                asyncio.create_task(delete_message_after_delay(context, msg.chat.id, msg.message_id, 10))
                 asyncio.create_task(delete_user_message(update, context, delay=10))
                 return
         
