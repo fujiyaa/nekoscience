@@ -13,73 +13,12 @@ from telegram.ext import (
 )
 
 from config import TOKEN
-from modules.systems.startup import startup
-from modules.commands.every_message.check_message import check_message
+from command_imports import *
 
-# osu
-from modules.commands.osu import (
-
-    # beatmaps
-    start_maps_skill, start_beatmap_audio,
-    beatmaps, simulate,    
-    callback_bms,
-    callback_msk1, callback_msk2,
-    callback_sim, callback_sim_ctx, 
-
-    # cards
-    start_card, start_skills, start_card_top5, start_beatmap_card,
-    callback_map_ctx,
-
-    # leaderboard
-    start_leaderboard_chat,
-    callback_lb,
-
-    # profile
-    start_compare_profile, start_profile, start_average,
-    start_mappers, start_mods, start_anime,
-    callback_avg, callback_prf_ctx,
-
-    # scores
-    start_rs, start_nochoke, start_recent_fix, start_scores_best,
-    callback_rs, callback_scb, callback_nch
-)
-
-# osu_games
-from modules.commands.osu_games import (    
-    start_challenge, start_higherlower_game,
-
-    callback_day, callback_hl
-)
-
-# fun
-from modules.commands.fun.doubt.doubt import doubt
-from modules.commands.fun.blacks.blacks import blacks
-from modules.commands.fun.reminders.reminders import reminders_command
-from modules.commands.fun.random_image.random_image import random_image
-
-# service
-from modules.commands.service import (
-    start_help,
-    set_name, settings_cmd,
-    uptime, ping
-)
-
-# inline
-from modules.inline import (
-    inline_osu_search
-)
-
-# other callbacks
-from modules.commands.service.settings.callback import callback as settings_handler
-from modules.actions.osu_chat import callback as osu_chat_callback
-# from modules.inline import callback as settings_handler
 
 # команды не начинающиеся со start_ не асинхронные.
 def register_commands(app):
     command_map = {
-
-        # osu
-       
         # beatmaps
         ("maps_skill", "ms"):               start_maps_skill,
         ("music",):                         start_beatmap_audio,
@@ -114,6 +53,7 @@ def register_commands(app):
         ("higherlower", "hl"):              start_higherlower_game,
       
         # fun
+        ("roll", "random"):                 roll,
         ("gn",):                            random_image,
         ("doubt", "ban"):                   doubt,
         ("blacks",):                        blacks,
@@ -167,7 +107,7 @@ def register_callbacks(app):
     for handler, pattern in callbacks:
         app.add_handler(CallbackQueryHandler(handler, pattern=pattern))
 
-def setup_logging():
+def _setup_logging():
     class ShortNetworkHandler(logging.Handler):
         def emit(self, record):
             msg = record.getMessage()
@@ -192,7 +132,7 @@ def main():
 
     register_commands(app)
     register_callbacks(app)
-    setup_logging()
+    _setup_logging()
     
     try:
         app.run_polling()
