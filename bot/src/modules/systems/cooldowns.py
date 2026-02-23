@@ -33,7 +33,8 @@ async def check_user_cooldown(command_name: str, user_id: str, cooldown_seconds:
         time_elapsed = datetime.now(timezone.utc) - last_used
         if time_elapsed < cooldown:
             if warn_text is None:
-                warn_text = f"⏳ {time_elapsed}s"
+                remaining = cooldown - time_elapsed
+                warn_text = f"⏳ {_format_timedelta(remaining)}"
                 
             if update and context:
                 try:
@@ -78,3 +79,19 @@ async def update_cooldown(command_name: str):
     user_cooldowns[bot_id] = now
     data[command_name] = user_cooldowns
     await write_cooldowns(data)
+
+def _format_timedelta(td: timedelta) -> str:
+    total_seconds = int(td.total_seconds())
+
+    if total_seconds < 0:
+        total_seconds = 0
+
+    hours = total_seconds // 3600
+    minutes = (total_seconds % 3600) // 60
+    seconds = total_seconds % 60
+
+    if hours:
+        return f"{hours}h {minutes}m {seconds}s"
+    if minutes:
+        return f"{minutes}m {seconds}s"
+    return f"{seconds}s"
