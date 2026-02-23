@@ -29,7 +29,8 @@ async def get_settings_kb(user_id, user_data):
     for field, tr_key in bool_settings:
         val = user_settings.get(field, False)
         text = T[tr_key][l]
-        padded_text = text +  FIGURE_SPACE * 2 + FIGURE_SPACE * (max_len - len(text)) * 3 + " " + mark(val)
+        # padded_text = text +  FIGURE_SPACE * 2 + FIGURE_SPACE * (max_len - len(text)) * 3 + " " + mark(val)
+        padded_text = text +FIGURE_SPACE * 2+ mark(val)
         keyboard.append([
             InlineKeyboardButton(
                 padded_text,
