@@ -47,8 +47,7 @@ async def skills(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reques
             user_id=str(update.effective_user.id),
             cooldown_seconds=COOLDOWN_CARD_COMMAND,           
             update=update,
-            context=context,
-            warn_text=f"⏳ Подождите {COOLDOWN_CARD_COMMAND} секунд"
+            context=context
         )
     if not can_run:
         return

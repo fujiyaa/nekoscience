@@ -31,8 +31,7 @@ async def score(update: Update, context: ContextTypes.DEFAULT_TYPE, requested_by
             user_id=user_id,
             cooldown_seconds=COOLDOWN_RS_COMMAND,
             update=update,
-            context=context,
-            warn_text=f"⏳ Подождите {COOLDOWN_RS_COMMAND} секунд"
+            context=context
         )
         if not can_run:
             return

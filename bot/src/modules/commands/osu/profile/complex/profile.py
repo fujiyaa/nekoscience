@@ -25,8 +25,7 @@ async def profile(
             user_id=str(update.effective_user.id),
             cooldown_seconds=COOLDOWN_STATS_COMMANDS,           
             update=update,
-            context=context,
-            warn_text=f"⏳ {COOLDOWN_STATS_COMMANDS}s"
+            context=context
         )
     if not can_run:
         return

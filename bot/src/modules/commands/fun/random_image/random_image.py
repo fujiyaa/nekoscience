@@ -28,8 +28,7 @@ async def random_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
             user_id=str(update.effective_user.id),
             cooldown_seconds=COOLDOWN_PICS_COMMANDS,           
             update=update,
-            context=context,
-            warn_text=f"⏳ Подождите {COOLDOWN_PICS_COMMANDS} секунд"
+            context=context
         )
         if not can_run:
             return

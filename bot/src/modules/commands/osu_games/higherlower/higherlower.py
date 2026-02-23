@@ -37,8 +37,7 @@ async def higherlower_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_id=user_id,
         cooldown_seconds=COOLDOWN_HLGAME_COMMANDS,
         update=update,
-        context=context,
-        warn_text=f"⏳ Подождите {COOLDOWN_HLGAME_COMMANDS} секунд"        
+        context=context        
     )    
     if not can_run or update.effective_user.username is None:
         return

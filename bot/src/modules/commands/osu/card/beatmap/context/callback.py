@@ -1,39 +1,22 @@
 
 
 
+import asyncio
 import traceback
-
-from telegram import Update, LinkPreviewOptions
 from telegram.ext import ContextTypes
+from telegram import Update, InputFile
 
 from ......actions.messages import safe_edit_query, safe_query_answer
 from ......actions.context import set_message_context
-
-
-
-
-import os
-import asyncio
-
-from telegram import Update, InputFile
-from telegram.ext import ContextTypes
-
-from ......systems.logging import log_all_update
-from ......systems.cooldowns import check_user_cooldown
-from ......actions.messages import delete_user_message, delete_message_after_delay, safe_send_message
 from ......external.osu_http import fetch_txt_beatmaps
 from ......external.osu_api import get_osu_token, get_beatmap
-from ......actions.context import set_message_context, get_message_context
-from ..context.buttons import get_context_keyboard
+from ......actions.context import set_message_context
 from ..buttons import get_keyboard
 from ..processing_v1 import create_beatmap_image
 from ..utils import delayed_remove
 import temp
 
 from config import USER_SETTINGS_FILE
-from config import OSU_MAP_REGEX, COOLDOWN_CARD_COMMAND
-
-
 
 
 

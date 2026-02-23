@@ -24,8 +24,7 @@ async def leaderboard_chat(update: Update, context: ContextTypes.DEFAULT_TYPE, u
             user_id=str(update.effective_user.id),
             cooldown_seconds=COOLDOWN_LEADERBOARD_COMMANDS,           
             update=update,
-            context=context,
-            warn_text=f"⏳ Подождите {COOLDOWN_LEADERBOARD_COMMANDS} секунд"
+            context=context
         )
     if not can_run:
         return

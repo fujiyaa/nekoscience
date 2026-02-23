@@ -88,8 +88,7 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
             user_id=str(update.effective_user.id),
             cooldown_seconds=COOLDOWN_CARD_COMMAND,           
             update=update,
-            context=context,
-            warn_text=warn_text
+            context=context
         )
         if not can_run:
             return

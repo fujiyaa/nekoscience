@@ -30,8 +30,7 @@ async def recent_fix(update: Update, context: ContextTypes.DEFAULT_TYPE, user_re
             user_id=str(update.effective_user.id),
             cooldown_seconds=COOLDOWN_RECENT_FIX_COMMAND,           
             update=update,
-            context=context,
-            warn_text=f"⏳ Подождите {COOLDOWN_RECENT_FIX_COMMAND} секунд"
+            context=context
         )
     if not can_run:
         return

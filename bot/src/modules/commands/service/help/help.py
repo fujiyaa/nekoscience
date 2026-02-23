@@ -24,8 +24,7 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request)
             user_id=str(update.effective_user.id),
             cooldown_seconds=COOLDOWN_HELP_COMMAND,           
             update=update,
-            context=context,
-            warn_text=f"⏳ Подождите {COOLDOWN_HELP_COMMAND} секунд"
+            context=context
         )
         if not can_run:
             return

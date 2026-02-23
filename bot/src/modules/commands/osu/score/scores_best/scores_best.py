@@ -24,13 +24,12 @@ async def start_scores_best(update, context, user_request=True):
     
 async def scores_best(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request):
     can_run = await check_user_cooldown(
-            command_name="scores_best",
-            user_id=str(update.effective_user.id),
-            cooldown_seconds=COOLDOWN_RECENT_FIX_COMMAND,           
-            update=update,
-            context=context,
-            warn_text=f"⏳ Подождите {COOLDOWN_RECENT_FIX_COMMAND} секунд"
-        )
+        command_name="scores_best",
+        user_id=str(update.effective_user.id),
+        cooldown_seconds=COOLDOWN_RECENT_FIX_COMMAND,           
+        update=update,
+        context=context
+    )
     if not can_run:
         return
 

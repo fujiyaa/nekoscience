@@ -27,8 +27,7 @@ async def compare_profile(update: Update, context: ContextTypes.DEFAULT_TYPE, us
             user_id=str(update.effective_user.id),
             cooldown_seconds=COOLDOWN_STATS_COMMANDS,           
             update=update,
-            context=context,
-            warn_text=f"⏳ Подождите {COOLDOWN_STATS_COMMANDS} секунд"
+            context=context
         )
     if not can_run:
         return

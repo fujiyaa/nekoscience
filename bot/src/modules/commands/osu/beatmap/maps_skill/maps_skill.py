@@ -28,8 +28,7 @@ async def maps_skill(update: Update, context: ContextTypes.DEFAULT_TYPE, user_re
             user_id=str(update.effective_user.id),
             cooldown_seconds=COOLDOWN_MS_COMMAND,           
             update=update,
-            context=context,
-            warn_text=f"⏳ Подождите {COOLDOWN_MS_COMMAND} секунд"
+            context=context
         )
     if not can_run:
         return

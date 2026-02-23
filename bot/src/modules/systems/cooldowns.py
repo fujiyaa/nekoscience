@@ -30,20 +30,24 @@ async def check_user_cooldown(command_name: str, user_id: str, cooldown_seconds:
     last_used_str = user_cooldowns.get(user_id)
     if last_used_str:
         last_used = datetime.fromisoformat(last_used_str)
-        if datetime.now(timezone.utc) - last_used < cooldown:
-            if not warn_text is None:
-                if update and context:
-                    try:
-                        await update.message.delete()
-                    except Exception:
-                        pass
+        time_elapsed = datetime.now(timezone.utc) - last_used
+        if time_elapsed < cooldown:
+            if warn_text is None:
+                warn_text = f"⏳ {time_elapsed}s"
                 
-                    warn_msg = await context.bot.send_message(
-                        chat_id=update.effective_chat.id,
-                        text=warn_text,
-                        message_thread_id=getattr(update.message, "message_thread_id", None)
-                    )
-                    asyncio.create_task(delete_message_after_delay(context, warn_msg.chat_id, warn_msg.message_id, 3))
+            if update and context:
+                try:
+                    await update.message.delete()
+                except Exception:
+                    pass
+            
+                warn_msg = await context.bot.send_message(
+                    chat_id=update.effective_chat.id,
+                    text=warn_text,
+                    message_thread_id=getattr(update.message, "message_thread_id", None)
+                )
+                asyncio.create_task(delete_message_after_delay(context, warn_msg.chat_id, warn_msg.message_id, 3))
+         
             return False
 
     user_cooldowns[user_id] = now

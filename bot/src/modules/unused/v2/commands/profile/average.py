@@ -28,14 +28,13 @@ async def average(update: Update, context: ContextTypes.DEFAULT_TYPE):
         telegram_username_str = str(update.effective_user.id)
 
         can_run = await check_user_cooldown(
-                command_name =      "average_stats",
-                user_id =           telegram_username_str,
-                cooldown_seconds =  COOLDOWN_STATS_COMMANDS,           
-                update =            update,
-                context =           context,
-                warn_text =         f"⏳ {COOLDOWN_STATS_COMMANDS}s"
-            )
-        
+            command_name =      "average_stats",
+            user_id =           telegram_username_str,
+            cooldown_seconds =  COOLDOWN_STATS_COMMANDS,           
+            update =            update,
+            context =           context
+        )
+    
         if not can_run:
             return      
         

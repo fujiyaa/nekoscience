@@ -51,8 +51,7 @@ async def beatmap_audio(update: Update, context: ContextTypes.DEFAULT_TYPE, user
         user_id=str(update.effective_user.id),
         cooldown_seconds=COOLDOWN_MP3_COMMAND,           
         update=update,
-        context=context,
-        warn_text=warn_text
+        context=context
     )
     if not can_run:
         return
