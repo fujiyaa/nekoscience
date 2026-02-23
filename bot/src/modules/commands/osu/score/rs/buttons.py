@@ -31,7 +31,7 @@ async def get_keyboard(
         return InlineKeyboardMarkup(buttons)
     
     row_ext = []
-    image_emoji = "⏳" if loading_image_flag else "✴️"    
+    image_emoji = "⏳" if loading_image_flag else "🖼"    
     row_ext.append(
         InlineKeyboardButton("⏮️", callback_data=f"rs_startExt_{message_id}" if index > 0 else "rs_disabled")
     )
