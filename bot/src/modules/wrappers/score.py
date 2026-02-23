@@ -202,9 +202,9 @@ async def send_score( update: Update, cached_entry: dict, user_id: str,  session
                 with open(img_path, "rb") as f:
                     bio = io.BytesIO(f.read())
                 media = InputMediaPhoto(media=bio, caption=caption, parse_mode="HTML")
-                await query.edit_message_media(media=media)
+                return await query.edit_message_media(media=media)
             else:
-                await query.edit_message_text(
+                return await query.edit_message_text(
                     text=caption,
                     parse_mode="HTML",
                     link_preview_options=link_preview
