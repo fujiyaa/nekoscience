@@ -10,6 +10,14 @@ DEFAULT_COMMAND_TEMPLATE = {
         "en": "Error...",
         "ru": "Ошибка..."
     },
+    "No nickname saved...": {
+        "en": "No nickname saved...",
+        "ru": "Не сохранен ник..."
+    },
+    "No recent scores...": {
+        "en": "No recent scores...",
+        "ru": "Нет последних игр..."
+    },
     "No data...": {
         "en": "No data...",
         "ru": "Нет данных..."
