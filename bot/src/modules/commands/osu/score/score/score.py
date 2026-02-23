@@ -13,6 +13,7 @@ from .....external.osu_api import get_osu_token, get_score_by_id
 from .....wrappers.score import send_score
 from .....actions.context import set_message_context
 from .....systems.images import delayed_remove
+from .....wrappers.score_image_v2 import get_score_caption
 from .....image_processing.workflows.score_adaptive.processing_v1 import create_score_compare_image
 import temp
 
@@ -63,19 +64,7 @@ async def score(update: Update, context: ContextTypes.DEFAULT_TYPE, requested_by
             scores.append(cached_entry)
             img_path = await create_score_compare_image(scores, language=l)
             
-            osu_api_data = cached_entry.get('osu_api_data', {})
-            score_url = f"https://osu.ppy.sh/scores/{osu_api_data.get('id')}"
-            map_id = cached_entry.get('map', {}).get('beatmap_id')
-            map_url = f"https://osu.ppy.sh/b/{map_id}"
-            username = cached_entry.get('user', {}).get('username')
-            profile_url = f"https://osu.ppy.sh/u/{username}"
-
-            caption = (
-                f"<b><a href='{profile_url}'>{T.get('Profile')[l]}</a></b>  •   "
-                f"<b><a href='{score_url}'>{T.get('Score')[l]}</a></b>   •   "          
-                f"<b><a href='{map_url}'>{T.get('Beatmap')[l]}</a></b>   •   "
-                f"id<code>{map_id}</code>"
-                )            
+            caption = await get_score_caption(cached_entry, l)
 
             try:     
                 if img_path:
@@ -90,7 +79,7 @@ async def score(update: Update, context: ContextTypes.DEFAULT_TYPE, requested_by
                 else:
                     raise() 
             except Exception:
-                traceback.print_exc()            
+                traceback.print_exc()
 
         map_id=cached_entry.get('map').get('beatmap_id')
 
