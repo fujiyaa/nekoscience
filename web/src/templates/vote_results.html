@@ -20,9 +20,11 @@
     <div class="result-block">
         <img src="{{ img }}" class="result-img">
 
+        {% set rounded = data.average|round(0, 'common')|int %}
+
         <div class="stars">
             {% for i in range(5) %}
-                {% if i < data.average %}
+                {% if i < rounded %}
                     ★
                 {% else %}
                     ☆
@@ -31,11 +33,10 @@
         </div>
 
         <p class="rating-text">
-             {{ data.average }} 
+            {{ data.average }}
         </p>
     </div>
     {% endfor %}
-
-    </div>
+</div>
 </body>
 </html>
