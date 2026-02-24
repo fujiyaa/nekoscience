@@ -105,9 +105,9 @@ async def submit_votes(payload: str = Form(...)):
 
 @router.get("/vote/results")
 async def vote_results(request: Request):   
-    all_votes_raw = await _fetch(file_d)  
-    all_votes = {}
+    all_votes_raw = await _fetch(file_d)
 
+    all_votes = {}
     for username, user_data_str in all_votes_raw.items():
         if isinstance(user_data_str, str):
             all_votes[username] = json.loads(user_data_str)
@@ -115,21 +115,30 @@ async def vote_results(request: Request):
             all_votes[username] = user_data_str
 
     stats = {}
+
     for user, user_data in all_votes.items():
         for vote in user_data.get("votes", []):
             img = vote["image"]
             rating = vote["rating"]
+
             if img not in stats:
                 stats[img] = {"count": 0, "sum": 0}
+
             stats[img]["count"] += 1
             stats[img]["sum"] += rating
 
     for img, data in stats.items():
-        data["average"] = round(data["sum"] / data["count"], 2) if data["count"] > 0 else 0
+        if data["count"] > 0:
+            avg = data["sum"] / data["count"]
+
+            data["average"] = round(avg, 2)
+            data["rounded"] = int(avg + 0.5)
+        else:
+            data["average"] = 0
+            data["rounded"] = 0
 
     return templates.TemplateResponse("vote_results.html", {
         "request": request,
         "total_users": len(all_votes),
-        "stats": stats,
-        "all_votes": all_votes
+        "stats": stats
     })

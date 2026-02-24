@@ -20,11 +20,9 @@
     <div class="result-block">
         <img src="{{ img }}" class="result-img">
 
-        {% set rounded = (data.average + 0.5)|int %}
-
         <div class="stars">
             {% for i in range(5) %}
-                {% if i < rounded %}
+                {% if i < data.rounded %}
                     ★
                 {% else %}
                     ☆
