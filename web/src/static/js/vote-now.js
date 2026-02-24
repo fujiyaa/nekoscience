@@ -11,9 +11,6 @@ document.addEventListener("DOMContentLoaded", () => {
         "/static/images/9.jpg",
         "/static/images/10.jpg",
         "/static/images/11.jpg",
-        "/static/images/12.jpg",
-        "/static/images/13.jpg",
-        "/static/images/14.jpg" 
     ];
 
     let currentIndex = 0;
