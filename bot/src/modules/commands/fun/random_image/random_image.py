@@ -85,7 +85,7 @@ async def random_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 bot_msg = await safe_send_message(update, random.choice(fail_texts))
 
                 if bot_msg:
-                    asyncio.create_task(delete_response([user_msg, bot_msg], delay=30))
+                    asyncio.create_task(delete_response([user_msg, bot_msg], delay=60))
 
             else:
                 data = temp.load_images_data()
