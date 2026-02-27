@@ -89,11 +89,11 @@ async def skip_challenge(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     
                     keys_to_remove = []
                     keys_to_remove.append(osu_id)
-
-                    await remove_from_file_neko(d_file, keys_to_remove)
-
+                    
                     # прошлый челлендж не завершен и время не вышло
                     if (now - given) < TIME_LIMIT:
+                        
+                        await remove_from_file_neko(d_file, keys_to_remove)
                         
                         time_taken = now - active.get("given", now)
                         penalty_points = calculate_penalty_for_tier(tier, time_taken)
