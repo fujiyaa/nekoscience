@@ -92,7 +92,7 @@ async def submit_votes(payload: str = Form(...)):
     votes = data["votes"]
 
     # Не принимать голоса больше
-    # return
+    return
 
     await insert_to_file_neko(file_d, {
         username: {
