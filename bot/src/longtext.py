@@ -1,4 +1,4 @@
-help_text = """Darkness
+help_text = """Weakness
 ├─ osu! команды
 │  ├─ 🎮 Последние игры
 │  │  ├─   /recent | /rs 📖
@@ -41,7 +41,7 @@ help_text = """Darkness
 │  │         аниме фоны в топ100
 │  │
 │  ├─ 🗺 Карты
-│  │   ├─  @fujiyaosubot map ...📖
+│  │   ├─  @WeakoBot map ...📖
 │  │   │    искать карты
 │  │   │
 │  │   ├─  /simulate
@@ -180,10 +180,10 @@ HELP_TEXTS = {
     в команде /topchat
 ""","inline": """
 📖
-    @fujiyaosubot | map
+    @WeakoBot | map
     <b>поиск карт</b>
 
-    <code>@fujiyaosubot map The Big Black</code> — найти биг блек        
+    <code>@WeakoBot map The Big Black</code> — найти биг блек        
 """
 }
 

@@ -300,13 +300,13 @@ async def inline_osu_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 InlineQueryResultArticle(
                     id=str(uuid.uuid4()),
                     title="map 〰️ поиск карт по названию",
-                    description="пример: @fujiyaosubot MAP kotoko",
+                    description="пример: @WeakoBot MAP kotoko",
                     input_message_content=InputTextMessageContent(help_text, parse_mode='HTML')
                 ),
                 InlineQueryResultArticle(
                     id=str(uuid.uuid4()),
                     title="user 〰️ поиск профиля пользователя",
-                    description="пример: @fujiyaosubot USER vaxei",
+                    description="пример: @WeakoBot USER vaxei",
                     input_message_content=InputTextMessageContent(help_text, parse_mode='HTML')
                 )
             ]

@@ -56,8 +56,7 @@ async def send_audio(update: Update, context: ContextTypes.DEFAULT_TYPE, audio_f
             send_path = path
 
         username = escape_markdown(update.effective_user.username, version=2)
-        link = "https://t.me/fujiyaosubot"
-        caption = f"@{username} 💃 [ᴅᴀʀᴋɴᴇss]({link})"
+        caption = f"@{username}"
 
         with open(send_path, "rb") as f:
             kwargs = {
