@@ -53,12 +53,13 @@ async def send_score_compare(
     health_text = "🤍" * current_health
     
     captions = (
-        f"✴️ @{tg_name}, где <b>больше pp</b>?\n"
+        f"✴️ @{tg_name}\n"
     )
 
     captions += (
-        f"Текущая игра: <b>{current_score}</b> угадано, рекорд: <b>{best_score}</b>\n"
-        f"<b>HP</b>: {health_text}\n"        
+        f"Текущая игра: <b>{current_score}</b> угадано, рекорд: <b>{best_score}</b>\n\n"
+        f"<b>HP</b>: {health_text}\n\n" 
+        f"Где <b>больше pp</b>?"       
     )
     
     reply_markup = get_keyboard(f"next_{scores_quantity}", owner_id=user_id)
