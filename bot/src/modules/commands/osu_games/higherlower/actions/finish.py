@@ -209,7 +209,7 @@ async def finish_game(update: Update, context: ContextTypes.DEFAULT_TYPE, score_
                 else:
                     next_scores_quantity = 4           
                                  
-                reply_markup = get_keyboard(f"finish_{next_scores_quantity}")
+                reply_markup = get_keyboard(f"finish_{next_scores_quantity}", owner_id=tg_id)
 
                 if img_path:
                     if update.callback_query.message.message_id:

@@ -61,7 +61,7 @@ async def send_score_compare(
         f"<b>HP</b>: {health_text}\n"        
     )
     
-    reply_markup = get_keyboard(f"next_{scores_quantity}")
+    reply_markup = get_keyboard(f"next_{scores_quantity}", owner_id=user_id)
 
     if img_path:
         if update.callback_query.message.message_id:

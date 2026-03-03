@@ -78,13 +78,13 @@ async def higherlower_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             if not active:
                 text = "📑 Главное меню игры"
-                reply_markup = get_keyboard("main")
+                reply_markup = get_keyboard("main", owner_id=tg_id)
 
             else:                
                 text = (
                     f"🎯❗ <b>Есть не завершенная игра</b>"
                 )                    
-                reply_markup = get_keyboard("main-active")                    
+                reply_markup = get_keyboard("main-active", owner_id=tg_id)                    
                
             await safe_send_message(
                 update,
