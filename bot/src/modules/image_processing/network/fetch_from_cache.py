@@ -16,7 +16,7 @@ async def fetch_image(
     beatmap_id,
     cache_dir,
     max_age_hours=12,
-    max_attempts=3,
+    max_attempts=1,
     thumb_size=(300, 300),
     radius=12,
 ):
@@ -36,7 +36,7 @@ async def fetch_image(
         try:
             img = Image.open(cached_path).convert("RGBA")
             img.close()
-            print("🍡 using cache (card_beatmap fetch)")
+            print("🍡 using cache (card_beatmap fetch from cache)")
             return cached_path
         except Exception:
             cached_path = None
@@ -45,7 +45,7 @@ async def fetch_image(
     img = None
     for attempt in range(max_attempts):
         try:
-            print("🔻 HTTP request (card_score_compare fetch)")
+            print("🔻 HTTP request (card_score_compare fetch from cache)")
             headers = {
                 "User-Agent": "Mozilla/5.0"
             }
@@ -69,9 +69,7 @@ async def fetch_image(
                         return save_path
 
                     else:
-                        print("fetch_cover in card_beatmap error, status: ",resp.status)
+                        print("fetch_cover from cache in card_beatmap error, status: ",resp.status)
                     
         except Exception as e:
-            print("fetch_cover in card_beatmap error: ", e)
-
-    return None
+            print("fetch_cover from caches in card_beatmap error: ", e)

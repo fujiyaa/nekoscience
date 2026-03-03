@@ -1,14 +1,17 @@
 
 
 
+import os
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance, ImageOps
 
 from ...elements.image_utils import create_stat_button_left, draw_text_with_shadow, add_rounded_corners, draw_multiline_text_with_shadow, create_stat_button_right
 from ...utils.format_text import iso_to_DaysMonthYear
-from ...network.fetch import fetch_image
+from ...network.fetch_from_cache import fetch_image
+from ...network.fetch_from_api import get_image
 from ....utils.calculate import calculate_beatmap_attr
 from ....utils.osu_conversions import apply_mods_to_stats, get_mods_info
 from ....utils.calculate import caclulte_cached_entry
+from ....external.osu_api import get_user_profile
 
 from ....systems.translations import CARD_GUESS as T
 from config import BOT_DIR, BG_SCORE_COMPARE_DIR
@@ -86,28 +89,16 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
         pp = pp if not isinstance(osu_score.get("pp"), (int, float)) or osu_score.get("pp") <= 0 else osu_score.get("pp")
         stars = neko_api_calc.get('star_rating', 0)
 
-        user_avatar = await fetch_image(
-            user["avatar_url"],
-            f"{uid}a",
-            BG_SCORE_COMPARE_DIR,
-            thumb_size=(250, 250),
-            radius=corner_radius
+        user_avatar = await _resolve_image(
+            user["avatar_url"], 'user_avatar', cached_entry, f"{uid}a", (250, 250), radius=corner_radius
         )
 
-        user_cover = await fetch_image(
-            user["cover_url"],
-            f"{uid}c",
-            BG_SCORE_COMPARE_DIR,
-            thumb_size=(img_w, row_height),
-            radius=0
+        user_cover = await _resolve_image(
+            user["cover_url"], 'user_cover', cached_entry, f"{uid}c", (img_w, row_height), radius=0
         )
 
-        map_cover = await fetch_image(
-            map_data["card2x_url"],
-            f"{beatmap_id}c",
-            BG_SCORE_COMPARE_DIR,
-            thumb_size=(800, 280),
-            radius=0
+        map_cover = await _resolve_image(
+            map_data["card2x_url"], 'map_cover', cached_entry, f"{beatmap_id}c", (800, 280), radius=0
         )
 
 
@@ -481,5 +472,33 @@ async def create_score_compare_image(scores: list[dict], hide_values = None, lan
 
     img_path = f"{BOT_DIR}/cache/compare_{len(scores)}{beatmap_id}{uid}.png"
     img.convert("RGB").save(img_path)
+
+    return img_path
+
+
+async def _resolve_image(url, fallback_type, cached_entry, image_id, size, radius=12):
+    img_path = await fetch_image(
+        url,
+        image_id,
+        BG_SCORE_COMPARE_DIR,
+        thumb_size=size,
+        radius=radius
+    )
+
+    if not img_path and fallback_type:
+        img_path = await get_image(
+            fallback_type,
+            cached_entry,
+            image_id,
+            BG_SCORE_COMPARE_DIR,
+            thumb_size=size,
+            radius=radius
+        )
+
+    if not img_path:
+        img_path = os.path.join(BG_SCORE_COMPARE_DIR, f"backup_{fallback_type or 'generic'}.png")
+
+    if not os.path.exists(img_path):
+        raise ValueError(f"Image not found: {img_path}")
 
     return img_path

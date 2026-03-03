@@ -139,8 +139,8 @@ async def next_game(update: Update, context: ContextTypes.DEFAULT_TYPE, scores_q
     if active:
         cached_entries = [load_score_file(id) for id in active.get("scores_ids", [])]
         if not cached_entries or cached_entries is None:
-            await safe_send_message(update, "❌ Ошибка, попробуй еще раз", parse_mode="HTML")
-            return
+            raise ValueError('requested scores isnt cached')
+        
         await send_score_compare(update, context, cached_entries, tg_name, current_score, current_health, scores_quantity, best_score, user_id)
         
     else:
@@ -148,24 +148,7 @@ async def next_game(update: Update, context: ContextTypes.DEFAULT_TYPE, scores_q
             current_health = MAX_HEALTH
             current_score = 0
 
-        MAX_SEARCH_ATTEMPTS = 5
-        for _ in range(MAX_SEARCH_ATTEMPTS):
-            random_scores = db.find_random_scores(
-                version=3022026,
-                mode='osu',
-                ranked=False,
-                failed=False,
-                ignore_ids=None,
-                sort_by="pp",
-                max_diff=calculate_max_diff(current_score),
-                limit=scores_quantity,
-            )
-            cached_entries = [load_score_file(entry.get('id')) for entry in random_scores]
-            if len(cached_entries) == scores_quantity:
-                break
-        else:
-            await safe_send_message(update, "❌ Ошибка, попробуй еще раз", parse_mode="HTML")
-            return
+        cached_entries = await _get_entries(update, current_score, scores_quantity)
 
         await send_score_compare(update, context, cached_entries, tg_name, current_score, current_health, scores_quantity, best_score, user_id)
 
@@ -184,3 +167,23 @@ async def next_game(update: Update, context: ContextTypes.DEFAULT_TYPE, scores_q
         }
         data[osu_id] = construct_user(osu_id, osu_name, tg_id, tg_name, v1=v1_new)
         await insert_to_file_neko(d_file, data)
+
+async def _get_entries(update, current_score, scores_quantity):
+            MAX_SEARCH_ATTEMPTS = 5
+            for _ in range(MAX_SEARCH_ATTEMPTS):
+                random_scores = db.find_random_scores(
+                    version=3022026,
+                    mode='osu',
+                    ranked=False,
+                    failed=False,
+                    ignore_ids=None,
+                    sort_by="pp",
+                    max_diff=calculate_max_diff(current_score),
+                    limit=scores_quantity,
+                )
+                cached_entries = [load_score_file(entry.get('id')) for entry in random_scores]
+                if len(cached_entries) == scores_quantity:
+                    return cached_entries
+            else:
+                await safe_send_message(update, "❌ Ошибка, попробуй еще раз", parse_mode="HTML")
+                raise ValueError('no scores matching search criteria')

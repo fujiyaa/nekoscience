@@ -173,7 +173,10 @@ async def get_most_played(username: str, token: str = None) -> list[dict] | None
 
         return results
     
-async def get_beatmap(beatmap_id: int, token: str, timeout_sec: int = 10):
+async def get_beatmap(beatmap_id: int, token: str = None, timeout_sec: int = 10):
+    if token is None:
+        token = await get_osu_token()
+
     url = f"https://osu.ppy.sh/api/v2/beatmaps/{beatmap_id}"
     headers = {
         "Authorization": f"Bearer {token}"
