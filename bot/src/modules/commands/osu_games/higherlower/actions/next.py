@@ -138,11 +138,11 @@ async def next_game(update: Update, context: ContextTypes.DEFAULT_TYPE, scores_q
 
     if active:
         cached_entries = [load_score_file(id) for id in active.get("scores_ids", [])]
-        if not cached_entries:
+        if not cached_entries or cached_entries is None:
             await safe_send_message(update, "❌ Ошибка, попробуй еще раз", parse_mode="HTML")
             return
         await send_score_compare(update, context, cached_entries, tg_name, current_score, current_health, scores_quantity, best_score, user_id)
-    
+        
     else:
         if current_health == 0:
             current_health = MAX_HEALTH
