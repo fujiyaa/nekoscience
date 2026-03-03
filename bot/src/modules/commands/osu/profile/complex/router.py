@@ -27,3 +27,7 @@ async def start_anime(update, context):
 async def start_average(update, context):
     await log_all_update(update)
     asyncio.create_task(profile(update, context, 'average'))
+
+async def start_aimslop(update, context):
+    await log_all_update(update)
+    asyncio.create_task(profile(update, context, 'aimslop'))

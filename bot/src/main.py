@@ -41,6 +41,7 @@ def register_commands(app):
         ("mappers",):                       start_mappers,
         ("mods",):                          start_mods,
         ("anime", "goon"):                  start_anime,
+        ("aimslop", "slop"):                start_aimslop,
         
         # scores
         ("recent", "rs", "r"):              start_rs,

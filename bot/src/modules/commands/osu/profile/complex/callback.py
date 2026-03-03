@@ -2,19 +2,11 @@
 
 
 import traceback
-import asyncio
-
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from .....external.osu_api import get_osu_token, get_user_profile, get_top_100_scores
-from .....wrappers.osu_profile import get_profile_text
 from .....actions.messages import safe_query_answer, safe_edit_query
-from .....actions.context import set_message_context
 from .response import send_query
-# import temp
-
-# from config import USER_SETTINGS_FILE
 
 
 
@@ -24,7 +16,7 @@ async def callback(update: Update, _context: ContextTypes.DEFAULT_TYPE):
         uid_click = query.from_user.id
         
         parts = query.data.split(":")
-        # ["ctx1", "profile|compare|mods|mappers|anime", "u|c", "<username>", "<origin_user_id>"]
+        # ["ctx1", "profile|compare|mods|mappers|anime|aimslop", "u|c", "<username>", "<origin_user_id>"]
         action = parts[1]
         proceed_or_cancel = parts[2]
         username = str(parts[3])

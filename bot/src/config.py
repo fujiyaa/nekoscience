@@ -191,12 +191,23 @@ VERIFIED_USERS_FILE = BASE_DIR / "web" / "src" / "auth" / "verified.json"
 VERIFY_PENDING_FILE = BASE_DIR / "web" / "src" / "auth" / "pending.json"
 
 ALL_UPDATES_LOG = BASE_DIR / "storage" / "bot_data" / "all_updates.log"
-
+AIMSLOP_FILE = BASE_DIR / "storage" / "bot_data" / "aimslop.txt"
 
 GIF_BLACKS_PATH = BOT_DIR / "gifs" / "blacks" / "sticker.webm"
 GIF_DOUBT_PATH = BOT_DIR / "gifs" / "doubt" / "blue-archive-otogi.mp4"
 
 SUPPORT_STUB = 'обратись в техническую поддержку.'
 MAX_TEXT_LENGTH = 4096
+
+def load_aimslop_ids(path=AIMSLOP_FILE):
+    ids = set()
+    with open(path, "r", encoding="utf-8") as f:
+        for line in f:
+            match = re.search(r"#osu/(\d+)", line)
+            if match:
+                ids.add(int(match.group(1)))
+    return ids
+
+AIMSLOP_IDS = load_aimslop_ids()
 
 START_TIME = time.time()

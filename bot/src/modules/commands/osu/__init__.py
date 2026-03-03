@@ -28,7 +28,7 @@ from .leaderboard import (
 
 from .profile import (
     start_compare_profile, start_profile, start_average, 
-    start_mappers, start_mods, start_anime,
+    start_mappers, start_mods, start_anime, start_aimslop,
 
     callback_avg, callback_prf_ctx
 ) 

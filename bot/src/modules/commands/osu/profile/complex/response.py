@@ -13,6 +13,7 @@ from .....wrappers.osu_profile import get_profile_text
 from .....wrappers.mods_top import get_mods_top
 from .....wrappers.mappers import get_mappers_text
 from .....wrappers.anime import get_anime_text
+from .....wrappers.aimslop import get_aimslop_text
 from ..average.average import average
 import temp
 
@@ -44,7 +45,9 @@ async def get_text_by_action(
 
     elif action == 'anime':
         return get_anime_text(user_data, best_pp), "HTML"
-
+    
+    elif action == 'aimslop':
+        return get_aimslop_text(user_data, best_pp), "HTML"
 
     else:
         raise ValueError(f'unspecified action: {action}')
@@ -75,7 +78,8 @@ async def send_message(
             chat_id=update.effective_chat.id,
             message_id=temp_id,
             text=text,
-            parse_mode=parse_mode
+            parse_mode=parse_mode,
+            disable_web_page_preview=True
         )
 
         if bot_msg:
@@ -109,13 +113,13 @@ async def send_query(
             text="`Нет данных`",
             parse_mode="Markdown"
         )
-        return                
+        return
 
     bot_msg = await safe_edit_query(
         query,
         text=text,
         parse_mode=parse_mode,
-        disable_web_page_preview=False,
+        disable_web_page_preview=True,
     )
 
     if bot_msg:

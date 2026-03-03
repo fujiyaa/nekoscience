@@ -69,7 +69,7 @@ async def context_lookup(
                         
                     temp_message = await safe_send_message(
                         update, 
-                        text=f"<code>Посмотреть {action}...\n(или используй /profile +ник)</code>", 
+                        text=f"<code>Посмотреть {action}...\n(или используй /{action} +ник)</code>", 
                         reply_markup=await get_keyboard(
                             message_context,
                             message_context_reply,
