@@ -10,11 +10,8 @@ import zipfile
 import aiohttp
 import aiofiles
 import asyncio
-from datetime import datetime
 
-from ..systems.json_files import load_score_file, save_score_file
-
-from config import CACHE_TTL, LXML_TIMEOUT
+from config import CACHE_TTL
 from config import BEATMAPS_DIR, STATS_BEATMAPS, MAX_CONCURRENT_REQUESTS
 
 semaphore = asyncio.Semaphore(MAX_CONCURRENT_REQUESTS) 

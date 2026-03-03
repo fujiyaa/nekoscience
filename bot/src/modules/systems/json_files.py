@@ -9,16 +9,18 @@ from config import SCORES_DIR
 
 def get_score_path(score_id: str) -> str:
     return os.path.join(SCORES_DIR, f"{score_id}.json")
-def load_score_file(score_id: str) -> dict | None:
+def load_score_file(score_id: str, ignore_empty: bool = False) -> dict | None:
     path = get_score_path(score_id)
-    if not os.path.exists(path):
+    if not os.path.exists(path) and not ignore_empty:
         raise ValueError(f'⚠ Скора нет в кеше {score_id}')
     
     try:
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
     except Exception as e:
-        print(f"⚠ Ошибка при загрузке файла {score_id}: {e}")        
+        print(f"⚠ Ошибка при загрузке файла {score_id}: {e}")
+
+    return None  
 
 def save_score_file(score_id: str, data: dict):
     path = get_score_path(score_id)
