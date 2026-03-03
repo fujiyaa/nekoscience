@@ -476,7 +476,7 @@ async def get_user_scores_by_beatmap(
     async with aiohttp.ClientSession() as session:
         for i, score in enumerate(scores):
             score_id = str(score["id"])
-            cached_entry = load_score_file(score_id)
+            cached_entry = load_score_file(score_id, ignore_empty=True)
             if not cached_entry:   
                 score['beatmapset'] = beatmapset                  
                 score['beatmap'] = beatmap  
@@ -519,7 +519,7 @@ async def get_user_scores(
     async with aiohttp.ClientSession() as session:
         for i, score in enumerate(scores_sorted):
             score_id = str(score["id"])
-            cached_entry = load_score_file(score_id)
+            cached_entry = load_score_file(score_id, ignore_empty=True)
             
             if cached_entry:
                 if cached_entry['state']['error']:
@@ -689,7 +689,7 @@ async def score_to_schema(score, user_info):
 
 async def get_score_by_id(score_id: str, token: str, timeout_sec: int = 10, override: bool = False):
     if not override:    
-        cached_entry = load_score_file(score_id)
+        cached_entry = load_score_file(score_id, ignore_empty=True)
     else: 
         cached_entry = False
     
