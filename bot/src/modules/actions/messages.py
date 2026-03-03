@@ -133,12 +133,12 @@ async def safe_query_answer(query, text=None, show_alert=True, retries=2, delay=
                 await query.answer(text, show_alert=show_alert)
             else:
                 await query.answer()
-            return
+            return True
         except Exception as e:
             attempt += 1
             if attempt > retries:
                 print(f"❌ Не удалось отправить ответ: {e}")
-                return
+                return False
             await asyncio.sleep(delay)
 
 async def safe_edit_message(message, text, parse_mode=None, reply_markup=None):

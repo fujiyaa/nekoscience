@@ -197,6 +197,6 @@ GIF_BLACKS_PATH = BOT_DIR / "gifs" / "blacks" / "sticker.webm"
 GIF_DOUBT_PATH = BOT_DIR / "gifs" / "doubt" / "blue-archive-otogi.mp4"
 
 SUPPORT_STUB = 'обратись в техническую поддержку.'
-
+MAX_TEXT_LENGTH = 4096
 
 START_TIME = time.time()
