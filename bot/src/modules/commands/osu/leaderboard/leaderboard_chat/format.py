@@ -50,6 +50,8 @@ def format_stats(user):
     count_miss = stats.get("count_miss", 0)
     miss_ratio = 0
 
+    first_places = user.get('scores_first_count') or 0
+
     if count_miss > 0 and total_hits > 0:
         miss_ratio = total_hits / count_miss
 
@@ -130,18 +132,15 @@ def format_stats(user):
         "medals": medals,
         "join_date": user["join_date"].split("T")[0],
         "replays": stats.get("replays_watched_by_others", 0),
-        # "top1_pp": best_pp[0]["pp"] if best_pp else 0,
-        # "pp_avg_all": pp_avg_all,
         "avg_pp_per_month": avg_pp_per_month,
-        # "pp_diff": pp_diff,
         "max_count": max_count,
         "followers": user['follower_count'],
         "mapping": user['mapping_follower_count'],
         "maps": user['beatmap_playcounts_count'],
         "posts": user['post_count'],
         "hpp": hpp,
-        # "anime_bg_counter": anime_bg_counter,
-        # "not_anime_bg_counter": not_anime_bg_counter,
+
+        "first_places": first_places,
 
         "country_code": user['country_code'],
 

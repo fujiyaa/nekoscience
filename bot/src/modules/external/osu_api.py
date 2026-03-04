@@ -34,7 +34,11 @@ async def get_user_profile_batch(usernames: list[str]) -> list[dict | None]:
             tasks = []            
             for username in usernames:
                 url = f"https://osu.ppy.sh/api/v2/users/{username}/osu"
-                headers = {"Authorization": f"Bearer {token}"}
+                headers = {
+                    "Authorization": f"Bearer {token}",
+                    "x-api-version": "20240529",
+                    "Accept": "application/json"
+                }
                 tasks.append(fetch_with_timeout(session, url, headers))
 
             return await asyncio.gather(*tasks)        

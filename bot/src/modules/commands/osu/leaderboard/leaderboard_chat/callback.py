@@ -54,6 +54,8 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     hits_per_hour = "Hit / Hour"
     minutes_per_play = "Minutes / Play"
 
+    first_places = "🥇 First places"
+
 
     data = query.data
     if ":" not in data:
@@ -129,6 +131,9 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     InlineKeyboardButton(ss_ranks, callback_data=f"leaderboard_chat_ss:{allowed_user_id}"),
                     InlineKeyboardButton(s_ranks, callback_data=f"leaderboard_chat_s:{allowed_user_id}"),
                     InlineKeyboardButton(a_ranks, callback_data=f"leaderboard_chat_a:{allowed_user_id}"),
+                ],
+                [
+                    InlineKeyboardButton(first_places, callback_data=f"leaderboard_chat_first_places:{allowed_user_id}"),
                 ]
             ]
         elif group == "score":
@@ -179,6 +184,8 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             if data == "leaderboard_chat_total_pp":
                 await leaderboard(update, context, pp, 'pp', '', 'pp')
+            elif data == "leaderboard_chat_first_places":
+                await leaderboard(update, context, first_places, 'first_places', '', '')
             elif data == "leaderboard_chat_rank_perc":
                 await leaderboard(update, context, rank_perc, 'rank_perc', '', '%')
             elif data == "leaderboard_chat_global_rank":
@@ -246,6 +253,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             elif data == "leaderboard_chat_higherlower":
                 await leaderboard_with_json(update, context, "Higher-Lower game Leaderboard", "file_osugames_higherlower")
             else:
+                print(data)
                 await query.edit_message_text("Неизвестная кнопка!")
             return
         except Exception as e: print (e)
