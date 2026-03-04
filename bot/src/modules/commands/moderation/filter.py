@@ -6,7 +6,10 @@ from config import TARGET_CHAT_ID
 CHAT_SETTINGS = {
     TARGET_CHAT_ID: {
         "VOTE_LIMIT": 4,
-    }
+    },
+    -1003045768012: {
+        "VOTE_LIMIT": 5,
+    },
 }
 
 
