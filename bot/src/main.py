@@ -68,7 +68,7 @@ def register_commands(app):
         ("uptime",):                        uptime,
 
         # mod
-        ("mod",):                           start_vote_delete_message,
+        ("mod", "report"):                           start_vote_delete_message,
         ("message",):                       start_message_info
     }
 
