@@ -60,3 +60,13 @@ def get_message_context(obj: Update | Message, reply: bool = False) -> Optional[
         data = db.find_recent(chat_id=ids["chat_id"], topic_id=ids["topic_id"])
     
     return data
+
+def get_message_context_plain(obj: Update | Message, reply: bool = False) -> Optional[Dict[str, Any]]:
+  
+    ids = _extract_ids(obj, reply=reply)
+    
+    if ids is not None:
+        return ids
+    
+    else:
+        return None

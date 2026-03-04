@@ -4,17 +4,37 @@
 import asyncio
 from telegram import Update
 from telegram.ext import ContextTypes
+from telegram.error import RetryAfter, TelegramError
 import logging
 import os
 
 from config import remove_tasks
+err_text = 'Ошибка при удалении сообщения'
 
-async def delete_message_after_delay(context, chat_id: int, message_id: int, delay: int = 10):
+
+
+async def delete_message_after_delay(
+    context, chat_id: int, 
+    message_id: int, 
+    delay: int = 10,
+    que_delay: int = 0
+):
     await asyncio.sleep(delay)
+
     try:
+        if que_delay > 0: await asyncio.sleep(que_delay)
+
         await context.bot.delete_message(chat_id=chat_id, message_id=message_id)
-    except Exception as e:
-        print(f"Ошибка при удалении сообщения: {e}")
+
+    except RetryAfter as e:
+        await asyncio.sleep(e.retry_after)
+        try:
+            await context.bot.delete_message(chat_id=chat_id, message_id=message_id)
+        except TelegramError as e:
+            print(f"{err_text}: {e}")
+
+    except TelegramError as e:
+        print(f"{err_text}: {e}")
 
 async def delete_response(resp, delay: int = 10):
     await asyncio.sleep(delay)
@@ -23,12 +43,12 @@ async def delete_response(resp, delay: int = 10):
             try:
                 await r.delete()
             except Exception as e:
-                print(f"Ошибка при удалении сообщения: {e}")
+                print(f"{err_text}: {e}")
     else:
         try:
             await resp.delete()
         except Exception as e:
-            print(f"Ошибка при удалении сообщения: {e}")
+            print(f"{err_text}: {e}")
 
 async def delete_user_message(update: Update, context: ContextTypes.DEFAULT_TYPE, delay: int = 5):
     if not update.message:
@@ -41,7 +61,33 @@ async def delete_user_message(update: Update, context: ContextTypes.DEFAULT_TYPE
     try:
         await context.bot.delete_message(chat_id=chat_id, message_id=message_id)
     except Exception as e:
-        print(f"Ошибка при удалении пользовательского сообщения: {e}")
+        print(f"{err_text}: {e}")
+
+async def delete_messages_with_delay(context, chat_id, messages_ids, delay):
+    if not messages_ids:
+        return
+
+    if isinstance(messages_ids, int):
+        messages_ids = [messages_ids]
+
+    for message_id in messages_ids:
+        asyncio.create_task(
+            delete_message_after_delay(context, chat_id, message_id, delay)
+        )
+
+async def delete_messages_with_delay_in_que(context, chat_id, messages_ids, delay, que_delay):
+    if not messages_ids:
+        return
+
+    if isinstance(messages_ids, int):
+        messages_ids = [messages_ids]
+
+    for message_id in messages_ids:
+        que_delay += 1
+        asyncio.create_task(
+            delete_message_after_delay(context, chat_id, message_id, delay, que_delay)
+        )
+
 
 async def safe_send_message(
         update: Update, 
@@ -178,4 +224,3 @@ async def safe_edit_query(query, text, parse_mode=None, reply_markup=None,
 
     except Exception as e:
         print(f"safe_edit_query failed: {e}")
-

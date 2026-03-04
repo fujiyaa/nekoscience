@@ -65,7 +65,11 @@ def register_commands(app):
         ("name", "link", "nick", "osu"):    set_name,
         ("settings",):                      settings_cmd,
         ("ping",):                          ping,
-        ("uptime",):                        uptime
+        ("uptime",):                        uptime,
+
+        # mod
+        ("mod",):                           start_vote_delete_message,
+        ("message",):                       start_message_info
     }
 
     for names, handler in command_map.items():
@@ -102,7 +106,10 @@ def register_callbacks(app):
 
         # service
         (settings_handler,  r"^settings_"),                    
-        (osu_chat_callback, r"^send_pm_with_link_to:"),        
+        (osu_chat_callback, r"^send_pm_with_link_to:"),
+
+        # mod
+        (callback_modv,     r"^modv:")
     ]
 
     for handler, pattern in callbacks:

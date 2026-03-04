@@ -38,7 +38,7 @@ def get_aimslop_text(user_data, best_pp):
         def percent_emoji(p):
             if p < 1:
                 return '✅'
-            elif p < 15:
+            elif p < 20:
                 return '🟢'
             elif p < 30:
                 return '🟡'

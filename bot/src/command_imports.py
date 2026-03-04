@@ -62,3 +62,10 @@ from modules.inline import (
 from modules.commands.service.settings.callback import callback as settings_handler
 from modules.actions.osu_chat import callback as osu_chat_callback
 # from modules.inline import callback as settings_handler
+
+from modules.commands.moderation import (
+    start_vote_delete_message,
+    start_message_info,
+
+    callback_modv
+)
