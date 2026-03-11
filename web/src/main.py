@@ -33,6 +33,7 @@ from routers.darkness_auth import router as darkness_auth_router
 from routers.darkness_direct import router as darkness_direct_router
 from routers.darkness_reminders import router as darkness_reminders_router
 from routers.vote_for_images import router as vote_for_images_router
+from routers.side_server import router as side_server_router
 
 app.include_router(dash_router)
 app.include_router(chat_router)
@@ -41,6 +42,7 @@ app.include_router(darkness_auth_router)
 app.include_router(darkness_direct_router)
 app.include_router(darkness_reminders_router)
 app.include_router(vote_for_images_router)
+app.include_router(side_server_router)
 
 @app.get("/")
 async def root():
