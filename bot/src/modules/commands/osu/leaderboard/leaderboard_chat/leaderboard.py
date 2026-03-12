@@ -2,6 +2,7 @@
 
 
 import asyncio
+import traceback
 
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -30,20 +31,19 @@ async def leaderboard_chat(update: Update, context: ContextTypes.DEFAULT_TYPE, u
         return
     MAX_ATTEMPTS = 3
     
-    for attempt in range(1, MAX_ATTEMPTS + 1):
-        try:    
-            text = "🏆 Топ чата"
-            reply_markup = get_keyboard("select_group", update.effective_message.from_user.id)                
-            
-            await safe_send_message(
-                update,
-                text,
-                parse_mode="HTML",
-                reply_markup=reply_markup
-            )          
-            
-            return
+    try:    
+        text = "🏆 Топ чата"
+        reply_markup = get_keyboard("select_group", update.effective_message.from_user.id)                
+        
+        await safe_send_message(
+            update,
+            text,
+            parse_mode="HTML",
+            reply_markup=reply_markup
+        )          
+        
+        return
 
-        except Exception as e:
-            print(f"Ошибка при leaderboard_chat (попытка {attempt}/{MAX_ATTEMPTS}): {e}")
-           
+    except Exception:
+        traceback.print_exc()
+        

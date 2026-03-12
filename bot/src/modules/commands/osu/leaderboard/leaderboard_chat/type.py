@@ -56,67 +56,64 @@ async def leaderboard_with_json(update: Update, context: ContextTypes.DEFAULT_TY
     
     chat_ids = {item.get('id') for item in profiles}
 
-    try:
-        response = await read_file_neko(d_file)
-        data = response.get("current", {})
+    response = await read_file_neko(d_file)
+    data = response.get("current", {})
 
-        leaderboard_current = []
-        leaderboard_total = []
+    leaderboard_current = []
+    leaderboard_total = []
 
-        for osu_id, user in data.items():
-            tg_id = user["osu"]["id"]
-            if tg_id not in chat_ids:
-                continue
+    for osu_id, user in data.items():
+        tg_id = user["osu"]["id"]
+        if tg_id not in chat_ids:
+            continue
 
-            osu_name = user["osu"]["username"]
-            tg_name = user["telegram"]["username"]
-            points = user["v1"]["points"]
-
-            if d_file != 'file_osugames_higherlower':
-                current_score = points.get("current_season", 0)
-
-                total_score = current_score + points.get("previous_seasons", 0)
-
-                leaderboard_current.append({
-                    "osu": osu_name,
-                    "tg": tg_name,
-                    "score": current_score
-                })
-
-                leaderboard_total.append({
-                    "osu": osu_name,
-                    "tg": tg_name,
-                    "score": total_score
-                })
-            
-            else:
-                current_score = points.get("best_score", 0)
-
-                leaderboard_current.append({
-                    "osu": osu_name,
-                    "tg": tg_name,
-                    "score": current_score
-                })                
-
-        leaderboard_current = sorted(leaderboard_current, key=lambda x: x["score"], reverse=True)[:10]
-        if d_file != 'file_osugames_higherlower':
-            leaderboard_total   = sorted(leaderboard_total, key=lambda x: x["score"], reverse=True)[:3]
-           
-        medals = ["🥇", "🥈", "🥉"]
-        text = f"{caption}\n\n"
-        text += "⭐ Этот сезон:\n\n"
-        for i, entry in enumerate(leaderboard_current, 1):
-            prefix = medals[i-1] if i <= 3 else f"  {i} "
-            text += f"{prefix} {entry['osu']} ({entry['tg']}) - {entry['score']} очков\n"
+        osu_name = user["osu"]["username"]
+        tg_name = user["telegram"]["username"]
+        points = user["v1"]["points"]
 
         if d_file != 'file_osugames_higherlower':
-            text += "\n\n🏆 Топ за все время\n\n"
-            for i, entry in enumerate(leaderboard_total, 1):
-                prefix = medals[i-1] if i <= 3 else f"{i}."
-                text += f"{prefix} {entry['osu']} ({entry['tg']}) - {entry['score']} очков\n"   
+            current_score = points.get("current_season", 0)
 
+            total_score = current_score + points.get("previous_seasons", 0)
+
+            leaderboard_current.append({
+                "osu": osu_name,
+                "tg": tg_name,
+                "score": current_score
+            })
+
+            leaderboard_total.append({
+                "osu": osu_name,
+                "tg": tg_name,
+                "score": total_score
+            })
         
-        await send(update, text, text)       
+        else:
+            current_score = points.get("best_score", 0)
 
-    except Exception as e:
-        print(e)
+            leaderboard_current.append({
+                "osu": osu_name,
+                "tg": tg_name,
+                "score": current_score
+            })                
+
+    leaderboard_current = sorted(leaderboard_current, key=lambda x: x["score"], reverse=True)[:10]
+    if d_file != 'file_osugames_higherlower':
+        leaderboard_total   = sorted(leaderboard_total, key=lambda x: x["score"], reverse=True)[:3]
+        
+    medals = ["🥇", "🥈", "🥉"]
+    text = f"{caption}\n\n"
+    text += "⭐ Этот сезон:\n\n"
+    for i, entry in enumerate(leaderboard_current, 1):
+        prefix = medals[i-1] if i <= 3 else f"  {i} "
+        text += f"{prefix} {entry['osu']} ({entry['tg']}) - {entry['score']} очков\n"
+
+    if d_file != 'file_osugames_higherlower':
+        text += "\n\n🏆 Топ за все время\n\n"
+        for i, entry in enumerate(leaderboard_total, 1):
+            prefix = medals[i-1] if i <= 3 else f"{i}."
+            text += f"{prefix} {entry['osu']} ({entry['tg']}) - {entry['score']} очков\n"   
+
+    
+    await send(update, text, text)       
+

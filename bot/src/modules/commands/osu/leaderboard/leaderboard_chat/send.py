@@ -16,6 +16,7 @@ async def send(update: Update, stats_batch: dict = None, caption: str = ''):
                 parse_mode="HTML"
             )
         except:
+            print('send fallback 1')
             await safe_send_message(
                 update,
                 "Нет данных",
@@ -42,6 +43,7 @@ async def send(update: Update, stats_batch: dict = None, caption: str = ''):
             entities=entities
         )
     except:
+        print('send fallback 2')
         await safe_send_message(
             update,
             caption,
