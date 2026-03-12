@@ -1,6 +1,7 @@
 
 
 
+import traceback
 from telegram import Update
 from telegram.ext import ContextTypes
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
@@ -256,4 +257,5 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 print(data)
                 await query.edit_message_text("Неизвестная кнопка!")
             return
-        except Exception as e: print (e)
+        except Exception: 
+            traceback.print_exc()
