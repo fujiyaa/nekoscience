@@ -1,6 +1,7 @@
 
 
 
+import traceback
 import asyncio
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -222,5 +223,5 @@ async def safe_edit_query(query, text, parse_mode=None, reply_markup=None,
 
         return await msg.edit_caption(text, **kwargs)
 
-    except Exception as e:
-        print(f"safe_edit_query failed: {e}")
+    except Exception:
+        traceback.print_exc()
