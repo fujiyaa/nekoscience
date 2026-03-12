@@ -10,14 +10,12 @@ from .....actions.messages import safe_send_message, safe_edit_query
 async def send(update: Update, stats_batch: dict = None, caption: str = ''):
     if not stats_batch:
         try:
-            print('send 1')
             await safe_edit_query(
                 update.callback_query, 
                 "Нет данных",
                 parse_mode="HTML"
             )
         except:
-            print('send fallback 1')
             await safe_send_message(
                 update,
                 "Нет данных",
@@ -36,20 +34,16 @@ async def send(update: Update, stats_batch: dict = None, caption: str = ''):
                 length=tg_len(caption)    
             )
         ]        
-        print('send 2')
         await safe_edit_query(
             update.callback_query, 
             caption,
             parse_mode="HTML",
             entities=entities
         )
-        print('send 2 done')
     except:
-        print('send fallback 2')
         await safe_send_message(
             update,
             caption,
             parse_mode="HTML",
             # reply_markup=pagination
         )         
-        print('send fallback 2 done')
