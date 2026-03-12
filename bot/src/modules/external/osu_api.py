@@ -21,7 +21,7 @@ from config import OSU_ID_CACHE_FILE
 
 TIMEOUT = 10
 
-api_limit = asyncio.Semaphore(10)
+api_limit = asyncio.Semaphore(5)
 
 
 
