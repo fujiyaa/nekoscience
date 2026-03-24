@@ -156,15 +156,15 @@ async def nochoke(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
                             "custom_od": float(score.get('OD', 0.0)),
                         }
 
-                    try:
-                        pp_data = await get_score_pp_neko_api(payload)
+                        try:
+                            pp_data = await get_score_pp_neko_api(payload)
 
-                        max_pp = pp_data.get("no_choke_pp", pp)
-                        stars = pp_data.get("star_rating", stars)
-                        max_combo = pp_data.get("perfect_combo", max_combo)
+                            max_pp = pp_data.get("no_choke_pp", pp)
+                            stars = pp_data.get("star_rating", stars)
+                            max_combo = pp_data.get("perfect_combo", max_combo)
 
-                    except Exception as e:
-                        print(f"neko API failed: {e}")                    
+                        except Exception as e:
+                            print(f"neko API failed: {e}")                    
                                                 
                     score["index"] = i + 1
                     score["pp_old"] = pp
