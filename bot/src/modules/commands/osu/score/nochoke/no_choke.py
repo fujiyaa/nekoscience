@@ -127,22 +127,24 @@ async def nochoke(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
                     lazer = score.get("lazer")   
 
                     misses = score.get("misses", 0)
+                    max_pp = pp
+                    max_combo = combo
+                    stars = score.get("stars", 0.0)
+
                     if miss_limit is not None and misses > miss_limit:
-                        new_pp = pp
-                        max_combo = combo
-                        stars = score.get("stars", 0.0)  
+                    # ничего не делаем — уже заданы дефолты
+                        pass
                     else:
-                        #neko API 
                         payload = {
-                            "map_path": str(score.get('beatmap_id', "0")), 
-                            
+                            "map_path": str(score.get('beatmap_id', "0")),
+
                             "n300": int(score_stats.get("count_300", 0)),
                             "n100": int(score_stats.get("count_100", 0)),
                             "n50": int(score_stats.get("count_50", 0)),
                             "misses": int(misses),                   
                             
-                            "mods": str(score.get("mods", 0)), 
-                            "combo": int(score.get("combo", 0.0)),      
+                            "mods": str(score.get("mods", "")), 
+                            "combo": int(score.get("combo", 0)),      
                             "accuracy": float(score.get("accuracy", 1.0) * 100),    
                             
                             "lazer": bool(score.get('lazer', False)),          
@@ -154,19 +156,15 @@ async def nochoke(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
                             "custom_od": float(score.get('OD', 0.0)),
                         }
 
-                        try:
-                            pp_data = await get_score_pp_neko_api(payload)
+                    try:
+                        pp_data = await get_score_pp_neko_api(payload)
 
-                            _pp = pp_data.get("pp")
-                            max_pp = pp_data.get("no_choke_pp")
-                            _perfect_pp = pp_data.get("perfect_pp")
+                        max_pp = pp_data.get("no_choke_pp", pp)
+                        stars = pp_data.get("star_rating", stars)
+                        max_combo = pp_data.get("perfect_combo", max_combo)
 
-                            stars = pp_data.get("star_rating")
-                            max_combo = pp_data.get("perfect_combo")
-                            _expected_bpm = pp_data.get("expected_bpm")
-
-                        except Exception as e:
-                            print(f"neko API failed: {e}")                     
+                    except Exception as e:
+                        print(f"neko API failed: {e}")                    
                                                 
                     score["index"] = i + 1
                     score["pp_old"] = pp
