@@ -1,12 +1,16 @@
 
 
 
-from .complex.router import start_average
-from .complex.router import start_profile
-from .complex.router import start_mappers
-from .complex.router import start_mods
-from .complex.router import start_anime
-from .complex.router import start_aimslop
+from .complex.router import (
+    start_average,
+    start_profile,
+    start_mappers,
+    start_mods,
+    start_anime,
+    start_aimslop,
+    start_minmax
+)
+
 from .compare_profile.compare_profile import start_compare_profile
 
 

@@ -8,23 +8,26 @@ from .....actions.messages import safe_edit_query, safe_edit_message
 from .buttons import get_keyboard
 
 from .....systems.translations import DEFAULT_COMMAND_TEMPLATE as T
-from .keyboard_types import SELECT_TYPE
+from .keyboard_types import SELECT_TYPE, SELECT_DETAIL_TYPE
 
 
 
 async def average(
     update: Update, 
     username, 
-    language
+    language,
+    detail_type: bool = False
 ):
     try:
         query = update.callback_query
+
+        k_type = SELECT_DETAIL_TYPE if detail_type else SELECT_TYPE
 
         reply_markup = await get_keyboard(
             origin_user_id = update.effective_user.id,
             osu_username = username,
             ruleset = 'osu',
-            keyboard_type = SELECT_TYPE,
+            keyboard_type = k_type,
             language = language
         )
 

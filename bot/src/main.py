@@ -42,6 +42,7 @@ def register_commands(app):
         ("mods",):                          start_mods,
         ("anime", "goon"):                  start_anime,
         ("aimslop", "slop"):                start_aimslop,
+        ("minmax", "mx"):                   start_minmax,
         
         # scores
         ("recent", "rs", "r"):              start_rs,

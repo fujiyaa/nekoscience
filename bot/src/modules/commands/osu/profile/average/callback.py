@@ -13,6 +13,7 @@ from .....external.osu_http import fetch_txt_beatmaps
 from .....external.osu_api import get_user_scores
 from .....utils.osu_conversions import apply_mods_to_stats, get_mods_info
 from .....wrappers.average_table import get_average_table
+from .....wrappers.minmax_table import get_minmax_table
 from .....wrappers.user import get_user_link
 from .....utils.calculate import caclulte_cached_entry, calculate_beatmap_attr
 import temp
@@ -32,11 +33,12 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         uid_click = query.from_user.id
         
         parts = query.data.split(":")
-        # average_select_type   :   u|c    :   {osu_username}  :   {value} :   osu
+        # average_select_type   :   u|c    :   {osu_username}  :   {value} :   osu   :   {k_type (1|2)}
         action =        str(parts[1])
         origin_uid =    int(parts[2])        
         osu_username =  str(parts[3])
         scores_type =   str(parts[4])
+        k_type =   str(parts[6])
 
 
         s = temp.load_json(USER_SETTINGS_FILE, default={})
@@ -113,19 +115,21 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 if failed:
                     print("err loading maps (average_recent):", failed)
 
+                use_ids = (k_type == "2")
+
                 for cached_entry in recent_scores:
                     map =               cached_entry['map']
                     osu_score =         cached_entry['osu_score']
                     neko_api_calc =     cached_entry['neko_api_calc']
+                    score_id =          cached_entry['osu_api_data']['id']
 
                     if not cached_entry['state']['calculated']:
                         await caclulte_cached_entry(cached_entry)
-                        
                         neko_api_calc = cached_entry['neko_api_calc']
                     
                     pp = neko_api_calc.get("pp")
 
-                    #temp pp fix
+                    # temp pp fix
                     pp = pp if not isinstance(osu_score.get("pp"), (int, float)) or osu_score.get("pp") <= 0 else osu_score.get("pp")
                         
                     base_values = await calculate_beatmap_attr(cached_entry)
@@ -135,29 +139,53 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     mods_str = osu_score.get("mods", "")
                     speed_multiplier, hr_active, ez_active = get_mods_info(mods_str)                    
                     length = int(round(float(length) / speed_multiplier))
-                
+
                     bpm, ar, od, cs, hp = apply_mods_to_stats(
                         bpm, base_values[0], base_values[2], base_values[1], base_values[3],
                         speed_multiplier=speed_multiplier, hr=hr_active, ez=ez_active
                     )
 
-                    pps.append(pp)
-                    accs.append((osu_score.get('accuracy') or 0) * 100)
-                    combos.append(osu_score.get("max_combo") or 0)
-                    misses.append(osu_score.get("count_miss") or 0)                    
-                    stars.append(neko_api_calc.get("star_rating") or 0) 
-                    ars.append(ar)
-                    css.append(cs)
-                    hps.append(hp)
-                    ods.append(od)
-                    bpms.append(bpm)
-                    lengths.append(length)
+                    if use_ids:
+                        pps.append((pp, score_id))
+                        accs.append(((osu_score.get('accuracy') or 0) * 100, score_id))
+                        combos.append((osu_score.get("max_combo") or 0, score_id))
+                        misses.append((osu_score.get("count_miss") or 0, score_id))
+                        stars.append((neko_api_calc.get("star_rating") or 0, score_id))
+                        ars.append((ar, score_id))
+                        css.append((cs, score_id))
+                        hps.append((hp, score_id))
+                        ods.append((od, score_id))
+                        bpms.append((bpm, score_id))
+                        lengths.append((length, score_id))
+                    else:
+                        pps.append(pp)
+                        accs.append((osu_score.get('accuracy') or 0) * 100)
+                        combos.append(osu_score.get("max_combo") or 0)
+                        misses.append(osu_score.get("count_miss") or 0)
+                        stars.append(neko_api_calc.get("star_rating") or 0)
+                        ars.append(ar)
+                        css.append(cs)
+                        hps.append(hp)
+                        ods.append(od)
+                        bpms.append(bpm)
+                        lengths.append(length)
                                     
-                def calc_stats(values):
-                    numeric_values = [v for v in values if isinstance(v, (int, float))]
-                    if not numeric_values:
-                        return ("-", "-", "-")
-                    return (min(numeric_values), mean(numeric_values), max(numeric_values))                
+                if use_ids:
+                    def calc_stats(values):
+                        numeric_values = [(v, sid) for v, sid in values if isinstance(v, (int, float))]
+                        if not numeric_values:
+                            return (("-", "-"), ("-", "-"))
+
+                        min_v, min_id = min(numeric_values, key=lambda x: x[0])
+                        max_v, max_id = max(numeric_values, key=lambda x: x[0])
+
+                        return ((min_v, min_id), (max_v, max_id))
+                else:
+                    def calc_stats(values):
+                        numeric_values = [v for v in values if isinstance(v, (int, float))]
+                        if not numeric_values:
+                            return ("-", "-", "-")
+                        return (min(numeric_values), mean(numeric_values), max(numeric_values))      
 
                 table_data = {                    
                     SP.get('Accuracy')[lang]:   calc_stats(accs),
@@ -173,18 +201,31 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     SP.get('Length')[lang]:     calc_stats(lengths),
                 }
 
+
                 user_link = get_user_link(recent_scores[0])
-                table = get_average_table(table_data, lang)
 
+                if use_ids:
+                    table = get_minmax_table(table_data, lang)
 
-                text=(
-                    f'{user_link}\n'
-                    f'\n'
-                    f'<code>{AT.get(scores_type)[lang]}</code>  <b>{len(recent_scores)}</b>  '  
-                    f'<code>{AT.get("plays")[lang]}:</code>\n'
-                    f'\n'
-                    f'<pre>{table}</pre>'
-                )          
+                    text=(
+                        f'{user_link}\n'
+                        f'\n'
+                        f'{AT.get(scores_type)[lang]}  <b>{len(recent_scores)}</b>  '  
+                        f'{AT.get("plays")[lang]}:\n'
+                        f'\n'
+                        f'{table}'
+                    )
+                else:
+                    table = get_average_table(table_data, lang)
+
+                    text=(
+                        f'{user_link}\n'
+                        f'\n'
+                        f'<code>{AT.get(scores_type)[lang]}</code>  <b>{len(recent_scores)}</b>  '  
+                        f'<code>{AT.get("plays")[lang]}:</code>\n'
+                        f'\n'
+                        f'<pre>{table}</pre>'
+                    )                
 
                 try:
                     await safe_edit_query(

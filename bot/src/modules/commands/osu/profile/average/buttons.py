@@ -4,7 +4,7 @@
 import traceback
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
-from .keyboard_types import SELECT_TYPE
+from .keyboard_types import SELECT_TYPE, SELECT_DETAIL_TYPE
 from .....systems.translations import (
     DEFAULT_SCORES_TYPES as ST,
     DEFAULT_BUTTON_TYPES as BT
@@ -24,32 +24,37 @@ async def get_keyboard(
 
     try:
         if keyboard_type == SELECT_TYPE:
-            types = [
-                ('u', f"{ST.get('Recent')[language]}", 'recent'),
-                ('u', f"{ST.get('Best')  [language]}", 'best'),
-                ('u', f"{ST.get('Pinned')[language]}", 'pinned'),
-                ('c',   f"{BT.get('Cancel')[language]}", 'none'),
-            ]
+            k_type = 1
+        elif keyboard_type == SELECT_DETAIL_TYPE:
+            k_type = 2
 
-            for action, text, scores_type in types:
+        types = [
+            ('u', f"{ST.get('Recent')[language]}", 'recent'),
+            ('u', f"{ST.get('Best')  [language]}", 'best'),
+            ('u', f"{ST.get('Pinned')[language]}", 'pinned'),
+            ('c',   f"{BT.get('Cancel')[language]}", 'none'),
+        ]
 
-                x = f'{action}:{origin_user_id}:{osu_username}:{scores_type}:{ruleset}'
-                callback_data = f'average1:{x}'
-                callback_len = len(callback_data.encode("utf-8"))
+        for action, text, scores_type in types:
 
-                if callback_len > 64:
-                    raise ValueError(
-                        f'callback_data too long ({callback_len} bytes, max 64)'
-                    )
-                
-                keyboard.append([
-                    InlineKeyboardButton(
-                        text,
-                        callback_data=f'average1:{x}'
-                    )
-                ])
-                
-            return InlineKeyboardMarkup(keyboard)
+            x = f'{action}:{origin_user_id}:{osu_username}:{scores_type}:{ruleset}:{k_type}'
+            callback_data = f'average1:{x}'
+            callback_len = len(callback_data.encode("utf-8"))
+
+            if callback_len > 64:
+                raise ValueError(
+                    f'callback_data too long ({callback_len} bytes, max 64)'
+                )
+            
+            keyboard.append([
+                InlineKeyboardButton(
+                    text,
+                    callback_data=f'average1:{x}'
+                )
+            ])
+            
+        return InlineKeyboardMarkup(keyboard)
+    
     except Exception:
         traceback.print_exc()
         return None        

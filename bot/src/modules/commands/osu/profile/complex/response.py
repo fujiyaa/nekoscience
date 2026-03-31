@@ -31,6 +31,9 @@ async def get_text_by_action(
     if action == 'average':
         return await average(update, username, language), None # bypass
     
+    elif action == 'minmax':
+        return await average(update, username, language, True), None # bypass
+    
     
     user_data, best_pp = await get_data(username)
 
