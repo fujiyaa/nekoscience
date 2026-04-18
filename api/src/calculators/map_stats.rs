@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use crate::utils::get_sliders_osu::calculate_perfect_sliders;
 use crate::utils::mods_parser;
 use rosu_pp::{
-    osu::{OsuPerformance, OsuScoreState},
+    osu::{OsuPerformance, OsuScoreState, OsuHitResults},
 };
 
 #[derive(Deserialize)]
@@ -159,16 +159,23 @@ pub async fn calculate_map_stats(
 
     let state = calculate_perfect_sliders(&map);
 
+    let hits = OsuHitResults {
+        // max_combo: score.max_combo,
+        n300: n300,
+        n100: n100,
+        n50: n50,
+        misses: misses,
+        slider_end_hits: state.slider_end_hits,
+        large_tick_hits: state.osu_large_tick_hits,
+        small_tick_hits: state.osu_small_tick_hits,
+    };
+
     let score_state = OsuScoreState {
-                        max_combo: max_combo,
-                        n300: n300,
-                        n100: n100,
-                        n50: n50,
-                        misses: misses,
-                        slider_end_hits: state.slider_end_hits,
-                        large_tick_hits: state.osu_large_tick_hits,
-                        small_tick_hits: state.osu_small_tick_hits,
-                    };
+        hitresults: hits,
+        max_combo: max_combo,
+        legacy_total_score: None
+
+    };
     
     
     // maybe overdoing here by amount of calcs (OsuPerformance, Performance...)

@@ -2,10 +2,10 @@ use std::collections::HashMap;
 use crate::utils::mods_parser;
 use rosu_pp::{Beatmap};
 use rosu_pp::{
-    osu::{OsuPerformance, OsuScoreState},
-    taiko::{TaikoPerformance, TaikoScoreState},
-    catch::{CatchPerformance, CatchScoreState, CatchPerformanceAttributes},
-    mania::{ManiaPerformance, ManiaScoreState},
+    osu::{OsuPerformance, OsuScoreState, OsuHitResults},
+    // taiko::{TaikoPerformance, TaikoScoreState},
+    // catch::{CatchPerformance, CatchScoreState, CatchPerformanceAttributes},
+    // mania::{ManiaPerformance, ManiaScoreState},
 };
 use super::score::Score;
 
@@ -79,8 +79,8 @@ impl Skills {
                     // let large_tick_hits= score.statistics.large_tick_hit;
                     // let small_tick_hits = score.statistics.small_tick_hit;
 
-                    let state = OsuScoreState {
-                        max_combo: score.max_combo,
+                    let hits = OsuHitResults {
+                        // max_combo: score.max_combo,
                         n300: score.statistics.great,
                         n100: score.statistics.ok,
                         n50: score.statistics.meh,
@@ -88,6 +88,13 @@ impl Skills {
                         slider_end_hits,
                         large_tick_hits,
                         small_tick_hits,
+                    };
+
+                    let state = OsuScoreState {
+                        hitresults: hits,
+                        max_combo: score.max_combo,
+                        legacy_total_score: None
+
                     };
 
                     let mods = mods_parser::mods_from_str(&score.mods);
@@ -123,158 +130,160 @@ impl Skills {
                 Self::Osu { acc, aim, speed, acc_total, aim_total, speed_total }
             }
 
-            GameMode::Taiko => {
-                let mut acc = 0.0;
-                let mut strain = 0.0;
-                let mut weight_sum = 0.0;
-                const ACC_NERF: f64 = 1.15;
-                const DIFFICULTY_NERF: f64 = 3.6;
+            // GameMode::Taiko => {
+            //     let mut acc = 0.0;
+            //     let mut strain = 0.0;
+            //     let mut weight_sum = 0.0;
+            //     const ACC_NERF: f64 = 1.15;
+            //     const DIFFICULTY_NERF: f64 = 3.6;
 
-                for (i, score) in scores.iter().enumerate() {
-                    let Some(attrs) = maps.remove(&score.map_id) else { continue; };
+            //     for (i, score) in scores.iter().enumerate() {
+            //         let Some(attrs) = maps.remove(&score.map_id) else { continue; };
 
-                    let state = TaikoScoreState {
-                        max_combo: score.max_combo,
-                        n300: score.statistics.great,
-                        n100: score.statistics.ok,
-                        misses: score.statistics.miss,
-                    };
+            //         let state = TaikoScoreState {
+            //             max_combo: score.max_combo,
+            //             n300: score.statistics.great,
+            //             n100: score.statistics.ok,
+            //             misses: score.statistics.miss,
+            //         };
 
-                    let mods = mods_parser::mods_from_str(&score.mods);
+            //         let mods = mods_parser::mods_from_str(&score.mods);
 
-                    let difficulty = rosu_pp::Difficulty::new()
-                        .mods(mods)
-                        .lazer(score.set_on_lazer)
-                        .calculate(&attrs);
+            //         let difficulty = rosu_pp::Difficulty::new()
+            //             .mods(mods)
+            //             .lazer(score.set_on_lazer)
+            //             .calculate(&attrs);
 
-                    let attrs = TaikoPerformance::try_new(difficulty)
-                        .unwrap()
-                        .mods(mods)
-                        .state(state)
-                        .calculate()
-                        .unwrap();
+            //         let attrs = TaikoPerformance::try_new(difficulty)
+            //             .unwrap()
+            //             .mods(mods)
+            //             .state(state)
+            //             .calculate()
+            //             .unwrap();
 
-                    let acc_val = attrs.pp_acc / ACC_NERF;
-                    let diff_val = attrs.pp_difficulty / DIFFICULTY_NERF;
-                    let weight = 0.95_f64.powi(i as i32);
+            //         let acc_val = attrs.pp_acc / ACC_NERF;
+            //         let diff_val = attrs.pp_difficulty / DIFFICULTY_NERF;
+            //         let weight = 0.95_f64.powi(i as i32);
 
-                    acc += acc_val * weight;
-                    strain += diff_val * weight;
-                    weight_sum += weight;
-                }
+            //         acc += acc_val * weight;
+            //         strain += diff_val * weight;
+            //         weight_sum += weight;
+            //     }
 
-                acc = map_val(acc / weight_sum);
-                strain = map_val(strain / weight_sum);
+            //     acc = map_val(acc / weight_sum);
+            //     strain = map_val(strain / weight_sum);
 
-                Self::Taiko { acc, strain }
-            }
+            //     Self::Taiko { acc, strain }
+            // }
 
-            GameMode::Catch => {
-                let mut acc = 0.0;
-                let mut movement = 0.0;
-                let mut weight_sum = 0.0;
-                const ACC_BUFF: f64 = 1.7;
-                const MOVEMENT_NERF: f64 = 5.1;
+            // GameMode::Catch => {
+            //     let mut acc = 0.0;
+            //     let mut movement = 0.0;
+            //     let mut weight_sum = 0.0;
+            //     const ACC_BUFF: f64 = 1.7;
+            //     const MOVEMENT_NERF: f64 = 5.1;
 
-                for (i, score) in scores.iter().enumerate() {
-                    let Some(attrs) = maps.remove(&score.map_id) else { continue; };
+            //     for (i, score) in scores.iter().enumerate() {
+            //         let Some(attrs) = maps.remove(&score.map_id) else { continue; };
 
-                    let state = CatchScoreState {
-                        max_combo: score.max_combo,
-                        fruits: score.statistics.great,
-                        droplets: score.statistics.large_tick_hit,
-                        tiny_droplets: score.statistics.small_tick_hit,
-                        tiny_droplet_misses: score.statistics.small_tick_miss,
-                        misses: score.statistics.miss,
-                    };
+            //         let state = CatchScoreState {
+            //             max_combo: score.max_combo,
+            //             fruits: score.statistics.great,
+            //             droplets: score.statistics.large_tick_hit,
+            //             tiny_droplets: score.statistics.small_tick_hit,
+            //             tiny_droplet_misses: score.statistics.small_tick_miss,
+            //             misses: score.statistics.miss,
+            //         };
 
-                    let mods = mods_parser::mods_from_str(&score.mods);
+            //         let mods = mods_parser::mods_from_str(&score.mods);
 
-                    let difficulty = rosu_pp::Difficulty::new()
-                        .mods(mods)
-                        .lazer(score.set_on_lazer)
-                        .calculate(&attrs);
+            //         let difficulty = rosu_pp::Difficulty::new()
+            //             .mods(mods)
+            //             .lazer(score.set_on_lazer)
+            //             .calculate(&attrs);
 
-                    let od = attrs.od as f64;
-                    let attrs = CatchPerformance::try_new(difficulty)
-                        .unwrap()
-                        .mods(mods)
-                        .state(state)
-                        .calculate()
-                        .unwrap();
+            //         let od = attrs.od as f64;
+            //         let attrs = CatchPerformance::try_new(difficulty)
+            //             .unwrap()
+            //             .mods(mods)
+            //             .state(state)
+            //             .calculate()
+            //             .unwrap();
 
-                    let CatchPerformanceAttributes { difficulty, pp } = attrs;
-                    let acc_ = score.accuracy.max(10.0) as f64;
-                    let n_objects = (difficulty.n_fruits + difficulty.n_droplets + difficulty.n_tiny_droplets) as f64;
-                    let acc_exp = ((acc_ / 46.5).powi(6) / 55.0).powf(1.5);
-                    let acc_adj = (5.0 * acc_exp.powf(0.1).ln_1p()).recip();
-                    let acc_val = difficulty.stars.powf(acc_exp - acc_adj) * (od / 7.0).powf(0.25) * (n_objects / 2000.0).powf(0.15) * ACC_BUFF;
+            //         let CatchPerformanceAttributes { difficulty, pp } = attrs;
+            //         let acc_ = score.accuracy.max(10.0) as f64;
+            //         let n_objects = (difficulty.n_fruits + difficulty.n_droplets + difficulty.n_tiny_droplets) as f64;
+            //         let acc_exp = ((acc_ / 46.5).powi(6) / 55.0).powf(1.5);
+            //         let acc_adj = (5.0 * acc_exp.powf(0.1).ln_1p()).recip();
+            //         let acc_val = difficulty.stars.powf(acc_exp - acc_adj) * (od / 7.0).powf(0.25) * (n_objects / 2000.0).powf(0.15) * ACC_BUFF;
 
-                    let movement_val = pp / MOVEMENT_NERF;
-                    let weight = 0.95_f64.powi(i as i32);
+            //         let movement_val = pp / MOVEMENT_NERF;
+            //         let weight = 0.95_f64.powi(i as i32);
 
-                    acc += acc_val * weight;
-                    movement += movement_val * weight;
-                    weight_sum += weight;
-                }
+            //         acc += acc_val * weight;
+            //         movement += movement_val * weight;
+            //         weight_sum += weight;
+            //     }
 
-                acc = map_val(acc / weight_sum);
-                movement = map_val(movement / weight_sum);
+            //     acc = map_val(acc / weight_sum);
+            //     movement = map_val(movement / weight_sum);
 
-                Self::Catch { acc, movement }
-            }
+            //     Self::Catch { acc, movement }
+            // }
 
-            GameMode::Mania => {
-                let mut acc = 0.0;
-                let mut strain = 0.0;
-                let mut weight_sum = 0.0;
-                const ACC_BUFF: f64 = 2.1;
-                const DIFFICULTY_NERF: f64 = 5.0;
+            // GameMode::Mania => {
+            //     let mut acc = 0.0;
+            //     let mut strain = 0.0;
+            //     let mut weight_sum = 0.0;
+            //     const ACC_BUFF: f64 = 2.1;
+            //     const DIFFICULTY_NERF: f64 = 5.0;
 
-                for (i, score) in scores.iter().enumerate() {
-                    let Some(beatmap) = maps.remove(&score.map_id) else { continue; };
+            //     for (i, score) in scores.iter().enumerate() {
+            //         let Some(beatmap) = maps.remove(&score.map_id) else { continue; };
 
-                    let state = ManiaScoreState {
-                        n320: score.statistics.perfect,
-                        n300: score.statistics.great,
-                        n200: score.statistics.good,
-                        n100: score.statistics.ok,
-                        n50: score.statistics.meh,
-                        misses: score.statistics.miss,
-                    };
+            //         let state = ManiaScoreState {
+            //             n320: score.statistics.perfect,
+            //             n300: score.statistics.great,
+            //             n200: score.statistics.good,
+            //             n100: score.statistics.ok,
+            //             n50: score.statistics.meh,
+            //             misses: score.statistics.miss,
+            //         };
 
-                    let mods = mods_parser::mods_from_str(&score.mods);
+            //         let mods = mods_parser::mods_from_str(&score.mods);
 
-                    let difficulty = rosu_pp::Difficulty::new()
-                        .mods(mods)
-                        .lazer(score.set_on_lazer)
-                        .calculate(&beatmap);
+            //         let difficulty = rosu_pp::Difficulty::new()
+            //             .mods(mods)
+            //             .lazer(score.set_on_lazer)
+            //             .calculate(&beatmap);
 
-                    let attrs = ManiaPerformance::try_new(difficulty)
-                        .unwrap()
-                        .mods(mods)
-                        .lazer(score.set_on_lazer)
-                        .state(state)
-                        .calculate()
-                        .unwrap();
+            //         let attrs = ManiaPerformance::try_new(difficulty)
+            //             .unwrap()
+            //             .mods(mods)
+            //             .lazer(score.set_on_lazer)
+            //             .state(state)
+            //             .calculate()
+            //             .unwrap();
 
-                    let acc_ = ((score.accuracy / 36.0).powf(4.5) / 60.0).powf(1.5);
-                    let od = beatmap.od as f64;
-                    let n_objects = score.total_hits() as f64;
-                    let acc_val = attrs.stars().powf(acc_) * (od / 7.0).powf(0.25) * (n_objects / 2000.0).powf(0.15) * ACC_BUFF;
-                    let diff_val = attrs.pp_difficulty / DIFFICULTY_NERF;
-                    let weight = 0.95_f64.powi(i as i32);
+            //         let acc_ = ((score.accuracy / 36.0).powf(4.5) / 60.0).powf(1.5);
+            //         let od = beatmap.od as f64;
+            //         let n_objects = score.total_hits() as f64;
+            //         let acc_val = attrs.stars().powf(acc_) * (od / 7.0).powf(0.25) * (n_objects / 2000.0).powf(0.15) * ACC_BUFF;
+            //         let diff_val = attrs.pp_difficulty / DIFFICULTY_NERF;
+            //         let weight = 0.95_f64.powi(i as i32);
 
-                    acc += acc_val * weight;
-                    strain += diff_val * weight;
-                    weight_sum += weight;
-                }
+            //         acc += acc_val * weight;
+            //         strain += diff_val * weight;
+            //         weight_sum += weight;
+            //     }
 
-                acc = map_val(acc / weight_sum);
-                strain = map_val(strain / weight_sum);
+            //     acc = map_val(acc / weight_sum);
+            //     strain = map_val(strain / weight_sum);
 
-                Self::Mania { acc, strain }
-            }
+            //     Self::Mania { acc, strain }
+            // }
+
+            _ => { Self::Osu { acc: 0., aim: 0., speed: 0., acc_total: 0., aim_total: 0., speed_total: 0. }}
         }
     }
 }

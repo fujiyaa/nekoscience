@@ -53,6 +53,7 @@ target/
 /bot/src/scores/*
 /bot/src/scores_v2/*
 /bot/src/scores_v3/*
+/bot/src/scores_v4/*
 /bot/src/images/*
 /bot/src/logs/*
 /bot/src/settings/*

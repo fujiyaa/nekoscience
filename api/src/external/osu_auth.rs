@@ -7,6 +7,7 @@ use dotenv::dotenv;
 use std::env;
 use tokio::time::{sleep, Instant};
 
+#[allow(unused)]
 #[derive(Debug, Deserialize)]
 struct TokenResponse {
     access_token: String,
@@ -94,7 +95,7 @@ impl OsuAuth {
         Ok(token)
     }
 
-    pub async fn invalidate_token(&self) {
+    pub async fn _invalidate_token(&self) {
         let mut cache = self.cached_token.lock().await;
         *cache = None;
     }
@@ -120,7 +121,7 @@ impl OsuAuth {
         None
     }
 
-    pub async fn get_with_auth(
+    pub async fn _get_with_auth(
         &self,
         url: &str,
         timeout_sec: u64,
@@ -135,7 +136,7 @@ impl OsuAuth {
             .await?;
 
         if resp.status() == StatusCode::UNAUTHORIZED {
-            self.invalidate_token().await;
+            self._invalidate_token().await;
 
             let new_token = self.get_token(timeout_sec).await?;
 
@@ -171,7 +172,7 @@ mod tests {
         let auth = OsuAuth::new();
 
         let resp = auth
-            .get_with_auth(
+            ._get_with_auth(
                 "https://osu.ppy.sh/api/v2/users/peppy/osu",
                 10,
             )
@@ -198,7 +199,7 @@ mod tests {
         }
 
         let resp = auth
-            .get_with_auth(
+            ._get_with_auth(
                 "https://osu.ppy.sh/api/v2/users/peppy/osu",
                 10,
             )
