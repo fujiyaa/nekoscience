@@ -10,6 +10,7 @@ import zipfile
 import aiohttp
 import aiofiles
 import asyncio
+import traceback
 
 from config import CACHE_TTL
 from config import BEATMAPS_DIR, STATS_BEATMAPS, MAX_CONCURRENT_REQUESTS
@@ -359,60 +360,132 @@ async def download_osz_async(mapset_id: int, osu_session: str, save_dir: str,
 
     return extract_dir
 
-async def download_osz_async(mapset_id: int, osu_session: str, save_dir: str, override: bool = True,
-                             connect_timeout: int = 5, read_timeout: int = 60, chunk_size: int = 8192):
+async def download_osz_async(
+    mapset_id: int,
+    osu_session: str,
+    save_dir: str,
+    override: bool = True,
+    connect_timeout: int = 5,
+    read_timeout: int = 60,
+    chunk_size: int = 8192
+):
     extract_dir = os.path.join(save_dir, str(mapset_id))
-    
-    if os.path.exists(extract_dir):
-        print(f"cache {extract_dir}")
-        
-        if not override:
-            print(f"override {extract_dir}")
-            return extract_dir
 
-    os.makedirs(save_dir, exist_ok=True)
+    try:
+        print(f"[START] mapset_id={mapset_id}")
+        print(f"[PATH] extract_dir={extract_dir}")
 
-    url = f"https://beatconnect.io/b/{mapset_id}"
-    cookies = {"osu_session": osu_session}
-    headers = {
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/120.0.0.0 Safari/537.36"
-        ),
-        "Referer": f"https://osu.ppy.sh/beatmapsets/{mapset_id}"
-    }
+        if os.path.exists(extract_dir):
+            print(f"[CACHE FOUND] {extract_dir}")
 
-    osz_path = os.path.join(save_dir, f"{mapset_id}.osz")
+            if not override:
+                print(f"[SKIP DOWNLOAD - override=False]")
+                return extract_dir
 
-    timeout = aiohttp.ClientTimeout(sock_connect=connect_timeout, sock_read=read_timeout)
+        os.makedirs(save_dir, exist_ok=True)
+        print(f"[DIR OK] save_dir exists: {save_dir}")
 
-    async with aiohttp.ClientSession(timeout=timeout, cookies=cookies, headers=headers) as session:
-        async with session.get(url) as resp:
-            if resp.status != 200:
-                raise ValueError(f"{mapset_id}{resp.status}")
+        url = f"https://beatconnect.io/b/{mapset_id}"
+        cookies = {"osu_session": osu_session}
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/120.0.0.0 Safari/537.36"
+            ),
+            "Referer": f"https://osu.ppy.sh/beatmapsets/{mapset_id}"
+        }
 
-            content_type = resp.headers.get("Content-Type", "")
-            if "text/html" in content_type:
-                raise ValueError("HTML, not OSZ")
+        osz_path = os.path.join(save_dir, f"{mapset_id}.osz")
+        print(f"[DOWNLOAD] url={url}")
+        print(f"[DOWNLOAD] osz_path={osz_path}")
 
-            async with aiofiles.open(osz_path, "wb") as f:
-                async for chunk in resp.content.iter_chunked(chunk_size):
-                    if chunk:
-                        await f.write(chunk)
+        timeout = aiohttp.ClientTimeout(
+            sock_connect=connect_timeout,
+            sock_read=read_timeout
+        )
 
-    print(f"Скачано: {osz_path}")
+        async with aiohttp.ClientSession(timeout=timeout, cookies=cookies, headers=headers) as session:
+            async with session.get(url) as resp:
+                print(f"[HTTP] status={resp.status}")
 
-    os.makedirs(extract_dir, exist_ok=True)
+                if resp.status != 200:
+                    raise ValueError(f"[HTTP ERROR] {mapset_id} status={resp.status}")
 
-    def _extract():
-        with zipfile.ZipFile(osz_path, 'r') as zip_ref:
-            zip_ref.extractall(extract_dir)
-        os.remove(osz_path)
+                content_type = resp.headers.get("Content-Type", "")
+                print(f"[HTTP] content-type={content_type}")
 
-    await asyncio.to_thread(_extract)
+                if "text/html" in content_type:
+                    raise ValueError("[ERROR] HTML received instead of OSZ")
 
-    return extract_dir
+                try:
+                    async with aiofiles.open(osz_path, "wb") as f:
+                        total = 0
+                        async for chunk in resp.content.iter_chunked(chunk_size):
+                            if chunk:
+                                await f.write(chunk)
+                                total += len(chunk)
+                        print(f"[DOWNLOAD COMPLETE] bytes={total}")
+                except Exception:
+                    print("[ERROR] Failed writing file")
+                    traceback.print_exc()
+                    raise
+
+        if not os.path.exists(osz_path):
+            raise FileNotFoundError(f"[ERROR] osz not found after download: {osz_path}")
+
+        size = os.path.getsize(osz_path)
+        print(f"[FILE] size={size} bytes")
+
+        print(f"[EXTRACT PREP] creating dir: {extract_dir}")
+        os.makedirs(extract_dir, exist_ok=True)
+
+        def _extract():
+            print(f"[EXTRACT] start: {osz_path} -> {extract_dir}")
+
+            if not os.path.exists(osz_path):
+                raise FileNotFoundError(f"osz missing before extract: {osz_path}")
+
+            try:
+                with zipfile.ZipFile(osz_path, 'r') as zip_ref:
+                    zip_ref.extractall(extract_dir)
+                print("[EXTRACT] done")
+            except Exception:
+                print("[ERROR] extraction failed")
+                traceback.print_exc()
+                raise
+
+            try:
+                os.remove(osz_path)
+                print(f"[CLEANUP] removed {osz_path}")
+            except Exception:
+                print("[ERROR] failed to remove osz")
+                traceback.print_exc()
+
+        try:
+            await asyncio.to_thread(_extract)
+        except Exception:
+            print("[ERROR] asyncio.to_thread failed")
+            traceback.print_exc()
+            raise
+
+        if not os.path.exists(extract_dir):
+            print(f"[CRITICAL] extract_dir missing after extraction: {extract_dir}")
+        else:
+            try:
+                files = os.listdir(extract_dir)
+                print(f"[RESULT] files in dir: {len(files)}")
+            except Exception:
+                print("[ERROR] cannot list extracted dir")
+                traceback.print_exc()
+
+        print(f"[SUCCESS] returning {extract_dir}")
+        return extract_dir
+
+    except Exception as e:
+        print(f"[FATAL ERROR] mapset_id={mapset_id}")
+        traceback.print_exc()
+        raise
 
 def download_osr(score_id: int, osu_session: str, save_dir: str) -> str:
     url = f"https://osu.ppy.sh/scores/{score_id}/download"
