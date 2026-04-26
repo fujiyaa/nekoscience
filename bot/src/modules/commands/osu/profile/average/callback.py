@@ -175,12 +175,12 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     user_total_pp=float(live_total_pp)
                 )
 
-                burned_pp = raw_pp - weighted_pp
+                burned_pp = live_total_pp - weighted_pp
 
                 burn_line = (
                     f"\n\n{period_text} 🔥 "
                     f"сгорело <b>{burned_pp:.2f}pp</b>, "
-                    f"{raw_pp:.2f} → {weighted_pp:.2f} pp (не считая бонусных)"
+                    f"{live_total_pp:.2f} → {weighted_pp:.2f} pp (не считая бонусных)"
                 )
 
                 text = f"{user_link}\n\n{table}{burn_line}"
