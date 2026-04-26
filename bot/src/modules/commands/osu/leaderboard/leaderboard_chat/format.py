@@ -28,12 +28,10 @@ def format_caption(i, country_code, name, prop_value, prop_pre, prop_post):
     return f"{i}. {country_code} {name} - {prop_pre}{value}{prop_post}"
 
 def format_stats(user):
-    # Безопасные словари
     stats = user.get("statistics") or {}
     grade_counts = stats.get("grade_counts") or {}
     monthly_counts = user.get("monthly_playcounts") or []
 
-    # Основные показатели
     level_current = stats.get("level", {}).get("current", 0)
     level_progress = stats.get("level", {}).get("progress", 0)
     level = float(f"{level_current}.{level_progress}")

@@ -52,6 +52,18 @@ DEFAULT_SCORES_TYPES = {
     "Pinned": {
         "en": "📌 Pinned",
         "ru": "📌 Закреп."
+    },
+    "1m": {
+        "en": "🕐x1 month",
+        "ru": "🕐x1 месяц"
+    },
+    "2m": {
+        "en": "🕐x2 months",
+        "ru": "🕐x2 месяца"
+    },
+    "3m": {
+        "en": "🕐x3 months",
+        "ru": "🕐x3 месяца"
     }
 }
 

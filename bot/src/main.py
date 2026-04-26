@@ -43,6 +43,7 @@ def register_commands(app):
         ("anime", "goon"):                  start_anime,
         ("aimslop", "slop"):                start_aimslop,
         ("minmax", "mx"):                   start_minmax,
+        ("ppfire", "firepp", "fire"):       start_fire,
         
         # scores
         ("recent", "rs", "r"):              start_rs,
@@ -94,7 +95,7 @@ def register_callbacks(app):
 
         # profile
         (callback_prf_ctx,  r"^ctx1:"),
-        (callback_avg,      r"^average1:(u|c)"),
+        (callback_avg,      r"^average1:(u|c|f)"),
 
         # scores
         (callback_rs,       r"^rs_"),

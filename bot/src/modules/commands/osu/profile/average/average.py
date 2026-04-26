@@ -8,7 +8,7 @@ from .....actions.messages import safe_edit_query, safe_edit_message
 from .buttons import get_keyboard
 
 from .....systems.translations import DEFAULT_COMMAND_TEMPLATE as T
-from .keyboard_types import SELECT_TYPE, SELECT_DETAIL_TYPE
+from .keyboard_types import SELECT_TYPE, SELECT_DETAIL_TYPE # SELECT_FIRE_TYPE
 
 
 
@@ -21,7 +21,10 @@ async def average(
     try:
         query = update.callback_query
 
-        k_type = SELECT_DETAIL_TYPE if detail_type else SELECT_TYPE
+        if detail_type == "ppfire":
+            k_type = "select_fire"
+        else:
+            k_type = SELECT_DETAIL_TYPE if detail_type else SELECT_TYPE
 
         reply_markup = await get_keyboard(
             origin_user_id = update.effective_user.id,

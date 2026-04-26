@@ -35,3 +35,7 @@ async def start_aimslop(update, context):
 async def start_minmax(update, context):
     await log_all_update(update)
     asyncio.create_task(profile(update, context, 'minmax'))
+
+async def start_fire(update, context):
+    await log_all_update(update)
+    asyncio.create_task(profile(update, context, 'ppfire'))
