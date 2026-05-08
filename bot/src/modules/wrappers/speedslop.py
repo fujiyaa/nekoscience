@@ -3,18 +3,18 @@
 
 from ..utils.text_format import country_code_to_flag
 
-from config import AIMSLOP_IDS
+from config import SPEEDSLOP_IDS
 
 
 
-def get_aimslop_text(user_data, best_pp):
+def get_speedslop_text(user_data, best_pp):
     
     if isinstance(best_pp, list) and best_pp:
               
         total = len(best_pp)
         counter = 0
         total_weighted_pp = 0
-        aimslop_weighted_pp = 0
+        speedslop_weighted_pp = 0
 
         for score in best_pp:
             beatmap_id = score.get("beatmap_id")
@@ -24,14 +24,14 @@ def get_aimslop_text(user_data, best_pp):
             weighted_pp = pp * (weight_percent / 100)
             total_weighted_pp += weighted_pp
 
-            if beatmap_id and beatmap_id in AIMSLOP_IDS:
+            if beatmap_id and beatmap_id in SPEEDSLOP_IDS:
                 counter += 1
-                aimslop_weighted_pp += weighted_pp
+                speedslop_weighted_pp += weighted_pp
 
-        aimslop_percent = (counter / total) * 100 if total else 0
+        speedslop_percent = (counter / total) * 100 if total else 0
 
-        aimslop_weighted_percent = (
-            (aimslop_weighted_pp / total_weighted_pp) * 100
+        speedslop_weighted_percent = (
+            (speedslop_weighted_pp / total_weighted_pp) * 100
             if total_weighted_pp else 0
         )
 
@@ -49,21 +49,21 @@ def get_aimslop_text(user_data, best_pp):
             else:
                 return '‼️'
 
-        row1_emoji = percent_emoji(aimslop_percent)
-        row2_emoji = percent_emoji(aimslop_weighted_percent)
+        row1_emoji = percent_emoji(speedslop_percent)
+        row2_emoji = percent_emoji(speedslop_weighted_percent)
 
-        col1_header = "Аимслоп"
+        col1_header = "Спидслоп"
         col2_header = "N"
         col3_header = "%"
         col4_header = "чек"
 
         row1_label = "карт в топ100"
         row1_n = f"{counter}/{total}"
-        row1_p = f"{aimslop_percent:.0f}%"
+        row1_p = f"{speedslop_percent:.0f}%"
 
         row2_label = "pp слопа"
-        row2_n = f"{aimslop_weighted_pp:.0f}pp"
-        row2_p = f"{aimslop_weighted_percent:.0f}%"
+        row2_n = f"{speedslop_weighted_pp:.0f}pp"
+        row2_p = f"{speedslop_weighted_percent:.0f}%"
 
         col1_width = max(len(col1_header), len(row1_label), len(row2_label))
         col2_width = max(len(col2_header), len(row1_n), len(row2_n))

@@ -41,7 +41,8 @@ def register_commands(app):
         ("mappers",):                       start_mappers,
         ("mods",):                          start_mods,
         ("anime", "goon"):                  start_anime,
-        ("aimslop", "slop"):                start_aimslop,
+        ("aimslop", "aim"):                 start_aimslop,
+        ("speedslop", "speed"):             start_speedslop,
         ("minmax", "mx"):                   start_minmax,
         ("ppfire", "firepp", "fire"):       start_fire,
         
@@ -63,14 +64,15 @@ def register_commands(app):
         ("reminders",):                     reminders_command,
 
         # service
-        ("start", "help"):                  start_help, 
+        ("start", "help"):                  start_help,
+        ("minecraft", "mc"):                start_mc, 
         ("name", "link", "nick", "osu"):    set_name,
         ("settings",):                      settings_cmd,
         ("ping",):                          ping,
         ("uptime",):                        uptime,
 
         # mod
-        ("mod", "report"):                           start_vote_delete_message,
+        ("mod", "report"):                  start_vote_delete_message,
         ("message",):                       start_message_info
     }
 

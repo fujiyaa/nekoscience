@@ -8,6 +8,7 @@ from .complex.router import (
     start_mods,
     start_anime,
     start_aimslop,
+    start_speedslop,
     start_minmax,
     start_fire
 )

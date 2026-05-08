@@ -14,6 +14,7 @@ from .....wrappers.mods_top import get_mods_top
 from .....wrappers.mappers import get_mappers_text
 from .....wrappers.anime import get_anime_text
 from .....wrappers.aimslop import get_aimslop_text
+from .....wrappers.speedslop import get_speedslop_text
 from ..average.average import average
 import temp
 
@@ -54,6 +55,9 @@ async def get_text_by_action(
     
     elif action == 'aimslop':
         return get_aimslop_text(user_data, best_pp), "HTML"
+    
+    elif action == 'speedslop':
+        return get_speedslop_text(user_data, best_pp), "HTML"
 
     else:
         raise ValueError(f'unspecified action: {action}')

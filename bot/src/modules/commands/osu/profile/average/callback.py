@@ -59,9 +59,6 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             return
 
-        # ===============================
-        # ЗАГРУЗКА СКОРОВ (общая часть)
-        # ===============================
         elif action in ["u", "f"]:
             await safe_edit_query(
                 query, 
@@ -93,9 +90,6 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 )
                 return
 
-            # ===============================
-            # 🔥 РЕЖИМ "КОСТЁР"
-            # ===============================
             if action == "f":
                 now = datetime.now(timezone.utc)
 
@@ -192,9 +186,6 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 )
                 return
 
-            # ===============================
-            # СТАРАЯ ЛОГИКА (НЕ ТРОГАЕМ)
-            # ===============================
             accs, combos, misses, pps = [], [], [], []
             stars, ars, css, hps, ods, bpms, lengths = [], [], [], [], [], [], []
 

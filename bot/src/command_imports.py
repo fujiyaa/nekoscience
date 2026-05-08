@@ -25,7 +25,7 @@ from modules.commands.osu import (
     # profile
     start_compare_profile, start_profile, start_average,
     start_mappers, start_mods, start_anime, start_aimslop,
-    start_minmax, start_fire,
+    start_speedslop, start_minmax, start_fire,
     callback_avg, callback_prf_ctx,
 
     # scores
@@ -49,7 +49,7 @@ from modules.commands.fun import (
 
 # service
 from modules.commands.service import (
-    start_help,
+    start_help, start_mc,
     set_name, settings_cmd,
     uptime, ping
 )

@@ -1,4 +1,5 @@
 https://osu.ppy.sh/beatmapsets/2286088#osu/4876676
+https://osu.ppy.sh/beatmapsets/2515548#osu/5547407
 https://osu.ppy.sh/beatmapsets/2272084#osu/5064356
 https://osu.ppy.sh/beatmapsets/962050
 https://osu.ppy.sh/beatmapsets/2360606#osu/5297561
@@ -23,6 +24,7 @@ https://osu.ppy.sh/beatmapsets/2192808#osu/4638742
 https://osu.ppy.sh/beatmapsets/1114770#osu/2328679
 https://osu.ppy.sh/beatmapsets/2313987#osu/5098651
 https://osu.ppy.sh/beatmapsets/2381078#osu/5148807
+https://osu.ppy.sh/beatmapsets/2499353#osu/5513580
 https://osu.ppy.sh/beatmapsets/2302766#osu/4921872
 https://osu.ppy.sh/beatmapsets/979887#osu/2063931
 https://osu.ppy.sh/beatmapsets/1707590#osu/4235907
@@ -59,6 +61,7 @@ https://osu.ppy.sh/beatmapsets/544062#osu/1152984
 https://osu.ppy.sh/beatmapsets/2368916#osu/5114232
 https://osu.ppy.sh/beatmapsets/2474192#osu/5423181
 https://osu.ppy.sh/beatmapsets/2437172#osu/5314219
+https://osu.ppy.sh/beatmapsets/2381954#osu/5149739
 https://osu.ppy.sh/beatmapsets/2440245#osu/5322879
 https://osu.ppy.sh/beatmapsets/2360937#osu/5093443
  https://osu.ppy.sh/beatmapsets/2412924#osu/5308456
@@ -116,8 +119,10 @@ https://osu.ppy.sh/beatmapsets/2122109#osu/4577926
 https://osu.ppy.sh/beatmapsets/2323201#osu/4978375
 https://osu.ppy.sh/beatmapsets/2480881#osu/5442786
 https://osu.ppy.sh/beatmapsets/2353492#osu/5220983
+https://osu.ppy.sh/beatmapsets/2228050#osu/4727045
 https://osu.ppy.sh/beatmapsets/1831210#osu/4310045
 https://osu.ppy.sh/beatmapsets/2167949#osu/4573964
+https://osu.ppy.sh/beatmapsets/2487271#osu/5508757
 https://osu.ppy.sh/beatmapsets/2327424#osu/4989720
 https://osu.ppy.sh/beatmapsets/2374386#osu/5127729
 https://osu.ppy.sh/beatmapsets/2322707#osu/4977050
@@ -151,8 +156,10 @@ https://osu.ppy.sh/beatmapsets/2297262#osu/4907015
 https://osu.ppy.sh/beatmapsets/1155295#osu/2410945
 https://osu.ppy.sh/beatmapsets/1247857#osu/2593620
 https://osu.ppy.sh/beatmapsets/2119510#osu/4452319
+https://osu.ppy.sh/beatmapsets/2462576#osu/5388209
 https://osu.ppy.sh/beatmaps/4867579
 https://osu.ppy.sh/beatmapsets/1091595#osu/2282067
+https://osu.ppy.sh/beatmapsets/2200137#osu/5346970
 https://osu.ppy.sh/beatmapsets/1771982#osu/3627857
 https://osu.ppy.sh/beatmapsets/1190710#osu/2480902
 https://osu.ppy.sh/beatmapsets/2468170#osu/5404501
@@ -178,6 +185,7 @@ https://osu.ppy.sh/beatmapsets/2121231#osu/4457206
 https://osu.ppy.sh/beatmapsets/1846677#osu/3793450 
 https://osu.ppy.sh/beatmapsets/2169204#osu/4577577
 https://osu.ppy.sh/beatmapsets/1002271#osu/2097898
+https://osu.ppy.sh/beatmapsets/2423225#osu/5273344
 https://osu.ppy.sh/beatmapsets/1049899#osu/4634775
 https://osu.ppy.sh/beatmapsets/1620540#osu/3320563
 https://osu.ppy.sh/beatmapsets/1384619#osu/2860521
@@ -210,6 +218,7 @@ https://osu.ppy.sh/beatmapsets/2464479#osu/5394223
 https://osu.ppy.sh/beatmapsets/2447154#osu/5343550
 https://osu.ppy.sh/beatmapsets/2463664#osu/5391630
 https://osu.ppy.sh/beatmapsets/2495437#osu/5485060
+https://osu.ppy.sh/beatmapsets/2354884#osu/5070202
 https://osu.ppy.sh/beatmapsets/966062#osu/2022204
 https://osu.ppy.sh/beatmapsets/978477#osu/2047629
 https://osu.ppy.sh/beatmapsets/1148073#osu/2404778
@@ -221,6 +230,7 @@ https://osu.ppy.sh/beatmaps/5100179
 https://osu.ppy.sh/beatmapsets/798420#osu/1676639
 https://osu.ppy.sh/beatmapsets/2295303#osu/4901817
 https://osu.ppy.sh/beatmapsets/1331950#osu/2759787
+https://osu.ppy.sh/beatmapsets/1234909#osu/2567158
 https://osu.ppy.sh/beatmapsets/1255746#osu/2609731
 https://osu.ppy.sh/beatmapsets/1175471#osu/2451721
 https://osu.ppy.sh/beatmapsets/1435286#osu/2961120
@@ -298,6 +308,7 @@ https://osu.ppy.sh/beatmapsets/905572#osu/1890080
 https://osu.ppy.sh/beatmapsets/2388960#osu/5172906
 https://osu.ppy.sh/beatmapsets/1721545#osu/3545675
 https://osu.ppy.sh/beatmapsets/753356#osu/1586059
+https://osu.ppy.sh/beatmapsets/2515252#osu/5552221
 https://osu.ppy.sh/beatmapsets/2253247#osu/4793648
 https://osu.ppy.sh/beatmapsets/2513672#osu/5541616
 https://osu.ppy.sh/beatmapsets/745312#osu/1571309
@@ -334,6 +345,7 @@ https://osu.ppy.sh/beatmapsets/1048878#osu/2192351
 https://osu.ppy.sh/beatmapsets/2425417#osu/5279580
 https://osu.ppy.sh/beatmapsets/2479183#osu/5438072
 https://osu.ppy.sh/beatmapsets/2365992#osu/5102485
+https://osu.ppy.sh/beatmapsets/2515511#osu/5571529
 https://osu.ppy.sh/b/5201212
 https://osu.ppy.sh/beatmapsets/2236406#osu/4751008
 https://osu.ppy.sh/beatmapsets/2246377#osu/4776778
@@ -430,6 +442,7 @@ https://osu.ppy.sh/beatmapsets/1626734#osu/3320987
 https://osu.ppy.sh/beatmapsets/896080#osu/1872396
 https://osu.ppy.sh/beatmapsets/2339114#osu/5023601
 https://osu.ppy.sh/beatmapsets/2495916#osu/5486313
+https://osu.ppy.sh/beatmapsets/2506168#osu/5518249
 https://osu.ppy.sh/beatmapsets/2209946#osu/4680988
 https://osu.ppy.sh/beatmapsets/2275766#osu/4851768
 https://osu.ppy.sh/beatmapsets/932165#osu/1951733
@@ -478,6 +491,7 @@ https://osu.ppy.sh/beatmapsets/2379887#osu/5143160
 https://osu.ppy.sh/beatmapsets/2382989#osu/5152286
 https://osu.ppy.sh/beatmapsets/356821#osu/785097
 https://osu.ppy.sh/beatmapsets/2120430#osu/4455136
+https://osu.ppy.sh/beatmapsets/2492332#osu/5476054
 https://osu.ppy.sh/beatmapsets/2248158#osu/4780358
 https://osu.ppy.sh/beatmapsets/1068768#osu/2237466
 https://osu.ppy.sh/beatmapsets/1266531#osu/2632230
@@ -497,6 +511,8 @@ https://osu.ppy.sh/beatmapsets/661919#osu/1401254
 https://osu.ppy.sh/beatmapsets/656098#osu/1397951
 https://osu.ppy.sh/beatmapsets/747684#osu/1575386
 https://osu.ppy.sh/beatmapsets/720193#osu/1520549
+https://osu.ppy.sh/beatmapsets/2495896#osu/5486273
+https://osu.ppy.sh/beatmapsets/2531016#osu/5594518
 https://osu.ppy.sh/beatmapsets/1244123#osu/2587891
 https://osu.ppy.sh/beatmapsets/983911#osu/2118443
 https://osu.ppy.sh/beatmapsets/882839#osu/2813781
@@ -530,6 +546,7 @@ https://osu.ppy.sh/beatmapsets/2272449#osu/4840809
 https://osu.ppy.sh/beatmapsets/1062516#osu/2225036
 https://osu.ppy.sh/beatmapsets/1098490#osu/2295253
 https://osu.ppy.sh/beatmapsets/2446228#osu/5339641
+https://osu.ppy.sh/beatmapsets/2523937#osu/5573852
 https://osu.ppy.sh/beatmapsets/1685799#osu/3457998
 https://osu.ppy.sh/beatmaps/4925669
 https://osu.ppy.sh/beatmapsets/1581689#osu/3229766
@@ -579,6 +596,7 @@ https://osu.ppy.sh/beatmapsets/1180255#osu/2461085
 https://osu.ppy.sh/beatmapsets/1149042#osu/2399033
 https://osu.ppy.sh/beatmapsets/2250314#osu/4801626
 https://osu.ppy.sh/beatmapsets/2152637#osu/4577767
+https://osu.ppy.sh/beatmapsets/2496558#osu/5488396
 https://osu.ppy.sh/beatmapsets/2240889#osu/4891974
 https://osu.ppy.sh/beatmapsets/497942#osu/1059894
 https://osu.ppy.sh/beatmapsets/1070829#osu/2241492
@@ -594,6 +612,7 @@ https://osu.ppy.sh/beatmapsets/1054647#osu/2203622
 https://osu.ppy.sh/beatmapsets/1002716#osu/2098783
 https://osu.ppy.sh/beatmapsets/2430126#osu/5398240
 https://osu.ppy.sh/beatmapsets/2023911#osu/4215737
+https://osu.ppy.sh/beatmapsets/2435534#osu/5308904
 https://osu.ppy.sh/beatmapsets/2210696#osu/4699820
 https://osu.ppy.sh/beatmaps/4692859
 https://osu.ppy.sh/beatmapsets/2120431#osu/4454920
@@ -656,6 +675,7 @@ https://osu.ppy.sh/beatmaps/4104069
 https://osu.ppy.sh/beatmapsets/2343664#osu/5038071
 https://osu.ppy.sh/beatmapsets/1204361#osu/2599084
 https://osu.ppy.sh/beatmapsets/2314502#osu/4962030
+https://osu.ppy.sh/beatmapsets/2489634#osu/5570178
 https://osu.ppy.sh/beatmapsets/2298826#osu/4911787
 https://osu.ppy.sh/beatmapsets/2382142#osu/5150129
 https://osu.ppy.sh/beatmapsets/1242911#osu/2584022
@@ -678,11 +698,13 @@ https://osu.ppy.sh/beatmapsets/2377334#osu/5176386
 https://osu.ppy.sh/beatmapsets/2239883#osu/4760396
 https://osu.ppy.sh/beatmapsets/2175666#osu/4594039
 https://osu.ppy.sh/beatmapsets/2360849#osu/5088278
+https://osu.ppy.sh/beatmapsets/2470141#osu/5410604
 https://osu.ppy.sh/beatmapsets/1123162#osu/2347578
 https://osu.ppy.sh/beatmapsets/474376#osu/1018869
 https://osu.ppy.sh/beatmapsets/2166472#osu/4570744
 https://osu.ppy.sh/beatmapsets/2008974#osu/4179442
 https://osu.ppy.sh/beatmapsets/450315#osu/966136
+https://osu.ppy.sh/beatmapsets/2507398#osu/5545452
 https://osu.ppy.sh/beatmapsets/2479777#osu/5442912
 https://osu.ppy.sh/beatmapsets/2471883#osu/5480288
 https://osu.ppy.sh/beatmapsets/818349#osu/1786960
