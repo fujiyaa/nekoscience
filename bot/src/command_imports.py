@@ -35,9 +35,9 @@ from modules.commands.osu import (
 
 # osu_games
 from modules.commands.osu_games import (    
-    start_challenge, start_higherlower_game,
+    start_challenge, start_higherlower_game, start_unranked_game,
 
-    callback_day, callback_hl
+    callback_day, callback_hl, callback_elo
 )
 
 # fun

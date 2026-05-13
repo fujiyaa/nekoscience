@@ -55,6 +55,7 @@ def register_commands(app):
         # osu_games
         ("challenge",):                     start_challenge,
         ("higherlower", "hl"):              start_higherlower_game,
+        ("unranked", "u"):                  start_unranked_game,
       
         # fun
         ("roll", "random"):                 roll,
@@ -107,6 +108,7 @@ def register_callbacks(app):
         # osu_games
         (callback_day,      r"^challenge_(main|next|finish|skip|leaderboard|info)"),
         (callback_hl,       r"^osugamehl_(main|next|finish|\d+)"),
+        (callback_elo,      r"^unranked_(main|next|finish|\d+)"),
 
         # service
         (settings_handler,  r"^settings_"),                    
