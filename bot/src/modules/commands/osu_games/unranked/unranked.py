@@ -3,8 +3,9 @@
 
 import asyncio
 import traceback
+import html
 
-from telegram import Update
+from telegram import Update, LinkPreviewOptions
 from telegram.ext import ContextTypes
 
 from ....actions.messages import safe_send_message
@@ -12,14 +13,21 @@ from ....systems.cooldowns import check_user_cooldown
 from ....systems.logging import log_all_update
 from ....systems.auth import check_osu_verified, get_osu_id
 from ....external.localapi import read_file_neko, insert_to_file_neko
+from ....systems.cooldowns import check_user_cooldown
+from ....actions.messages import safe_send_message
+from ....external.osu_api import get_osu_token
+from ....actions.messages import safe_send_message
+from ....external.osu_http import fetch_txt_beatmaps
+from ....external.osu_api import get_osu_token, get_beatmap, get_score_by_id
 from .buttons import get_keyboard
 from .json_schema import construct_user
-# from .filter import filter_other_topics
+from .options import *
+from .rank import get_player_rank
 
-from config import COOLDOWN_HLGAME_COMMANDS
+from config import COOLDOWN_UNRANKED_COMMANDS
+from config import OSU_URL_REGEX
+
 MAX_ATTEMPTS = 2
-
-d_file = "file_osugames_higherlower"
 
 
 
@@ -33,66 +41,218 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     user_id = str(update.effective_user.id)
     can_run = await check_user_cooldown(
-        command_name="higherlower_game_main",
+        command_name="unranked_game_main",
         user_id=user_id,
-        cooldown_seconds=COOLDOWN_HLGAME_COMMANDS,
+        cooldown_seconds=COOLDOWN_UNRANKED_COMMANDS,
         update=update,
         context=context        
-    )    
+    )
     if not can_run or update.effective_user.username is None:
         return
     else:    
         tg_id = update.effective_user.id 
         tg_name = update.effective_user.username
 
-    for _ in range(MAX_ATTEMPTS):
-        try:                   
-            osu_name = await check_osu_verified(user_id)
-            if not osu_name:
-                await safe_send_message(
-                    update, "⚠ Не сохранен ник, он нужен для игры! Нажми и авторизуйся: /name", 
-                    parse_mode="Markdown")
-                return            
-            
-            osu_id = await get_osu_id(user_id)
-            if osu_id: 
-                osu_id = str(osu_id) 
-            else: 
-                return    
-            
-            response = await read_file_neko(d_file)
-            data = response.get("current", {})
 
-            if osu_id not in data:
-                data[osu_id] = construct_user(
-                    osu_id, 
-                    osu_name, 
-                    tg_id,
-                    tg_name,
+    message_text = update.message.text.strip()
+    result = parse_osu_url(message_text)
+
+    if result is None:
+        await update.message.reply_text(
+            text = (
+                f"✖️ Нужна ссылка на карту или скор\n\n"
+                f"<i><code>/help unranked</code> - узнать больше о ссылках</i>\n"
+            ),                    
+            parse_mode = "HTML"
+        )
+        
+        return
+    
+    if result["sent_type"] == 'score':
+        try:
+            token = await get_osu_token()
+
+            cached_entry =  await get_score_by_id(result["sent_id"], token, override = True)
+
+            if not cached_entry:
+                await safe_send_message(update, "❌ Не удалось загрузить скор", parse_mode="Markdown")
+                return
+                        
+
+            map_id = cached_entry.get('map').get('beatmap_id')
+            map_full = cached_entry.get('map').get('beatmap_full')
+            
+            sent_mods = str(((cached_entry.get('osu_score') or {}).get('mods')) or "")
+            
+            sent_score_user_id = cached_entry.get('osu_score').get('user_id')
+                        
+            url_config = "https://osu.ppy.sh/scores/"            
+                
+        except Exception:
+            traceback.print_exc()
+            await safe_send_message(update, "❌ Ошибка", parse_mode="Markdown")
+    else:
+        try:
+            token = await get_osu_token()
+
+            maps_ids = []
+            maps_ids.append(result["sent_id"])
+
+            results, failed = await fetch_txt_beatmaps(maps_ids)
+
+            token = await get_osu_token()
+            map_data = await get_beatmap(result["sent_id"], token)
+            
+            beatmap = map_data
+            beatmapset = map_data.get("beatmapset", {})
+
+            map_id = map_data.get('id')
+            map_full = f"{beatmapset.get('artist', '')} - {beatmapset.get('title', '')} [{beatmap.get('version', '')}]"
+
+            url_config = "https://osu.ppy.sh/b/"
+
+        except Exception:
+            traceback.print_exc()
+            await safe_send_message(update, "❌ Ошибка", parse_mode="Markdown")
+    
+    
+    try:                   
+        osu_name = await check_osu_verified(user_id)
+        if not osu_name:
+            await safe_send_message(
+                update, "⚠ Не сохранен ник, он нужен для игры! Нажми и авторизуйся: /name", 
+                parse_mode="Markdown")
+            return            
+        
+        osu_id = await get_osu_id(user_id)
+        if osu_id: 
+            osu_id = str(osu_id) 
+        else: 
+            return
+        
+        if result["sent_type"] == 'score':
+            if str(sent_score_user_id) != str(osu_id):
+                await update.message.reply_text(
+                    "🆔 Игроков (у скора и у тебя) не совпадают, что довольно печально! Мне обязательно нужен твой собственный скор.",
+                    parse_mode="HTML",
                 )
-                await insert_to_file_neko(d_file, data)
+                return
+        
+        response = await read_file_neko(d_file)
+        data = response.get("current", {})
 
-            user = data[osu_id]            
-            v1 = user["v1"]
-            active = v1.get("active")            
+        if osu_id not in data:
+            data[osu_id] = construct_user(
+                osu_id, 
+                osu_name, 
+                tg_id,
+                tg_name,
+            )
+            await insert_to_file_neko(d_file, data)
 
-            if not active:
-                text = "📑 Главное меню игры"
-                reply_markup = get_keyboard("main", owner_id=tg_id)
+        user = data[osu_id]            
+        v1 = user.get("v1")
+        config = user.get("config")
+        active = v1.get("active")
+        points = v1.get("points")
+        current = points.get("current")
+        rank = get_player_rank(data, osu_id)
 
-            else:                
-                text = (
-                    f"🎯❗ <b>Есть не завершенная игра</b>"
-                )                    
-                reply_markup = get_keyboard("main-active", owner_id=tg_id)                    
-               
+        creation_text = f"📑 Создание раунда"
+        rating_text = f"{osu_name} (@{tg_name})   🏆{current}  (#{rank})"
+        difficulty_text = f'<a href="{url_config}{map_id}">{html.escape(map_full)}</a>'
+
+        if not active:
+
+            intake_new = {
+                "sent_type": result['sent_type'],
+                "sent_id": result['sent_id'],
+                "map_full": html.escape(map_full),
+                "sent_mods": sent_mods,
+                "temp_rank": rank
+            }
+
+            if result['sent_type'] == 'map':
+                config['source'] = 1
+
+            data[osu_id] = construct_user(
+                osu_id, 
+                osu_name, 
+                tg_id,
+                tg_name,
+                config=config,
+                intake=intake_new
+            )
+            await insert_to_file_neko(d_file, data)
+
+            text = f"{rating_text}\n\n{creation_text}: {difficulty_text}"
+            reply_markup = get_keyboard("main", config, intake_new, owner_id=tg_id)
+
+        # тут должно быть автозавершение обязательно
+        else:                
+            text = (
+                f"🎯❗ <b>Есть не завершенная игра</b>"
+            )                    
+            reply_markup = get_keyboard("main-active", config, owner_id=tg_id)   
+
+
+        link_preview = LinkPreviewOptions(
+            url=BANNER_OPTIONS[0],
+            is_disabled=False,
+            prefer_small_media=False,
+            prefer_large_media=True,
+            show_above_text=True
+        )                 
+
+        try:
+            return await update.message.reply_text(
+                text,
+                parse_mode="HTML",
+                link_preview_options=link_preview,
+                reply_markup=reply_markup
+            ) 
+        except:
             await safe_send_message(
                 update,
                 text,
                 parse_mode="HTML",
                 reply_markup=reply_markup
-            )            
+            )
 
-            return
-        except Exception:
-            traceback.print_exc()
+        return
+    except Exception:
+        traceback.print_exc()
+
+def parse_osu_url(url: str) -> dict | None:
+    match = OSU_URL_REGEX.search(url.strip())
+
+    if not match:
+        return None
+
+    groups = match.groupdict()
+
+    if groups.get("score_id"):
+        return {
+            "sent_type": "score",
+            "sent_id": int(groups["score_id"])
+        }
+
+    if groups.get("map_id1"):
+        return {
+            "sent_type": "map",
+            "sent_id": int(groups["map_id1"])
+        }
+
+    if groups.get("map_id2"):
+        return {
+            "sent_type": "map",
+            "sent_id": int(groups["map_id2"])
+        }
+
+    if groups.get("set_id"):
+        return {
+            "sent_type": "map",
+            "sent_id": int(groups["set_id"])
+        }
+
+    return None

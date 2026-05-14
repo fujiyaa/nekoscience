@@ -13,19 +13,18 @@ from .....systems.json_files import load_score_file
 from .....systems.images import delayed_remove
 from .....image_processing.workflows.score_adaptive.processing_v1 import create_score_compare_image
 from ..buttons import get_keyboard
-from ..calculate_difficulty_level import calculate_max_diff
 from ..json_schema import construct_user, construct_active
 # from .filter import filter_other_topics
 from .....systems import scores_state_db as db
 import temp
 
-from config import COOLDOWN_HLGAME_COMMANDS, USER_SETTINGS_FILE
+from config import COOLDOWN_UNRANKED_COMMANDS, USER_SETTINGS_FILE
 from .....systems.translations import SCORE_CAPTION as T
 
 MAX_ATTEMPTS = 1
 MAX_HEALTH = 5
 
-d_file = "file_osugames_higherlower"
+d_file = "file_osugames_elo"
 
 
 
@@ -94,9 +93,9 @@ async def next_game(update: Update, context: ContextTypes.DEFAULT_TYPE, scores_q
     user_id = str(update.effective_user.id)
     
     can_run = await check_user_cooldown(
-        command_name="higherlower_game_next",
+        command_name="unranked_game_next",
         user_id=user_id,
-        cooldown_seconds=COOLDOWN_HLGAME_COMMANDS,
+        cooldown_seconds=COOLDOWN_UNRANKED_COMMANDS,
         update=update,
         context=context
     )

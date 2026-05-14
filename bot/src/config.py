@@ -74,6 +74,7 @@ COOLDOWN_CARD_COMMAND =         COOLDOWN_WITH_API_COMMANDS
 COOLDOWN_RS_COMMAND =           COOLDOWN_WITH_API_COMMANDS
 COOLDOWN_MS_COMMAND =           COOLDOWN_WITH_API_COMMANDS
 COOLDOWN_HLGAME_COMMANDS =      COOLDOWN_WITH_API_COMMANDS
+COOLDOWN_UNRANKED_COMMANDS =    COOLDOWN_WITH_API_COMMANDS
 
 COOLDOWN_LEADERBOARD_COMMANDS = COOLDOWN_NO_API_COMMANDS
 COOLDOWN_CHALLENGE_COMMANDS =   COOLDOWN_NO_API_COMMANDS
@@ -171,6 +172,11 @@ OSU_MAP_REGEX = re.compile(
     r"https?://osu\.ppy\.sh/beatmapsets/\d+#\w+/(\d+)"
 )
 
+OSU_URL_REGEX = re.compile(
+    r"https?://osu\.ppy\.sh/(?:beatmapsets/\d+#\w+/(?P<map_id1>\d+)|b/(?P<map_id2>\d+)|beatmapsets/(?P<set_id>\d+)|scores/(?P<score_id>\d+))"
+)
+
+
 # if sys.platform.startswith("win"): 
    
 
@@ -198,7 +204,7 @@ SPEEDSLOP_FILE = BASE_DIR / "storage" / "bot_data" / "speedslop.txt"
 GIF_BLACKS_PATH = BOT_DIR / "gifs" / "blacks" / "sticker.webm"
 GIF_DOUBT_PATH = BOT_DIR / "gifs" / "doubt" / "blue-archive-otogi.mp4"
 
-SUPPORT_STUB = 'обратись в техническую поддержку.'
+SUPPORT_STUB = '⚠️ Если эта ошибка что-то действительно ломает, перешли ее мне: @fujiya_sama'
 MAX_TEXT_LENGTH = 4096
 
 def load_ids(path):

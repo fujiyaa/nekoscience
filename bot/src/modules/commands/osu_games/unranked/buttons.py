@@ -3,9 +3,16 @@
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
+from .options import *
 
 
-def get_keyboard(keyboard_type: str, scores_quantity: int = 2, owner_id: int | None = None):
+
+def get_keyboard(
+    keyboard_type: str, 
+    config: dict | None = None,    
+    intake: dict | None = None,
+    owner_id: int | None = None
+):
     
     def with_owner(cb_data: str) -> str:
         if owner_id is not None:
@@ -13,53 +20,133 @@ def get_keyboard(keyboard_type: str, scores_quantity: int = 2, owner_id: int | N
         return cb_data
 
     if keyboard_type == "main":
+        if intake.get('sent_type') == 'score':
+            mods_text = intake.get("sent_mods")
+
+            if not mods_text or mods_text == "None":
+                mods_text = ""
+        else:
+            mods = config.get("mods", [])
+            mods_text = " ".join(mods) if mods else ""
+
+        if config.get('source') == 1:
+            mods = config.get("mods", [])
+            mods_text = " ".join(mods) if mods else ""
+
         keyboard = [
             [InlineKeyboardButton(
-                "➡️ Играть", 
-                callback_data=with_owner(f"osugamehl_next_{scores_quantity}")),
-            ]           
+                SOURCE_OPTIONS[config.get('source')],
+                callback_data=with_owner(f"unranked_switch_source")
+            )],
+            [                
+                InlineKeyboardButton(
+                    TIME_OPTIONS[config.get('time')],
+                    callback_data=with_owner(f"unranked_switch_time")
+                ),
+                InlineKeyboardButton(
+                    GOAL_OPTIONS[config.get('goal')],
+                    callback_data=with_owner(f"unranked_switch_goal")
+                )
+            ],
+            [InlineKeyboardButton(
+                f"mods... {mods_text}",
+                callback_data=with_owner(f"unranked_switch_mods")
+            )],
+            [InlineKeyboardButton(
+                CROSSCLIENT_OPTIONS[config.get('crossclient')],
+                callback_data=with_owner(f"unranked_switch_crossclient")
+            )],
+            [InlineKeyboardButton(
+                POLICY_OPTIONS[config.get('policy')],
+                callback_data=with_owner(f"unranked_switch_policy")
+            )],
+            [
+                InlineKeyboardButton(
+                    "Помощь",
+                    callback_data=with_owner(f"unranked_help_display")
+                ),
+                InlineKeyboardButton(
+                    "Удалить",
+                    callback_data=with_owner(f"unranked_round_donotcreate")
+                ),
+                InlineKeyboardButton(
+                    "✳️ Создать", 
+                    callback_data=with_owner(f"unranked_round_create")
+                )
+            ]
         ]
+    elif keyboard_type == "help":
+        keyboard = [
+            [InlineKeyboardButton(
+                "⬅️ Назад",
+                callback_data=with_owner(f"unranked_help_back")
+            )]
+        ]
+    elif keyboard_type == "mods":
+        selected_mods = config.get("mods", [])
+
+        keyboard = []
+
+        row = []
+
+        for mod in MOD_OPTIONS:
+            enabled = mod in selected_mods
+
+            text = f"✅ {mod}" if enabled else f"⬛ {mod}"
+
+            row.append(
+                InlineKeyboardButton(
+                    text,
+                    callback_data=with_owner(f"unranked_modtoggle_{mod}")
+                )
+            )
+
+            if len(row) == 3:
+                keyboard.append(row)
+                row = []
+
+        if row:
+            keyboard.append(row)
+
+        keyboard.append([
+            InlineKeyboardButton(
+                "⬅️ Назад",
+                callback_data=with_owner("unranked_modtoggle_back")
+            )
+        ])
     elif keyboard_type == "main-active":
         keyboard = [
             [InlineKeyboardButton(
                 "🎯 Текущая игра", 
-                callback_data=with_owner(f"osugamehl_next_{scores_quantity}"))
+                callback_data=with_owner(f"unranked_???_"))
             ]
         ]
-    elif keyboard_type.startswith("next_"):
-        count = int(keyboard_type.split("_")[1])
-        EMOJIS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
-
-        keyboard = [[
-            InlineKeyboardButton(
-                emoji,
-                callback_data=with_owner(f"osugamehl_finish_{i}")
-            )
-            for i, emoji in enumerate(EMOJIS[:count], start=1)
-        ]]
-    elif keyboard_type == "finish":
+    elif keyboard_type == "round-configured":
         keyboard = [
-            [InlineKeyboardButton(
-                "➡️ Новая игра", 
-                callback_data=with_owner(f"osugamehl_next_{scores_quantity}"))
+            [   
+                InlineKeyboardButton(
+                    "Отменить", 
+                    callback_data=with_owner(f"unranked_round_donotcreate")
+                ),
+                InlineKeyboardButton(
+                    "✅ Участвовать", 
+                    callback_data=with_owner(f"unranked_round_join")
+                )
             ]
         ]
-    elif keyboard_type.startswith("finish_"):
-        count = int(keyboard_type.split("_")[1])
-        keyboard = [
-            [InlineKeyboardButton(
-                "➡️ Дальше", 
-                callback_data=with_owner(f"osugamehl_next_{count}"))
-            ]
-        ]
-        
-    elif keyboard_type == "leaderboard":
+    elif keyboard_type == "round-askformember":
         keyboard = [
             [
                 InlineKeyboardButton(
-                    "📑 Главное меню игры", 
-                    callback_data="osugamehl_main")
-            ],
+                    "🚫 Отклонить",
+                    callback_data=with_owner(f"unranked_round_declinemember")
+                ),
+                InlineKeyboardButton(
+                    "✅ Начать игру", 
+                    callback_data=with_owner(f"unranked_round_join")
+                )
+            ]
         ]
+   
 
     return InlineKeyboardMarkup(keyboard)

@@ -5,8 +5,18 @@ import time
 
 
 
-def construct_user(osu_id: int, osu_name: str, tg_id: int, tg_name: str, v1: dict = None):
+def construct_user(
+    osu_id: int, 
+    osu_name: str, 
+    tg_id: int, 
+    tg_name: str, 
+    v1: dict = None,
+    config: dict = None,
+    intake: dict = None
+):
     if v1 is None: v1 = {}
+    if config is None: config = construct_config()
+    if intake is None: intake = {}
 
     return {
         "osu":{
@@ -21,32 +31,45 @@ def construct_user(osu_id: int, osu_name: str, tg_id: int, tg_name: str, v1: dic
 
         "v1": {            
             "points": {
-                "current_score":        int(v1.get("points", {}).get("current_score", 0)),
-                "average_score":        int(v1.get("points", {}).get("average_score", 0)),
-                "best_score":           int(v1.get("points", {}).get("best_score", 0)),
-
-                "current_health":       int(v1.get("points", {}).get("current_health", 0))
+                "current":              int(v1.get("points", {}).get("current", 1000)),
+                "min":                  int(v1.get("points", {}).get("min", 1000)),
+                "max":                  int(v1.get("points", {}).get("max", 1000)),
             },
-            "active":                   v1.get("active", None),     # construct_active
-            "skipped":                  v1.get("skipped", {}),
-            "completed":                v1.get("completed", {})
-        }
+            "active":                   v1.get("active", None),     # construct_active            
+        },
+
+        "config":                       config,     # construct_config
+
+        "intake": {
+            "sent_type":                intake.get('sent_type'),
+            "sent_id":                  intake.get('sent_id'),
+            "sent_mods":                str(intake.get('sent_mods')),
+            "map_full":                 str(intake.get('map_full')),
+            "temp_rank":                int(intake.get('temp_rank'))
+        }        
     }
 
-def construct_active(cached_entries: list [dict], value_to_guess: str, user_msg_id: str, bot_msg_id: str):
-    
-    scores_ids = []
-
-    for entry in cached_entries:
-       scores_ids.append(entry.get('osu_api_data', {}).get('id', 0))
+def construct_active(match_id: int):    
 
     return {
-        "scores_ids":           scores_ids,
+        "match_id":     match_id,
+        "given":        time.time()
+    }
 
-        "origin_user_msg_id":   user_msg_id,
-        "origin_bot_msg_id":    bot_msg_id,
+def construct_config(
+    source: int = 0,
+    goal: int = 0,
+    time: int = 0,
+    policy: int = 0,        
+    mods: list = [],
+    crossclient: int = 0
+):    
 
-        "value_to_guess":       value_to_guess,
-
-        "given":                time.time()
+    return {
+        "source":       source,
+        "goal":         goal,
+        "time":         time,
+        "policy":       policy,
+        "mods":         mods,
+        "crossclient":  crossclient
     }

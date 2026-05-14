@@ -21,13 +21,13 @@ from ..json_schema import construct_user
 from .....systems import scores_state_db as db
 import temp
 
-from config import COOLDOWN_HLGAME_COMMANDS, USER_SETTINGS_FILE
+from config import COOLDOWN_UNRANKED_COMMANDS, USER_SETTINGS_FILE
 from .....systems.translations import SCORE_CAPTION as T
 
 MAX_ATTEMPTS = 1
 MAX_HEALTH = 5
 
-d_file = "file_osugames_higherlower"
+d_file = "file_osugames_elo"
 
 
 
@@ -37,9 +37,9 @@ async def finish_game(update: Update, context: ContextTypes.DEFAULT_TYPE, score_
     
     user_id = str(update.effective_user.id)    
     can_run = await check_user_cooldown(
-        command_name="higherlower_game_finish",
+        command_name="unranked_game_finish",
         user_id=user_id,
-        cooldown_seconds=COOLDOWN_HLGAME_COMMANDS,
+        cooldown_seconds=COOLDOWN_UNRANKED_COMMANDS,
         update=update,
         context=context        
     )    
