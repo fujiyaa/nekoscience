@@ -9,8 +9,13 @@ def get_keyboard(keyboard_type: str):
     if keyboard_type == "main":
         keyboard = [
             [InlineKeyboardButton(
-                "➡️ Новый челлендж", 
-                callback_data="challenge_next")],
+                    "➡️ Новый челлендж", 
+                    callback_data="challenge_next"
+            )],
+            [InlineKeyboardButton(
+                    "🫖 Без челленджа", 
+                    callback_data="challenge_justamap"
+            )],
             [
                 InlineKeyboardButton(
                     "🏆 Топ дейли", 
@@ -92,6 +97,17 @@ def get_keyboard(keyboard_type: str):
                     "📑 Главное меню дейли", 
                     callback_data="challenge_main")
             ],
+        ]
+    elif keyboard_type == "justamap":
+        keyboard = [
+            [
+                InlineKeyboardButton(
+                    "📑 Главное меню дейли", 
+                    callback_data="challenge_main"),
+                InlineKeyboardButton(
+                    "⏭️ Следующая", 
+                    callback_data="challenge_justamap")
+            ]
         ]
 
     return InlineKeyboardMarkup(keyboard)

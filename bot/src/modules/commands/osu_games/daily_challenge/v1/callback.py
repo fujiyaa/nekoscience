@@ -10,6 +10,7 @@ from .actions.leaderboard import leaderboard
 from .actions.next import next_challenge
 from .actions.skip import skip_challenge
 from .challenge import challenge
+from .actions.justamap import justamap
 
 
 
@@ -32,6 +33,8 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await               skip_challenge(     update, context)
         elif data == "challenge_main":
             await               challenge(          update, context)
+        elif data == "challenge_justamap":
+            await               justamap(           update, context)
         else:
             await query.edit_message_text("Неизвестная кнопка!")
     except Exception as e: print (e)

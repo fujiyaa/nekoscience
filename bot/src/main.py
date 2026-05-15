@@ -106,7 +106,7 @@ def register_callbacks(app):
         (callback_nch,      r"^page_\d+_\d+$"),
         
         # osu_games
-        (callback_day,      r"^challenge_(main|next|finish|skip|leaderboard|info)"),
+        (callback_day,      r"^challenge_(main|next|finish|skip|leaderboard|info|justamap)"),
         (callback_hl,       r"^osugamehl_(main|next|finish|\d+)"),
         (callback_elo,      r"^unranked_(switch|round|modtoggle|help|menu|matchcancel|deny|accept|\d+)"),
 
