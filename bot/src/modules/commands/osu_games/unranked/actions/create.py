@@ -13,7 +13,7 @@ from .....systems.json_files import load_score_file
 from .....systems.images import delayed_remove
 from .....image_processing.workflows.score_adaptive.processing_v1 import create_score_compare_image
 from ..buttons import get_keyboard
-from ..json_schema import construct_user, construct_active
+from ..json_schema import construct_user
 # from .filter import filter_other_topics
 from .....systems import scores_state_db as db
 import temp

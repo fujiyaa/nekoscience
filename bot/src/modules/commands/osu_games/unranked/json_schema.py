@@ -6,17 +6,20 @@ import time
 
 
 def construct_user(
-    osu_id: int, 
-    osu_name: str, 
-    tg_id: int, 
-    tg_name: str, 
-    v1: dict = None,
+    osu_id: int,
+    osu_name: str,
+    tg_id: int,
+    tg_name: str,
+    points: dict = None,
     config: dict = None,
-    intake: dict = None
-):
-    if v1 is None: v1 = {}
+    intake: dict = None,
+    active_matches: list[str] | None = None
+):  
+    if points is None: points = {}
     if config is None: config = construct_config()
     if intake is None: intake = {}
+    if active_matches is None:
+        active_matches = []
 
     return {
         "osu":{
@@ -29,14 +32,13 @@ def construct_user(
             "id":           int(tg_id),
         },
 
-        "v1": {            
-            "points": {
-                "current":              int(v1.get("points", {}).get("current", 1000)),
-                "min":                  int(v1.get("points", {}).get("min", 1000)),
-                "max":                  int(v1.get("points", {}).get("max", 1000)),
-            },
-            "active":                   v1.get("active", None),     # construct_active            
+        "points": {
+            "current":              points.get("current", 1000),
+            "min":                  points.get("min", 1000),
+            "max":                  points.get("max", 1000)
         },
+
+        "active_matches":               active_matches,
 
         "config":                       config,     # construct_config
 
@@ -45,15 +47,8 @@ def construct_user(
             "sent_id":                  intake.get('sent_id'),
             "sent_mods":                str(intake.get('sent_mods')),
             "map_full":                 str(intake.get('map_full')),
-            "temp_rank":                int(intake.get('temp_rank'))
+            "temp_rank":                str(intake.get('temp_rank'))
         }        
-    }
-
-def construct_active(match_id: int):    
-
-    return {
-        "match_id":     match_id,
-        "given":        time.time()
     }
 
 def construct_config(
@@ -61,9 +56,11 @@ def construct_config(
     goal: int = 0,
     time: int = 0,
     policy: int = 0,        
-    mods: list = [],
-    crossclient: int = 0
+    mods: list | None = None,
+    crossclient: int = 0    
 ):    
+    if mods is None:
+        mods = []
 
     return {
         "source":       source,
@@ -72,4 +69,40 @@ def construct_config(
         "policy":       policy,
         "mods":         mods,
         "crossclient":  crossclient
+    }
+
+def construct_match(
+    creator: dict,
+    config: dict,
+    intake: dict,
+    member: dict | None = None
+):
+    timestamp = int(time.time())
+
+    match_id = f"{creator['osu']['id']}_{timestamp}"
+
+    return match_id, {
+        "id": match_id,
+
+        "created_at": timestamp,
+
+        "state": {
+            "started": False,
+            "finished": False,
+            "winner": None
+        },
+
+        "config": config,
+
+        "intake": intake,
+
+        "creator": {
+            "osu_id": creator["osu"]["id"],
+            "osu_name": creator["osu"]["username"],
+
+            "tg_id": creator["telegram"]["id"],
+            "tg_name": creator["telegram"]["username"]
+        },
+
+        "member": member
     }

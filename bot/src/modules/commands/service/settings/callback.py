@@ -40,6 +40,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "display_fails_average_recent": True,
         "display_more_scores": False,
         "settings_score_card": False,
+        "settings_allow_direct": True
     })
 
     bool_settings_map = {
@@ -47,6 +48,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "settings_sc_more_scores": "display_more_scores",
         "settings_rs_fails": "display_fails",
         "settings_ar_fails": "display_fails_average_recent",
+        "settings_allow_direct": "settings_allow_direct"
     }
 
     if setting_key in bool_settings_map:

@@ -147,6 +147,81 @@ def get_keyboard(
                 )
             ]
         ]
+    elif keyboard_type == "main-menu":
+        # 👤 моя статистика
+        # ⏳ игры с моим участием
+        # 📺 все активные игры
+        # 🏆 топ рейтинга
+        # помощь
+
+        keyboard = [
+            [
+                InlineKeyboardButton(
+                    "👤 Статистика",
+                    callback_data=with_owner(f"unranked_menu_mystats")
+                ),
+                InlineKeyboardButton(
+                    "🏆 Топ рейтинга",
+                    callback_data=with_owner(f"unranked_menu_alltop")
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    "⏳ Мои игры",
+                    callback_data=with_owner(f"unranked_menu_myactive")
+                ),
+                InlineKeyboardButton(
+                    "📺 Все игры",
+                    callback_data=with_owner(f"unranked_menu_allactive")
+                )
+            ],
+            [InlineKeyboardButton(
+                "FAQ (лучше посмотреть)",
+                callback_data=with_owner(f"unranked_menu_helpnested")
+            )]
+        ]
+    elif keyboard_type == "main-helpnested":
+        keyboard = [
+            [InlineKeyboardButton(
+                "Что такое unranked плей?",
+                callback_data=with_owner(f"unranked_menu_aboutgame")
+            )],
+            [InlineKeyboardButton(
+                "Как работает рейтинг?",
+                callback_data=with_owner(f"unranked_menu_aboutelo")
+            )],
+            [InlineKeyboardButton(
+                "❗️ Как создавать и отменять раунд?",
+                callback_data=with_owner(f"unranked_menu_aboutcreation")
+            )],
+            [InlineKeyboardButton(
+                "Два режима игры?",
+                callback_data=with_owner(f"unranked_menu_aboutend")
+            )],
+            [InlineKeyboardButton(
+                "Как работает таймер?",
+                callback_data=with_owner(f"unranked_menu_abouttime")
+            )],           
+            [InlineKeyboardButton(
+                "⬅️ Назад",
+                callback_data=with_owner(f"unranked_menu_main")
+            )]            
+        ]
+    elif keyboard_type == "main-help":
+        keyboard = [
+            [InlineKeyboardButton(
+                "⬅️ Назад",
+                callback_data=with_owner(f"unranked_menu_helpnested")
+            )]            
+        ]
+    elif keyboard_type == "main-back":
+        keyboard = [
+            [InlineKeyboardButton(
+                "⬅️ Назад",
+                callback_data=with_owner(f"unranked_menu_main")
+            )]            
+        ]
+    else: print(f"unknown keyboard type: {keyboard_type}")
    
 
     return InlineKeyboardMarkup(keyboard)

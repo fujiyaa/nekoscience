@@ -53,17 +53,64 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
         tg_id = update.effective_user.id 
         tg_name = update.effective_user.username
 
+    osu_name = await check_osu_verified(user_id)
+    if not osu_name:
+        await safe_send_message(
+            update, "⚠ Не сохранен ник, он нужен для игры! Нажми и авторизуйся: /name", 
+            parse_mode="Markdown")
+        return
+    
+    osu_id = await get_osu_id(user_id)
+    if osu_id: 
+        osu_id = str(osu_id) 
+    else: 
+        await safe_send_message(
+            update, "⚠ Что-то не так с авторизацией, попробуй еще раз вот это: /name", 
+            parse_mode="Markdown")
+        return
+    
+    link_preview = LinkPreviewOptions(
+        url=BANNER_OPTIONS[0],
+        is_disabled=False,
+        prefer_small_media=False,
+        prefer_large_media=True,
+        show_above_text=True
+    )
 
     message_text = update.message.text.strip()
     result = parse_osu_url(message_text)
 
+    # режим главного меню когда нет ссылок
     if result is None:
+        response = await read_file_neko(d_file)
+        data = response.get("current", {})
+
+        if osu_id not in data:
+            data[osu_id] = construct_user(
+                osu_id, 
+                osu_name, 
+                tg_id,
+                tg_name,
+            )
+            await insert_to_file_neko(d_file, data)
+
+        user = data[osu_id]
+        config = user.get("config")
+        points = user.get("points")
+        current = points.get("current")
+        rank = get_player_rank(data, osu_id)
+
+        reply_markup = get_keyboard(
+            "main-menu", 
+            config, 
+            owner_id=tg_id
+        )
+
         await update.message.reply_text(
-            text = (
-                f"✖️ Нужна ссылка на карту или скор\n\n"
-                f"<i><code>/help unranked</code> - узнать больше о ссылках</i>\n"
-            ),                    
-            parse_mode = "HTML"
+            text = MAIN_MENU_TEXT,
+            reply_markup = reply_markup,
+            parse_mode = "HTML",
+            link_preview_options=link_preview
         )
         
         return
@@ -109,6 +156,7 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
             map_id = map_data.get('id')
             map_full = f"{beatmapset.get('artist', '')} - {beatmapset.get('title', '')} [{beatmap.get('version', '')}]"
 
+            sent_mods = "" 
             url_config = "https://osu.ppy.sh/b/"
 
         except Exception:
@@ -116,20 +164,7 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await safe_send_message(update, "❌ Ошибка", parse_mode="Markdown")
     
     
-    try:                   
-        osu_name = await check_osu_verified(user_id)
-        if not osu_name:
-            await safe_send_message(
-                update, "⚠ Не сохранен ник, он нужен для игры! Нажми и авторизуйся: /name", 
-                parse_mode="Markdown")
-            return            
-        
-        osu_id = await get_osu_id(user_id)
-        if osu_id: 
-            osu_id = str(osu_id) 
-        else: 
-            return
-        
+    try:    
         if result["sent_type"] == 'score':
             if str(sent_score_user_id) != str(osu_id):
                 await update.message.reply_text(
@@ -150,19 +185,18 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             await insert_to_file_neko(d_file, data)
 
-        user = data[osu_id]            
-        v1 = user.get("v1")
+        user = data[osu_id]
+        active_matches = user.get("active_matches")
         config = user.get("config")
-        active = v1.get("active")
-        points = v1.get("points")
+        points = user.get("points")
         current = points.get("current")
         rank = get_player_rank(data, osu_id)
 
-        creation_text = f"📑 Создание раунда"
-        rating_text = f"{osu_name} (@{tg_name})   🏆{current}  (#{rank})"
-        difficulty_text = f'<a href="{url_config}{map_id}">{html.escape(map_full)}</a>'
-
-        if not active:
+        creation_text = f"<b>Создание раунда</b>"
+        rating_text = f"<b>{osu_name}</b> (@{tg_name})   <b>🏆{current}</b>  <i>(#{rank})</i>"
+        difficulty_text = f'<a href="https://osu.ppy.sh/b/{map_id}">{html.escape(map_full)} 🔗</a>'
+        
+        if len(active_matches) < 10:
 
             intake_new = {
                 "sent_type": result['sent_type'],
@@ -180,8 +214,10 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 osu_name, 
                 tg_id,
                 tg_name,
+                points=points,
                 config=config,
-                intake=intake_new
+                intake=intake_new,                
+                active_matches=active_matches,
             )
             await insert_to_file_neko(d_file, data)
 
@@ -190,19 +226,18 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         # тут должно быть автозавершение обязательно
         else:                
-            text = (
-                f"🎯❗ <b>Есть не завершенная игра</b>"
-            )                    
-            reply_markup = get_keyboard("main-active", config, owner_id=tg_id)   
+            reply_markup = get_keyboard(
+                "main-menu", 
+                config, 
+                owner_id=tg_id
+            )
 
-
-        link_preview = LinkPreviewOptions(
-            url=BANNER_OPTIONS[0],
-            is_disabled=False,
-            prefer_small_media=False,
-            prefer_large_media=True,
-            show_above_text=True
-        )                 
+            await update.message.reply_text(
+                text = MAIN_MENU_TEXT,
+                reply_markup = reply_markup,
+                parse_mode = "HTML",
+                link_preview_options=link_preview
+            )
 
         try:
             return await update.message.reply_text(

@@ -2,7 +2,7 @@
 
 
 import traceback
-from telegram import Update, LinkPreviewOptions
+from telegram import Update, LinkPreviewOptions, MessageEntity
 from telegram.ext import ContextTypes
 
 from ....actions.messages import safe_query_answer
@@ -12,11 +12,14 @@ from ....systems.json_files import load_score_file
 from .buttons import get_keyboard
 from ....external.localapi import read_file_neko, insert_to_file_neko
 from ....systems.auth import get_osu_id
-from .json_schema import construct_user
+from .json_schema import construct_user, construct_match
 from .options import *
+from .match import *
+from .rank import *
 
 from config import SUPPORT_STUB, MAX_TEXT_LENGTH
-
+from longtext import UNRANKED_HELP, UNRANKED_HELP_LINKS, UNRANKED_HELP_ELO 
+from longtext import UNRANKED_HELP_END, UNRANKED_HELP_TIME, UNRANKED_HELP_MAIN
 
 
 async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -58,11 +61,10 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         user = data[osu_id]
 
-        v1 = user.get("v1")
         config = user.get("config")
         intake = user.get("intake")
-        active = v1.get("active")
-        points = v1.get("points")
+        points = user.get("points")
+        active_matches = user.get("active_matches")
         current = points.get("current")
         rank = intake.get("temp_rank")
 
@@ -88,7 +90,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     int(((cached_entry.get('osu_score') or {}).get('max_combo')) or 0)
                 ]
 
-                choice_text = f"{GOAL_OPTIONS[config.get('goal')]}: "
+                choice_text = f"<b>Условие победы:</b> {GOAL_OPTIONS[config.get('goal')]}: "
                 choice_data = sent_options[config.get('goal')]
                             
                 url_config = "https://osu.ppy.sh/scores/"            
@@ -101,7 +103,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             try:
                 map_id = intake['sent_id']
 
-                choice_text = ""
+                choice_text = f"<b>Условие победы:</b> {GOAL_OPTIONS[config.get('goal')]}"
                 choice_data = ""
 
                 url_config = "https://osu.ppy.sh/b/"
@@ -111,9 +113,9 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await query.answer("❌ Ошибка", show_alert=True)
                 return
 
-        creation_text = f"📑 Создание раунда"
-        rating_text = f"{osu_name} (@{tg_name})   🏆{current}  (#{rank})"
-        difficulty_text = f'<a href="{url_config}{map_id}">{map_full}</a>'
+        creation_text = f"<b>Создание раунда</b>"
+        rating_text = f"<b>{osu_name}</b> <i>@{tg_name}</i>   <b>🏆{current}</b>  (#{rank})"
+        difficulty_text = f'<a href="https://osu.ppy.sh/b/{map_id}">{map_full} 🔗</a>'
 
         text = f"{rating_text}\n\n{creation_text}: {difficulty_text}\n\n{choice_text}{choice_data}"
 
@@ -123,9 +125,233 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             prefer_small_media=False,
             prefer_large_media=True,
             show_above_text=True
-        )      
+        )
+        
+        if action == "menu":
+            if subaction == "main":
+                reply_markup = get_keyboard(
+                    "main-menu", 
+                    config, 
+                    owner_id=tg_id
+                )
 
-        if not active:                   
+                await query.edit_message_text(
+                    text = MAIN_MENU_TEXT,
+                    parse_mode="HTML",
+                    reply_markup=reply_markup,
+                    link_preview_options=link_preview
+                )
+
+            elif subaction == "aboutcreation":
+                reply_markup = get_keyboard(
+                        "main-help",
+                        owner_id=owner_id
+                    )
+
+                await query.edit_message_text(
+                    UNRANKED_HELP_LINKS,
+                    parse_mode="HTML",
+                    reply_markup=reply_markup,
+                    link_preview_options=link_preview
+                )
+
+            elif subaction == "aboutelo":
+                reply_markup = get_keyboard(
+                        "main-help",
+                        owner_id=owner_id
+                    )
+
+                await query.edit_message_text(
+                    UNRANKED_HELP_ELO,
+                    parse_mode="HTML",
+                    reply_markup=reply_markup,
+                    link_preview_options=link_preview
+                )
+
+            elif subaction == "aboutend":
+                reply_markup = get_keyboard(
+                        "main-help",
+                        owner_id=owner_id
+                    )
+
+                await query.edit_message_text(
+                    UNRANKED_HELP_END,
+                    parse_mode="HTML",
+                    reply_markup=reply_markup,
+                    link_preview_options=link_preview
+                )
+
+            elif subaction == "abouttime":
+                reply_markup = get_keyboard(
+                        "main-help",
+                        owner_id=owner_id
+                    )
+
+                await query.edit_message_text(
+                    UNRANKED_HELP_TIME,
+                    parse_mode="HTML",
+                    reply_markup=reply_markup,
+                    link_preview_options=link_preview
+                )
+
+            elif subaction == "aboutgame":
+                reply_markup = get_keyboard(
+                        "main-help",
+                        owner_id=owner_id
+                    )
+
+                await query.edit_message_text(
+                    UNRANKED_HELP_MAIN,
+                    parse_mode="HTML",
+                    reply_markup=reply_markup,
+                    link_preview_options=link_preview
+                )
+
+            elif subaction == "helpnested":
+                reply_markup = get_keyboard(
+                        "main-helpnested",
+                        owner_id=owner_id
+                    )
+
+                await query.edit_message_text(
+                    "<b>Выбери раздел.</b>",
+                    parse_mode="HTML",
+                    reply_markup=reply_markup,
+                    link_preview_options=link_preview
+                )
+
+            elif subaction == "allactive":
+
+                response = await read_file_neko(m_file)
+
+                matches = response.get("current", {})
+
+                matches_list = get_all_matches(matches)
+
+                text = "\n".join(matches_list)
+
+                def tg_len(text: str) -> int:
+                    return len(text.encode("utf-16-le")) // 2
+                
+                entities = [
+                    MessageEntity(
+                        type="expandable_blockquote",
+                        offset=0,                     
+                        length=tg_len(text)    
+                    )
+                ]
+
+                reply_markup = get_keyboard(
+                        "main-back",
+                        owner_id=owner_id
+                    )
+
+                await query.edit_message_text(
+                    f"{text}\n\nЗдесь отображаются все активные раунды.\nНажми на блок, чтобы развернуть текст",
+                    reply_markup=reply_markup,
+                    link_preview_options=link_preview,
+                    entities=entities
+                )
+
+            elif subaction == "myactive":
+
+                response = await read_file_neko(m_file)
+
+                matches = response.get("current", {})
+
+                matches_list = get_user_matches(
+                    matches,
+                    active_matches
+                )
+
+                text = "\n".join(matches_list)
+
+                def tg_len(text: str) -> int:
+                    return len(text.encode("utf-16-le")) // 2
+                
+                entities = [
+                    MessageEntity(
+                        type="expandable_blockquote",
+                        offset=0,                     
+                        length=tg_len(text)    
+                    )
+                ]
+
+                reply_markup = get_keyboard(
+                        "main-back",
+                        owner_id=owner_id
+                    )
+
+                await query.edit_message_text(
+                    f"{text}\n\nЗдесь отображаются твои активные раунды.\nНажми на блок, чтобы развернуть текст",
+                    reply_markup=reply_markup,
+                    link_preview_options=link_preview,
+                    entities=entities
+                )
+
+            elif subaction == "mystats":
+                rank = get_player_rank(data, osu_id)
+                rating_text = f"<b>{osu_name}</b> <i>@{tg_name}</i>   <b>🏆{current}</b>  (#{rank})"
+                text = f"""
+{rating_text}
+
+<b>ELO:</b>
+- минимум: {points.get('min')}
+- максимум: {points.get('max')}
+
+<b>Активных раундов:</b> {len(active_matches)} (см.⏳ Мои игры)
+
+<i>больше статистики тут, если режим станет популярным</i>
+"""               
+
+                reply_markup = get_keyboard(
+                        "main-back",
+                        owner_id=owner_id
+                    )
+
+                await query.edit_message_text(
+                    text,
+                    reply_markup=reply_markup,
+                    link_preview_options=link_preview,
+                    parse_mode="HTML"
+                )
+
+            elif subaction == "alltop":
+                
+                response = await read_file_neko(d_file)
+
+                users = response.get("current", {})
+
+                ranking = get_top_players(users, limit=50)
+
+                text = "\n".join(ranking)
+
+                def tg_len(text: str) -> int:
+                    return len(text.encode("utf-16-le")) // 2
+
+                entities = [
+                    MessageEntity(
+                        type="expandable_blockquote",
+                        offset=0,
+                        length=tg_len(text)
+                    )
+                ]
+
+                reply_markup = get_keyboard(
+                    "main-back",
+                    owner_id=owner_id
+                )
+
+                await query.edit_message_text(
+                    f"{text}\n\n🏆 Топ-50 ELO.",
+                    reply_markup=reply_markup,
+                    link_preview_options=link_preview,
+                    entities=entities
+                )
+
+            return    
+
+        if len(active_matches) < 10:                   
             if action == "switch":
                 if subaction == "mods":
                     if config.get('source') == 0:
@@ -185,8 +411,10 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     osu_name, 
                     tg_id,
                     tg_name,
+                    points=points,
                     config=config,
-                    intake=intake
+                    intake=intake,                
+                    active_matches=active_matches,
                 )
                 await insert_to_file_neko(d_file, data)
 
@@ -199,11 +427,11 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         choice_text = f"{GOAL_OPTIONS[config.get('goal')]}: "
                         choice_data = sent_options[config.get('goal')]
                     else:
-                        choice_text = ""
+                        choice_text = f"<b>Условие победы:</b> {GOAL_OPTIONS[config.get('goal')]}" 
                         choice_data = ""
 
                     if config.get('source') == 1:
-                        choice_text = ""
+                        choice_text = f"<b>Условие победы:</b> {GOAL_OPTIONS[config.get('goal')]}" 
                         choice_data = ""
 
                     text = f"{rating_text}\n\n{creation_text}: {difficulty_text}\n\n{choice_text}{choice_data}"
@@ -252,12 +480,14 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     config["mods"] = mods
 
                     data[osu_id] = construct_user(
-                        osu_id,
-                        osu_name,
+                        osu_id, 
+                        osu_name, 
                         tg_id,
                         tg_name,
+                        points=points,
                         config=config,
-                        intake=intake
+                        intake=intake,                
+                        active_matches=active_matches,
                     )
 
                     await insert_to_file_neko(d_file, data)
@@ -277,6 +507,39 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
             elif action == "round":  
                 if subaction == "create":
+
+                    response = await read_file_neko(m_file)
+
+                    matches = response.get("current", {})
+
+                    match_id, match_data = construct_match(
+                        creator=user,
+                        config=config,
+                        intake=intake
+                    )
+
+                    matches[match_id] = match_data
+
+                    await insert_to_file_neko(m_file, matches)
+
+
+                    if match_id not in active_matches:
+                        active_matches.append(match_id)
+
+                    data[osu_id] = construct_user(
+                        osu_id,
+                        osu_name,
+                        tg_id,
+                        tg_name,
+                        points=points,
+                        config=config,
+                        intake=intake,
+                        active_matches=active_matches
+                    )
+
+                    await insert_to_file_neko(d_file, data)
+
+
                     reply_markup = get_keyboard(
                         "round-configured",
                         config,
@@ -306,13 +569,13 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     text = f"""
 Новый раунд создан! {policy_text}
 
-{osu_name} (@{tg_name})   🏆{current}
+<b>{osu_name}</b> <i>@{tg_name}</i>   <b>🏆{current}</b>  (#{rank})
 
-условие победы: {goal_text}
-клиент: {crossclient_text}, {time_text}
+<b>Условие победы:</b> {goal_text}
+<b>Клиент:</b> {crossclient_text}, {time_text}
 
-моды: {mods_text},
-карта: https://osu.ppy.sh/b/4803734
+<b>Моды:</b> {mods_text},
+<b>Карта:</b> <a href="https://osu.ppy.sh/b/{map_id}">{map_full} 🔗</a>
 """
                     
                 elif subaction == "donotcreate":
@@ -324,7 +587,8 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await query.edit_message_text(
                     text=text,
                     reply_markup=reply_markup,
-                    link_preview_options=link_preview
+                    link_preview_options=link_preview,
+                    parse_mode="HTML"
                 )                
 
             elif action == "help":
@@ -350,71 +614,8 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         owner_id=owner_id
                     )
 
-                    text = """
-UNRANKED ПЛЕЙ (ELO ver.)
-
-(1)
-⤴️ Против скора, играет только противник
-- Выбирается твой самый последний скор в чате, например из /r.
-- Тебе не надо играть еще раз, но проиграть легко!
-
-🔄 Сам играю еще раз, более честное 1v1
-- Обоим придется снова сыграть карту.
-- Есть вариант отыграться, если противник сабмитнет скор в бота первым.
-
-(2)
-🆕 SCORE-V2
-- Лазер скор, так называемый турнирный вариант скора
-- В стейбле НЕ НУЖНО включать одноименный мод, конвертация автоматическая
-
-👨‍🦳 SCORE-STD
-- Обычные очки из стейбла
-
-🏹 Точность 🔗 Комбо
-- выигрывает большее
-
-❌ Миссы
-- выигрывает меньшее
-
-(3)
-⏳ Таймер X ч.
-- Время, за которое нужно сабмитнуть свои скоры.
-- Если скор не был сабмитнут за это время, то выигрывает тот кто сабмитнул
-- Если никто не сабмитнул, то ничья
-- Если был выбран режим ⤴️ Против скора, и противник не сабмитнул скор - он проиграет
-- Таймер не срабатывает автоматически, только когда один из играющих раунд взаимодействует с меню этой команды бота
-
-(4)
-➕ Моды
-- Не выбирай несовместимые моды, иначе не сможешь сабмитнуть скор
-- Выбери FM (любые моды, в т.ч. лазера), если хочешь дать фору
-- с FM можно включить любые моды при игре
-
-(5)
-🔀 Разрешить лазер и стейбл
-- Разрешить противнику играть в другом клиенте
-- В этом режиме рекомендуется играть ТОЛЬКО на SCORE-V2
-- Если один из игроков играет в стейбле, то к лазеру применится CL множитель скора
-
-▶️ Только Х клиент
-- Не разрешать играть в другом клиенте. 
-
-(6)
-🔓 Не подтверждать соперника и таймер
-- В этом режиме любой принимает скор и играет сразу
-- Будет неприятно, если вызов в общем чате примут чтобы потролить
-- ⏳ Таймер начинается СРАЗУ после того как кто-то принял вызов
-
-🔐 Подтверждать соперника и таймер
-- После того как кто-то примет вызов, у создателя будет запрошено подтверждение о начале раунда
-- Несколько игроков смогут попробовать принять раунд, а создатель выберет одного из них
-- ⏳ Таймер начинается ТОЛЬКО с момента подтверждения
-
-Совет: не спамь кнопки, иначе не увидишь изменения.
-"""
-
                     await query.edit_message_text(
-                        text,
+                        UNRANKED_HELP,
                         parse_mode="HTML",
                         reply_markup=reply_markup,
                         link_preview_options=link_preview

@@ -241,7 +241,11 @@ TRANSLATIONS = {
     "settings_score_card_n": {
         "en": "Disabled",
         "ru": "Выкл"
-    }, 
+    },
+    "settings_allow_direct": {
+        "en": "Allow private messages",
+        "ru": "Личные сообщения от бота"
+    }
 }
 
 CARD_PROFILE = {
