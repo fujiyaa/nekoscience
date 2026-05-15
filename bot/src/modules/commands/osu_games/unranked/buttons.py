@@ -161,7 +161,7 @@ def get_keyboard(
                 )
             ],
             [InlineKeyboardButton(
-                "FAQ (лучше посмотреть)",
+                " Как играть",
                 callback_data=with_owner(f"unranked_menu_helpnested")
             )]
         ]
