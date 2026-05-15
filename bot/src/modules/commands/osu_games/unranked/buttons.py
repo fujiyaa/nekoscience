@@ -1,6 +1,8 @@
 
 
 
+from math import ceil
+
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 from .options import *
@@ -55,11 +57,7 @@ def get_keyboard(
             [InlineKeyboardButton(
                 CROSSCLIENT_OPTIONS[config.get('crossclient')],
                 callback_data=with_owner(f"unranked_switch_crossclient")
-            )],
-            [InlineKeyboardButton(
-                POLICY_OPTIONS[config.get('policy')],
-                callback_data=with_owner(f"unranked_switch_policy")
-            )],
+            )],            
             [
                 InlineKeyboardButton(
                     "Помощь",
@@ -120,20 +118,7 @@ def get_keyboard(
                 "🎯 Текущая игра", 
                 callback_data=with_owner(f"unranked_???_"))
             ]
-        ]
-    elif keyboard_type == "round-configured":
-        keyboard = [
-            [   
-                InlineKeyboardButton(
-                    "Отменить", 
-                    callback_data=with_owner(f"unranked_round_donotcreate")
-                ),
-                InlineKeyboardButton(
-                    "✅ Участвовать", 
-                    callback_data=with_owner(f"unranked_round_join")
-                )
-            ]
-        ]
+        ]    
     elif keyboard_type == "round-askformember":
         keyboard = [
             [
@@ -224,4 +209,89 @@ def get_keyboard(
     else: print(f"unknown keyboard type: {keyboard_type}")
    
 
+    return InlineKeyboardMarkup(keyboard)
+
+
+def get_active_matches_keyboard(
+    active_matches: list[str],
+    matches: dict,
+    owner_id: int
+):
+    keyboard = []
+
+    buttons = []
+
+    for match_id in active_matches:
+
+        match = matches.get(match_id)
+
+        if not match:
+            continue
+
+        member = match.get("member") or {}
+
+        short_id = match_id[-5:]
+
+        if member:
+            text = f"{short_id} ❌"
+        else:
+            text = f"{short_id} ❎"
+
+        buttons.append(
+            InlineKeyboardButton(
+                text=text,
+                callback_data=f"unranked_matchcancel_{match_id}:{owner_id}"
+            )
+        )
+
+    per_row = 4
+
+    keyboard = [
+        buttons[i:i + per_row]
+        for i in range(0, len(buttons), per_row)
+    ]
+
+    keyboard.append([
+        InlineKeyboardButton(
+            "⬅️ Назад",
+            callback_data=f"unranked_menu_main:{owner_id}"
+        )
+    ])
+
+    return InlineKeyboardMarkup(keyboard)
+
+def get_round_configured_keyboard(
+    match_id: int,
+    owner_id: int
+):
+    keyboard = [
+            [   
+                InlineKeyboardButton(
+                    "Скрыть", 
+                    callback_data=f"unranked_round_hide:{owner_id}"
+                ),
+                InlineKeyboardButton(
+                    "✅ Участвовать", 
+                    callback_data=f"unranked_round_join:{match_id}"
+                )
+            ]
+        ]
+    return InlineKeyboardMarkup(keyboard)
+
+def get_penfing_join_keyboard(
+    join_tg_id: int,
+    owner_id: int
+):
+    keyboard = [
+            [   
+                InlineKeyboardButton(
+                    "✖️ Отклонить", 
+                    callback_data=f"unranked_deny_{join_tg_id}:{owner_id}"
+                ),
+                InlineKeyboardButton(
+                    "✅ Начать игру", 
+                    callback_data=f"unranked_accept_{join_tg_id}:{owner_id}"
+                )
+            ]
+        ]
     return InlineKeyboardMarkup(keyboard)

@@ -5,7 +5,7 @@ import asyncio
 import traceback
 import html
 
-from telegram import Update, LinkPreviewOptions
+from telegram import Update, LinkPreviewOptions, MessageEntity
 from telegram.ext import ContextTypes
 
 from ....actions.messages import safe_send_message
@@ -19,10 +19,11 @@ from ....external.osu_api import get_osu_token
 from ....actions.messages import safe_send_message
 from ....external.osu_http import fetch_txt_beatmaps
 from ....external.osu_api import get_osu_token, get_beatmap, get_score_by_id
-from .buttons import get_keyboard
+from .buttons import *
 from .json_schema import construct_user
 from .options import *
-from .rank import get_player_rank
+from .rank import *
+from .match import *
 
 from config import COOLDOWN_UNRANKED_COMMANDS
 from config import OSU_URL_REGEX
@@ -196,13 +197,14 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
         rating_text = f"<b>{osu_name}</b> (@{tg_name})   <b>🏆{current}</b>  <i>(#{rank})</i>"
         difficulty_text = f'<a href="https://osu.ppy.sh/b/{map_id}">{html.escape(map_full)} 🔗</a>'
         
-        if len(active_matches) < 10:
+        if len(active_matches) < 20:
 
             intake_new = {
                 "sent_type": result['sent_type'],
                 "sent_id": result['sent_id'],
                 "map_full": html.escape(map_full),
                 "sent_mods": sent_mods,
+                "map_id": map_id,
                 "temp_rank": rank
             }
 
@@ -226,18 +228,42 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         # тут должно быть автозавершение обязательно
         else:                
-            reply_markup = get_keyboard(
-                "main-menu", 
-                config, 
+            response = await read_file_neko(m_file)
+
+            matches = response.get("current", {})
+
+            matches_list = get_user_matches(
+                matches,
+                active_matches
+            )
+
+            text = "\n".join(matches_list)
+
+            def tg_len(text: str) -> int:
+                return len(text.encode("utf-16-le")) // 2
+            
+            entities = [
+                MessageEntity(
+                    type="expandable_blockquote",
+                    offset=0,                     
+                    length=tg_len(text)    
+                )
+            ]
+
+            reply_markup = get_active_matches_keyboard(
+                active_matches,
+                matches,
                 owner_id=tg_id
             )
 
             await update.message.reply_text(
-                text = MAIN_MENU_TEXT,
-                reply_markup = reply_markup,
-                parse_mode = "HTML",
-                link_preview_options=link_preview
+                text=f"{text}\n\n{MAIN_MENU_MYACTIVE}\n\n(достигнут лимит, удали ненужное)",
+                reply_markup=reply_markup,
+                link_preview_options=link_preview,
+                entities=entities
             )
+
+            return
 
         try:
             return await update.message.reply_text(

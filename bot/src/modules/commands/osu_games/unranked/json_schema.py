@@ -47,6 +47,7 @@ def construct_user(
             "sent_id":                  intake.get('sent_id'),
             "sent_mods":                str(intake.get('sent_mods')),
             "map_full":                 str(intake.get('map_full')),
+            "map_id":                   str(intake.get('map_id')),
             "temp_rank":                str(intake.get('temp_rank'))
         }        
     }
@@ -55,7 +56,6 @@ def construct_config(
     source: int = 0,
     goal: int = 0,
     time: int = 0,
-    policy: int = 0,        
     mods: list | None = None,
     crossclient: int = 0    
 ):    
@@ -66,7 +66,6 @@ def construct_config(
         "source":       source,
         "goal":         goal,
         "time":         time,
-        "policy":       policy,
         "mods":         mods,
         "crossclient":  crossclient
     }

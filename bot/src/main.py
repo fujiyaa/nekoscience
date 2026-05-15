@@ -108,7 +108,7 @@ def register_callbacks(app):
         # osu_games
         (callback_day,      r"^challenge_(main|next|finish|skip|leaderboard|info)"),
         (callback_hl,       r"^osugamehl_(main|next|finish|\d+)"),
-        (callback_elo,      r"^unranked_(switch|round|modtoggle|help|menu|\d+)"),
+        (callback_elo,      r"^unranked_(switch|round|modtoggle|help|menu|matchcancel|deny|accept|\d+)"),
 
         # service
         (settings_handler,  r"^settings_"),                    
@@ -133,7 +133,7 @@ def _setup_logging():
     logger = startup()
     logger.addHandler(ShortNetworkHandler())
 
-def main():  
+def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(
