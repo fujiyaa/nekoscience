@@ -237,8 +237,8 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await leaderboard(update, context, count_300, 'count_300', '', '') 
             elif data == "leaderboard_chat_count_100":
                 await leaderboard(update, context, count_100, 'count_100', '', '')
-            elif data == "leaderboard_chat_count_500":
-                await leaderboard(update, context, count_50, 'count_500', '', '')
+            elif data == "leaderboard_chat_count_50":
+                await leaderboard(update, context, count_50, 'count_50', '', '')
             elif data == "leaderboard_chat_ssh":
                 await leaderboard(update, context, ssh_ranks, 'ssh', '', '')
             elif data == "leaderboard_chat_sh":
