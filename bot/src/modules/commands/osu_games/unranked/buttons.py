@@ -205,12 +205,64 @@ def get_keyboard(
                 "⬅️ Назад",
                 callback_data=with_owner(f"unranked_menu_main")
             )]            
-        ]
+        ]    
     else: print(f"unknown keyboard type: {keyboard_type}")
    
 
     return InlineKeyboardMarkup(keyboard)
 
+def get_match_edit_keyboard(
+    keyboard_type: str,
+    match_id: str,
+    owner_id: int
+):
+    def with_owner(cb_data: str) -> str:
+        if owner_id is not None:
+            return f"{cb_data}:{owner_id}"
+        return cb_data
+    
+    if keyboard_type == "with-member":
+
+        keyboard = [
+            [                
+                InlineKeyboardButton(
+                    "❌ Сдаться",
+                    callback_data=with_owner(f"unranked_matchleave_{match_id}")
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    "⬅️ Назад",
+                    callback_data=with_owner(f"unranked_menu_myactive")
+                )
+            ],
+        ]
+    elif keyboard_type == "without-member":
+        keyboard = [
+            [
+                InlineKeyboardButton(
+                    "❎ Отменить",
+                    callback_data=with_owner(f"unranked_matchcancel_{match_id}")
+                )                
+            ],
+            [
+                InlineKeyboardButton(
+                    "⬅️ Назад",
+                    callback_data=with_owner(f"unranked_menu_myactive")
+                )
+            ],
+        ]
+    else:
+        keyboard = [           
+            [
+                InlineKeyboardButton(
+                    "⬅️ Назад",
+                    callback_data=with_owner(f"unranked_menu_myactive")
+                )
+            ],
+        ]
+
+    return InlineKeyboardMarkup(keyboard)
 
 def get_active_matches_keyboard(
     active_matches: list[str],
@@ -240,7 +292,7 @@ def get_active_matches_keyboard(
         buttons.append(
             InlineKeyboardButton(
                 text=text,
-                callback_data=f"unranked_matchcancel_{match_id}:{owner_id}"
+                callback_data=f"unranked_matchedit_{match_id}:{owner_id}"
             )
         )
 
@@ -267,7 +319,7 @@ def get_round_configured_keyboard(
     keyboard = [
             [   
                 InlineKeyboardButton(
-                    "Скрыть", 
+                    "Скрыть кнопки", 
                     callback_data=f"unranked_round_hide:{owner_id}"
                 ),
                 InlineKeyboardButton(

@@ -268,7 +268,7 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
 
             await update.message.reply_text(
-                text=f"{text}\n\n{MAIN_MENU_MYACTIVE_LIMIT}",
+                text=f"{text}\n{MAIN_MENU_MYACTIVE_LIMIT}",
                 reply_markup=reply_markup,
                 link_preview_options=link_preview,
                 entities=entities
