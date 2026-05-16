@@ -78,7 +78,7 @@ def construct_match(
 ):
     timestamp = int(time.time())
 
-    match_id = f"{creator['osu']['id']}_{timestamp}"
+    match_id = f"{creator['osu']['id']}{timestamp}"
 
     return match_id, {
         "id": match_id,

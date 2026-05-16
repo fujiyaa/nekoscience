@@ -99,7 +99,18 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
         config = user.get("config")
         points = user.get("points")
         current = points.get("current")
+        active_matches = user.get("active_matches")
         rank = get_player_rank(data, osu_id)
+
+        rank = get_player_rank(data, osu_id)
+        rating_text = f"<b>{osu_name}</b> <i>@{tg_name}</i>   <b>🏆{current}</b>  (#{rank})"
+        text = f"""
+{rating_text}
+<code>- игр в процессе: {len(active_matches)}</code>
+<code>- мин/макс ELO: {points.get('min')}/{points.get('max')}</code>
+
+{MAIN_MENU_TEXT}
+"""
 
         reply_markup = get_keyboard(
             "main-menu", 
@@ -108,7 +119,7 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
         await update.message.reply_text(
-            text = MAIN_MENU_TEXT,
+            text = text,
             reply_markup = reply_markup,
             parse_mode = "HTML",
             link_preview_options=link_preview
@@ -257,7 +268,7 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
 
             await update.message.reply_text(
-                text=f"{text}\n\n{MAIN_MENU_MYACTIVE}\n\n(достигнут лимит, удали ненужное)",
+                text=f"{text}\n\n{MAIN_MENU_MYACTIVE_LIMIT}",
                 reply_markup=reply_markup,
                 link_preview_options=link_preview,
                 entities=entities

@@ -139,25 +139,25 @@ def get_keyboard(
         # 🏆 топ рейтинга
         # помощь
 
-        keyboard = [
-            [
-                InlineKeyboardButton(
-                    "👤 Статистика",
-                    callback_data=with_owner(f"unranked_menu_mystats")
-                ),
-                InlineKeyboardButton(
-                    "🏆 Топ рейтинга",
-                    callback_data=with_owner(f"unranked_menu_alltop")
-                )
-            ],
+        keyboard = [            
             [
                 InlineKeyboardButton(
                     "⏳ Мои игры",
                     callback_data=with_owner(f"unranked_menu_myactive")
                 ),
+                # InlineKeyboardButton(
+                #     "📺 Все игры",
+                #     callback_data=with_owner(f"unranked_menu_allactive")
+                # )
+            ],
+            [
+                # InlineKeyboardButton(
+                #     "👤 Статистика",
+                #     callback_data=with_owner(f"unranked_menu_mystats")
+                # ),
                 InlineKeyboardButton(
-                    "📺 Все игры",
-                    callback_data=with_owner(f"unranked_menu_allactive")
+                    "🏆 Топ рейтинга",
+                    callback_data=with_owner(f"unranked_menu_alltop")
                 )
             ],
             [InlineKeyboardButton(
@@ -233,7 +233,7 @@ def get_active_matches_keyboard(
         short_id = match_id[-5:]
 
         if member:
-            text = f"{short_id} ❌"
+            text = f"{short_id} ⏳"
         else:
             text = f"{short_id} ❎"
 
@@ -278,19 +278,20 @@ def get_round_configured_keyboard(
         ]
     return InlineKeyboardMarkup(keyboard)
 
-def get_penfing_join_keyboard(
-    join_tg_id: int,
-    owner_id: int
+def get_pending_join_keyboard(
+    match_id: str,
+    join_tg_id: str,
+    owner_id: str,
 ):
     keyboard = [
             [   
                 InlineKeyboardButton(
                     "✖️ Отклонить", 
-                    callback_data=f"unranked_deny_{join_tg_id}:{owner_id}"
+                    callback_data=f"unranked_deny_{join_tg_id}_{match_id}:{owner_id}"
                 ),
                 InlineKeyboardButton(
                     "✅ Начать игру", 
-                    callback_data=f"unranked_accept_{join_tg_id}:{owner_id}"
+                    callback_data=f"unranked_accept_{join_tg_id}_{match_id}:{owner_id}"
                 )
             ]
         ]

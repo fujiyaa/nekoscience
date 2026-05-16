@@ -1,6 +1,7 @@
 
 
 
+from contextlib import asynccontextmanager
 import traceback
 from telegram import Update, LinkPreviewOptions, MessageEntity
 from telegram.ext import ContextTypes
@@ -16,11 +17,18 @@ from .json_schema import construct_user, construct_match
 from .options import *
 from .match import *
 from .rank import *
+from .locks import GLOBAL_LOCK
 
 from config import SUPPORT_STUB, MAX_TEXT_LENGTH
 from longtext import UNRANKED_HELP, UNRANKED_HELP_LINKS, UNRANKED_HELP_ELO 
 from longtext import UNRANKED_HELP_END, UNRANKED_HELP_TIME, UNRANKED_HELP_MAIN
 
+
+
+@asynccontextmanager
+async def transaction():
+    async with GLOBAL_LOCK:
+        yield
 
 async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -41,122 +49,127 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         subaction = parts[1]
         
         if action == "round" and subaction == "join":
-            try:
-                match_id = owner_id_str
 
-                response = await read_file_neko(m_file)
-                matches = response.get("current", {})
+            async with transaction():
+                try:
+                    match_id = owner_id_str
 
-                match = matches.get(match_id)
-                short_id = match_id[-5:]
+                    response = await read_file_neko(m_file)
+                    matches = response.get("current", {})
 
-                if not match:
-                    await query.answer("❌ Раунд уже удален.", show_alert=True)
-                    return
+                    match = matches.get(match_id)
+                    short_id = match_id[-5:]
 
-                creator = match.get("creator", {})
+                    if not match:
+                        await query.answer("❌ Раунд уже удален.", show_alert=True)
+                        return
 
-                if creator.get("tg_id") == query.from_user.id:
-                    await query.answer("❌ Нельзя играть самому с собой.", show_alert=True)
-                    return
+                    creator = match.get("creator", {})
 
-                state = match.get("state", {})
+                    if creator.get("tg_id") == query.from_user.id:
+                        await query.answer("❌ Нельзя играть самому с собой.", show_alert=True)
+                        return
 
-                if state.get("finished"):
-                    await query.answer("❌ Раунд уже завершен.", show_alert=True)
-                    return
+                    state = match.get("state", {})
 
-                # если уже есть участник
-                if match.get("member") is not None:
-                    await query.answer("❌ Раунд уже занят.", show_alert=True)
-                    return
+                    if state.get("finished"):
+                        await query.answer("❌ Раунд уже завершен.", show_alert=True)
+                        return
 
-                # ❗ теперь список заявок
-                pending_joins = match.get("pending_joins") or []
+                    # если уже есть участник
+                    if match.get("member") is not None:
+                        await query.answer("❌ Раунд уже занят.", show_alert=True)
+                        return
 
-                join_osu_id = await get_osu_id(str(query.from_user.id))
+                    # ❗ теперь список заявок
+                    pending_joins = match.get("pending_joins") or []
 
-                if not join_osu_id:
-                    await query.answer("❌ Осу аккаунт не авторизован? Он нужен для игры: /name", show_alert=True)
-                    return
+                    join_osu_id = await get_osu_id(str(query.from_user.id))
 
-                join_osu_id = str(join_osu_id)
+                    if not join_osu_id:
+                        await query.answer("❌ Осу аккаунт не авторизован? Он нужен для игры: /name", show_alert=True)
+                        return
 
-                response = await read_file_neko(d_file)
-                users = response.get("current", {})
+                    join_osu_id = str(join_osu_id)
 
-                join_user = users.get(join_osu_id)
+                    response = await read_file_neko(d_file)
+                    users = response.get("current", {})
 
-                if not join_user:
-                    await query.answer("❌ Сначала посети главное меню /unranked", show_alert=True)
-                    return
+                    join_user = users.get(join_osu_id)
 
-                join_osu = join_user.get("osu", {})
-                join_tg = join_user.get("telegram", {})
+                    if not join_user:
+                        await query.answer("❌ Сначала посети главное меню /unranked", show_alert=True)
+                        return
 
-                # ❗ защита от дубля заявки
-                already_requested = any(
-                    p.get("tg_id") == join_tg.get("id")
-                    for p in pending_joins
-                )
+                    join_osu = join_user.get("osu", {})
+                    join_tg = join_user.get("telegram", {})
 
-                if already_requested:
-                    await query.answer("❌ Ты уже отправлял сюда заявку", show_alert=True)
-                    return
-
-                owner_id = creator.get("tg_id")
-
-                if owner_id:
-                    _id = join_osu.get('id')
-                    _name = join_osu.get("username")
-                    link = f'<a href="https://osu.ppy.sh/b/{_id}">{_name} 🔗</a>'
-                    
-
-                    text = (
-                        f"@{creator.get('tg_name')}, заявка на раунд (id {short_id})\n\n"
-                        f"<b>{link}</b> хочет играть!"
+                    # ❗ защита от дубля заявки
+                    already_requested = any(
+                        p.get("tg_id") == join_tg.get("id")
+                        for p in pending_joins
                     )
 
-                    reply_markup = get_penfing_join_keyboard(join_tg.get('id'), owner_id)
-                    
-                    try:
-                        await query.message.reply_text(
-                            reply_to_message_id=query.message.message_id,
-                            text = text,
-                            parse_mode="HTML",
-                            reply_markup=reply_markup
-                        ) 
-                    except:
-                        print('fallback')
-                        await context.bot.send_message(                                                
-                            chat_id=query.message.chat.id,
-                            text=text,
-                            reply_markup=reply_markup,
-                            parse_mode="HTML"
+                    if already_requested:
+                        await query.answer("❌ Ты уже отправлял сюда заявку", show_alert=True)
+                        return
+
+                    owner_id = creator.get("tg_id")
+
+                    if owner_id:
+                        _id = join_osu.get('id')
+                        _name = join_osu.get("username")
+                        link = f'<a href="https://osu.ppy.sh/b/{_id}">{_name} 🔗</a>'
+                        
+
+                        text = (
+                            f"@{creator.get('tg_name')}, заявка на раунд (id {short_id})\n\n"
+                            f"<b>{link}</b> хочет играть!"
+                        )
+
+                        reply_markup = get_pending_join_keyboard(
+                            str(match_id),
+                            str(join_tg.get('id')), 
+                            str(owner_id)
                         )
                         
-                    await query.answer("📩 Заявка отправлена создателю.", show_alert=True)
-                
-                else: 
-                    raise ValueError
-                
-                pending_joins.append({
-                    "osu_id": join_osu.get("id"),
-                    "osu_name": join_osu.get("username"),
-                    "tg_id": join_tg.get("id"),
-                    "tg_name": join_tg.get("username")
-                })
+                        try:
+                            await query.message.reply_text(
+                                reply_to_message_id=query.message.message_id,
+                                text = text,
+                                parse_mode="HTML",
+                                reply_markup=reply_markup
+                            ) 
+                        except:
+                            print('fallback')
+                            await context.bot.send_message(                                                
+                                chat_id=query.message.chat.id,
+                                text=text,
+                                reply_markup=reply_markup,
+                                parse_mode="HTML"
+                            )
+                            
+                        await query.answer("📩 Заявка отправлена создателю.", show_alert=True)
+                    
+                    else: 
+                        raise ValueError
+                    
+                    pending_joins.append({
+                        "osu_id": join_osu.get("id"),
+                        "osu_name": join_osu.get("username"),
+                        "tg_id": join_tg.get("id"),
+                        "tg_name": join_tg.get("username")
+                    })
 
-                match["pending_joins"] = pending_joins
-                matches[match_id] = match
+                    match["pending_joins"] = pending_joins
+                    matches[match_id] = match
 
-                await insert_to_file_neko(m_file, matches)
+                    await insert_to_file_neko(m_file, matches)
 
-            except:
-                await query.answer("⚠️ При доставке заявки возникли проблемы.", show_alert=True)
+                    print(f"added pending join for match {match_id} from user {join_osu.get('id')}")
 
-                
-                        
+                except:
+                    await query.answer("⚠️ При доставке заявки возникли проблемы.", show_alert=True)               
 
         if owner_id is not None and query.from_user.id != owner_id:  
             await query.answer("❔ Чужие кнопки", show_alert=True)
@@ -242,57 +255,95 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # дейстиве из menu action без визуала
         if action == "matchcancel":
 
-            match_id = "_".join(parts[1:])
+            async with transaction():
 
-            response = await read_file_neko(m_file)
+                match_id = subaction
 
-            matches = response.get("current", {})
+                response = await read_file_neko(m_file)
 
-            match = matches.get(match_id)
+                matches = response.get("current", {})
 
-            if not match:
-                await query.answer(
-                    "Раунд уже удален.",
-                    show_alert=True
+                match = matches.get(match_id)
+
+                if not match:
+                    await query.answer(
+                        "Раунд уже удален.",
+                        show_alert=True
+                    )
+                    return
+
+                creator = match.get("creator", {})
+
+                if creator.get("tg_id") != tg_id:
+                    await query.answer(
+                        "Можно отменять только свои раунды.",
+                        show_alert=True
+                    )
+                    return
+
+                # удаление матча у участника        
+                member = match.get("member")
+
+                member = match.get("member")
+
+                if member:
+                    member_osu_id = str(member.get("osu_id"))
+
+                    enemy_user = data.get(member_osu_id)
+
+                    if enemy_user:
+                        enemy_active = list(enemy_user.get("active_matches", []))
+
+                        if match_id in enemy_active:
+                            enemy_active.remove(match_id)
+
+                        enemy_osu = enemy_user.get("osu", {})
+                        enemy_tg = enemy_user.get("telegram", {})
+
+                        data[member_osu_id] = construct_user(
+                            member_osu_id,
+                            enemy_osu.get("username"),
+                            enemy_tg.get("id"),
+                            enemy_tg.get("username"),
+                            points=enemy_user.get("points"),
+                            config=enemy_user.get("config"),
+                            intake=enemy_user.get("intake"),
+                            active_matches=enemy_active
+                        )
+
+                        print(f"removed match {match_id} from member {member_osu_id} (without insert to file)")
+               
+                if match_id in active_matches:
+                    active_matches.remove(match_id)
+
+                data[osu_id] = construct_user(
+                    osu_id,
+                    osu_name,
+                    tg_id,
+                    tg_name,
+                    points=points,
+                    config=config,
+                    intake=intake,
+                    active_matches=active_matches
                 )
-                return
 
-            creator = match.get("creator", {})
-
-            if creator.get("tg_id") != tg_id:
-                await query.answer(
-                    "Можно отменять только свои раунды.",
-                    show_alert=True
+                await insert_to_file_neko(
+                    d_file,
+                    data
                 )
+
+                print(f"removed match {match_id} from creator {creator.get('osu_id')} (insert to file)")
+
+                await remove_from_file_neko(
+                    m_file,
+                    [match_id]
+                )
+
+                print(f"deleted match {match_id}")
+
+                await query.answer("Раунд отменен, список обновится при следующем входе.", show_alert=True)
+
                 return
-
-            await remove_from_file_neko(
-                m_file,
-                [match_id]
-            )
-
-            if match_id in active_matches:
-                active_matches.remove(match_id)
-
-            data[osu_id] = construct_user(
-                osu_id,
-                osu_name,
-                tg_id,
-                tg_name,
-                points=points,
-                config=config,
-                intake=intake,
-                active_matches=active_matches
-            )
-
-            await insert_to_file_neko(
-                d_file,
-                data
-            )
-
-            await query.answer("Раунд отменен, список обновится при следующем входе.", show_alert=True)
-
-            return
                 
         def find_match_by_owner(matches, owner_id):
             for match_id, match in matches.items():
@@ -302,179 +353,197 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return None, None
 
         if action == "accept":
-            
-            try:
-                target_tg_id = int(parts[1])                
+            async with transaction():
+                try:
+                    target_tg_id = int(parts[1])
+                    match_id = str(parts[2])
+                    short_id = match_id[-5:]
 
-                response = await read_file_neko(m_file)
-                matches = response.get("current", {})
+                    response = await read_file_neko(m_file)
+                    matches = response.get("current", {})
+                    
+                    match = matches.get(match_id)                    
 
-                match_id, match = find_match_by_owner(matches, query.from_user.id)
-                short_id = match_id[-5:]
+                    if not match:
+                        await query.answer(f"❌ Раунд c ID {short_id} не найден.", show_alert=True)
+                        return
 
-                if not match:
-                    await query.answer("Раунд не найден.", show_alert=True)
+                    pending_joins = match.get("pending_joins") or []
+
+                    pending = next(
+                        (p for p in pending_joins if p.get("tg_id") == target_tg_id),
+                        None
+                    )
+
+                    if not pending:
+                        await query.answer(f"❌ Возможно старая заявка, ID рауда: {short_id}", show_alert=True)
+                        return
+
+                    match["member"] = pending
+                    match["pending_joins"] = [
+                        p for p in pending_joins if p.get("tg_id") != target_tg_id
+                    ]
+
+                    matches[match_id] = match   
+                    
+                    creator = match.get('creator')
+                    config = match.get('config')
+                    intake = match.get('intake')
+
+                    if config.get('crossclient') == 2:
+                        crossclient_text = "только Lazer"
+                    elif config.get('crossclient') == 1:
+                        crossclient_text = "только Stable"
+                    else:
+                        crossclient_text = "любой"
+
+                    some_mods = config.get("mods", [])
+                    mods_text = "".join(some_mods) if some_mods else "нет"
+
+                    goal_text = GOAL_OPTIONS[config.get('goal')]
+                    time_text = TIME_OPTIONS[config.get('time')]
+
+                    map_id = intake.get('map_id')
+                    map_full = intake.get('map_full')
+
+                    text = f"""
+    ✅ @{pending.get('tg_name')}, заявка была <b>принята</b>
+    <code>ID этого раунда: {short_id}</code>
+
+    <b>Противник:</b> {creator.get('osu_name')} <i>@{creator.get('tg_name')}</i>
+
+    <b>Условие победы:</b> {goal_text}
+    <b>Клиент:</b> {crossclient_text}, {time_text}
+
+    <b>Моды:</b> {mods_text},
+    <b>Карта:</b> <a href="https://osu.ppy.sh/b/{map_id}">{map_full} 🔗</a>
+
+    <i>Чтобы самбитнуть скор, сыграй карту и нажми:</i> /unranked
+                    """
+
+                    await query.edit_message_text(
+                        text = text,
+                        parse_mode="HTML",
+                        link_preview_options=link_preview
+                    )
+
+                except Exception as e:
+                    print(e)
+                    await query.answer(f"ошибка..?", show_alert=True)
                     return
-
-                pending_joins = match.get("pending_joins") or []
-
-                pending = next(
-                    (p for p in pending_joins if p.get("tg_id") == target_tg_id),
-                    None
-                )
-
-                if not pending:
-                    await query.answer("Заявка уже обработана.", show_alert=True)
-                    return
-
-                match["member"] = pending
-                match["pending_joins"] = [
-                    p for p in pending_joins if p.get("tg_id") != target_tg_id
-                ]
-
-                matches[match_id] = match   
+                               
                 
-                creator = match.get('creator')
-                config = match.get('config')
-                intake = match.get('intake')
+                # запись id матча участнику            
+                response = await read_file_neko(d_file)
+                data = response.get("current", {})
 
-                if config.get('crossclient') == 2:
-                    crossclient_text = "только Lazer"
-                elif config.get('crossclient') == 1:
-                    crossclient_text = "только Stable"
-                else:
-                    crossclient_text = "любой"
+                user = data[str(pending.get('osu_id'))]
 
-                some_mods = config.get("mods", [])
-                mods_text = "".join(some_mods) if some_mods else "нет"
+                config = user.get("config")
+                intake = user.get("intake")
+                points = user.get("points")
+                active_matches = user.get("active_matches")
+                current = points.get("current")
+                rank = intake.get("temp_rank")
 
-                goal_text = GOAL_OPTIONS[config.get('goal')]
-                time_text = TIME_OPTIONS[config.get('time')]
+                osu, tg = user.get("osu"), user.get("telegram")     
+                osu_name, osu_id = osu.get("username"), osu.get("id")
+                tg_name, tg_id = tg.get("username"), tg.get("id")
 
-                map_id = intake.get('map_id')
-                map_full = intake.get('map_full')
+                if match_id not in active_matches:
+                    active_matches.append(match_id)
 
-                text = f"""
-✅ @{pending.get('tg_name')}, заявка была <b>принята</b>
-<code>ID этого раунда: {short_id}</code>
-
-<b>Противник:</b> {creator.get('osu_name')} <i>@{creator.get('tg_name')}</i>
-
-<b>Условие победы:</b> {goal_text}
-<b>Клиент:</b> {crossclient_text}, {time_text}
-
-<b>Моды:</b> {mods_text},
-<b>Карта:</b> <a href="https://osu.ppy.sh/b/{map_id}">{map_full} 🔗</a>
-
-<i>Чтобы самбитнуть скор, сыграй карту и нажми:</i> /unranked
-                """
-
-                await query.edit_message_text(
-                    text = text,
-                    parse_mode="HTML",
-                    link_preview_options=link_preview
+                data[osu_id] = construct_user(
+                    osu_id,
+                    osu_name,
+                    tg_id,
+                    tg_name,
+                    points=points,
+                    config=config,
+                    intake=intake,
+                    active_matches=active_matches
                 )
 
-            except Exception as e:
-                print(e)
-                await query.answer(f"ошибка..?", show_alert=True)
-                return
-            
-            
-
-            
-            # запись id матча участнику            
-            response = await read_file_neko(d_file)
-            data = response.get("current", {})
-
-            user = data[str(pending.get('osu_id'))]
-
-            config = user.get("config")
-            intake = user.get("intake")
-            points = user.get("points")
-            active_matches = user.get("active_matches")
-            current = points.get("current")
-            rank = intake.get("temp_rank")
-
-            osu, tg = user.get("osu"), user.get("telegram")     
-            osu_name, osu_id = osu.get("username"), osu.get("id")
-            tg_name, tg_id = tg.get("username"), tg.get("id")
-
-            if match_id not in active_matches:
-                active_matches.append(match_id)
-
-            data[osu_id] = construct_user(
-                osu_id,
-                osu_name,
-                tg_id,
-                tg_name,
-                points=points,
-                config=config,
-                intake=intake,
-                active_matches=active_matches
-            )
-
-            await insert_to_file_neko(m_file, matches)
-
-            await insert_to_file_neko(d_file, data)
-
-            print("updated member match id")
-
-            # дальше нельзя ничего делать, data перезаписана из join
-            return
-
-        if action == "deny":
-            try:
-                target_tg_id = int(parts[1])            
-
-                response = await read_file_neko(m_file)
-                matches = response.get("current", {})
-
-                match_id, match = find_match_by_owner(matches, query.from_user.id)
-
-                if not match:
-                    return
-
-                pending_joins = match.get("pending_joins") or []
-
-                pending = next(
-                    (p for p in pending_joins if p.get("tg_id") == target_tg_id),
-                    None
-                )
-
-                if not pending:
-                    return
-
-                match["pending_joins"] = [
-                    p for p in pending_joins if p.get("tg_id") != target_tg_id
-                ]
-
-                matches[match_id] = match
                 await insert_to_file_neko(m_file, matches)
 
-                await query.edit_message_text(
-                    text = f"💤 @{pending.get('tg_name')}, заявка была <b>отклонена</b>",
-                    parse_mode="HTML",
-                )
+                print(f"added member {osu_id} to match {match_id}")
 
-            except Exception as e:
-                print(e)
-                await query.answer(f"ошибка..?", show_alert=True)
+                await insert_to_file_neko(d_file, data)
+
+                print(f"updated active matches for {osu_id}, added {match_id}")
+
+                # дальше нельзя ничего делать, data перезаписана из join
                 return
+
+        if action == "deny":
+
+            async with transaction():
+                try:
+                    target_tg_id = int(parts[1])            
+                    match_id = str(parts[2])
+                    short_id = match_id[-5:]
+
+                    response = await read_file_neko(m_file)
+                    matches = response.get("current", {})
+
+                    match = matches.get(match_id)
+
+                    if not match:
+                        await query.answer(f"❌ Раунд c ID {short_id} не найден.", show_alert=True)
+                        return
+
+                    pending_joins = match.get("pending_joins") or []
+
+                    pending = next(
+                        (p for p in pending_joins if p.get("tg_id") == target_tg_id),
+                        None
+                    )
+
+                    if not pending:
+                        await query.answer(f"❌ Возможно старая заявка, ID рауда: {short_id}", show_alert=True)
+                        return
+
+                    match["pending_joins"] = [
+                        p for p in pending_joins if p.get("tg_id") != target_tg_id
+                    ]
+
+                    matches[match_id] = match
+
+                    await insert_to_file_neko(m_file, matches)
+
+                    print(f"deleted pending join for match {match_id} from user {target_tg_id}")
+
+                    await query.edit_message_text(
+                        text = f"💤 @{pending.get('tg_name')}, заявка была <b>отклонена</b>",
+                        parse_mode="HTML",
+                    )
+
+                except Exception as e:
+                    print(e)
+                    await query.answer(f"ошибка..?", show_alert=True)
+                    return
                             
         if action == "menu":
             if subaction == "main":
+                rank = get_player_rank(data, osu_id)
+                rating_text = f"<b>{osu_name}</b> <i>@{tg_name}</i>   <b>🏆{current}</b>  (#{rank})"
+                text = f"""
+{rating_text}
+<b>- мин/макс ELO:</b> {points.get('min')}/{points.get('max')}
+<b>- игр в процессе:</b> {len(active_matches)}
+
+{MAIN_MENU_TEXT}
+"""
                 reply_markup = get_keyboard(
-                    "main-menu", 
-                    config, 
-                    owner_id=tg_id
-                )
+                        "main-menu",
+                        owner_id=owner_id
+                    )
 
                 await query.edit_message_text(
-                    text = MAIN_MENU_TEXT,
-                    parse_mode="HTML",
+                    text,
                     reply_markup=reply_markup,
-                    link_preview_options=link_preview
+                    link_preview_options=link_preview,
+                    parse_mode="HTML"
                 )
 
             elif subaction == "aboutcreation":
@@ -618,8 +687,15 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     owner_id
                 )
 
+                if len(active_matches) < 1:
+                    _text = MAIN_MENU_MYACTIVE_NONE
+                elif len(active_matches) < 20:
+                    _text = MAIN_MENU_MYACTIVE_SOME
+                else:
+                    _text = MAIN_MENU_MYACTIVE_LIMIT
+
                 await query.edit_message_text(
-                    text=f"{text}\n\n{MAIN_MENU_MYACTIVE}",
+                    text=f"{text}\n\n{_text}",
                     reply_markup=reply_markup,
                     link_preview_options=link_preview,
                     entities=entities
@@ -750,34 +826,37 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     intake=intake,                
                     active_matches=active_matches,
                 )
-                await insert_to_file_neko(d_file, data)
 
-                print("config updated")
-                
-                reply_markup = get_keyboard("main", config, intake, owner_id=owner_id)
+                async with transaction():
 
-                try:
-                    if intake['sent_type'] == 'score':
-                        choice_text = f"{GOAL_OPTIONS[config.get('goal')]}: "
-                        choice_data = sent_options[config.get('goal')]
-                    else:
-                        choice_text = f"<b>Условие победы:</b> {GOAL_OPTIONS[config.get('goal')]}" 
-                        choice_data = ""
+                    await insert_to_file_neko(d_file, data)
 
-                    if config.get('source') == 1:
-                        choice_text = f"<b>Условие победы:</b> {GOAL_OPTIONS[config.get('goal')]}" 
-                        choice_data = ""
+                    print(f"updated config for user {osu_id}")
+                    
+                    reply_markup = get_keyboard("main", config, intake, owner_id=owner_id)
 
-                    text = f"{rating_text}\n\n{creation_text}: {difficulty_text}\n\n{choice_text}{choice_data}"
+                    try:
+                        if intake['sent_type'] == 'score':
+                            choice_text = f"{GOAL_OPTIONS[config.get('goal')]}: "
+                            choice_data = sent_options[config.get('goal')]
+                        else:
+                            choice_text = f"<b>Условие победы:</b> {GOAL_OPTIONS[config.get('goal')]}" 
+                            choice_data = ""
 
-                    await query.edit_message_text(
-                        text,
-                        parse_mode="HTML",
-                        reply_markup=reply_markup,
-                        link_preview_options=link_preview
-                    )
-                except Exception:
-                    await safe_query_answer(query, show_alert=False)
+                        if config.get('source') == 1:
+                            choice_text = f"<b>Условие победы:</b> {GOAL_OPTIONS[config.get('goal')]}" 
+                            choice_data = ""
+
+                        text = f"{rating_text}\n\n{creation_text}: {difficulty_text}\n\n{choice_text}{choice_data}"
+
+                        await query.edit_message_text(
+                            text,
+                            parse_mode="HTML",
+                            reply_markup=reply_markup,
+                            link_preview_options=link_preview
+                        )
+                    except Exception:
+                        await safe_query_answer(query, show_alert=False)
 
             elif action == "modtoggle":
                 if subaction == "back":
@@ -824,88 +903,96 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         active_matches=active_matches,
                     )
 
-                    await insert_to_file_neko(d_file, data)
+                    async with transaction():
+                        await insert_to_file_neko(d_file, data)
 
-                    reply_markup = get_keyboard(
-                        "mods",
-                        config,
-                        intake,
-                        owner_id=owner_id
-                    )
+                        print(f"updated mods for user {osu_id}")
 
-                    await query.edit_message_reply_markup(
-                        reply_markup=reply_markup
-                    )
-                
+                        reply_markup = get_keyboard(
+                            "mods",
+                            config,
+                            intake,
+                            owner_id=owner_id
+                        )
+
+                        await query.edit_message_reply_markup(
+                            reply_markup=reply_markup
+                        )
+                    
                 return
             
             elif action == "round":  
                 if subaction == "create":
+                    async with transaction():
 
-                    response = await read_file_neko(m_file)
+                        response = await read_file_neko(m_file)
 
-                    matches = response.get("current", {})
+                        matches = response.get("current", {})
 
-                    match_id, match_data = construct_match(
-                        creator=user,
-                        config=config,
-                        intake=intake
-                    )
+                        match_id, match_data = construct_match(
+                            creator=user,
+                            config=config,
+                            intake=intake
+                        )
 
-                    matches[match_id] = match_data
+                        matches[match_id] = match_data
 
-                    await insert_to_file_neko(m_file, matches)
+                        await insert_to_file_neko(m_file, matches)
 
-
-                    if match_id not in active_matches:
-                        active_matches.append(match_id)
-
-                    data[osu_id] = construct_user(
-                        osu_id,
-                        osu_name,
-                        tg_id,
-                        tg_name,
-                        points=points,
-                        config=config,
-                        intake=intake,
-                        active_matches=active_matches
-                    )
-
-                    await insert_to_file_neko(d_file, data)
+                        print(f"created match {match_id} for user {osu_id}")
 
 
-                    reply_markup = get_round_configured_keyboard(
-                        match_id,
-                        owner_id
-                    )
-                    
-                    policy_text = "Создатель этого раунда будет подтверждать, что хочет играть."
-                    
-                    if config.get('crossclient') == 2:
-                        crossclient_text = "только Lazer"
-                    elif config.get('crossclient') == 1:
-                        crossclient_text = "только Stable"
-                    else:
-                        crossclient_text = "любой"
+                        if match_id not in active_matches:
+                            active_matches.append(match_id)
 
-                    some_mods = config.get("mods", [])
-                    mods_text = "".join(some_mods) if some_mods else "нет"
+                        data[osu_id] = construct_user(
+                            osu_id,
+                            osu_name,
+                            tg_id,
+                            tg_name,
+                            points=points,
+                            config=config,
+                            intake=intake,
+                            active_matches=active_matches
+                        )
 
-                    goal_text = GOAL_OPTIONS[config.get('goal')]
-                    time_text = TIME_OPTIONS[config.get('time')]
+                        await insert_to_file_neko(d_file, data)
+
+                        print(f"updated active matches for {osu_id}, added {match_id}")
 
 
-                    text = f"""
-Новый раунд создан! {policy_text}
+                        reply_markup = get_round_configured_keyboard(
+                            match_id,
+                            owner_id
+                        )
+                        
+                        policy_text = "Создатель этого раунда будет подтверждать, что хочет играть."
+                        
+                        if config.get('crossclient') == 2:
+                            crossclient_text = "только Lazer"
+                        elif config.get('crossclient') == 1:
+                            crossclient_text = "только Stable"
+                        else:
+                            crossclient_text = "любой"
 
-<b>{osu_name}</b> <i>@{tg_name}</i>   <b>🏆{current}</b>  (#{rank})
+                        some_mods = config.get("mods", [])
+                        mods_text = "".join(some_mods) if some_mods else "нет"
 
-<b>Условие победы:</b> {goal_text}
-<b>Клиент:</b> {crossclient_text}, {time_text}
+                        goal_text = GOAL_OPTIONS[config.get('goal')]
+                        time_text = TIME_OPTIONS[config.get('time')]
 
-<b>Моды:</b> {mods_text},
-<b>Карта:</b> <a href="https://osu.ppy.sh/b/{map_id}">{map_full} 🔗</a>
-"""
+
+                        text = f"""
+    Новый раунд создан! {policy_text}
+
+    <b>{osu_name}</b> <i>@{tg_name}</i>   <b>🏆{current}</b>  (#{rank})
+
+    <b>Условие победы:</b> {goal_text}
+    <b>Клиент:</b> {crossclient_text}, {time_text}
+
+    <b>Моды:</b> {mods_text},
+    <b>Карта:</b> <a href="https://osu.ppy.sh/b/{map_id}">{map_full} 🔗</a>
+    """
                     
                 elif subaction == "hide":
                     reply_markup = None
@@ -955,22 +1042,6 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             await query.answer("⭐️ Лимит активных раундов. Удали ненужные или доиграй принятые ранее!", show_alert=True)
             return
-
-        # actions = {
-        #     "next": next_game,
-        #     "finish": finish_game,
-        #     "main": higherlower_game
-        # }
-
-        # if action in actions:
-        #     if arg is not None:
-        #         await actions[action](update, context, arg)
-        #     else:
-        #         await actions[action](update, context)
-        # else:
-        #     await query.edit_message_text("Неизвестная кнопка!")
-
-        # await safe_query_answer(query, show_alert=False)
 
     except Exception:
         error_details = traceback.format_exc()
