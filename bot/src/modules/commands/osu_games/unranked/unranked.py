@@ -144,8 +144,6 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
             sent_mods = str(((cached_entry.get('osu_score') or {}).get('mods')) or "")
             
             sent_score_user_id = cached_entry.get('osu_score').get('user_id')
-                        
-            url_config = "https://osu.ppy.sh/scores/"            
                 
         except Exception:
             traceback.print_exc()
@@ -169,7 +167,6 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
             map_full = f"{beatmapset.get('artist', '')} - {beatmapset.get('title', '')} [{beatmap.get('version', '')}]"
 
             sent_mods = "" 
-            url_config = "https://osu.ppy.sh/b/"
 
         except Exception:
             traceback.print_exc()
