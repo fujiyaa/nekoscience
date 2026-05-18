@@ -106,10 +106,8 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
         rating_text = f"<b>{osu_name}</b> <i>@{tg_name}</i>   <b>🏆{current}</b>  (#{rank})"
         text = f"""
 {rating_text}
-<code>- игр в процессе: {len(active_matches)}</code>
 <code>- мин/макс ELO: {points.get('min')}/{points.get('max')}</code>
-
-{MAIN_MENU_TEXT}
+<code>- игр в процессе: {len(active_matches)}</code>
 """
 
         reply_markup = get_keyboard(

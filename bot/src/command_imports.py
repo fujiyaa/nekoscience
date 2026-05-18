@@ -13,6 +13,7 @@ from modules.commands.osu import (
     callback_bms,
     callback_msk1, callback_msk2,
     callback_sim, callback_sim_ctx, 
+    callback_muz_ctx,
 
     # cards
     start_card, start_skills, start_card_top5, start_beatmap_card,

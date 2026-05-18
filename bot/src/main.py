@@ -55,7 +55,7 @@ def register_commands(app):
         # osu_games
         ("challenge",):                     start_challenge,
         ("higherlower", "hl"):              start_higherlower_game,
-        ("unranked", "u"):                  start_unranked_game,
+        ("unranked", "unrenked"):           start_unranked_game,
       
         # fun
         ("roll", "random"):                 roll,
@@ -89,6 +89,7 @@ def register_callbacks(app):
         (callback_msk2,     r"^ms_page:"),
         (callback_sim,      r"^simulate_"),
         (callback_sim_ctx,  r"^sim_context:(map|cancel)"),
+        (callback_muz_ctx,  r"^muz_context:(map|cancel)"),
 
         # cards
         (callback_map_ctx,  r"^card_beatmap_context:(map|cancel)"),

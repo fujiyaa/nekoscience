@@ -162,12 +162,12 @@ def get_keyboard(
                 #     callback_data=with_owner(f"unranked_menu_mystats")
                 # ),
                 InlineKeyboardButton(
-                    "🏆 Топ рейтинга",
+                    "🏆 Рейтинг",
                     callback_data=with_owner(f"unranked_menu_alltop")
                 )
             ],
             [InlineKeyboardButton(
-                " Как играть",
+                " Как играть?",
                 callback_data=with_owner(f"unranked_menu_helpnested")
             )]
         ]

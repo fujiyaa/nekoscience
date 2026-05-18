@@ -172,6 +172,10 @@ OSU_MAP_REGEX = re.compile(
     r"https?://osu\.ppy\.sh/beatmapsets/\d+#\w+/(\d+)"
 )
 
+OSU_MAPSET_REGEX = re.compile(
+    r"https?://osu\.ppy\.sh/(?:beatmapsets/(\d+)(?:#\w+/\d+)?|b/(\d+))"
+)
+
 OSU_URL_REGEX = re.compile(
     r"https?://osu\.ppy\.sh/(?:beatmapsets/\d+#\w+/(?P<map_id1>\d+)|b/(?P<map_id2>\d+)|beatmapsets/(?P<set_id>\d+)|scores/(?P<score_id>\d+))"
 )
