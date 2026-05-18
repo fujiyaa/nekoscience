@@ -695,7 +695,10 @@ async def score_to_schema(score, user_info):
         }
     }
 
-async def get_score_by_id(score_id: str, token: str, timeout_sec: int = 10, override: bool = False):
+async def get_score_by_id(score_id: str, token: str = None, timeout_sec: int = 10, override: bool = False):
+    
+    if token is None: token = await get_osu_token()
+
     if not override:    
         cached_entry = load_score_file(score_id, ignore_empty=True)
     else: 

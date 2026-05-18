@@ -5,13 +5,8 @@ from contextlib import asynccontextmanager
 import traceback
 from telegram import Update, LinkPreviewOptions, MessageEntity
 from telegram.ext import ContextTypes
-import logging
-import logging.handlers
-import queue
 
 from ....actions.messages import safe_query_answer
-from .actions.finish import finish_game
-from .actions.create import next_game
 from ....systems.json_files import load_score_file
 from .buttons import *
 from ....external.localapi import read_file_neko, insert_to_file_neko, remove_from_file_neko
@@ -20,32 +15,12 @@ from .json_schema import construct_user, construct_match
 from .options import *
 from .match import *
 from .rank import *
+from .actions_log import *
 from .locks import GLOBAL_LOCK
 
 from config import SUPPORT_STUB, MAX_TEXT_LENGTH
 from longtext import UNRANKED_HELP, UNRANKED_HELP_LINKS, UNRANKED_HELP_ELO 
 from longtext import UNRANKED_HELP_END, UNRANKED_HELP_TIME, UNRANKED_HELP_MAIN
-
-log_queue = queue.Queue()
-queue_handler = logging.handlers.QueueHandler(log_queue)
-
-logger = logging.getLogger("bot")
-logger.setLevel(logging.INFO)
-logger.addHandler(queue_handler)
-
-file_handler = logging.FileHandler("unranked_callback.log", encoding="utf-8")
-
-listener = logging.handlers.QueueListener(
-    log_queue,
-    file_handler
-)
-
-listener.start()
-
-formatter = logging.Formatter(
-    "%(asctime)s | %(levelname)s | %(message)s"
-)
-file_handler.setFormatter(formatter)
 
 link_preview = LinkPreviewOptions(
     url=BANNER_OPTIONS[0],
