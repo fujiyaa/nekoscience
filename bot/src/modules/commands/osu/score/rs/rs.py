@@ -85,12 +85,14 @@ async def rs(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         msg = await try_send(send_score, update, score, user_id, local_session, message_id=0)
         
-        map_id=score.get('map').get('beatmap_id')
+        map_id = score.get('map').get('beatmap_id')
+        score_id = score.get('meta').get('score_id', 0)
         if msg:
             set_message_context(
                 msg, 
                 reply=False, 
-                map_id=map_id, 
+                map_id=map_id,
+                score_id=score_id, 
                 map_title=await get_beatmap_title_from_file(map_id),
                 mapper_username=await get_beatmap_creator_from_file(map_id),
                 origin_call_user_id=update.effective_user.id,

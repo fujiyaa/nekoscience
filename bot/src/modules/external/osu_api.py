@@ -688,6 +688,7 @@ async def score_to_schema(score, user_info):
             "error":            False,
         },
         "meta": {
+            "score_id":         score.get('id', 0),
             "created_at":       datetime.now().isoformat(),
             "calculated_at":    None,
             "version":          "03022026",         # !

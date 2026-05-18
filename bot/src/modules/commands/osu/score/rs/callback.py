@@ -181,12 +181,13 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         session["index"] = new_index
 
         map_id=entry.get('map').get('beatmap_id')
-
+        score_id = entry.get('meta').get('score_id', 0)
         if bot_msg:
             set_message_context(
                         bot_msg, 
                         reply=False, 
                         map_id=map_id,
+                        score_id=score_id,
                         map_title=await get_beatmap_title_from_file(map_id),
                         mapper_username=await get_beatmap_creator_from_file(map_id), 
                         origin_call_user_id=update.effective_user.id,

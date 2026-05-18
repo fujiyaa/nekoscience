@@ -142,6 +142,12 @@ def get_keyboard(
         keyboard = [            
             [
                 InlineKeyboardButton(
+                    "✳️ Создать",
+                    callback_data=with_owner(f"unranked_menu_create")
+                )
+            ],
+            [
+                InlineKeyboardButton(
                     "⏳ Мои игры",
                     callback_data=with_owner(f"unranked_menu_myactive")
                 ),

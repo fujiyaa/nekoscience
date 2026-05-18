@@ -5,9 +5,7 @@ BANNER_OPTIONS = [
     "https://i.ibb.co/LXLsx9HL/image-10.png",
 ]
 
-MAIN_MENU_TEXT = (
-    "<b>Главное меню игры.</b>"
-)
+MAIN_MENU_TEXT = ""
 
 MAIN_MENU_MYACTIVE_NONE = "У тебя нет активных игр."
 
