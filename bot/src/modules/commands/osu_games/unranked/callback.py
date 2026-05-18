@@ -20,7 +20,7 @@ from .actions_log import *
 from .locks import GLOBAL_LOCK
 
 from config import SUPPORT_STUB, MAX_TEXT_LENGTH
-from longtext import UNRANKED_HELP, UNRANKED_HELP_LINKS, UNRANKED_HELP_ELO 
+from longtext import UNRANKED_HELP, UNRANKED_HELP_LINKS, UNRANKED_HELP_ELO, UNRANKED_HELP_SUBMIT
 from longtext import UNRANKED_HELP_END, UNRANKED_HELP_TIME, UNRANKED_HELP_MAIN
 
 link_preview = LinkPreviewOptions(
@@ -301,6 +301,19 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
                 await query.edit_message_text(
                     UNRANKED_HELP_LINKS,
+                    parse_mode="HTML",
+                    reply_markup=reply_markup,
+                    link_preview_options=link_preview
+                )
+
+            elif subaction == "aboutsubmit":
+                reply_markup = get_keyboard(
+                        "main-help",
+                        owner_id=owner_id
+                    )
+
+                await query.edit_message_text(
+                    UNRANKED_HELP_SUBMIT,
                     parse_mode="HTML",
                     reply_markup=reply_markup,
                     link_preview_options=link_preview
@@ -987,7 +1000,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
                             raise StopTransaction(
                                 answer={
-                                    "text": "Отправь ссылку на скор чтобы использовать другой режим",
+                                    "text": "Используй СВОЙ скор как источник, чтобы переключить режим",
                                     "show_alert": True
                                 }
                             )

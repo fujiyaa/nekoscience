@@ -174,16 +174,16 @@ def get_keyboard(
     elif keyboard_type == "main-helpnested":
         keyboard = [
             [InlineKeyboardButton(
-                "Что такое unranked плей?",
+                "Об этой игре",
                 callback_data=with_owner(f"unranked_menu_aboutgame")
             )],
             [InlineKeyboardButton(
-                "Как работает рейтинг?",
-                callback_data=with_owner(f"unranked_menu_aboutelo")
+                "⚠️ Как создать раунд?",
+                callback_data=with_owner(f"unranked_menu_aboutcreation")
             )],
             [InlineKeyboardButton(
-                "❗️ Как создавать и отменять раунд?",
-                callback_data=with_owner(f"unranked_menu_aboutcreation")
+                "⚠️ Как сабмитнуть скор?",
+                callback_data=with_owner(f"unranked_menu_aboutsubmit")
             )],
             [InlineKeyboardButton(
                 "Два режима игры?",
@@ -192,7 +192,11 @@ def get_keyboard(
             [InlineKeyboardButton(
                 "Как работает таймер?",
                 callback_data=with_owner(f"unranked_menu_abouttime")
-            )],           
+            )],
+            [InlineKeyboardButton(
+                "Рейтинг? (подробно)",
+                callback_data=with_owner(f"unranked_menu_aboutelo")
+            )],
             [InlineKeyboardButton(
                 "⬅️ Назад",
                 callback_data=with_owner(f"unranked_menu_main")
