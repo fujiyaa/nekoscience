@@ -61,7 +61,7 @@ async def beatmap_audio(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                 
                     await safe_send_message(
                         update, 
-                        text=f"<code>Выбери карту...\n(или /simulate +ссылка)</code>", 
+                        text=f"<code>Выбери карту...\n(или /music +ссылка)</code>", 
                         reply_markup=get_context_keyboard(
                             message_context,
                             message_context_reply,
