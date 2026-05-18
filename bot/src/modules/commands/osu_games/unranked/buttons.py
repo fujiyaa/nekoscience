@@ -58,14 +58,14 @@ def get_keyboard(
                 CROSSCLIENT_OPTIONS[config.get('crossclient')],
                 callback_data=with_owner(f"unranked_switch_crossclient")
             )],            
-            [
+            [                
                 InlineKeyboardButton(
-                    "Помощь",
-                    callback_data=with_owner(f"unranked_help_display")
+                    "⬅️ Назад",
+                    callback_data=with_owner(f"unranked_menu_main")
                 ),
                 InlineKeyboardButton(
-                    "Удалить",
-                    callback_data=with_owner(f"unranked_round_donotcreate")
+                    "помощь",
+                    callback_data=with_owner(f"unranked_help_display")
                 ),
                 InlineKeyboardButton(
                     "✳️ Создать", 
@@ -142,8 +142,8 @@ def get_keyboard(
         keyboard = [            
             [
                 InlineKeyboardButton(
-                    "✳️ Создать",
-                    callback_data=with_owner(f"unranked_menu_create")
+                    "✳️ Создание",
+                    callback_data=with_owner(f"unranked_round_prepare")
                 )
             ],
             [

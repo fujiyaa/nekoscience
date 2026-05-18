@@ -3,6 +3,7 @@
 
 from contextlib import asynccontextmanager
 import traceback
+import html
 from telegram import Update, LinkPreviewOptions, MessageEntity
 from telegram.ext import ContextTypes
 
@@ -270,10 +271,15 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if subaction == "main":
                 rank = get_player_rank(data, osu_id)
                 rating_text = f"<b>{osu_name}</b> <i>@{tg_name}</i>   <b>🏆{current}</b>  (#{rank})"
+                intake_text = "<code>- создание: нет нового контекста</code>"
+                if intake:
+                    intake_text = f"<code>+ создание: из {intake['sent_type']} {intake['sent_id']}</code>"
+                
                 text = f"""
 {rating_text}
+<code>- Elo макс: {points.get('max')}</code>
 <code>- игр в процессе: {len(active_matches)}</code>
-<code>- мин/макс ELO: {points.get('min')}/{points.get('max')}</code>
+{intake_text}
 """
                 reply_markup = get_keyboard(
                         "main-menu",
@@ -717,7 +723,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         if intake["sent_type"] == 'score':
 
-            cached_entry =  load_score_file(intake['sent_id'])                          
+            cached_entry = load_score_file(intake['sent_id'])                          
 
             map_id = cached_entry.get('map').get('beatmap_id')
             
@@ -1111,8 +1117,108 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             }
                         )
                 
-                elif action == "round":  
-                    if subaction == "create":
+                elif action == "round":
+                    if subaction == "prepare":
+
+                        response = await read_file_neko(d_file)
+                        data = response.get("current", {})
+
+                        osu_id = str(osu_id)
+
+                        if osu_id not in data:                            
+                            logger.warning(f"[user {osu_id}] still unknown at this point: callback-{action}-{subaction}")
+                            raise StopTransaction(
+                                answer={
+                                    "text": "ошибка, попробуй еще раз...",
+                                    "show_alert": True
+                                }
+                            )
+
+                        user = data[osu_id]
+                        response = await read_file_neko(d_file)
+                        data = response.get("current", {})
+                        user = data[str(osu_id)]
+                        config = user.get("config")
+                        intake = user.get("intake")
+                        points = user.get("points")
+                        active_matches = user.get("active_matches")
+                        current = points.get("current")
+                        rank = get_player_rank(data, osu_id)
+                        osu, tg = user.get("osu"), user.get("telegram")     
+                        osu_name, osu_id = osu.get("username"), osu.get("id")
+                        tg_name, tg_id = tg.get("username"), tg.get("id")
+                        map_full = intake['map_full']
+
+                        if intake['sent_type'] == 'score':
+                            choice_text = f"<b>Противник должен побить:</b> {GOAL_OPTIONS[config.get('goal')]}: "
+                            choice_data = sent_options[config.get('goal')]
+                        else:
+                            choice_text = f"<b>Условие победы:</b> {GOAL_OPTIONS[config.get('goal')]}" 
+                            choice_data = ""
+
+                        if config.get('source') == 1:
+                            choice_text = f"<b>Условие победы:</b> {GOAL_OPTIONS[config.get('goal')]}" 
+                            choice_data = ""
+                        
+                        creation_text = f"<b>Создание раунда</b>"
+                        rating_text = f"<b>{osu_name}</b> (@{tg_name})   <b>🏆{current}</b>  <i>(#{rank})</i>"
+                        difficulty_text = f'<a href="https://osu.ppy.sh/b/{map_id}">{map_full} 🔗</a>'
+                        
+
+                        if len(active_matches) < 20:
+
+                            text = f"{rating_text}\n\n{creation_text}: {difficulty_text}\n\n{choice_text}{choice_data}"
+                            reply_markup = get_keyboard("main", config, intake, owner_id=tg_id)
+
+                            raise StopTransaction(                
+                                edit={
+                                    "text": text,
+                                    "reply_markup": reply_markup,
+                                    "link_preview_options": link_preview,
+                                    "parse_mode": "HTML"
+                                    
+                                }
+                            )
+                        
+                        else:                
+                            response = await read_file_neko(m_file)
+
+                            matches = response.get("current", {})
+
+                            matches_list = get_user_matches(
+                                matches,
+                                active_matches
+                            )
+
+                            text = "\n".join(matches_list)
+
+                            def tg_len(text: str) -> int:
+                                return len(text.encode("utf-16-le")) // 2
+                            
+                            entities = [
+                                MessageEntity(
+                                    type="expandable_blockquote",
+                                    offset=0,                     
+                                    length=tg_len(text)    
+                                )
+                            ]
+
+                            reply_markup = get_active_matches_keyboard(
+                                active_matches,
+                                matches,
+                                owner_id=tg_id
+                            )
+
+                            raise StopTransaction(                
+                                edit={                                    
+                                    "text": f"{text}\n{MAIN_MENU_MYACTIVE_LIMIT}",
+                                    "reply_markup": reply_markup,
+                                    "link_preview_options": link_preview,
+                                    "entities": entities
+                                }
+                            )
+                    
+                    elif subaction == "create":
 
                         response = await read_file_neko(m_file)
 

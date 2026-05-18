@@ -16,6 +16,7 @@ from ....systems.auth import check_osu_verified, get_osu_id
 from ....external.localapi import read_file_neko, insert_to_file_neko
 from ....external.osu_http import fetch_txt_beatmaps
 from ....external.osu_api import get_beatmap, get_score_by_id
+from ....actions.context import get_message_context
 from .buttons import *
 from .json_schema import construct_user
 from .options import *
@@ -115,8 +116,130 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
         message_text = update.message.text.strip()
         result = parse_osu_url(message_text)
 
-        # режим главного меню когда нет ссылок
+        # когда нет ссылок проверить контекст
         if result is None:
+
+            context_result = None
+
+            try:
+                context_score_ok = context_map_ok = False
+                message_context = get_message_context(update, reply=False)
+
+                # если нет то и не важно
+                if message_context:
+                    context_score_id = None
+
+                    context_score_id = message_context["metadata"].get("score_id")
+                    
+                    # может быть есть скор id
+                    if context_score_id:
+
+                        cached_entry =  await get_score_by_id(context_score_id)
+
+                        if not cached_entry:
+                            logger.warning(f"[context parse] cached_entry, id {context_score_id} failed")
+                        
+                        else:
+                            map_id = cached_entry.get('map').get('beatmap_id')
+                            map_full = cached_entry.get('map').get('beatmap_full')
+                            
+                            sent_mods = str(((cached_entry.get('osu_score') or {}).get('mods')) or "")
+                            
+                            sent_score_user_id = cached_entry.get('osu_score').get('user_id')
+
+                            if str(sent_score_user_id) == str(osu_id):                                
+                                context_score_ok = True                                
+
+                    # или может быть есть id карты
+                    if not context_score_id or (context_score_id and not context_score_ok):
+                        context_map_id = None
+
+                        context_map_id = message_context["metadata"].get("map_id")
+
+                        if context_map_id:
+                            maps_ids = []
+                            maps_ids.append(context_map_id)
+
+                            results, failed = await fetch_txt_beatmaps(maps_ids)
+
+                            map_data = await get_beatmap(context_map_id)
+                            
+                            beatmap = map_data
+                            beatmapset = map_data.get("beatmapset", {})
+
+                            map_id = map_data.get('id')
+                            map_full = f"{beatmapset.get('artist', '')} - {beatmapset.get('title', '')} [{beatmap.get('version', '')}]"
+
+                            sent_mods = ""
+
+                            if map_id: context_map_ok = True
+
+                    if context_score_ok or context_map_ok:
+                        if context_score_ok:
+                            context_result = {
+                                "sent_type": "score",
+                                "sent_id": int(context_score_id)
+                            }
+                        else:
+                            context_result = {
+                                "sent_type": "map",
+                                "sent_id": int(map_id)
+                            }
+
+                        async with transaction():
+                
+                            response = await read_file_neko(d_file)
+                            data = response.get("current", {})
+
+                            if osu_id not in data:
+                                data[osu_id] = construct_user(
+                                    osu_id, 
+                                    osu_name, 
+                                    tg_id,
+                                    tg_name,
+                                )
+                                await insert_to_file_neko(d_file, data)
+
+                                logger.info(f"[user {osu_id}] added new user")
+
+                            user = data[osu_id]
+                            active_matches = user.get("active_matches")
+                            config = user.get("config")
+                            points = user.get("points")
+                            current = points.get("current")
+                            rank = get_player_rank(data, osu_id)
+                            
+
+                            intake_new = {
+                                "sent_type": context_result['sent_type'],
+                                "sent_id": context_result['sent_id'],
+                                "map_full": html.escape(map_full),
+                                "sent_mods": sent_mods,
+                                "map_id": map_id,
+                                "temp_rank": rank
+                            }
+
+                            if context_result['sent_type'] == 'map':
+                                config['source'] = 1
+
+                            data[osu_id] = construct_user(
+                                osu_id, 
+                                osu_name, 
+                                tg_id,
+                                tg_name,
+                                points=points,
+                                config=config,
+                                intake=intake_new,                
+                                active_matches=active_matches,
+                            )
+                            await insert_to_file_neko(d_file, data)
+
+                            logger.info(f"[user {osu_id}] updated with new intake, type: {context_result['sent_type']}")
+
+            except Exception as e:
+                logger.warning(f"[context parse] failed: {e}")                        
+                pass
+
             async with transaction():
                 response = await read_file_neko(d_file)
                 data = response.get("current", {})
@@ -141,11 +264,17 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
                 rank = get_player_rank(data, osu_id)
                 rating_text = f"<b>{osu_name}</b> <i>@{tg_name}</i>   <b>🏆{current}</b>  (#{rank})"
+                intake_text = "<code>- создание: нет нового контекста</code>"
+                if context_result:
+                    intake_text = f"<code>+ создание: из {context_result['sent_type']} {context_result['sent_id']}</code>"
+                
                 text = f"""
-        {rating_text}
-        <code>- мин/макс ELO: {points.get('min')}/{points.get('max')}</code>
-        <code>- игр в процессе: {len(active_matches)}</code>
-        """
+{rating_text}
+<code>- Elo макс: {points.get('max')}</code>
+<code>- игр в процессе: {len(active_matches)}</code>
+{intake_text}
+        """                 
+                
 
                 reply_markup = get_keyboard(
                     "main-menu", 
@@ -164,7 +293,6 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         }
                     }
                 )
-
         else:
             if result["sent_type"] == 'score':            
 

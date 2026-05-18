@@ -88,7 +88,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 set_message_context(
                     bot_msg, 
                     reply=False, 
-                    map_id=map_id,
+                    mapset_id=map_id,
                     map_title=await get_beatmap_title_from_file(map_id),
                     mapper_username=await get_beatmap_creator_from_file(map_id),
                     origin_call_user_id=update.effective_user.id,
