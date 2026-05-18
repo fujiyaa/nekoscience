@@ -9,6 +9,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from ......external.osu_http import get_beatmap_title_from_file, get_beatmap_creator_from_file
+from ......external.osu_api import get_beatmap
 from ......actions.messages import safe_edit_query, safe_query_answer
 from ......actions.context import set_message_context
 from ......actions.messages import delete_message_after_delay
@@ -33,7 +34,17 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if uid_click != origin_uid:
             await safe_query_answer(query, text="Не твои кнопки")
             return
-        
+    
+    beatmap_data = await get_beatmap(beatmap_id)
+
+    if beatmap_data:
+        converted_mapset_id = (
+            beatmap_data.get("beatmapset_id")
+        )
+
+        if converted_mapset_id:
+            beatmap_id = converted_mapset_id
+    
     await safe_query_answer(query, show_alert=False)
   
     if action == "cancel":
