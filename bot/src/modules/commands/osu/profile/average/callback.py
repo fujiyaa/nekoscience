@@ -24,7 +24,7 @@ from .....systems.translations import (
     DEFAULT_SCORES_PROP as SP
 )
 
-
+ 
 async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         query = update.callback_query
@@ -289,9 +289,24 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if use_ids:
                 table = get_minmax_table(table_data, lang)
                 text=(f'{user_link}\n\n{table}')
+                text=(
+                    f'{user_link}\n'
+                    f'\n'
+                    f'{AT.get(scores_type)[lang]}  <b>{len(recent_scores)}</b>  '  
+                    f'{AT.get("plays")[lang]}:\n'
+                    f'\n'
+                    f'{table}'
+                )
             else:
                 table = get_average_table(table_data, lang)
-                text=(f'{user_link}\n\n<pre>{table}</pre>')
+                text=(
+                    f'{user_link}\n'
+                    f'\n'
+                    f'<code>{AT.get(scores_type)[lang]}</code>  <b>{len(recent_scores)}</b>  '  
+                    f'<code>{AT.get("plays")[lang]}:</code>\n'
+                    f'\n'
+                    f'<pre>{table}</pre>'
+                )
 
             await safe_edit_query(
                 query, 
