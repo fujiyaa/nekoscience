@@ -72,6 +72,8 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             "show_alert": True
                         }                            
                     )
+            else:
+                join_osu_id = str(join_osu_id)
             
             async with transaction():
                 response = await read_file_neko(d_file)                
