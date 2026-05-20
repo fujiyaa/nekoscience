@@ -78,6 +78,8 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 users = response.get("current", {})
 
                 if join_osu_id not in users:
+                    logger.info(f"[join_osu_id not in users] users: {users}")
+
                     tg_id = update.effective_user.id 
                     osu_name = await check_osu_verified(str(query.from_user.id))
                     tg_name = update.effective_user.username

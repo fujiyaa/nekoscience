@@ -146,10 +146,12 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             sent_mods = str(((cached_entry.get('osu_score') or {}).get('mods')) or "")
                             
                             sent_score_user_id = cached_entry.get('osu_score').get('user_id')
+                            sent_score_failed = bool(cached_entry.get('osu_score').get('failed'))
 
-                            if str(sent_score_user_id) == str(osu_id):                                
-                                context_score_ok = True                                
-
+                            if str(sent_score_user_id) == str(osu_id):
+                                if not sent_score_failed:
+                                    context_score_ok = True
+                                
                     # или может быть есть id карты
                     if not context_score_id or (context_score_id and not context_score_ok):
                         context_map_id = None
@@ -192,6 +194,8 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             data = response.get("current", {})
 
                             if osu_id not in data:
+                                logger.info(f"[osu_id not in data 1] data: {data}")
+
                                 data[osu_id] = construct_user(
                                     osu_id, 
                                     osu_name, 
@@ -245,6 +249,8 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 data = response.get("current", {})
 
                 if osu_id not in data:
+                    logger.info(f"[osu_id not in data 2] data: {data}")
+
                     data[osu_id] = construct_user(
                         osu_id, 
                         osu_name, 
@@ -308,6 +314,7 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 sent_mods = str(((cached_entry.get('osu_score') or {}).get('mods')) or "")
                 
                 sent_score_user_id = cached_entry.get('osu_score').get('user_id')
+                sent_score_failed = bool(cached_entry.get('osu_score').get('failed'))
                         
             else:
                 maps_ids = []
@@ -335,7 +342,18 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                     "parse_mode": "HTML"
                                 }
                             }
-                        )                    
+                        )
+                    if sent_score_failed:
+                        raise StopTransaction(                
+                            send={
+                                "method": "reply_text",
+                                "kwargs":{
+                                    "text": "<code>❌ Кажется этот скор с фейлом, мне нужен твой скор с прохождением всей карты!</code>",
+                                    "parse_mode": "HTML"
+                                }
+                            }
+                        )
+                    
                 
                 async with transaction():
                 
@@ -343,6 +361,8 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     data = response.get("current", {})
 
                     if osu_id not in data:
+                        logger.info(f"[osu_id not in data 3] data: {data}")
+
                         data[osu_id] = construct_user(
                             osu_id, 
                             osu_name, 
@@ -390,6 +410,7 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         )
                         await insert_to_file_neko(d_file, data)
 
+                        logger.info(f"[user {osu_id}] constructing again with inatke_new")
                         logger.info(f"[user {osu_id}] updated with new intake, type: {result['sent_type']}")
 
                         text = f"{rating_text}\n\n{creation_text}: {difficulty_text}"
@@ -406,7 +427,7 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                 }
                             }
                         )
-                    
+                   
                     else:                
                         response = await read_file_neko(m_file)
 
