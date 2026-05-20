@@ -37,11 +37,6 @@ def update_elo(rating_a, rating_b, result_a, k_factor=20):
     return round(new_rating_a), round(new_rating_b)
 
 def run_elo_tests():
-    """
-    Запускает серию тестов с разными сценариями матчей.
-    """
-
-    # Список тестовых сценариев
     test_scenarios = [
         # (рейтинг A, рейтинг B, результат A)
         (1000, 800, 1),
@@ -62,15 +57,12 @@ def run_elo_tests():
     for rating_a, rating_b, result_a in test_scenarios:
         print(f"{rating_a} vs {rating_b}, первый победил: {result_a}")
 
-        # Рассчитываем ожидаемые результаты
         expected_a = calculate_expected(rating_a, rating_b)
         expected_b = 1 - expected_a
-        # print(f"{expected_a:.3f} vs {expected_b:.3f} (ожидаемые результаты)")
+        print(f"{expected_a:.3f} vs {expected_b:.3f}")
 
-        # Обновляем рейтинги
         new_a, new_b = update_elo(rating_a, rating_b, result_a)
 
-        # Выводим изменения
         change_a = new_a - rating_a
         change_b = new_b - rating_b
         print(f"{new_a} ({change_a:+d}), {new_b} ({change_b:+d})")
