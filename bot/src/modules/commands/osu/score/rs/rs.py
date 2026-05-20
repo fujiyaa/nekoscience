@@ -15,6 +15,7 @@ from .....systems.auth import check_osu_verified
 from .....external.osu_api import get_user_scores
 from .....wrappers.score import send_score
 from .....actions.context import set_message_context
+from .....commands.osu_games.unranked.sumbit import submit
 from .buttons import get_keyboard
 import temp
 
@@ -118,6 +119,67 @@ async def rs(update: Update, context: ContextTypes.DEFAULT_TYPE):
             RS_BUTTONS_TIMEOUT,
             cleanup=lambda: user_sessions.pop(msg.message_id, None)
         )
+
+        match = {
+            "started_at": "2026-05-20T09:04:08.982298+00:00",   # НОВОЕ ПОЛЕ
+            "track": True,      # трекинг этого раунда (отвечать ли сообщением)
+            "submit_state": {                                             
+            "creator": False,
+            "member": True,
+            },
+            "submit_result": {                                             
+            "creator": 20.0, 
+            "member": 31.0
+            },                                              # НОВОЕ ПОЛЕ
+
+            "config": {
+            "crossclient": 0,
+            "goal": 0,
+            "mods": [],
+            "source": 1,
+            "time": 6
+            },
+            "created_at": 1778930985,    
+            "member": {
+            "osu_id": 11596989,
+            "osu_name": "Fujiya",
+            "tg_id": 1803166423,
+            "tg_name": "fujiya_sama"
+            },
+            "id": "115969891778930985",
+            "intake": {
+            "map_full": "Oratorio The World God Only Knows - God only knows -Secrets of the Goddess- [The World Guy Only Knows]",
+            "map_id": "4376986",
+            "sent_id": 4287518921,
+            "sent_mods": "DT+CL",
+            # "DA_values": {                # НОВОЕ ПОЛЕ
+            #     "circle_size": 3,
+            #     "approach_rate": 8.7, 
+            # },
+            "sent_type": "score",
+            "temp_rank": "1"
+            },
+            "creator": {
+            "osu_id": 26197609,
+            "osu_name": "foundbpm",
+            "tg_id": 7354740126,
+            "tg_name": "foundbpm"
+            },
+            "pending_joins": [],
+            "state": {
+            "finished": False,
+            "started": True,
+            "winner": None,
+            "elo_calculated": False        # НОВОЕ ПОЛЕ
+            }
+        }
+        # text = submit(score, match)
+        # if text is not None:
+        #     await try_send(
+        #         update.message.reply_text, 
+        #             f"`{text}`", 
+        #             parse_mode="Markdown"
+        #     )
 
     except Exception:
         traceback.print_exc()
