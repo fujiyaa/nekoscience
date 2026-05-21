@@ -21,7 +21,7 @@ from .locks import GLOBAL_LOCK
 
 from config import SUPPORT_STUB, MAX_TEXT_LENGTH
 from longtext import UNRANKED_HELP, UNRANKED_HELP_LINKS, UNRANKED_HELP_ELO, UNRANKED_HELP_SUBMIT
-from longtext import UNRANKED_HELP_END, UNRANKED_HELP_TIME, UNRANKED_HELP_MAIN
+from longtext import UNRANKED_HELP_END, UNRANKED_HELP_TIME, UNRANKED_HELP_MAIN, UNRANKED_TUTORIAL
 
 link_preview = LinkPreviewOptions(
     url=BANNER_OPTIONS[0],
@@ -526,6 +526,90 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 )
 
             return
+        
+        if action == "tutorial":
+
+            page = int(subaction)
+
+            if page > (len(UNRANKED_TUTORIAL)-1):
+                
+                async with transaction():
+
+                    response = await read_file_neko(d_file)
+                    data = response.get("current", {})
+                    user = data[str(osu_id)]
+                    config = user.get("config")
+                    intake = user.get("intake")
+                    points = user.get("points")
+                    meta = user.get("meta")
+                    active_matches = user.get("active_matches")
+                    current = points.get("current")
+                    rank = intake.get("temp_rank")
+                    osu, tg = user.get("osu"), user.get("telegram")     
+                    osu_name, osu_id = osu.get("username"), osu.get("id")
+                    tg_name, tg_id = tg.get("username"), tg.get("id")
+                    map_full = intake['map_full']
+
+                    rank = get_player_rank(data, osu_id)
+                    rating_text = f"<b>{osu_name}</b> <i>@{tg_name}</i>   <b>🏆{current}</b>  (#{rank})"
+                    intake_text = "<code>- создание: нет нового контекста</code>"
+                    if intake:
+                        intake_text = f"<code>+ создание: из {intake['sent_type']} {intake['sent_id']}</code>"
+                    
+                    text = f"""
+{rating_text}
+<code>- Elo макс: {points.get('max')}</code>
+<code>- игр в процессе: {len(active_matches)}</code>
+<code>- туториал завершен! (удачи короче)</code>
+{intake_text}
+        """
+                    meta['skip_tutorial'] = True
+
+                    data[str(osu_id)] = construct_user(
+                        osu_id,
+                        osu_name,
+                        tg_id,
+                        tg_name,
+                        points=points,
+                        config=config,
+                        intake=intake,
+                        active_matches=active_matches,
+                        meta=meta
+                    )
+
+                    await insert_to_file_neko(
+                        d_file,
+                        data
+                    )
+
+                    logger.info(f"[user {osu_id}] updated meta (skip_tutorial)")
+
+                    reply_markup = get_keyboard(
+                            "main-menu",
+                            owner_id=owner_id
+                        )
+
+                    raise StopTransaction(
+                        edit={
+                            "text": text,
+                            "link_preview_options": link_preview,
+                            "reply_markup":reply_markup,
+                            "parse_mode": "HTML"
+                        }
+                    )
+
+            else:
+                reply_markup = get_tutorial_keyboard(
+                    page=page,
+                    owner_id=owner_id
+                )
+
+                await query.edit_message_text(
+                    f"{UNRANKED_TUTORIAL[page]}",
+                    reply_markup=reply_markup,
+                    link_preview_options=link_preview,
+                    parse_mode="HTML"
+                )
 
         if action == "matchcancel":
 
@@ -540,6 +624,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 intake = user.get("intake")
                 points = user.get("points")
                 active_matches = user.get("active_matches")
+                meta = user.get("meta")
                 current = points.get("current")
                 rank = intake.get("temp_rank")
                 osu, tg = user.get("osu"), user.get("telegram")     
@@ -594,7 +679,8 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             points=enemy_user.get("points"),
                             config=enemy_user.get("config"),
                             intake=enemy_user.get("intake"),
-                            active_matches=enemy_active
+                            active_matches=enemy_active,
+                            meta=enemy_user.get("meta"),
                         )
 
                         logger.info(f"[user {member_osu_id}] removed match {match_id} (member)")
@@ -610,7 +696,8 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     points=points,
                     config=config,
                     intake=intake,
-                    active_matches=active_matches
+                    active_matches=active_matches,
+                    meta=meta
                 )
 
                 await insert_to_file_neko(
@@ -835,6 +922,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 config = user.get("config")
                 intake = user.get("intake")
                 points = user.get("points")
+                meta = user.get("meta")
                 active_matches = user.get("active_matches")
                 current = points.get("current")
                 rank = intake.get("temp_rank")
@@ -854,7 +942,8 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     points=points,
                     config=config,
                     intake=intake,
-                    active_matches=active_matches
+                    active_matches=active_matches,
+                    meta=meta
                 )
 
                 await insert_to_file_neko(m_file, matches)
@@ -951,6 +1040,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 config = user.get("config")
                 intake = user.get("intake")
                 points = user.get("points")
+                meta = user.get("meta")
                 active_matches = user.get("active_matches")
                 current = points.get("current")
                 rank = intake.get("temp_rank")
@@ -1044,6 +1134,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         config=config,
                         intake=intake,                
                         active_matches=active_matches,
+                        meta=meta
                     )
 
                     await insert_to_file_neko(d_file, data)
@@ -1112,6 +1203,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             config=config,
                             intake=intake,                
                             active_matches=active_matches,
+                            meta=meta,
                         )
 
                         await insert_to_file_neko(d_file, data)
@@ -1158,6 +1250,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         config = user.get("config")
                         intake = user.get("intake")
                         points = user.get("points")
+                        meta = user.get("meta")
                         active_matches = user.get("active_matches")
                         current = points.get("current")
                         rank = get_player_rank(data, osu_id)
@@ -1265,7 +1358,8 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             points=points,
                             config=config,
                             intake=intake,
-                            active_matches=active_matches
+                            active_matches=active_matches,
+                            meta=meta
                         )
 
                         await insert_to_file_neko(d_file, data)

@@ -13,13 +13,22 @@ def construct_user(
     points: dict = None,
     config: dict = None,
     intake: dict = None,
-    active_matches: list[str] | None = None
+    active_matches: list[str] | None = None,
+    meta: dict = None,
 ):  
     if points is None: points = {}
     if config is None: config = construct_config()
-    if intake is None: intake = {}
+    if intake is None: intake = {
+        "sent_type":                "map",
+        "sent_id":                  "929464",
+        "sent_mods":                "NM",
+        "map_full":                 "Карта не выбрана, может прочитать помощь?",
+        "map_id":                   "929464",
+        "temp_rank":                "0"
+    },
     if active_matches is None:
-        active_matches = []
+        active_matches = []    
+    if meta is None: meta = construct_meta()
 
     return {
         "osu":{
@@ -36,11 +45,7 @@ def construct_user(
             "current":              points.get("current", 1000),
             "min":                  points.get("min", 1000),
             "max":                  points.get("max", 1000)
-        },
-
-        "active_matches":               active_matches,
-
-        "config":                       config,     # construct_config
+        },        
 
         "intake": {
             "sent_type":                intake.get('sent_type'),
@@ -49,7 +54,21 @@ def construct_user(
             "map_full":                 str(intake.get('map_full')),
             "map_id":                   str(intake.get('map_id')),
             "temp_rank":                str(intake.get('temp_rank'))
-        }        
+        },
+
+        "meta":                         meta,
+        "active_matches":               active_matches,
+        "config":                       config,
+    }
+
+def construct_meta(
+    skip_tutorial: bool = False,
+    hide_help: bool = False
+):
+
+    return {
+        "skip_tutorial": skip_tutorial,
+        "hide_help": hide_help
     }
 
 def construct_config(
@@ -57,7 +76,7 @@ def construct_config(
     goal: int = 0,
     time: int = 0,
     mods: list | None = None,
-    crossclient: int = 0    
+    crossclient: int = 0
 ):    
     if mods is None:
         mods = []

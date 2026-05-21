@@ -6,6 +6,7 @@ from math import ceil
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 from .options import *
+from longtext import UNRANKED_TUTORIAL
 
 
 
@@ -215,7 +216,7 @@ def get_keyboard(
                 "⬅️ Назад",
                 callback_data=with_owner(f"unranked_menu_main")
             )]            
-        ]    
+        ]
     else: print(f"unknown keyboard type: {keyboard_type}")
    
 
@@ -357,4 +358,51 @@ def get_pending_join_keyboard(
                 )
             ]
         ]
+    return InlineKeyboardMarkup(keyboard)
+
+
+def get_tutorial_keyboard(
+    page: int,
+    owner_id: int
+):
+    def with_owner(cb_data: str) -> str:
+        if owner_id is not None:
+            return f"{cb_data}:{owner_id}"
+        return cb_data
+    
+    if page == 0:
+        keyboard = [
+            [                
+                InlineKeyboardButton(
+                    "➡️ Начать обучение",
+                    callback_data=with_owner(f"unranked_tutorial_{page+1}")
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    "✖️ Пропустить",
+                    callback_data=with_owner(f"unranked_tutorial_67")
+                )
+            ],
+        ]
+    elif page < (len(UNRANKED_TUTORIAL)):
+        keyboard = [
+            [                
+                InlineKeyboardButton(
+                    "➡️ Дальше",
+                    callback_data=with_owner(f"unranked_tutorial_{page+1}")
+                )
+            ]
+        ]
+    else:
+        keyboard = [
+            [                
+                InlineKeyboardButton(
+                    "✅ Закончить обучение",
+                    callback_data=with_owner(f"unranked_tutorial_67")
+                )
+            ]
+        ]
+    
+
     return InlineKeyboardMarkup(keyboard)

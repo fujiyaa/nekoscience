@@ -212,6 +212,7 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             points = user.get("points")
                             current = points.get("current")
                             rank = get_player_rank(data, osu_id)
+                            meta = user.get("meta")
                             
 
                             intake_new = {
@@ -235,6 +236,7 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                 config=config,
                                 intake=intake_new,                
                                 active_matches=active_matches,
+                                meta=meta
                             )
                             await insert_to_file_neko(d_file, data)
 
@@ -264,41 +266,63 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 user = data[osu_id]
                 config = user.get("config")
                 points = user.get("points")
+                meta = user.get("meta", {})
                 current = points.get("current")
                 active_matches = user.get("active_matches")
-                rank = get_player_rank(data, osu_id)
 
-                rank = get_player_rank(data, osu_id)
-                rating_text = f"<b>{osu_name}</b> <i>@{tg_name}</i>   <b>🏆{current}</b>  (#{rank})"
-                intake_text = "<code>- создание: нет нового контекста</code>"
-                if context_result:
-                    intake_text = f"<code>+ создание: из {context_result['sent_type']} {context_result['sent_id']}</code>"
-                
-                text = f"""
+                skip = meta.get("skip_tutorial")
+                if skip:
+
+                    rank = get_player_rank(data, osu_id)
+
+                    rating_text = f"<b>{osu_name}</b> <i>@{tg_name}</i>   <b>🏆{current}</b>  (#{rank})"
+                    intake_text = "<code>- создание: нет нового контекста</code>"
+                    if context_result:
+                        intake_text = f"<code>+ создание: из {context_result['sent_type']} {context_result['sent_id']}</code>"
+                    
+                    text = f"""
 {rating_text}
 <code>- Elo макс: {points.get('max')}</code>
 <code>- игр в процессе: {len(active_matches)}</code>
 {intake_text}
-        """                 
-                
+            """                 
+                    
 
-                reply_markup = get_keyboard(
-                    "main-menu", 
-                    config, 
-                    owner_id=tg_id
-                )
+                    reply_markup = get_keyboard(
+                        "main-menu", 
+                        config, 
+                        owner_id=tg_id
+                    )
 
-                raise StopTransaction(                
-                    send={
-                        "method": "reply_text",
-                        "kwargs":{
-                            "text": text,
-                            "parse_mode": "HTML",
-                            "reply_markup": reply_markup,
-                            "link_preview_options": link_preview
+                    raise StopTransaction(                
+                        send={
+                            "method": "reply_text",
+                            "kwargs":{
+                                "text": text,
+                                "parse_mode": "HTML",
+                                "reply_markup": reply_markup,
+                                "link_preview_options": link_preview
+                            }
                         }
-                    }
-                )
+                    )
+                else:
+                    page = 0
+                    reply_markup = get_tutorial_keyboard(
+                        page=page,
+                        owner_id=tg_id
+                    )
+
+                    raise StopTransaction(                
+                        send={
+                            "method": "reply_text",
+                            "kwargs":{
+                                "text": f"{UNRANKED_TUTORIAL[page]}",
+                                "parse_mode": "HTML",
+                                "reply_markup": reply_markup,
+                                "link_preview_options": link_preview
+                            }
+                        }
+                    )
         else:
             if result["sent_type"] == 'score':            
 
@@ -379,6 +403,7 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     points = user.get("points")
                     current = points.get("current")
                     rank = get_player_rank(data, osu_id)
+                    meta = user.get("meta")
 
                     creation_text = f"<b>Создание раунда</b>"
                     rating_text = f"<b>{osu_name}</b> (@{tg_name})   <b>🏆{current}</b>  <i>(#{rank})</i>"
@@ -407,6 +432,7 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             config=config,
                             intake=intake_new,                
                             active_matches=active_matches,
+                            meta=meta
                         )
                         await insert_to_file_neko(d_file, data)
 
