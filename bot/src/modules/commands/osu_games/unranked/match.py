@@ -2,6 +2,8 @@
 
 
 import time
+from ....external.localapi import read_file_neko
+from .options import *
 
 
 
@@ -80,3 +82,21 @@ def get_user_matches(
         result.append(format_match_title(match_id, match))
 
     return result
+
+async def find_matches_by_user(user_id: str):
+    found = []
+   
+    response = await read_file_neko(m_file)
+    matches = response.get("current", {})
+
+    for _match_id, match in matches.items():
+        creator = match.get("creator", {})
+        member = match.get("member", {})
+
+        is_creator = str(creator.get("osu_id")) == user_id
+        is_member = str(member.get("osu_id")) == user_id        
+
+        if is_creator or is_member:
+            found.append(match)
+
+    return found

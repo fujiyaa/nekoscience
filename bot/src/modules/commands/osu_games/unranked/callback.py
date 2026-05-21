@@ -3,9 +3,9 @@
 
 from contextlib import asynccontextmanager
 import traceback
-import html
 from telegram import Update, LinkPreviewOptions, MessageEntity
 from telegram.ext import ContextTypes
+from datetime import datetime, timezone
 
 from ....actions.messages import safe_query_answer
 from ....systems.json_files import load_score_file
@@ -763,8 +763,24 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             map_id = intake.get('map_id')
             map_full = intake.get('map_full')
 
-            some_mods = config.get("mods", [])
+            if config['source'] == 1:
+                some_mods = config.get("mods", [])
+            else:
+                some_mods = intake.get("sent_mods", [])
+            
             mods_text = "".join(some_mods) if some_mods else "нет"
+
+            DA_text = ""
+            if config['source'] == 1:
+                some_mods = config.get("mods", [])
+            else:
+                some_mods = intake.get("sent_mods", [])
+                DA_vals = intake.get("DA_values")
+
+                if DA_vals is not None:
+                    DA_text += "\n"
+                    for item in DA_vals:
+                        DA_text += f"<code>- {item}: {DA_vals[item]}</code>\n"
 
             goal_text = GOAL_OPTIONS[config.get('goal')]
             time_text = TIME_OPTIONS[config.get('time')]
@@ -786,7 +802,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 <b>Условие победы:</b> {goal_text}
  {crossclient_text}, {time_text}
 
-<b>Моды:</b> {mods_text},
+<b>Моды:</b> {mods_text}{DA_text}
 <b>Карта:</b> <a href="https://osu.ppy.sh/b/{map_id}">{map_full} 🔗</a>
 
 <i>{cancel_text}</i>
@@ -945,6 +961,9 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     active_matches=active_matches,
                     meta=meta
                 )
+
+                match['started_at'] = datetime.now(timezone.utc).isoformat()
+                match['state']['started'] = True
 
                 await insert_to_file_neko(m_file, matches)
 
@@ -1339,6 +1358,11 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             config=config,
                             intake=intake,
                         )
+
+                        if config['source'] == 0:
+                            match_data['submit_state']['creator'] = True
+                            match_data['submit_result']['creator'] = float(sent_options[config.get('goal')])
+
                         short_id = match_id[-5:]
 
                         matches[match_id] = match_data
@@ -1352,7 +1376,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
                         
                         # пресет конфига из интейка перед тем как создать меню create
-                        if intake['sent_type'] == 'map':  
+                        if intake['sent_type'] == 'map':
                             config['source'] = 1
                         try:
                             if config.get('source') == 0:
@@ -1386,8 +1410,20 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             match_id,
                             owner_id
                         )
+                         
+                        DA_text = ""
+                        if config['source'] == 1:
+                            some_mods = config.get("mods", [])
+                        else:
+                            some_mods = intake.get("sent_mods", [])
+                            DA_vals = intake.get("DA_values")
 
-                        some_mods = config.get("mods", [])
+                            if DA_vals is not None:
+                                DA_text += "\n"
+                                for item in DA_vals:
+                                    DA_text += f"<code>- {item}: {DA_vals[item]}</code>\n"
+
+
                         mods_text = "".join(some_mods) if some_mods else "нет"
 
                         goal_text = GOAL_OPTIONS[config.get('goal')]
@@ -1403,7 +1439,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 <b>Условие победы:</b> {goal_text}
 {crossclient_text}, {time_text}
 
-<b>Моды:</b> {mods_text},
+<b>Моды:</b> {mods_text}{DA_text}
 <b>Карта:</b> <a href="https://osu.ppy.sh/b/{map_id}">{map_full} 🔗</a>"""
                         
                     elif subaction == "hide":

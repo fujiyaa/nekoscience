@@ -1,5 +1,13 @@
+
+
 import os, json
 from datetime import datetime, timedelta, timezone
+from .match import find_matches_by_user
+
+from contextlib import asynccontextmanager
+from ....external.localapi import read_file_neko, insert_to_file_neko
+from .options import *
+from .locks import GLOBAL_LOCK
 
 SCORES_DIR = 'E:/fa/nekoscience/bot/src/scores_v4'
 TIME_OPTIONS = [1, 2, 3, 6, 12, 24, 48]
@@ -11,6 +19,11 @@ GOAL_OPTIONS = [
     "❌ Миссы",
     "🔗 Комбо"
 ]
+
+@asynccontextmanager
+async def transaction():
+    async with GLOBAL_LOCK:
+        yield
 
 def get_score_path(score_id: str) -> str:
     return os.path.join(SCORES_DIR, f"{score_id}.json")
@@ -60,7 +73,8 @@ class CancelTryFinish(Exception):
         self.forward_list_back = forward_list_back
         self.finished = finished
 
-def submit(cached_entry: dict | None = None, match_entry: dict | None = None) -> str | None:
+async def submit(cached_entry: dict | None = None, match_entry: dict | None = None) -> str | None:
+    
     try:       
         incorrections_list = []
         # если пустой то PASS в конце
@@ -178,8 +192,8 @@ def submit(cached_entry: dict | None = None, match_entry: dict | None = None) ->
                 print(f'[submit] score_mods is None, should be str')
                 return
         
-        match_source_is_score = match_config.get('source')
-        if match_source_is_score:
+        match_source = match_config.get('source')
+        if match_source == 0:
             match_mods = match_intake.get('sent_mods')
             if match_mods is None:
                 print(f'[submit] match_mods is None, should be str')
@@ -221,7 +235,7 @@ def submit(cached_entry: dict | None = None, match_entry: dict | None = None) ->
         if score_client is None:
             print(f'[submit] score_client is None')
             return
-        if bool(score_client) != bool(match_client):
+        if bool(score_client) == bool(match_client):
             print(f'[submit] clients does not match')
             incorrections_list.append(f'Клиент: должен быть {CROSSCLIENT_OPTIONS[match_client]}')
         
@@ -242,7 +256,7 @@ def submit(cached_entry: dict | None = None, match_entry: dict | None = None) ->
         elif match_goal == 1:
             score_goal_data = cached_entry.get('osu_score', {}).get('score_legacy')
         elif match_goal == 2:
-            score_goal_data = cached_entry.get('osu_score', {}).get('accuracy')
+            score_goal_data = cached_entry.get('osu_score', {}).get('accuracy')*100
         elif match_goal == 3:
             score_goal_data = cached_entry.get('osu_score', {}).get('count_miss')
         elif match_goal == 4:
@@ -268,9 +282,72 @@ def submit(cached_entry: dict | None = None, match_entry: dict | None = None) ->
 
             # считать рейтинги
             if match_finished:
-                match_entry['state']['finished'] = True
+                match_entry['state']['finished'] = True                
 
-                ratings = process_elo(match_entry)
+                users = [
+                    creator_osu_id,
+                    member_osu_id
+                ]                
+
+                response = await read_file_neko(d_file)
+                data = response.get("current", {})
+
+                for osu_id in users:
+                    user = data.get(str(osu_id))
+
+                    if not user:
+                        print(f'[submit] user not found: {osu_id}') 
+                        continue
+
+                    user = data[str(osu_id)]
+                    points = user.get("points")                    
+              
+                    if str(osu_id) == str(creator_osu_id):
+                        creator_old_elo = points['current']  
+                    else:
+                        member_old_elo = points['current']
+
+                print(f"{creator_old_elo}, {member_old_elo}")
+                ratings = process_elo(creator_old_elo, member_old_elo, match_entry)
+
+                for osu_id in users:
+                    user = data.get(str(osu_id))
+
+                    if not user:
+                        print(f'[submit] user not found: {osu_id}') 
+                        continue
+
+                    user = data[str(osu_id)]
+                    config = user.get("config")
+                    intake = user.get("intake")
+                    points = user.get("points")
+                    active_matches = user.get("active_matches")
+                    meta = user.get("meta")
+                    current = points.get("current")
+                    rank = intake.get("temp_rank")
+                    osu, tg = user.get("osu"), user.get("telegram")     
+                    osu_name, osu_id = osu.get("username"), osu.get("id")
+                    tg_name, tg_id = tg.get("username"), tg.get("id")
+                    map_full = intake['map_full']
+
+                    response = await read_file_neko(m_file)
+                    matches = response.get("current", {})
+                    match = matches.get(match_entry['id'])
+                    
+              
+                    if str(osu_id) == str(creator_osu_id):
+                        new_elo = ratings['creator_elo_new']
+                    else:
+                        new_elo = ratings['member_elo_new']
+
+                    points['current'] = new_elo
+
+                    print(f'[submit] {osu_id} -> {new_elo}')
+
+                await insert_to_file_neko(d_file, data)    
+
+
+
 
                 if ratings is not None:
                     print('[submit] new ratings calculated')
@@ -284,14 +361,9 @@ def submit(cached_entry: dict | None = None, match_entry: dict | None = None) ->
                 else:
                     ratings_text = 'ошибка при рассчете рейтинга'
 
-                    print('[submit] error in ratings calculation')
+                    print('[submit] error in ratings calculation')           
 
 
-            
-
-            # сохранить!!!!!
-            ################## FIXME
-            # # #  #
 
 
             text = ''
@@ -427,19 +499,16 @@ def match_try_finish(match_entry: dict | None = None):
         print(e)
         return [], False
     
-def process_elo(match_entry: dict | None = None):    
+def process_elo(creator_elo: int, member_elo: int, match_entry: dict | None = None):    
     # таймер должен быть проверен заранее
     # match_entry должен быть проверен
     try:
         # стейт раунда
         match_state = match_entry.get('state')
-        if not match_state['elo_calculated']:
+        if not match_state['elo_calculated']:            
             
-            # хз получить elo двух игроков 
-            # допустим 1250 и 1014
-            
-            creator_elo = 1250 
-            member_elo = 1014
+            creator_elo = int(creator_elo)
+            member_elo = int(member_elo)
             
             ending = match_entry['state']['winner']
             if ending == 'creator':
@@ -563,3 +632,41 @@ def update_elo(rating_a, rating_b, result_a, k_factor=20):
 # maybe_text = submit(cached_entry, match)
 # if maybe_text is not None:
 #     print(maybe_text)
+
+async def submit_all(cached_entry: dict | None = None) -> str | None:
+
+    if not none_check(cached_entry, 'cached_entry'): return
+
+    try:        
+        user_id = cached_entry.get('osu_score', {}).get('user_id')
+        
+        if user_id is None: return
+
+        user_id = str(user_id)
+
+        async with transaction():
+
+            matches = await find_matches_by_user(user_id)
+
+            if matches is None:
+                return
+            
+            if len(matches) < 1:
+                return
+
+            text_info = ""        
+            for item in matches:
+                text = await submit(cached_entry, item)
+                if text is not None:
+                    text_info += f"[{item['id'][-5:]}] "
+                    text_info += text
+                    text_info += "\n"
+
+            if text_info == "": 
+                return
+            else:
+                return text_info
+
+    except Exception as e:
+        print(e)
+        pass

@@ -26,7 +26,7 @@ def construct_user(
         "map_id":                   "929464",
         "temp_rank":                "0",
         "DA_values":                None
-    },
+    }
     if active_matches is None:
         active_matches = []    
     if meta is None: meta = construct_meta()
@@ -54,7 +54,8 @@ def construct_user(
             "sent_mods":                str(intake.get('sent_mods')),
             "map_full":                 str(intake.get('map_full')),
             "map_id":                   str(intake.get('map_id')),
-            "temp_rank":                str(intake.get('temp_rank'))
+            "temp_rank":                str(intake.get('temp_rank')),
+            "DA_values":                intake.get('DA_values') or None
         },
 
         "meta":                         meta,

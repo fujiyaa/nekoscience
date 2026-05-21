@@ -417,7 +417,7 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     meta = user.get("meta")
 
                     creation_text = f"<b>Создание раунда</b>"
-                    rating_text = f"<b>{osu_name}</b> (@{tg_name})   <b>🏆{current}</b>  <i>(#{rank})</i>"
+                    rating_text = f"<b>{osu_name}</b> <i>@{tg_name}</i>   <b>🏆{current}</b>  <i>(#{rank})</i>"
                     difficulty_text = f'<a href="https://osu.ppy.sh/b/{map_id}">{html.escape(map_full)} 🔗</a>'
                     
                     if len(active_matches) < 20:
