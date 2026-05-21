@@ -344,6 +344,8 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 
                 sent_score_user_id = cached_entry.get('osu_score').get('user_id')
                 sent_score_failed = bool(cached_entry.get('osu_score').get('failed'))
+
+                sent_client_lazer = bool(cached_entry.get('state').get('lazer'))
                 
                 DA_values = cached_entry.get('lazer_data', {}).get('DA_values')
                 if DA_values == {}: DA_values = None
@@ -385,7 +387,7 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                     "parse_mode": "HTML"
                                 }
                             }
-                        )
+                        )                                   
                     
                 
                 async with transaction():
@@ -430,8 +432,21 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             "DA_values": DA_values,
                         }
 
+                        
+                        # пресет конфига из интейка перед тем как создать меню create
                         if result['sent_type'] == 'map':
                             config['source'] = 1
+                        try:
+                            if config.get('source') == 0:
+
+                                if sent_client_lazer:
+                                    config['crossclient'] = 0
+                                else: 
+                                    config['crossclient'] = 1
+                        except:
+                            logger.warning(f"[user {osu_id}] has config source-0 and sent_client_x errored out (pass)")
+                            pass
+
 
                         data[osu_id] = construct_user(
                             osu_id, 

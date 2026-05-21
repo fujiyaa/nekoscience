@@ -1350,6 +1350,22 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         if match_id not in active_matches:
                             active_matches.append(match_id)
 
+                        
+                        # пресет конфига из интейка перед тем как создать меню create
+                        if intake['sent_type'] == 'map':  
+                            config['source'] = 1
+                        try:
+                            if config.get('source') == 0:
+
+                                if sent_client_lazer:
+                                    config['crossclient'] = 0
+                                else: 
+                                    config['crossclient'] = 1
+                        except:
+                            logger.warning(f"[user {osu_id}] has config source-0 and sent_client_x errored out (pass)")
+                            pass
+
+
                         data[str(osu_id)] = construct_user(
                             osu_id,
                             osu_name,
