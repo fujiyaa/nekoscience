@@ -123,6 +123,7 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             try:
                 context_score_ok = context_map_ok = False
+                DA_values = None
                 message_context = get_message_context(update, reply=False)
 
                 # если нет то и не важно
@@ -151,6 +152,9 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             if str(sent_score_user_id) == str(osu_id):
                                 if not sent_score_failed:
                                     context_score_ok = True
+
+                                    DA_values = cached_entry.get('lazer_data', {}).get('DA_values')
+                                    if DA_values == {}: DA_values = None
                                 
                     # или может быть есть id карты
                     if not context_score_id or (context_score_id and not context_score_ok):
@@ -221,7 +225,8 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                 "map_full": html.escape(map_full),
                                 "sent_mods": sent_mods,
                                 "map_id": map_id,
-                                "temp_rank": rank
+                                "temp_rank": rank,
+                                "DA_values": DA_values,
                             }
 
                             if context_result['sent_type'] == 'map':
@@ -339,6 +344,9 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 
                 sent_score_user_id = cached_entry.get('osu_score').get('user_id')
                 sent_score_failed = bool(cached_entry.get('osu_score').get('failed'))
+                
+                DA_values = cached_entry.get('lazer_data', {}).get('DA_values')
+                if DA_values == {}: DA_values = None
                         
             else:
                 maps_ids = []
@@ -355,6 +363,7 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 map_full = f"{beatmapset.get('artist', '')} - {beatmapset.get('title', '')} [{beatmap.get('version', '')}]"
 
                 sent_mods = ""
+                DA_values = None
 
                 if result["sent_type"] == 'score':
                     if str(sent_score_user_id) != str(osu_id):
@@ -417,7 +426,8 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             "map_full": html.escape(map_full),
                             "sent_mods": sent_mods,
                             "map_id": map_id,
-                            "temp_rank": rank
+                            "temp_rank": rank,
+                            "DA_values": DA_values,
                         }
 
                         if result['sent_type'] == 'map':

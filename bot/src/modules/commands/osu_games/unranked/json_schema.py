@@ -24,7 +24,8 @@ def construct_user(
         "sent_mods":                "NM",
         "map_full":                 "Карта не выбрана, может прочитать помощь?",
         "map_id":                   "929464",
-        "temp_rank":                "0"
+        "temp_rank":                "0",
+        "DA_values":                None
     },
     if active_matches is None:
         active_matches = []    
@@ -102,12 +103,24 @@ def construct_match(
     return match_id, {
         "id": match_id,
 
+        "track": True,
         "created_at": timestamp,
+        "started_at": None,
+
+        "submit_state": {                                             
+            "creator": False,
+            "member": False,
+        },
+        "submit_result": {                                             
+            "creator": 0.0, 
+            "member": 0.0
+        },
 
         "state": {
             "started": False,
             "finished": False,
-            "winner": None
+            "winner": None,
+            "elo_calculated": False
         },
 
         "config": config,
