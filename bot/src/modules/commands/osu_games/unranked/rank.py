@@ -6,7 +6,7 @@ def get_player_rank(data: dict, osu_id: str) -> int:
 
     ranking = sorted(
         (
-            (str(uid), int(user.get("v1", {}).get("points", {}).get("current", 0)))
+            (str(uid), int(user.get("points", {}).get("current", 0)))
             for uid, user in data.items()
         ),
         key=lambda x: x[1],
