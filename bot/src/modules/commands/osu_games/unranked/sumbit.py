@@ -3,12 +3,13 @@
 
 from datetime import datetime, timedelta, timezone
 
-from ....external.localapi import read_file_neko, insert_to_file_neko
+from ....external.localapi import read_file_neko, insert_to_file_neko, remove_from_file_neko
 from .elo import process_elo
 from .transaction import transaction
 from .match import find_matches_by_user
 from .utils import *
 from .exceptions import *
+from .elo import update_elo_with_minmax
 
 from .options import d_file, m_file
 TIME_OPTIONS = [1, 2, 3, 6, 12, 24, 48]
@@ -237,9 +238,24 @@ async def submit(cached_entry: dict | None = None, match_entry: dict | None = No
             # здесь сразу нужно завершать раунд, возможно
             finish_list, match_finished = match_try_finish(match_entry)
 
+
+            response = await read_file_neko(m_file)            
+            matches = response.get("current", {})
+
+            match = matches.get(match_entry['id'])
+            match_id = match_entry['id']
+
+            
+            match['submit_state'][role] = True
+            match['submit_result'][role] = float(score_goal_data)
+            
+
             # считать рейтинги
             if match_finished:
-                match_entry['state']['finished'] = True                
+                match_entry['state']['finished'] = True
+
+                match['state']['finished'] = True
+                match['state']['winner'] = match_entry['state']['winner']
 
                 users = [
                     creator_osu_id,
@@ -264,8 +280,11 @@ async def submit(cached_entry: dict | None = None, match_entry: dict | None = No
                     else:
                         member_old_elo = points['current']
 
-                print(f"{creator_old_elo}, {member_old_elo}")
                 ratings = process_elo(creator_old_elo, member_old_elo, match_entry)
+                
+                match['state']['elo_calculated'] = True
+                match['track'] = False
+
 
                 for osu_id in users:
                     user = data.get(str(osu_id))
@@ -275,36 +294,28 @@ async def submit(cached_entry: dict | None = None, match_entry: dict | None = No
                         continue
 
                     user = data[str(osu_id)]
-                    config = user.get("config")
-                    intake = user.get("intake")
                     points = user.get("points")
                     active_matches = user.get("active_matches")
-                    meta = user.get("meta")
-                    current = points.get("current")
-                    rank = intake.get("temp_rank")
                     osu, tg = user.get("osu"), user.get("telegram")     
                     osu_name, osu_id = osu.get("username"), osu.get("id")
-                    tg_name, tg_id = tg.get("username"), tg.get("id")
-                    map_full = intake['map_full']
 
-                    response = await read_file_neko(m_file)
-                    matches = response.get("current", {})
-                    match = matches.get(match_entry['id'])
-                    
+
+                    if match_id in active_matches:
+                        active_matches.remove(match_id)                   
+
               
                     if str(osu_id) == str(creator_osu_id):
                         new_elo = ratings['creator_elo_new']
                     else:
                         new_elo = ratings['member_elo_new']
 
-                    points['current'] = new_elo
+                    update_elo_with_minmax(points, new_elo)
 
-                    print(f'[submit] {osu_id} -> {new_elo}')
+                    print(f'[submit] {osu_id} -> {new_elo}')                    
+
 
                 await insert_to_file_neko(d_file, data)    
-
-
-
+              
 
                 if ratings is not None:
                     print('[submit] new ratings calculated')
@@ -318,9 +329,15 @@ async def submit(cached_entry: dict | None = None, match_entry: dict | None = No
                 else:
                     ratings_text = 'ошибка при рассчете рейтинга'
 
-                    print('[submit] error in ratings calculation')           
+                    print('[submit] error in ratings calculation')
+                    
 
+            await remove_from_file_neko(
+                m_file,
+                [match_id]
+            )
 
+            print(f"[match {match_id}] deleted")
 
 
             text = ''

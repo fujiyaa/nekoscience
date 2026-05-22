@@ -42,10 +42,17 @@ CROSSCLIENT_OPTIONS = [
     "🔸Стейбл клиент"
 ]
 
-MOD_LAYOUT = [
+MOD_LAYOUT_STABLE = [
+    [   "EZ",   "NF",   "HT",   None,   None,   "FM"],
+    [   "HR",   "HD",   "DT",   "NC",   None,   None],
+    [   "SO",   "FL",   None,   None,   None, "RESET"],
+    ["⬅️ Назад"]
+]
+
+MOD_LAYOUT_LAZER = [
     [   "EZ",   "NF",   "HT",   None,   None,   "FM"],
     [   "HR",   "HD",   "DT",   "NC",   None,   "CL"],
-    [   "SO",   "FL",   "RX",   "AP",   None,   "RESET"],
+    [   "SO",   "FL",   "RX",   "AP",   None, "RESET"],
     ["⬅️ Назад"]
 ]
 

@@ -84,6 +84,14 @@ def get_keyboard(
     elif keyboard_type == "mods":
         selected_mods = config.get("mods", [])
 
+        # FIXME на будущее возможно
+        # if config.get('crossclient') == 1:
+        #     MOD_LAYOUT = MOD_LAYOUT_STABLE
+        # else:
+        #     MOD_LAYOUT = MOD_LAYOUT_LAZER
+
+        MOD_LAYOUT = MOD_LAYOUT_LAZER
+
         keyboard = []
 
         for layout_row in MOD_LAYOUT:

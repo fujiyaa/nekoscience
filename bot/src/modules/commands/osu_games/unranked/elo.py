@@ -104,5 +104,20 @@ def process_elo(creator_elo: int, member_elo: int, match_entry: dict | None = No
         print(e)        
         return None
 
+
+def update_elo_with_minmax(points: dict, new_elo: int | float) -> dict:
+    if points is None:
+        return {}
+
+    current_min = points.get('min', new_elo)
+    current_max = points.get('max', new_elo)
+
+    points['current'] = new_elo
+    points['min'] = min(current_min, new_elo)
+    points['max'] = max(current_max, new_elo)
+
+    return points
+
+
 if __name__ == "__main__":
     run_elo_tests()

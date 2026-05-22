@@ -120,13 +120,17 @@ async def rs(update: Update, context: ContextTypes.DEFAULT_TYPE):
             cleanup=lambda: user_sessions.pop(msg.message_id, None)
         )        
         
-        # text = await submit_all(score)
-        # if text is not None:
-        #     await try_send(
-        #         update.message.reply_text, 
-        #             f"`{text}`", 
-        #             parse_mode="Markdown"
-        #     )
+        if str(msg.chat.id) == "-1003999493820" or str(msg.chat.id) == "-1002502301063" or str(msg.chat.id) == "1803166423":
+            text = await submit_all(score)
+            if text is not None:
+                await try_send(
+                    update.message.reply_text, 
+                        f"`{text}`", 
+                        parse_mode="Markdown"
+                )
+        else:
+            print(msg.chat.id)
+            print('forbidden chat')
 
     except Exception:
         traceback.print_exc()

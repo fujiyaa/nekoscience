@@ -40,23 +40,25 @@ def normalize_mods(mods):
             for mod in mods.split('+')
             if mod.strip()
         }
-        return result
-
-    if isinstance(mods, list):
+    elif isinstance(mods, list):
         result = {
             str(mod).strip().upper()
             for mod in mods
             if str(mod).strip()
         }
-        return result
+    else:
+        return None
 
-    return None
+    result.discard("NM")
+
+    return result if result else None
 
 async def get_intake_text(intake: dict | None = None) -> str:
     none_text = "<code>- создание: нет контекста</code>"
     
-    def c_text(title: str):
-        return f"<code>+ создание: из {html.escape(title)}</code>"
+    def c_text(title: str, sent_type: str):       
+        t = "карты"  if sent_type == 'map' else "скора на"
+        return f"<code>+ создание: из {t} {html.escape(title)}</code>"
 
     if intake is None: return none_text
 
@@ -69,7 +71,7 @@ async def get_intake_text(intake: dict | None = None) -> str:
 
     if sent_type == 'map':
 
-        return c_text(await get_beatmap_title_from_file_offline(sent_id))
+        return c_text(await get_beatmap_title_from_file_offline(sent_id), sent_type)
 
     elif sent_type == 'score':
         try:
@@ -77,7 +79,7 @@ async def get_intake_text(intake: dict | None = None) -> str:
 
             map_id = int(cached_entry.get('map').get('beatmap_id'))
 
-            return c_text(await get_beatmap_title_from_file_offline(map_id))
+            return c_text(await get_beatmap_title_from_file_offline(map_id), sent_type)
         except:
             return none_text
     else: 

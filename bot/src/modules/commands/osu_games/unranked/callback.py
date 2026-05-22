@@ -19,6 +19,9 @@ from .actions_log import *
 from .buttons import *
 from .exceptions import *
 from .utils import *
+from .leave import force_finish_match
+from .sumbit import process_elo
+from .elo import update_elo_with_minmax
 
 from config import SUPPORT_STUB, MAX_TEXT_LENGTH
 from longtext import UNRANKED_HELP, UNRANKED_HELP_LINKS, UNRANKED_HELP_ELO, UNRANKED_HELP_SUBMIT
@@ -715,6 +718,158 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.answer("🗑 Создание раунда отменено.", show_alert=True)
 
             return
+        
+        if action == "matchleave":
+
+            match_id = subaction
+            short_id = match_id[-5:]
+
+            async with transaction():
+                response = await read_file_neko(d_file)
+                data = response.get("current", {})
+                user = data[str(osu_id)]
+                config = user.get("config")
+                intake = user.get("intake")
+                points = user.get("points")
+                active_matches = user.get("active_matches")
+                meta = user.get("meta")
+                current = points.get("current")
+                rank = intake.get("temp_rank")
+                osu, tg = user.get("osu"), user.get("telegram")     
+                osu_name, osu_id = osu.get("username"), osu.get("id")
+                tg_name, tg_id = tg.get("username"), tg.get("id")
+                map_full = intake['map_full']
+
+                response = await read_file_neko(m_file)
+                matches = response.get("current", {})
+                match = matches.get(match_id)
+
+                if not match:
+                    raise StopTransaction(
+                        answer={
+                            "text": "Раунд уже удален",
+                            "show_alert": True
+                        }
+                    )
+
+                creator = match.get("creator", {})                
+                member = match.get("member", {})
+
+                if creator.get("tg_id") != tg_id and member.get("tg_id") != tg_id:
+                    logger.warning(f"[user {osu_id}] creator or member != tg_id (matchleave)")
+
+                    raise StopTransaction(
+                        answer={
+                            "text": "Что-то не так. Ты не был участником в этом раунде",
+                            "show_alert": True
+                        }
+                    )
+
+                osu_id = str(osu_id)
+
+
+                # опредилить роль в раунде из скора
+                match = force_finish_match(match, str(osu_id))
+                if match is None: 
+                    logger.warning(f"[user {osu_id}] has no role in match {match_id} (matchleave)")
+                    
+                    raise StopTransaction(
+                        answer={
+                            "text": "Что-то не так. Не определена роль в этом раунде",
+                            "show_alert": True
+                        }
+                    )
+
+                
+                creator_user = data.get(str(creator['osu_id']))
+                member_user = data.get(str(member['osu_id']))
+
+                creator_old_elo = creator_user['points']['current']
+                member_old_elo = member_user['points']['current']
+             
+             
+                ratings = process_elo(creator_old_elo, member_old_elo, match)
+
+                if ratings is None:
+                    logger.warning(f"[user {osu_id}] ratings is None, match {match_id} (matchleave)")
+                    
+                    raise StopTransaction(
+                        answer={
+                            "text": "Что-то не так...",
+                            "show_alert": True
+                        }
+                    )
+                
+                update_elo_with_minmax(
+                    creator_user['points'],
+                    ratings['creator_elo_new']
+                )
+
+                update_elo_with_minmax(
+                    member_user['points'],
+                    ratings['member_elo_new']
+                )
+                
+                match['state']['elo_calculated'] = True
+                match['track'] = False                    
+            
+                for user in (creator_user, member_user):
+                    active_matches = user.get('active_matches', [])
+
+                    if match_id in active_matches:
+                        active_matches.remove(match_id)
+
+
+                await insert_to_file_neko(d_file, data)
+
+                logger.info(f"[user {creator.get('osu_id')}] removed match {match_id} (matchleave)")
+                logger.info(f"[user {member.get('osu_id')}] removed match {match_id} (matchleave)")
+
+#                 t = (
+#     "<b>Изменение рейтинга:</b>\n"
+#     "<pre>"
+#     f"{creator.get('osu_name'):<16} {ratings['creator_elo_new']:>5} ({ratings['creator_delta']:+d})\n"
+#     f"{member.get('osu_name'):<16} {ratings['member_elo_new']:>5} ({ratings['member_delta']:+d})"
+#     "</pre>"
+# )
+                creator_name = creator.get('osu_name')[:16]
+                member_name = member.get('osu_name')[:16]
+                t = (
+    "<b>Изменение рейтинга:</b>\n"
+    f"<code>{creator_name:<16} {ratings['creator_elo_new']:>5} ({ratings['creator_delta']:+d})</code>\n"
+    f"<code>{member_name:<16} {ratings['member_elo_new']:>5} ({ratings['member_delta']:+d})</code>"
+)
+                
+                text = f"""
+<b>Раунд удален (поражение)</b> 
+<code>- ID этого раунда: {short_id}</code>
+
+{t}
+"""               
+
+                await remove_from_file_neko(
+                    m_file,
+                    [match_id]
+                )
+
+                logger.info(f"[match {match_id}] deleted")
+
+            reply_markup = get_match_edit_keyboard(
+                keyboard_type="back",
+                match_id=match_id,
+                owner_id=owner_id
+            )
+            
+            await query.edit_message_text(
+                text=text,
+                reply_markup=reply_markup,
+                link_preview_options=None,
+                parse_mode="HTML"
+            )
+
+            await query.answer("🗑 Поражение засчитано и раунд удален.", show_alert=True)
+
+            return
             
         if action == "matchedit":
 
@@ -1088,7 +1243,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         
                         else:
                             _text = (
-                                f"<code>CL - только для лазера, FM - любые моды</code>"
+                                f"<code>FM - любые моды, CL/RX/AP - только лазер</code>"
                             )
                             
                             reply_markup = get_keyboard(
