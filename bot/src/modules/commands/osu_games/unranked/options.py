@@ -64,10 +64,10 @@ INCOMPATIBLE_MODS = {
     "EZ": {"HR"},
 
     "RX": {"AP"},
-    "AP": {"RX"},
+
+    "AP": {"RX", "SO"},
 
     "SO": {"AP"},
-    "AP": {"SO"},
 }
 
 from telegram import LinkPreviewOptions
