@@ -14,6 +14,10 @@ def force_finish_match(match: dict, leaver_osu_id: str) -> dict:
     else:
         return None
 
+    match.setdefault('state', {})
+    match.setdefault('submit_state', {})
+    match.setdefault('submit_result', {})
+
     match['state']['elo_calculated'] = False
     
     match['state']['finished'] = True
