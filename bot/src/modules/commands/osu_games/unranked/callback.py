@@ -1,7 +1,6 @@
 
 
 
-from contextlib import asynccontextmanager
 import traceback
 from telegram import Update, LinkPreviewOptions, MessageEntity
 from telegram.ext import ContextTypes
@@ -9,38 +8,23 @@ from datetime import datetime, timezone
 
 from ....actions.messages import safe_query_answer
 from ....systems.json_files import load_score_file
-from .buttons import *
 from ....external.localapi import read_file_neko, insert_to_file_neko, remove_from_file_neko
 from ....systems.auth import check_osu_verified, get_osu_id
 from .json_schema import construct_user, construct_match
+from .transaction import transaction
 from .options import *
 from .match import *
 from .rank import *
 from .actions_log import *
-from .locks import GLOBAL_LOCK
+from .buttons import *
+from .exceptions import *
+from .utils import *
 
 from config import SUPPORT_STUB, MAX_TEXT_LENGTH
 from longtext import UNRANKED_HELP, UNRANKED_HELP_LINKS, UNRANKED_HELP_ELO, UNRANKED_HELP_SUBMIT
 from longtext import UNRANKED_HELP_END, UNRANKED_HELP_TIME, UNRANKED_HELP_MAIN, UNRANKED_TUTORIAL
 
-link_preview = LinkPreviewOptions(
-    url=BANNER_OPTIONS[0],
-    is_disabled=False,
-    prefer_small_media=False,
-    prefer_large_media=True,
-    show_above_text=True
-)
 
-@asynccontextmanager
-async def transaction():
-    async with GLOBAL_LOCK:
-        yield
-
-class StopTransaction(Exception):
-    def __init__(self, answer=None, edit=None, send=None):
-        self.answer = answer
-        self.edit = edit
-        self.send = send
 
 async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -274,11 +258,8 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             if subaction == "main":
                 rank = get_player_rank(data, osu_id)
-                rating_text = f"<b>{osu_name}</b> <i>@{tg_name}</i>   <b>🏆{current}</b>  (#{rank})"
-                intake_text = "<code>- создание: нет нового контекста</code>"
-                if intake:
-                    intake_text = f"<code>+ создание: из {intake['sent_type']} {intake['sent_id']}</code>"
-                
+                rating_text = f"<b>{osu_name}</b> <i>@{tg_name}</i>   <b>🏆{current}</b>  (#{rank})"                              
+                intake_text = await get_intake_text(intake)                
                 text = f"""
 {rating_text}
 <code>- Elo макс: {points.get('max')}</code>
@@ -454,7 +435,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 if len(active_matches) < 1:
                     _text = MAIN_MENU_MYACTIVE_NONE
                 elif len(active_matches) < 20:
-                    _text = MAIN_MENU_MYACTIVE_SOME
+                    _text = f"{MAIN_MENU_MYACTIVE_SOME} ({len(active_matches)})"
                 else:
                     _text = MAIN_MENU_MYACTIVE_LIMIT
 
@@ -821,68 +802,99 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             
             return
-        
 
-        response = await read_file_neko(d_file)
-        data = response.get("current", {})
+        async with transaction():        
 
-        user = data[str(osu_id)]
+            response = await read_file_neko(d_file)
+            data = response.get("current", {})
 
-        config = user.get("config")
-        intake = user.get("intake")
-        points = user.get("points")
-        active_matches = user.get("active_matches")
-        current = points.get("current")
-        rank = intake.get("temp_rank")
+            user = data[str(osu_id)]
 
-        osu, tg = user.get("osu"), user.get("telegram")     
-        osu_name, osu_id = osu.get("username"), osu.get("id")
-        tg_name, tg_id = tg.get("username"), tg.get("id")
+            config = user.get("config")
+            intake = user.get("intake")
+            points = user.get("points")
+            active_matches = user.get("active_matches")
+            current = points.get("current")
+            rank = intake.get("temp_rank")
 
-        map_full = intake['map_full']
-        
-        if intake["sent_type"] == 'score':
+            osu, tg = user.get("osu"), user.get("telegram")     
+            osu_name, osu_id = osu.get("username"), osu.get("id")
+            tg_name, tg_id = tg.get("username"), tg.get("id")
 
-            cached_entry = load_score_file(intake['sent_id'])                          
+            map_full = intake['map_full']
 
-            map_id = cached_entry.get('map').get('beatmap_id')
+
+            response = await read_file_neko(m_file)
+            matches = response.get("current", {})
+
+            if active_matches is not None:
+                
+                # эта функция проверит есть ли лишние матчи
+                real_active_matches = get_user_matches_leftovers(
+                    matches,
+                    active_matches
+                )
+
+                # эта проверяет потерянные
+                lost = find_user_matches_lost(
+                    matches,
+                    active_matches,
+                    osu_id
+                )
+
+                if set(real_active_matches) != set(active_matches) or len(lost) > 0:
+
+                    active_matches = find_matches_by_user_fast(
+                        matches,
+                        str(osu_id)
+                    )
+
+                    user['active_matches'] = active_matches
+
+                    logger.warning(f"[user {osu_id}] incorrect matches info")
+
+                    await insert_to_file_neko(d_file, data)
+                    logger.info(f"[user {osu_id}] updated active matches")
+
             
-            sent_client_lazer = bool(cached_entry.get('state').get('lazer'))
+            if intake["sent_type"] == 'score':
 
-            sent_options = [
-                int(((cached_entry.get('lazer_data') or {}).get('total_score')) or 0),
-                int(((cached_entry.get('osu_score') or {}).get('score_legacy')) or 0),                    
-                float(((cached_entry.get('osu_score') or {}).get('accuracy')) or 0)*100,
-                int(((cached_entry.get('osu_score') or {}).get('count_miss')) or 0),
-                int(((cached_entry.get('osu_score') or {}).get('max_combo')) or 0)
-            ]
+                cached_entry = load_score_file(intake['sent_id'])                          
 
-            choice_text = f"<b>Противник должен побить:</b> {GOAL_OPTIONS[config.get('goal')]}: "
-            choice_data = sent_options[config.get('goal')]
+                map_id = cached_entry.get('map').get('beatmap_id')
+                
+                sent_client_lazer = bool(cached_entry.get('state').get('lazer'))
 
-        else:
-            
-            map_id = intake['sent_id']
+                sent_options = [
+                    int(((cached_entry.get('lazer_data') or {}).get('total_score')) or 0),
+                    int(((cached_entry.get('osu_score') or {}).get('score_legacy')) or 0),                    
+                    float(((cached_entry.get('osu_score') or {}).get('accuracy')) or 0)*100,
+                    int(((cached_entry.get('osu_score') or {}).get('count_miss')) or 0),
+                    int(((cached_entry.get('osu_score') or {}).get('max_combo')) or 0)
+                ]
 
-            choice_text = f"<b>Условие победы:</b> {GOAL_OPTIONS[config.get('goal')]}"
-            choice_data = ""
+                choice_text = f"<b>Противник должен побить:</b> {GOAL_OPTIONS[config.get('goal')]}: "
+                choice_data = sent_options[config.get('goal')]
 
-        creation_text = f"<b>Создание раунда</b>"
-        rating_text = f"<b>{osu_name}</b> <i>@{tg_name}</i>   <b>🏆{current}</b>  (#{rank})"
-        difficulty_text = f'<a href="https://osu.ppy.sh/b/{map_id}">{map_full} 🔗</a>'
+            else:
+                
+                map_id = intake['sent_id']
 
-        text = f"{rating_text}\n\n{creation_text}: {difficulty_text}\n\n{choice_text}{choice_data}"
+                choice_text = f"<b>Условие победы:</b> {GOAL_OPTIONS[config.get('goal')]}"
+                choice_data = ""
+
+            creation_text = f"<b>Создание раунда</b>"
+            rating_text = f"<b>{osu_name}</b> <i>@{tg_name}</i>   <b>🏆{current}</b>  (#{rank})"
+            difficulty_text = f'<a href="https://osu.ppy.sh/b/{map_id}">{map_full} 🔗</a>'
+
+            text = f"{rating_text}\n\n{creation_text}: {difficulty_text}\n\n{choice_text}{choice_data}"
 
 
-        if action == "accept":
-            async with transaction():
+            if action == "accept":
 
                 target_tg_id = int(parts[1])
                 match_id = str(parts[2])
                 short_id = match_id[-5:]
-
-                response = await read_file_neko(m_file)
-                matches = response.get("current", {})
                 
                 match = matches.get(match_id)                    
 
@@ -987,15 +999,11 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     }
                 )
 
-        if action == "deny":
-            async with transaction():
+            if action == "deny":
 
                 target_tg_id = int(parts[1])            
                 match_id = str(parts[2])
                 short_id = match_id[-5:]
-
-                response = await read_file_neko(m_file)
-                matches = response.get("current", {})
 
                 match = matches.get(match_id)
 
@@ -1050,8 +1058,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     }
                 )
 
-        if len(active_matches) < 20:
-            async with transaction():
+            if len(active_matches) < 20:
 
                 response = await read_file_neko(d_file)
                 data = response.get("current", {})
@@ -1081,8 +1088,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         
                         else:
                             _text = (
-                                f"✖️ Не выбирай несовместимые моды, иначе не сможешь сабмитнуть скор.\n"
-                                f"➕ Выбери FM (любые моды, в т.ч. лазера), если хочешь дать фору"
+                                f"<code>CL - только для лазера, FM - любые моды</code>"
                             )
                             
                             reply_markup = get_keyboard(
@@ -1096,7 +1102,8 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                 edit={
                                     "text": _text,
                                     "reply_markup": reply_markup,
-                                    "link_preview_options": link_preview
+                                    "link_preview_options": link_preview,
+                                    "parse_mode": "HTML"
                                 }
                             )
 
@@ -1201,17 +1208,62 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             }
                         )
                     
+                    elif subaction == "reset":
+                        config["mods"] = []
+
+                        data[str(osu_id)] = construct_user(
+                            osu_id, 
+                            osu_name, 
+                            tg_id,
+                            tg_name,
+                            points=points,
+                            config=config,
+                            intake=intake,                
+                            active_matches=active_matches,
+                            meta=meta,
+                        )
+
+                        await insert_to_file_neko(d_file, data)
+
+                        logger.info(f"[user {osu_id}] mods updated (reset)")
+
+                        reply_markup = get_keyboard(
+                            "mods",
+                            config,
+                            intake,
+                            owner_id=owner_id
+                        )
+
+                        raise StopTransaction(
+                            send={
+                                "method": "query.edit_message_reply_markup",
+                                "kwargs":{
+                                    "reply_markup": reply_markup,
+                                }                                
+                            }
+                        )
+                    
                     else:
                         mod = subaction
+                        
+                        if mod == "FM":
+                            config["mods"] = ["FM"]
 
-                        mods = config.get("mods", [])
-
-                        if mod in mods:
-                            mods.remove(mod)
                         else:
-                            mods.append(mod)
+                            mods = config.get("mods", [])
 
-                        config["mods"] = mods
+                            if "FM" in mods:
+                                mods.remove("FM")
+
+                            if mod in mods:
+                                mods.remove(mod)
+
+                            else:
+                                mods = remove_incompatible_mods(mods, mod)
+
+                                mods.append(mod)
+
+                            config["mods"] = mods
 
                         data[str(osu_id)] = construct_user(
                             osu_id, 
@@ -1290,7 +1342,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             choice_data = ""
                         
                         creation_text = f"<b>Создание раунда</b>"
-                        rating_text = f"<b>{osu_name}</b> (@{tg_name})   <b>🏆{current}</b>  <i>(#{rank})</i>"
+                        rating_text = f"<b>{osu_name}</b> <i>@{tg_name}</i>   <b>🏆{current}</b>  (#{rank})"
                         difficulty_text = f'<a href="https://osu.ppy.sh/b/{map_id}">{map_full} 🔗</a>'
                         
 
@@ -1309,11 +1361,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                 }
                             )
                         
-                        else:                
-                            response = await read_file_neko(m_file)
-
-                            matches = response.get("current", {})
-
+                        else:
                             matches_list = get_user_matches(
                                 matches,
                                 active_matches
@@ -1348,11 +1396,6 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             )
                     
                     elif subaction == "create":
-
-                        response = await read_file_neko(m_file)
-
-                        matches = response.get("current", {})
-
                         match_id, match_data = construct_match(
                             creator=user,
                             config=config,
@@ -1410,7 +1453,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             match_id,
                             owner_id
                         )
-                         
+                        
                         DA_text = ""
                         if config['source'] == 1:
                             some_mods = config.get("mods", [])
@@ -1499,12 +1542,16 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             }
                         )
                 else:
-                    logger.warning(f"[unknown] action")
+                    logger.warning(f"[unknown] action: {action}")
                     return
-        else:
-            logger.info(f"[limit] active macthes limit")
-            await query.answer("⭐️ Лимит активных раундов. Удали ненужные или доиграй принятые ранее!", show_alert=True)
-            return
+            else:
+                logger.info(f"[limit] active macthes limit")
+                raise StopTransaction(
+                    answer={
+                        "text": "⭐️ Лимит активных раундов. Удали ненужные или доиграй принятые ранее!",
+                        "show_alert": True
+                    }
+                )
         
     except StopTransaction as e:
 
@@ -1568,3 +1615,11 @@ def find_match_by_owner(matches, owner_id):
         if creator.get("tg_id") == owner_id:
             return match_id, match
     return None, None
+
+def remove_incompatible_mods(mods, new_mod):
+    incompatible = INCOMPATIBLE_MODS.get(new_mod, set())
+
+    return [
+        mod for mod in mods
+        if mod not in incompatible
+    ]

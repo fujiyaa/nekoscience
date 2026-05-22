@@ -83,20 +83,82 @@ def get_user_matches(
 
     return result
 
+def get_user_matches_leftovers(
+    matches: dict,
+    active_matches: list[str]
+) -> list[str]:
+
+    result = []
+
+    for match_id in active_matches:
+
+        match = matches.get(match_id)
+        if not match:
+            continue        
+
+        result.append(match_id)
+
+    return result
+
+def find_user_matches_lost(
+    matches: dict,
+    active_matches: list[str],
+    user_id: str
+) -> list[str]:
+
+    active_set = set(active_matches)
+
+    lost = []
+
+    user_id = str(user_id)
+
+    for match_id in matches.keys():
+
+        if not match_id.startswith(user_id):
+            continue
+
+        if match_id in active_set:
+            continue
+
+        lost.append(match_id)
+
+    return lost
+
 async def find_matches_by_user(user_id: str):
     found = []
+
+    user_id = str(user_id)
    
     response = await read_file_neko(m_file)
     matches = response.get("current", {})
 
-    for _match_id, match in matches.items():
-        creator = match.get("creator", {})
-        member = match.get("member", {})
+    for _id, match in matches.items():
+        creator = match.get("creator") or {}
+        member = match.get("member") or {}
 
         is_creator = str(creator.get("osu_id")) == user_id
         is_member = str(member.get("osu_id")) == user_id        
 
         if is_creator or is_member:
             found.append(match)
+
+    return found
+
+def find_matches_by_user_fast(matches: dict, user_id: str) -> list[str]:
+
+    found = []
+
+    user_id = str(user_id)
+
+    for match_id, match in matches.items():
+
+        creator = match.get("creator") or {}
+        member = match.get("member") or {}
+
+        is_creator = str(creator.get("osu_id")) == user_id
+        is_member = str(member.get("osu_id")) == user_id
+
+        if is_creator or is_member:
+            found.append(match_id)
 
     return found

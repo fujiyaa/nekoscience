@@ -7,11 +7,11 @@ BANNER_OPTIONS = [
 
 MAIN_MENU_TEXT = ""
 
-MAIN_MENU_MYACTIVE_NONE = "У тебя нет активных игр."
+MAIN_MENU_MYACTIVE_NONE = "Нет игр с твоим участием"
 
-MAIN_MENU_MYACTIVE_SOME = "Твои активные игры."
+MAIN_MENU_MYACTIVE_SOME = "Игры с твоим участием"
 
-MAIN_MENU_MYACTIVE_LIMIT = "Лимит раундов достигнут. Заверши или отмени что-нибудь"
+MAIN_MENU_MYACTIVE_LIMIT = "Лимит количества игр, удали что-то"
 
 SOURCE_OPTIONS = [
     "⤴️ Против скора",
@@ -42,14 +42,39 @@ CROSSCLIENT_OPTIONS = [
     "🔸Стейбл клиент"
 ]
 
-MOD_OPTIONS = [
-    "DT",
-    "HD",
-    "HR",
-    "HT",
-    "FL",
-    "EZ",
-    "RX",
-    "AP",
-    "FM"
+MOD_LAYOUT = [
+    [   "EZ",   "NF",   "HT",   None,   None,   "FM"],
+    [   "HR",   "HD",   "DT",   "NC",   None,   "CL"],
+    [   "SO",   "FL",   "RX",   "AP",   None,   "RESET"],
+    ["⬅️ Назад"]
 ]
+
+MOD_OPTIONS = [
+        "EZ",   "NF",   "HT",                   "FM",
+        "HR",   "HD",   "DT",   "NC",           "CL",
+        "SO",   "FL",   "RX",   "AP"
+]
+
+INCOMPATIBLE_MODS = {
+    "DT": {"HT", "NC"},
+    "HT": {"DT", "NC"},
+    "NC": {"HT", "DT"},
+
+    "HR": {"EZ"},
+    "EZ": {"HR"},
+
+    "RX": {"AP"},
+    "AP": {"RX"},
+
+    "SO": {"AP"},
+    "AP": {"SO"},
+}
+
+from telegram import LinkPreviewOptions
+link_preview = LinkPreviewOptions(
+            url=BANNER_OPTIONS[0],
+            is_disabled=False,
+            prefer_small_media=False,
+            prefer_large_media=True,
+            show_above_text=True
+        )

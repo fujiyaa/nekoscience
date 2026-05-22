@@ -1,15 +1,16 @@
 
 
-import os, json
+
 from datetime import datetime, timedelta, timezone
-from .match import find_matches_by_user
 
-from contextlib import asynccontextmanager
 from ....external.localapi import read_file_neko, insert_to_file_neko
-from .options import *
-from .locks import GLOBAL_LOCK
+from .elo import process_elo
+from .transaction import transaction
+from .match import find_matches_by_user
+from .utils import *
+from .exceptions import *
 
-SCORES_DIR = 'E:/fa/nekoscience/bot/src/scores_v4'
+from .options import d_file, m_file
 TIME_OPTIONS = [1, 2, 3, 6, 12, 24, 48]
 CROSSCLIENT_OPTIONS = ["🔹Лазер", "🔸Стейбл"]
 GOAL_OPTIONS = [
@@ -20,61 +21,9 @@ GOAL_OPTIONS = [
     "🔗 Комбо"
 ]
 
-@asynccontextmanager
-async def transaction():
-    async with GLOBAL_LOCK:
-        yield
-
-def get_score_path(score_id: str) -> str:
-    return os.path.join(SCORES_DIR, f"{score_id}.json")
-def load_score_file(score_id: str, ignore_empty: bool = False) -> dict | None:
-    path = get_score_path(score_id)
-    if not os.path.exists(path) and not ignore_empty:
-        raise ValueError(f'⚠ Скора нет в кеше {score_id}')
-    
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except Exception as e:
-        print(f"⚠ Ошибка при загрузке файла {score_id}: {e}")
-
-    return None
 
 
-def none_check(entry: dict | None = None, probe_name: str = '') -> bool:
-    try:
-        if entry is None or entry == '{}':
-            print(f'[submit] {probe_name} failed: {entry}')
-            raise
-        else:
-            return True
-    except:
-        return False
-
-def id_check(entry: dict | None = None, probe_name: str = '') -> bool:
-    try:
-        id = str(entry.get('id'))
-        if not id or type(id) != type(''):
-            print(f'[submit] {probe_name} id failed: {id}')
-            raise
-        else: 
-            print(f'[submit] {probe_name}: {id}')
-            return True
-    except:
-        return False
-
-class CancelSubmit(Exception):
-    def __init__(self, incorrections_list=None):
-        self.incorrections_list = incorrections_list
-
-class CancelTryFinish(Exception):
-    def __init__(self, list=None, forward_list_back=None, finished=None):
-        self.list = list
-        self.forward_list_back = forward_list_back
-        self.finished = finished
-
-async def submit(cached_entry: dict | None = None, match_entry: dict | None = None) -> str | None:
-    
+async def submit(cached_entry: dict | None = None, match_entry: dict | None = None) -> str | None:    
     try:       
         incorrections_list = []
         # если пустой то PASS в конце
@@ -220,11 +169,19 @@ async def submit(cached_entry: dict | None = None, match_entry: dict | None = No
                         incorrections_list.append(f'{item} = {match_DA[item]}')
             
         else:
-            # тут моды это лист []
-            # incorrections_list ?
-            # FIXME тут нужно умную функцию поиска модов в раунде
-            print(f'[submit] FIXME тут нужно умную функцию поиска модов в раунде')
-            return
+            match_mods = match_config.get('mods')
+            score_mods = score_mods
+
+            normalized_match = normalize_mods(match_mods) or set()
+            normalized_score = normalize_mods(score_mods) or set()
+
+            if normalized_match != normalized_score:
+                print('[submit] mods does not match')
+
+                incorrections_list.append(
+                    f'Моды: {"+".join(sorted(normalized_score))}, '
+                    f'а нужно {"+".join(sorted(normalized_match))}'
+                )
         
         # клиент: 0 - стейбл, 1 - лазер
         match_client = match_config.get('crossclient')
@@ -497,141 +454,7 @@ def match_try_finish(match_entry: dict | None = None):
             return [], False
     except Exception as e:
         print(e)
-        return [], False
-    
-def process_elo(creator_elo: int, member_elo: int, match_entry: dict | None = None):    
-    # таймер должен быть проверен заранее
-    # match_entry должен быть проверен
-    try:
-        # стейт раунда
-        match_state = match_entry.get('state')
-        if not match_state['elo_calculated']:            
-            
-            creator_elo = int(creator_elo)
-            member_elo = int(member_elo)
-            
-            ending = match_entry['state']['winner']
-            if ending == 'creator':
-                creator_result = 1.0
-            elif ending == 'member':
-                creator_result = 0.0
-            else: # ending == 'draw':
-                creator_result = 0.5
-
-            creator_elo_new, member_elo_new = update_elo(creator_elo, member_elo, creator_result)
-
-            creator_delta = creator_elo_new - creator_elo
-            member_delta = member_elo_new - member_elo
-
-            return {
-                "creator_elo_new": creator_elo_new,
-                "member_elo_new": member_elo_new,
-                "creator_delta": creator_delta,
-                "member_delta": member_delta
-            }        
-        else: 
-            raise ValueError('elo was already calculated for that match')
-    except Exception as e:
-        print(e)        
-        return None
-
-
-def calculate_expected(rating_a, rating_b):
-    """
-    Рассчитывает ожидаемый результат (вероятность победы) для игрока A.
-
-    Args:
-        rating_a (float): рейтинг игрока A
-        rating_b (float): рейтинг игрока B
-
-    Returns:
-        float: вероятность победы игрока A (от 0 до 1)
-    """
-    return 1 / (1 + 10 ** ((rating_b - rating_a) / 400))
-
-
-def update_elo(rating_a, rating_b, result_a, k_factor=20):
-    """
-    Обновляет рейтинги двух игроков после матча.
-
-    Args:
-        rating_a (float): текущий рейтинг игрока A
-        rating_b (float): текущий рейтинг игрока B
-        result_a (float): результат матча для игрока A:
-                         1 — победа, 0.5 — ничья, 0 — поражение
-        k_factor (int): K‑фактор (коэффициент развития)
-
-    Returns:
-        tuple: (новый рейтинг игрока A, новый рейтинг игрока B)
-    """
-    expected_a = calculate_expected(rating_a, rating_b)
-    expected_b = 1 - expected_a
-
-    new_rating_a = rating_a + k_factor * (result_a - expected_a)
-    new_rating_b = rating_b + k_factor * ((1 - result_a) - expected_b)
-
-    return round(new_rating_a), round(new_rating_b)
-
-# match = {
-#     "started_at": "2026-05-20T09:04:08.982298+00:00",   # НОВОЕ ПОЛЕ
-#     "track": True,      # трекинг этого раунда (отвечать ли сообщением)
-#     "submit_state": {                                             
-#       "creator": True,
-#       "member": False,
-#     },
-#     "submit_result": {                                             
-#       "creator": 20.0, 
-#       "member": 31.0
-#     },                                              # НОВОЕ ПОЛЕ
-
-#     "config": {
-#       "crossclient": 1,
-#       "goal": 3,
-#       "mods": [],
-#       "source": 1,
-#       "time": 4
-#     },
-#     "created_at": 1778930985,    
-#     "member": {
-#       "osu_id": 11596989,
-#       "osu_name": "Fujiya",
-#       "tg_id": 1803166423,
-#       "tg_name": "fujiya_sama"
-#     },
-#     "id": "115969891778930985",
-#     "intake": {
-#       "map_full": "Oratorio The World God Only Knows - God only knows -Secrets of the Goddess- [The World Guy Only Knows]",
-#       "map_id": "5274323",
-#       "sent_id": 4287518921,
-#       "sent_mods": "DT+DA",
-#       "DA_values": {                # НОВОЕ ПОЛЕ
-#         "circle_size": 3,
-#         "approach_rate": 8.7, 
-#       },
-#       "sent_type": "score",
-#       "temp_rank": "1"
-#     },
-#     "creator": {
-#       "osu_id": 26197609,
-#       "osu_name": "foundbpm",
-#       "tg_id": 7354740126,
-#       "tg_name": "foundbpm"
-#     },
-#     "pending_joins": [],
-#     "state": {
-#       "finished": False,
-#       "started": True,
-#       "winner": None,
-#       "elo_calculated": False        # НОВОЕ ПОЛЕ
-#     }
-# }
-# cached_entry = None
-# try: cached_entry = load_score_file('6711851789')
-# except: pass
-
-# maybe_text = submit(cached_entry, match)
-# if maybe_text is not None:
-#     print(maybe_text)
+        return [], False    
 
 async def submit_all(cached_entry: dict | None = None) -> str | None:
 

@@ -68,5 +68,41 @@ def run_elo_tests():
         print(f"{new_a} ({change_a:+d}), {new_b} ({change_b:+d})")
         # print('\n')
 
+def process_elo(creator_elo: int, member_elo: int, match_entry: dict | None = None):    
+    # таймер должен быть проверен заранее
+    # match_entry должен быть проверен
+    try:
+        # стейт раунда
+        match_state = match_entry.get('state')
+        if not match_state['elo_calculated']:            
+            
+            creator_elo = int(creator_elo)
+            member_elo = int(member_elo)
+            
+            ending = match_entry['state']['winner']
+            if ending == 'creator':
+                creator_result = 1.0
+            elif ending == 'member':
+                creator_result = 0.0
+            else: # ending == 'draw':
+                creator_result = 0.5
+
+            creator_elo_new, member_elo_new = update_elo(creator_elo, member_elo, creator_result)
+
+            creator_delta = creator_elo_new - creator_elo
+            member_delta = member_elo_new - member_elo
+
+            return {
+                "creator_elo_new": creator_elo_new,
+                "member_elo_new": member_elo_new,
+                "creator_delta": creator_delta,
+                "member_delta": member_delta
+            }        
+        else: 
+            raise ValueError('elo was already calculated for that match')
+    except Exception as e:
+        print(e)        
+        return None
+
 if __name__ == "__main__":
     run_elo_tests()

@@ -65,7 +65,7 @@ def get_keyboard(
                     callback_data=with_owner(f"unranked_menu_main")
                 ),
                 InlineKeyboardButton(
-                    "помощь",
+                    "...",
                     callback_data=with_owner(f"unranked_help_display")
                 ),
                 InlineKeyboardButton(
@@ -86,33 +86,53 @@ def get_keyboard(
 
         keyboard = []
 
-        row = []
+        for layout_row in MOD_LAYOUT:
+            row = []
 
-        for mod in MOD_OPTIONS:
-            enabled = mod in selected_mods
+            for item in layout_row:
 
-            text = f"✅ {mod}" if enabled else f"⬛ {mod}"
+                # Пустая кнопка для выравнивания
+                if item is None:
+                    row.append(
+                        InlineKeyboardButton(
+                            "ㅤ",  # невидимый символ
+                            callback_data="ignore"
+                        )
+                    )
+                    continue
 
-            row.append(
-                InlineKeyboardButton(
-                    text,
-                    callback_data=with_owner(f"unranked_modtoggle_{mod}")
+                # Кнопка назад
+                if item == "⬅️ Назад":
+                    row.append(
+                        InlineKeyboardButton(
+                            item,
+                            callback_data=with_owner("unranked_modtoggle_back")
+                        )
+                    )
+                    continue
+
+                if item == "RESET":
+                    row.append(
+                        InlineKeyboardButton(
+                            item,
+                            callback_data=with_owner("unranked_modtoggle_reset")
+                        )
+                    )
+                    continue
+
+                # Обычный мод
+                enabled = item in selected_mods
+
+                text = f"✅ {item}" if enabled else f"▢ {item}"
+
+                row.append(
+                    InlineKeyboardButton(
+                        text,
+                        callback_data=with_owner(f"unranked_modtoggle_{item}")
+                    )
                 )
-            )
 
-            if len(row) == 3:
-                keyboard.append(row)
-                row = []
-
-        if row:
             keyboard.append(row)
-
-        keyboard.append([
-            InlineKeyboardButton(
-                "⬅️ Назад",
-                callback_data=with_owner("unranked_modtoggle_back")
-            )
-        ])
     elif keyboard_type == "main-active":
         keyboard = [
             [InlineKeyboardButton(
@@ -280,14 +300,13 @@ def get_active_matches_keyboard(
     matches: dict,
     owner_id: int
 ):
-    keyboard = []
+    per_row = 4
 
     buttons = []
 
     for match_id in active_matches:
 
         match = matches.get(match_id)
-
         if not match:
             continue
 
@@ -295,10 +314,7 @@ def get_active_matches_keyboard(
 
         short_id = match_id[-5:]
 
-        if member:
-            text = f"{short_id} ⏳"
-        else:
-            text = f"{short_id} ❎"
+        text = f"{short_id} ⏳" if member else f"{short_id} ❎"
 
         buttons.append(
             InlineKeyboardButton(
@@ -307,21 +323,42 @@ def get_active_matches_keyboard(
             )
         )
 
-    per_row = 4
-
-    keyboard = [
+    rows = [
         buttons[i:i + per_row]
         for i in range(0, len(buttons), per_row)
     ]
 
-    keyboard.append([
+    for row in rows:
+        while len(row) < per_row:
+            row.append(
+                InlineKeyboardButton(
+                    text="ㅤ",
+                    callback_data="ignore"
+                )
+            )
+
+    if not rows:
+        rows = [
+            [
+                InlineKeyboardButton("ㅤ", callback_data="ignore")
+                for _ in range(per_row)
+            ]
+        ]
+
+    rows.append([
+        InlineKeyboardButton("ㅤ", callback_data="ignore")
+        for _ in range(per_row)
+    ])
+
+    # кнопка назад
+    rows.append([
         InlineKeyboardButton(
             "⬅️ Назад",
             callback_data=f"unranked_menu_main:{owner_id}"
         )
     ])
 
-    return InlineKeyboardMarkup(keyboard)
+    return InlineKeyboardMarkup(rows)
 
 def get_round_configured_keyboard(
     match_id: int,

@@ -196,6 +196,37 @@ async def get_beatmap_title_from_file(map_id: int) -> str | None:
 
     return parse_title(path_to_map)
 
+async def get_beatmap_title_from_file_offline(map_id: int) -> str:
+    path_to_map = os.path.join(BEATMAPS_DIR, f"{map_id}.osu")
+
+    def parse_title(path: str) -> str:
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                in_metadata = False
+                for line in f:
+                    line = line.strip()
+
+                    if line.startswith("[Metadata]"):
+                        in_metadata = True
+                        continue
+
+                    if in_metadata:
+                        # Title:Something
+                        if line.startswith("Title:"):
+                            return line.split(":", 1)[1].strip()
+                        
+                        if line.startswith("["):
+                            break
+        except:
+            return str(map_id)
+        
+        return str(map_id)
+
+    if os.path.exists(path_to_map):        
+        return parse_title(path_to_map)
+    else: 
+        return str(map_id)
+
 async def get_beatmap_creator_from_file(map_id: int) -> str | None:
     path_to_map = os.path.join(BEATMAPS_DIR, f"{map_id}.osu")
 

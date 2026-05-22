@@ -1,12 +1,11 @@
 
 
 
-from contextlib import asynccontextmanager
 import asyncio
 import traceback
 import html
 
-from telegram import Update, LinkPreviewOptions, MessageEntity
+from telegram import Update, MessageEntity
 from telegram.ext import ContextTypes
 
 from ....actions.messages import safe_send_message
@@ -17,28 +16,23 @@ from ....external.localapi import read_file_neko, insert_to_file_neko
 from ....external.osu_http import fetch_txt_beatmaps
 from ....external.osu_api import get_beatmap, get_score_by_id
 from ....actions.context import get_message_context
-from .buttons import *
+from .transaction import transaction
 from .json_schema import construct_user
 from .options import *
 from .rank import *
 from .match import *
-from .locks import GLOBAL_LOCK
 from .actions_log import *
+from .buttons import *
+from .exceptions import *
+from .utils import *
 
 from config import SUPPORT_STUB, MAX_TEXT_LENGTH
 from config import COOLDOWN_UNRANKED_COMMANDS
 from config import OSU_URL_REGEX
 
-MAX_ATTEMPTS = 2
+MAX_ATTEMPTS = 1
 
-class StopTransaction(Exception):
-    def __init__(self, send=None):
-        self.send = send
 
-@asynccontextmanager
-async def transaction():
-    async with GLOBAL_LOCK:
-        yield
 
 async def start_unranked_game(update, context):
     await log_all_update(update)
@@ -104,14 +98,6 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     }
                 }
             )
-        
-        link_preview = LinkPreviewOptions(
-            url=BANNER_OPTIONS[0],
-            is_disabled=False,
-            prefer_small_media=False,
-            prefer_large_media=True,
-            show_above_text=True
-        )
 
         message_text = update.message.text.strip()
         result = parse_osu_url(message_text)
@@ -255,6 +241,9 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 response = await read_file_neko(d_file)
                 data = response.get("current", {})
 
+                response = await read_file_neko(m_file)
+                matches = response.get("current", {})
+
                 if osu_id not in data:
                     logger.info(f"[osu_id not in data 2] data: {data}")
 
@@ -275,16 +264,43 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 current = points.get("current")
                 active_matches = user.get("active_matches")
 
-                skip = meta.get("skip_tutorial")
-                if skip:
+                if active_matches is not None:
+                
+                    # эта функция проверит есть ли лишние матчи
+                    real_active_matches = get_user_matches_leftovers(
+                        matches,
+                        active_matches
+                    )
 
+                    # эта проверяет потерянные
+                    lost = find_user_matches_lost(
+                        matches,
+                        active_matches,
+                        osu_id
+                    )
+
+                    if set(real_active_matches) != set(active_matches) or len(lost) > 0:
+
+                        active_matches = find_matches_by_user_fast(
+                            matches,
+                            str(osu_id)
+                        )
+
+                        user['active_matches'] = active_matches
+
+                        logger.warning(f"[user {osu_id}] incorrect matches info")
+
+                        await insert_to_file_neko(d_file, data)
+                        logger.info(f"[user {osu_id}] updated active matches")
+
+
+                skip = meta.get("skip_tutorial")
+
+                if skip:
                     rank = get_player_rank(data, osu_id)
 
-                    rating_text = f"<b>{osu_name}</b> <i>@{tg_name}</i>   <b>🏆{current}</b>  (#{rank})"
-                    intake_text = "<code>- создание: нет нового контекста</code>"
-                    if context_result:
-                        intake_text = f"<code>+ создание: из {context_result['sent_type']} {context_result['sent_id']}</code>"
-                    
+                    rating_text = f"<b>{osu_name}</b> <i>@{tg_name}</i>   <b>🏆{current}</b>  (#{rank})"                    
+                    intake_text = await get_intake_text(context_result)
                     text = f"""
 {rating_text}
 <code>- Elo макс: {points.get('max')}</code>
