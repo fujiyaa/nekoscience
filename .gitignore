@@ -80,6 +80,7 @@ target/
 /storage/web_data/dashboard/*.json
 /storage/web_data/vote/*.json
 
+/bot/src/osu_tokens.json
 osu_tokens.json
 
 !*.gitkeep

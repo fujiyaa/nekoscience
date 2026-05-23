@@ -55,7 +55,8 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             # text += f"     [https://t.me/fujiyaosu [help]] | [https://t.me/fujiyaosu [help]] "
 
-            osu_id = "26197609"
+            
+            if osu_id == "11596989": osu_id = "26197609"
             await send_pm(osu_id, text, action = False)
 
         except Exception as e:             
