@@ -135,7 +135,12 @@ def _setup_logging():
     logger.addHandler(ShortNetworkHandler())
 
 def main():
-    app = ApplicationBuilder().token(TOKEN).build()
+    app = (
+        ApplicationBuilder()
+        .token(TOKEN)
+        .post_init(post_init)
+        .build()
+    )
 
     app.add_handler(
         MessageHandler(filters.ALL & ~filters.COMMAND, check_message)        
@@ -155,5 +160,17 @@ def main():
     except Exception as e:
         print(e)
 
+
+from telegram.ext import ApplicationBuilder, MessageHandler, InlineQueryHandler, filters
+
+from modules.external.osu_api_chat import init_osu_auth
+
+
+async def post_init(app):
+    await init_osu_auth()
+    print("OAuth system started")
+
 if __name__ == "__main__":
     main()
+
+

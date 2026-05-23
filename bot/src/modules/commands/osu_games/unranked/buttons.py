@@ -253,7 +253,8 @@ def get_keyboard(
 def get_match_edit_keyboard(
     keyboard_type: str,
     match_id: str,
-    owner_id: int
+    owner_id: int,
+    beatmap_id: str = "0"
 ):
     def with_owner(cb_data: str) -> str:
         if owner_id is not None:
@@ -267,7 +268,11 @@ def get_match_edit_keyboard(
                 InlineKeyboardButton(
                     "❌ Сдаться",
                     callback_data=with_owner(f"unranked_matchleave_{match_id}")
-                )
+                ),
+                InlineKeyboardButton(
+                    "📨 Получить в осу",
+                    callback_data=f"send_pm_with_link_to:{beatmap_id}"
+                ),
             ],
             [
                 InlineKeyboardButton(
@@ -282,7 +287,11 @@ def get_match_edit_keyboard(
                 InlineKeyboardButton(
                     "❎ Отменить",
                     callback_data=with_owner(f"unranked_matchcancel_{match_id}")
-                )                
+                ),
+                InlineKeyboardButton(
+                    "📨 Получить в осу",
+                    callback_data=f"send_pm_with_link_to:{beatmap_id}"
+                ),           
             ],
             [
                 InlineKeyboardButton(
@@ -449,5 +458,18 @@ def get_tutorial_keyboard(
             ]
         ]
     
+
+    return InlineKeyboardMarkup(keyboard)
+
+def get_pm_keyboard(beatmap_id: str):     
+
+    keyboard = [
+        [
+            InlineKeyboardButton(
+                "📨 Получить в осу",
+                callback_data=f"send_pm_with_link_to:{beatmap_id}"
+            )
+        ]
+    ]
 
     return InlineKeyboardMarkup(keyboard)

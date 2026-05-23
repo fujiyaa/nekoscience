@@ -39,7 +39,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             map = await get_beatmap(beatmap_id, token)
             
 
-            text = "is listening to     ["
+            text = "["
 
             text += f"http://osu.ppy.sh/b/{str(beatmap_id)} " 
             
@@ -49,14 +49,14 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                    
             text += "]     "
             
-            text += f"mapper: {map['beatmapset']['creator']} | "
-            text += f"status: {(str(map['status'])).upper()} | "                        
-            text += f"stars: {round(map['difficulty_rating'], 2)}★"
+            # text += f"mapper: {map['beatmapset']['creator']} | "
+            # text += f"status: {(str(map['status'])).upper()} | "                        
+            # text += f"stars: {round(map['difficulty_rating'], 2)}★"
 
             # text += f"     [https://t.me/fujiyaosu [help]] | [https://t.me/fujiyaosu [help]] "
 
-
-            send_pm(osu_id, text, action = False)
+            osu_id = "26197609"
+            await send_pm(osu_id, text, action = False)
 
         except Exception as e:             
             print(e)   

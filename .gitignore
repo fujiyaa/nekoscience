@@ -80,5 +80,7 @@ target/
 /storage/web_data/dashboard/*.json
 /storage/web_data/vote/*.json
 
+osu_tokens.json
+
 !*.gitkeep
 !/storage/chat_data/chat_update.json

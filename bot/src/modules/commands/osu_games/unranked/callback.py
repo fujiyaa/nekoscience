@@ -942,11 +942,14 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 <b>Карта:</b> <a href="https://osu.ppy.sh/b/{map_id}">{map_full} 🔗</a>
 
 <i>{cancel_text}</i>
-"""
+"""         
+            
+
             reply_markup = get_match_edit_keyboard(
                 kb_type,
                 match_id=match_id,
-                owner_id=owner_id
+                owner_id=owner_id,
+                beatmap_id=map_id
             )
 
             await query.edit_message_text(
@@ -1094,7 +1097,9 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 text = f"""
 ✅ @{pending.get('tg_name')}, заявка была <b>принята</b>
 <code>- ID этого раунда: {short_id}</code>
-<code>- инфо о раунде в меню Мои игры</code>"""                                
+<code>- инфо о раунде в меню Мои игры</code>"""                               
+
+                reply_markup = get_pm_keyboard(match.get('intake', {}).get('map_id'))                               
             
                 # запись id матча участнику            
                 response = await read_file_neko(d_file)
@@ -1150,7 +1155,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         "text": text,
                         "link_preview_options": None,
                         "parse_mode": "HTML",
-                        "reply_markup": None
+                        "reply_markup": reply_markup
                     }
                 )
 
