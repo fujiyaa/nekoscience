@@ -188,6 +188,7 @@ OSU_URL_REGEX = re.compile(
     
 
 dev_flag = os.getenv("DEV_FLAG", "0")  # default "0"
+OSU_CHAT_OAUTH = os.getenv("OSU_CHAT_OAUTH", None)
 TOKEN = os.getenv("DTOKEN") if dev_flag == "1" else os.getenv("TOKEN")
 LOCAL_API_KEY = os.getenv("LOCAL_API_KEY", None)
 OSU_SESSION = os.getenv("OSU_SESSION", None)

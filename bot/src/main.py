@@ -12,7 +12,7 @@ from telegram.ext import (
     filters,
 )
 
-from config import TOKEN
+from config import TOKEN, OSU_CHAT_OAUTH
 from command_imports import *
 
 
@@ -167,6 +167,7 @@ from modules.external.osu_api_chat import init_osu_auth
 
 
 async def post_init(app):
+    # if str(OSU_CHAT_OAUTH) == "1":
     await init_osu_auth()
     print("OAuth system started")
 
