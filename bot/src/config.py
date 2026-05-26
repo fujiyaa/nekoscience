@@ -147,8 +147,16 @@ os.makedirs(BG_CARD_DIR, exist_ok=True)
 os.makedirs(BG_LIST_DIR, exist_ok=True)
 os.makedirs(BG_SCORE_COMPARE_DIR, exist_ok=True)
 
-OSU_USER_REGEX = re.compile(r"osu\.ppy\.sh/users/(\d+)")
-OSU_SCORE_REGEX = re.compile(r"osu\.ppy\.sh/scores/(\d+)")
+OSU_USER_REGEX = re.compile(
+    r"(?:users|u)/([^/?#\s]+)",
+    re.IGNORECASE
+)
+
+OSU_SCORE_REGEX = re.compile(
+    r"(?:scores|score|s)/(\d+)",
+    re.IGNORECASE
+)
+
 COOLDOWN_LINKS_IN_CHAT = 5
 
 
@@ -169,7 +177,8 @@ semaphore = asyncio.Semaphore(MAX_CONCURRENT_REQUESTS)
 getcontext().prec = 28
 
 OSU_MAP_REGEX = re.compile(
-    r"https?://osu\.ppy\.sh/beatmapsets/\d+#\w+/(\d+)"
+    r"(?:beatmapsets/\d+#\w+/|b/)(\d+)",
+    re.IGNORECASE
 )
 
 OSU_MAPSET_REGEX = re.compile(
