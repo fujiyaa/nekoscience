@@ -7,6 +7,7 @@ import traceback
 from telegram import Update
 from telegram.ext import ContextTypes
 
+from .....commands.service import set_name
 from .....actions.messages import safe_send_message, try_send
 from .....systems.cooldowns import check_user_cooldown
 from .....systems.logging import log_all_update
@@ -42,12 +43,7 @@ async def scores_best(update: Update, context: ContextTypes.DEFAULT_TYPE, user_r
         elif saved_name:
             username = saved_name
         else:
-            text = (
-                "Использование без авторизации: `/scores Fujiya` <- ник\n"
-                "\n"
-                "авторизация: */name*"
-            )
-            await safe_send_message(update, text, parse_mode="Markdown")
+            await set_name(update, context)
             return
      
         text = "`загрузка...`"

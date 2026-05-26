@@ -86,12 +86,12 @@ def generate_code():
     return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(6))
 
 
-@router.get("/darkness/auth")
+@router.get("/weakness/auth")
 async def root_redirect():    
     return RedirectResponse(err_url)
 
 
-@router.get("/darkness/oauth/callback")
+@router.get("/weakness/oauth/callback")
 async def oauth_callback(request: Request, code: str = None):
     if not code:
         oauth_url = (
@@ -132,7 +132,7 @@ async def oauth_callback(request: Request, code: str = None):
     else:
         new_code = "error"
 
-    return templates.TemplateResponse("darkness_auth_code.html", {
+    return templates.TemplateResponse("weakness_auth_code.html", {
         "request": request,
         "username": username,
         "code": new_code

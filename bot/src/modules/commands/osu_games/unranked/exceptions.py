@@ -16,3 +16,9 @@ class StopTransaction(Exception):
         self.answer = answer
         self.edit = edit
         self.send = send
+
+class AuthException(Exception):
+    def __init__(self, answer=None, edit=None, send=None):
+        self.answer = answer
+        self.edit = edit
+        self.send = send

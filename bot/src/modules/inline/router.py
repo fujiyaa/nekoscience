@@ -128,7 +128,7 @@ def format_map_results(data, query, search_term, seen_ids: set | None = None):
             or "https://osu.ppy.sh/images/layout/card-404.png"
         )
 
-        direct_url = f"https://myangelfujiya.ru/darkness/direct?id={mapset_id}"
+        direct_url = f"https://myangelfujiya.ru/weakness/direct?id={mapset_id}"
         beatconnect_url = f"https://beatconnect.io/b/{mapset_id}"
 
         kb = InlineKeyboardMarkup([

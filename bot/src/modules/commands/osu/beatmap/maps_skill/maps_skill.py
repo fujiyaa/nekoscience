@@ -6,12 +6,12 @@ import asyncio
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from .....actions.messages import safe_send_message
 from .....systems.cooldowns import check_user_cooldown
 from .....systems.logging import log_all_update
 from .....systems.auth import check_osu_verified
 from .....external.osu_api import get_user_profile, get_top_100_scores
 from .....external.local_skills import get_skills_by_scores
+from .....commands.service import set_name
 from .buttons_level1 import get_keyboard
 
 from config import COOLDOWN_MS_COMMAND
@@ -43,12 +43,7 @@ async def maps_skill(update: Update, context: ContextTypes.DEFAULT_TYPE, user_re
                 if saved_name:
                     username = saved_name
                 else:
-                    text = (
-                        "Использование: `/maps_skill fujina123` <- никнейм\n\n\n"
-                        "⚙ *Дополнительно*\n\n"
-                        "/name – сохранить ник\n"
-                    )
-                    await safe_send_message(update, text, parse_mode="Markdown")
+                    await set_name(update, context)
                     return
             else:
                 username = " ".join(context.args)

@@ -2,12 +2,11 @@
 
 
 import asyncio
-import html
 
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from .....actions.messages import safe_send_message
+from .....commands.service import set_name
 from .....systems.cooldowns import check_user_cooldown
 from .....systems.logging import log_all_update
 from .....systems.auth import check_osu_verified
@@ -56,12 +55,7 @@ async def nochoke(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reque
         username = saved_name
 
     if not username:
-        text = (f"`Нужна помощь?`\n\n"
-                f"Сохранить ник: */name*\n\n"
-                        "✨*/help*"
-                        " | `/help nochoke`\n\n"
-        )
-        await safe_send_message(update, text, parse_mode="Markdown")
+        await set_name(update, context)
         return
 
     if saved_name is None:

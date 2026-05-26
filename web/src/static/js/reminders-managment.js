@@ -5,7 +5,7 @@ async function login() {
     const password = document.getElementById("password").value.trim();
     if (!password) { alert("Введите пароль"); return; }
 
-    const res = await fetch("/darkness/reminders/password", {
+    const res = await fetch("/weakness/reminders/password", {
     method: "POST",
     headers: {"Content-Type":"application/json"},
     body: JSON.stringify({password})
@@ -33,7 +33,7 @@ async function saveReminder() {
         return; 
     }
 
-    const resList = await fetch(`/darkness/reminders/list?user=${encodeURIComponent(user)}`);
+    const resList = await fetch(`/weakness/reminders/list?user=${encodeURIComponent(user)}`);
     const currentReminders = await resList.json();
 
     if (currentReminders.length >= MAX_REMINDERS) {
@@ -43,7 +43,7 @@ async function saveReminder() {
 
     const reminder = { user, message, date, time, repeatCount: Number(repeatCount) };
 
-    const res = await fetch('/darkness/reminders/save', {
+    const res = await fetch('/weakness/reminders/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(reminder)
@@ -59,7 +59,7 @@ async function saveReminder() {
 }
 
 async function loadReminders() {
-    const res = await fetch(`/darkness/reminders/list?user=${encodeURIComponent(user)}`);
+    const res = await fetch(`/weakness/reminders/list?user=${encodeURIComponent(user)}`);
     const reminders = await res.json();
     const list = document.getElementById('reminderList');
     list.innerHTML = "";
@@ -79,7 +79,7 @@ async function loadReminders() {
     delBtn.className = 'deleteBtn';
     delBtn.onclick = async () => {
         if (!confirm("Удалить это напоминание?")) return;
-        const delRes = await fetch(`/darkness/reminders/delete?user=${encodeURIComponent(r.user)}&message=${encodeURIComponent(r.message)}&date=${r.date}&time=${r.time}`, {
+        const delRes = await fetch(`/weakness/reminders/delete?user=${encodeURIComponent(r.user)}&message=${encodeURIComponent(r.message)}&date=${r.date}&time=${r.time}`, {
         method: 'DELETE'
         });
         if (delRes.ok) loadReminders();

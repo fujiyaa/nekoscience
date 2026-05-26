@@ -7,6 +7,7 @@ import traceback
 from telegram import Update
 from telegram.ext import ContextTypes
 
+from .....commands.service import set_name
 from .....external.osu_http import get_beatmap_title_from_file, get_beatmap_creator_from_file
 from .....actions.messages import safe_send_message, try_send
 from .....systems.cooldowns import check_user_cooldown
@@ -44,12 +45,7 @@ async def recent_fix(update: Update, context: ContextTypes.DEFAULT_TYPE, user_re
         elif saved_name:
             username = saved_name
         else:
-            text = (
-                "Использование: `/fix Fujiya` <- никнейм\n\n\n"
-                "⚙ *Дополнительно*\n\n"
-                "/name – сохранить ник\n"
-            )
-            await safe_send_message(update, text, parse_mode="Markdown")
+            await set_name(update, context)
             return
      
         text = "`загрузка...`"

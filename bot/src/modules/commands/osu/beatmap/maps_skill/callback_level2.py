@@ -80,7 +80,7 @@ async def ms_pagination_callback(update: Update, context: ContextTypes.DEFAULT_T
         ])
 
         url = f"https://osu.ppy.sh/beatmaps/{map_id}"
-        url_2 = f"https://myangelfujiya.ru/darkness/direct?id={map_id}"
+        url_2 = f"https://myangelfujiya.ru/weakness/direct?id={map_id}"
 
         line = f"*{total_str}*pts {symbols} id`{map_id}` • [ссылка]({url}) • [direct]({url_2})"
         lines.append(line)

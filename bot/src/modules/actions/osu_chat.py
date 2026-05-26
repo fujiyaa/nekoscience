@@ -4,10 +4,11 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from .messages import safe_send_message, safe_query_answer
+from .messages import safe_query_answer
 from ..systems.auth import check_osu_verified, get_osu_id
 from ..external.osu_api_chat import send_pm
 from ..external.osu_api import get_beatmap, get_osu_token
+from ..commands.service import set_name
 
 
 
@@ -24,7 +25,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             osu_name = await check_osu_verified(user_id)
             if not osu_name:
-                await safe_query_answer(query, "⚠ Не сохранен ник, это делается командой /name")
+                await set_name(update, context)
                 return            
             
             osu_id = await get_osu_id(user_id)
@@ -62,5 +63,5 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception as e:             
             print(e)   
             try:
-                await safe_query_answer(query,f"🐟 Подзравляю, это неизвестная ошибка! \n\nЕсли она повторяется, отправь ее пожалуйста мне (@fujiya_sama) или в чат группы (@fujiyaosu) \n\nОшибка: {e}")
+                await safe_query_answer(query,f"🐟 Поздравляю, это неизвестная ошибка! \n\nЕсли она повторяется, отправь ее пожалуйста мне (@fujiya_sama) или в чат группы (@fujiyaosu) \n\nОшибка: {e}")
             except Exception as e: print(e)          

@@ -31,7 +31,7 @@ def get_text(user_data, best_scores, page=0, page_size=5):
         map_id = score.get("beatmap_id")
 
         url = f"https://osu.ppy.sh/beatmaps/{map_id}"
-        url_2 = f"https://myangelfujiya.ru/darkness/direct?id={map_id}"
+        url_2 = f"https://myangelfujiya.ru/weakness/direct?id={map_id}"
 
         line1 = f'<b>#{score.get("index")}</b> <a href="{url}">{title} [{version}]</a> <b>+{mods_str}</b> [{stars:.2f}★]'
         line2 = f'<a href="{url_2}">🔗</a> <code>{pp_old}</code> → <b>{pp_new}pp</b> • <i>Removed {misses}❌</i>'

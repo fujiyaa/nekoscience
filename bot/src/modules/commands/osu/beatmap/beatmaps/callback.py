@@ -17,6 +17,7 @@ from .....actions.messages import safe_query_answer, delete_message_after_delay
 from .....systems.auth import check_osu_verified
 from .....external.osu_api import get_osu_token, get_most_played, get_top_100_scores
 from .....utils.text_format import build_beatmaps_text
+from .....commands.service import set_name
 from .processing import worker, check_group_status, delete_done_file, addtask
 from .buttons import get_keyboard
 
@@ -71,7 +72,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         saved_name = await check_osu_verified(str(update.effective_user.id))
                 
         if saved_name is None:
-            await safe_query_answer(query, "🚷 Сначала нужно сохранить имя /name...")     
+            await set_name(update, context)
             return       
         else:
             await safe_query_answer(query, "👍 Запуск... \nНажми кнопку ОБНОВИТЬ чтобы увидеть статус")

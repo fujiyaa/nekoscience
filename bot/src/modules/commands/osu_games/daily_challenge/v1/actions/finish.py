@@ -9,6 +9,7 @@ import traceback
 from telegram import Update
 from telegram.ext import ContextTypes
 
+from ......commands.service import set_name
 from ......actions.messages import safe_send_message
 from ......systems.cooldowns import check_user_cooldown
 from ......systems.auth import check_osu_verified, get_osu_id
@@ -52,9 +53,7 @@ async def finish_challenge(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:                   
             osu_name = await check_osu_verified(user_id)
             if not osu_name:
-                await safe_send_message(
-                    update, "⚠ Не сохранен ник, это делается командой /name", 
-                    parse_mode="Markdown")
+                await set_name(update, context)
                 return            
             
             osu_id = await get_osu_id(user_id)

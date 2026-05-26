@@ -7,8 +7,7 @@ import asyncio
 from telegram import Update, InputFile
 from telegram.ext import ContextTypes
 
-from models.score import Score 
-from .....actions.messages import safe_send_message
+from .....commands.service import set_name
 from .....systems.cooldowns import check_user_cooldown
 from .....systems.logging import log_all_update
 from .....systems.auth import check_osu_verified
@@ -71,12 +70,8 @@ async def card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request)
         if saved_name:
             username = saved_name
         else:
-            text = (
-                "Использование: `/c Fujiya` <- никнейм\n\n\n"
-                "⚙ *Дополнительно*\n\n"
-                "/name – сохранить ник\n"
-            )
-            await safe_send_message(update, text, parse_mode="Markdown")
+            await set_name(update, context)
+            await temp_message.delete()
             return
     else:
         username = " ".join(context.args)

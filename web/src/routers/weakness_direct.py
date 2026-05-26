@@ -7,6 +7,6 @@ templates = Jinja2Templates(directory="templates")
 router = APIRouter()
 
 
-@router.get("/darkness/direct", response_class=HTMLResponse)
+@router.get("/weakness/direct", response_class=HTMLResponse)
 async def dashboard(request: Request):
-    return templates.TemplateResponse("darkness_direct.html", {"request": request})
+    return templates.TemplateResponse("weakness_direct.html", {"request": request})

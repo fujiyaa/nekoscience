@@ -11,7 +11,7 @@ from pathlib import Path
 
 templates = Jinja2Templates(directory="templates")
 
-router = APIRouter(prefix="/darkness/reminders")
+router = APIRouter(prefix="/weakness/reminders")
 
 BASE_DIR = Path(__file__).resolve().parents[3]  # nekoscience/
 DATA_FILE = BASE_DIR / "web" / "src" / "reminders" / "data" / "reminders.json"
@@ -32,7 +32,7 @@ for filename, initial_content in files_to_create.items():
 
 @router.get("/")
 async def reminders(request: Request):
-    return templates.TemplateResponse("darkness_reminders.html", {"request": request})
+    return templates.TemplateResponse("weakness_reminders.html", {"request": request})
 
 
 

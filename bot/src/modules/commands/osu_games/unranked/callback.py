@@ -2,10 +2,11 @@
 
 
 import traceback
-from telegram import Update, LinkPreviewOptions, MessageEntity
+from telegram import Update, MessageEntity
 from telegram.ext import ContextTypes
 from datetime import datetime, timezone
 
+from ....commands.service import set_name
 from ....actions.messages import safe_query_answer
 from ....systems.json_files import load_score_file
 from ....external.localapi import read_file_neko, insert_to_file_neko, remove_from_file_neko
@@ -53,12 +54,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             join_osu_id = await get_osu_id(str(query.from_user.id))
             
             if not join_osu_id:
-                raise StopTransaction(
-                        answer={
-                            "text": "❌ Не авторизован осу аккаунт в боте? /name",
-                            "show_alert": True
-                        }                            
-                    )
+                raise AuthException
             else:
                 join_osu_id = str(join_osu_id)
             
@@ -241,7 +237,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if osu_id: 
             osu_id = str(osu_id) 
         else: 
-            return # хз выход
+            raise AuthException
         
         if action == "menu":
 
@@ -1712,6 +1708,10 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         "show_alert": True
                     }
                 )
+            
+    except AuthException:
+        await set_name(update, context)
+        return
         
     except StopTransaction as e:
 

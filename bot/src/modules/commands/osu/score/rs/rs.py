@@ -7,6 +7,7 @@ import traceback
 from telegram import Update
 from telegram.ext import ContextTypes
 
+from .....commands.service import set_name
 from .....external.osu_http import get_beatmap_title_from_file, get_beatmap_creator_from_file
 from .....actions.messages import safe_send_message, try_send, reset_remove_timer
 from .....actions.public_buttons import get_keyboard as get_pbk
@@ -52,11 +53,7 @@ async def rs(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if fails: fails = 1
 
         if not username:
-            await safe_send_message(
-                update, 
-                f"`{DT.get('No nickname saved...')[l]}`", 
-                parse_mode="Markdown"
-            )
+            await set_name(update, context)
             return
 
         loading_msg = await try_send(

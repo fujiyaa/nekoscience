@@ -170,7 +170,7 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
         f'{user_link}{map_text}<b><i><a href="{score_url}">{rank}</a></i>  {mods_text}   {accuracy_display}</b>    <code>{score_date}</code>{spacer}'
         f"{pp_text} • {combo_text}{miss_text}"
         f"<code>{text_format.seconds_to_hhmmss(length)} • CS:{cs:g} AR:{ar:g} OD:{od:g} BPM:{bpm:g}</code>\n\n"
-        f'⦿ <a href="{map_url}">Mapset</a> by {mapper} • {status.capitalize()}  <a href="https://myangelfujiya.ru/darkness/direct?id={map_id}">🔗</a>\n'
+        f'⦿ <a href="{map_url}">Mapset</a> by {mapper} • {status.capitalize()}  <a href="https://myangelfujiya.ru/weakness/direct?id={map_id}">🔗</a>\n'
         )          
     # &set_id={set_id} вырезано из ссылки директа
 

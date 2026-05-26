@@ -8,6 +8,7 @@ import html
 from telegram import Update, MessageEntity
 from telegram.ext import ContextTypes
 
+from ....commands.service import set_name
 from ....actions.messages import safe_send_message
 from ....systems.cooldowns import check_user_cooldown
 from ....systems.logging import log_all_update
@@ -73,31 +74,13 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
         osu_name = await check_osu_verified(user_id)
 
         if not osu_name:
-            raise StopTransaction(                
-                send={
-                    "method": "reply_text",
-                    "kwargs":{
-                        "text": "<code>⚠ Что-то не так с авторизацией, попробуй еще раз вот это:</code> /name",
-                        "parse_mode": "HTML",
-                        "reply_markup": None
-                    }
-                }
-            )
+            raise AuthException
         
         osu_id = await get_osu_id(user_id)
         if osu_id: 
             osu_id = str(osu_id) 
         else: 
-            raise StopTransaction(                
-                send={
-                    "method": "reply_text",
-                    "kwargs":{
-                        "text": "<code>⚠ Что-то не так с авторизацией, попробуй еще раз вот это:</code> /name",
-                        "parse_mode": "HTML",
-                        "reply_markup": None
-                    }
-                }
-            )
+            raise AuthException
 
         message_text = update.message.text.strip()
         result = parse_osu_url(message_text)
@@ -535,6 +518,10 @@ async def unranked_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                 }
                             }
                         )
+                    
+    except AuthException:
+        await set_name(update, context)
+        return
                    
     except StopTransaction as e:
 

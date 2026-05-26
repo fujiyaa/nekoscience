@@ -480,7 +480,6 @@ PARAMS_TEMPLATE = {
 }
 
 UNLUCKY_MESSAGES = [ "Не повезло", "Ничего", "Пусто"]
-CHALLENGE_COMMANDS = ["/challenge", "/next_challenge", "/finish", "/skip", "/name", "/info", "/force_finish", "/leaderboard"]
 
 fail_texts = [
     "Не повезло",

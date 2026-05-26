@@ -6,8 +6,10 @@ import asyncio
 from telegram import Update
 from telegram.ext import ContextTypes
 
+from .....commands.service import set_name
 from .....systems.cooldowns import check_user_cooldown
 from .....systems.logging import log_all_update
+from .....systems.auth import check_osu_verified
 from .....external.osu_api import get_osu_token, get_user_profile, get_top_100_scores
 from .....utils.text_format import format_stats, make_header, row
 
@@ -34,7 +36,7 @@ async def compare_profile(update: Update, context: ContextTypes.DEFAULT_TYPE, us
     
     for attempt in range(1, MAX_ATTEMPTS + 1):
         try:
-            temp_message = await update.message.reply_text(f"`Загрузочка... `{attempt}/{MAX_ATTEMPTS}", parse_mode="Markdown") 
+            temp_message = await update.message.reply_text(f"`Загрузка...`", parse_mode="Markdown") 
             break
         except Exception as e:
             print(e)
@@ -42,42 +44,26 @@ async def compare_profile(update: Update, context: ContextTypes.DEFAULT_TYPE, us
 
     for attempt in range(1, MAX_ATTEMPTS + 1):
         try:
-    
-            await context.bot.edit_message_text(
-                    chat_id=update.effective_chat.id,
-                    message_id=temp_message.message_id,
-                    text=f"`Загрузочка... {attempt}/{MAX_ATTEMPTS}`", 
-                    parse_mode="Markdown")
+            saved_osu_name = await check_osu_verified(str(update.effective_user.id))
 
-            args_text = " ".join(context.args)
+            args_text = " ".join(context.args).strip()
 
-            if args_text.count("#") == 1:
+            username1, username2 = parse_pc(args_text, saved_osu_name)
+
+            if not username1:
+                await set_name(update, context)
+                await temp_message.delete()
+                return
+            if not username1 or not username2:
                 await context.bot.edit_message_text(
                     chat_id=update.effective_chat.id,
                     message_id=temp_message.message_id,
-                    text="`Ошибка: найден только один #. Должно быть либо 0, либо 2.`",
+                    text=("Против себя: `/pc ник1 (в том числе с пробелами)`\n\n" 
+                          "Два ника: `/pc ник1 ник2`\n" 
+                          "Два ника: `/pc #ник1 #ник2 (для ников с пробелами)`"),
                     parse_mode="Markdown"
                 )
                 return
-            elif args_text.count("#") == 2:
-                parts = args_text.split("#")
-                username1 = parts[1].strip()
-                username2 = parts[2].strip()
-            else:
-                parts = args_text.split()
-                if len(parts) != 2:
-                    await context.bot.edit_message_text(
-                        chat_id=update.effective_chat.id,
-                        message_id=temp_message.message_id,
-                        text=(
-                            "Использование: `/pc <ник1> <ник2>`\n\n"
-                            "Пример: `/pc Fujiya Vaxei`\n"
-                            "Или с пробелами: `/pc #Fujiya #cs Pro 2014`"
-                        ),
-                        parse_mode="Markdown"
-                    )
-                    return
-                username1, username2 = parts[0], parts[1]
             
             token = await get_osu_token()
             async def fetch_data(name):
@@ -156,3 +142,30 @@ async def compare_profile(update: Update, context: ContextTypes.DEFAULT_TYPE, us
                     text=f"`Ошибка после {MAX_ATTEMPTS} попыток...`",
                     parse_mode="Markdown"
                 )
+
+def parse_pc(args_text: str, saved_name: str | None):
+    args_text = args_text.strip()
+
+    if "#" in args_text:
+        parts = [p.strip() for p in args_text.split("#") if p.strip()]
+        
+        if len(parts) == 1:
+            if not saved_name:
+                return None, None
+            return saved_name, parts[0]
+
+        # #user1 #user2 → user1 vs user2
+        if len(parts) >= 2:
+            return parts[0], parts[1]
+
+    parts = args_text.split()
+
+    if len(parts) == 2:
+        return parts[0], parts[1]
+
+    if len(parts) >= 1:
+        if not saved_name:
+            return None, None
+        return saved_name, " ".join(parts)
+
+    return None, None

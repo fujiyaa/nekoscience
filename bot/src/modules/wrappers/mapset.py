@@ -31,7 +31,7 @@ async def get_mapset_link(cached_entry: dict = None):
 
     map_id = map.get('beatmap_id')
     map_url = f"https://osu.ppy.sh/b/{map_id}"
-    direct_link = f'<a href="https://myangelfujiya.ru/darkness/direct?id={map_id}">🔗</a>'
+    direct_link = f'<a href="https://myangelfujiya.ru/weakness/direct?id={map_id}">🔗</a>'
     mapper_link = f'<a href="https://osu.ppy.sh/users/{mapper}">by {mapper}</a>'
     mapset_link = f'⦿ <a href="{map_url}">Mapset</a> {mapper_link} • {status.capitalize()}  {direct_link}'
 
