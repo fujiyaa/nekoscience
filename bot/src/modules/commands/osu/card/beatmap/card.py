@@ -132,7 +132,7 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
 
             with open(img_path, "rb") as f:
                 try:
-                    reply_markup = get_pkb(beatmap_id=str(map_id))
+                    reply_markup = get_pkb(beatmap_id=str(beatmap_id))
                     bot_msg = await message.reply_photo(
                         InputFile(f), reply_markup = reply_markup
                     )

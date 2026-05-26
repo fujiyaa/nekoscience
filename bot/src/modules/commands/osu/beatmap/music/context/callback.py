@@ -36,7 +36,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         delete_origin = True
         
     # так как delete это режим для public keyboard
-    if delete_origin: 
+    if delete_origin:
         if uid_click != origin_uid:
                 await safe_query_answer(query, text="Не твои кнопки")
                 return
