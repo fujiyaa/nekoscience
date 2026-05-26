@@ -39,7 +39,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             map = await get_beatmap(beatmap_id, token)
             
 
-            text = "["
+            text = "Weakness ->>- ["
 
             text += f"http://osu.ppy.sh/b/{str(beatmap_id)} " 
             
