@@ -5,6 +5,7 @@ import asyncio
 import temp
 from datetime import datetime
 
+from .....actions.public_buttons import get_keyboard as get_pkb
 from .....external.osu_api import get_top_100_scores
 from .....external.osu_http import beatmap
 from .....external.localapi import get_score_pp_neko_api
@@ -176,5 +177,11 @@ async def send_score_fix(update, cached_entry, user_id, token:str = None):
         f"{TR['r_fix_to'][lang_code]}<b><u>{max_pp_int}</u>.{max_pp_frac}рр</b>.{best_text}"
         f"\n⠀"
     )        
+
+    reply_markup = get_pkb(beatmap_id=str(map_id))
     
-    return await update.message.reply_text(text=caption, parse_mode="HTML")
+    return await update.message.reply_text(
+        text=caption, 
+        parse_mode="HTML",
+        reply_markup=reply_markup
+    )

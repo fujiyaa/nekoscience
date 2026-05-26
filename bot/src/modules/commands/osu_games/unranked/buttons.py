@@ -270,7 +270,7 @@ def get_match_edit_keyboard(
                     callback_data=with_owner(f"unranked_matchleave_{match_id}")
                 ),
                 InlineKeyboardButton(
-                    "📨 Получить в осу",
+                    "📨 Получить карту",
                     callback_data=f"send_pm_with_link_to:{beatmap_id}"
                 ),
             ],
@@ -289,7 +289,7 @@ def get_match_edit_keyboard(
                     callback_data=with_owner(f"unranked_matchcancel_{match_id}")
                 ),
                 InlineKeyboardButton(
-                    "📨 Получить в осу",
+                    "📨 Получить карту",
                     callback_data=f"send_pm_with_link_to:{beatmap_id}"
                 ),           
             ],
@@ -466,7 +466,7 @@ def get_pm_keyboard(beatmap_id: str):
     keyboard = [
         [
             InlineKeyboardButton(
-                "📨 Получить в осу",
+                "📨 Получить карту",
                 callback_data=f"send_pm_with_link_to:{beatmap_id}"
             )
         ]

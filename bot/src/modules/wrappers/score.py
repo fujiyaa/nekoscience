@@ -181,7 +181,14 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
     return img_path, caption
 
 
-async def send_score( update: Update, cached_entry: dict, user_id: str,  session: dict,  message_id: int, query=None,  show_buttons=True, img_path=None, is_recent=True):
+async def send_score(
+        update: Update, 
+        cached_entry: dict, 
+        query=None, 
+        img_path=None, 
+        is_recent=True,
+        reply_markup=None
+    ):
     s =  temp.load_json(USER_SETTINGS_FILE, default={})
     user_settings = s.get(str(update.effective_user.id), {}) 
     rs_bg_render = user_settings.get("rs_bg_render", False)  
@@ -202,12 +209,14 @@ async def send_score( update: Update, cached_entry: dict, user_id: str,  session
                 with open(img_path, "rb") as f:
                     bio = io.BytesIO(f.read())
                 media = InputMediaPhoto(media=bio, caption=caption, parse_mode="HTML")
+                await query.edit_message_reply_markup(reply_markup=reply_markup)
                 return await query.edit_message_media(media=media)
             else:
                 return await query.edit_message_text(
                     text=caption,
                     parse_mode="HTML",
-                    link_preview_options=link_preview
+                    link_preview_options=link_preview,
+                    reply_markup=reply_markup
                 )
         else:
             if img_path:
@@ -215,12 +224,14 @@ async def send_score( update: Update, cached_entry: dict, user_id: str,  session
                     photo=open(img_path, "rb"),
                     caption=caption,
                     parse_mode="HTML",
+                    reply_markup=reply_markup
                 )
             else:
                 return await update.message.reply_text(
                     caption,
                     parse_mode="HTML",
-                    link_preview_options=link_preview
+                    link_preview_options=link_preview,
+                    reply_markup=reply_markup
                 )
     except Exception:
         traceback.print_exc()

@@ -33,7 +33,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             else: 
                 return               
             
-            await safe_query_answer(query,"🍉 Отправляется сообщение в осу...")  
+            await safe_query_answer(query,"🍉 Отправлено в личные сообщения (чат в игре)...")  
 
             token = await get_osu_token()
             map = await get_beatmap(beatmap_id, token)

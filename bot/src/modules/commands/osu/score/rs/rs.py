@@ -9,6 +9,7 @@ from telegram.ext import ContextTypes
 
 from .....external.osu_http import get_beatmap_title_from_file, get_beatmap_creator_from_file
 from .....actions.messages import safe_send_message, try_send, reset_remove_timer
+from .....actions.public_buttons import get_keyboard as get_pbk
 from .....systems.cooldowns import check_user_cooldown
 from .....systems.logging import log_all_update
 from .....systems.auth import check_osu_verified
@@ -84,7 +85,15 @@ async def rs(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "keyboardExt": False
         }
 
-        msg = await try_send(send_score, update, score, user_id, local_session, message_id=0)
+        msg = await try_send(
+                send_score, 
+                update = update,
+                cached_entry = score,
+                query = None,
+                img_path = None,
+                is_recent = True,
+                reply_markup = None
+            )        
         
         map_id = score.get('map').get('beatmap_id')
         score_id = score.get('meta').get('score_id', 0)
@@ -117,7 +126,12 @@ async def rs(update: Update, context: ContextTypes.DEFAULT_TYPE):
             msg.chat.id,
             msg.message_id,
             RS_BUTTONS_TIMEOUT,
-            cleanup=lambda: user_sessions.pop(msg.message_id, None)
+            cleanup=lambda: user_sessions.pop(msg.message_id, None),
+            replace_with=get_pbk,
+            replace_args={
+                "state": "hidden",
+                "beatmap_id": map_id
+            }
         )        
         
         if str(msg.chat.id) == "-1003999493820" or str(msg.chat.id) == "-1002502301063" or str(msg.chat.id) == "1803166423":

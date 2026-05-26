@@ -141,24 +141,40 @@ async def try_send(coro_func, *args, retries=3, delay=1, **kwargs):
                 return None
 
 
-def reset_remove_timer(bot, chat_id, msg_id, delay=30, cleanup=None):    
+def reset_remove_timer(
+    bot,
+    chat_id,
+    msg_id,
+    delay=30,
+    cleanup=None,
+    replace_with=None,
+    replace_args=None
+):
     if msg_id in remove_tasks:
         remove_tasks[msg_id].cancel()
 
     async def delayed():
-
-        # ошибка здесь это нормально
         await asyncio.sleep(delay)
+
         try:
+            reply_markup = None
+
+            if callable(replace_with):
+                args = replace_args or {}
+                reply_markup = replace_with(**args)
+
             await bot.edit_message_reply_markup(
                 chat_id=chat_id,
                 message_id=msg_id,
-                reply_markup=None
+                reply_markup=reply_markup
             )
-        except Exception:
-            pass
+
+        except Exception as e:
+            print(e)
+
         finally:
             remove_tasks.pop(msg_id, None)
+
             if cleanup:
                 cleanup()
 

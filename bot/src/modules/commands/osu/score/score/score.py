@@ -15,6 +15,7 @@ from .....actions.context import set_message_context
 from .....systems.images import delayed_remove
 from .....wrappers.score_image_v2 import get_score_caption
 from .....image_processing.workflows.score_adaptive.processing_v1 import create_score_compare_image
+from .....actions.public_buttons import get_keyboard as get_pkb
 import temp
 
 from config import COOLDOWN_RS_COMMAND     # why
@@ -57,20 +58,35 @@ async def score(update: Update, context: ContextTypes.DEFAULT_TYPE, requested_by
         render_card = user_settings.get("settings_score_card", False)
         l = user_settings.get("lang", "ru")
 
+        try:
+            map_id=cached_entry.get('map').get('beatmap_id')
+        except:
+            map_id=0
+
+        reply_markup = get_pkb(beatmap_id=str(map_id))
+
         if not render_card:
-            bot_msg = await send_score(update, cached_entry, user_id, user_id, user_id, is_recent=False)
+            bot_msg = await send_score( 
+                update = update,
+                cached_entry = cached_entry,
+                query = None,
+                img_path = None,
+                is_recent = False,
+                reply_markup = reply_markup
+            )
         else:
             scores = []
             scores.append(cached_entry)
             img_path = await create_score_compare_image(scores, language=l)
             
-            caption = await get_score_caption(cached_entry, l)
+            caption = await get_score_caption(cached_entry, l)            
 
             try:     
                 if img_path:
                     bot_msg = await update.message.reply_photo(
                         photo=open(img_path, "rb"),
                         caption=caption,
+                        reply_markup=reply_markup,
                         parse_mode="HTML"    
                     )
                 
@@ -79,9 +95,7 @@ async def score(update: Update, context: ContextTypes.DEFAULT_TYPE, requested_by
                 else:
                     raise() 
             except Exception:
-                traceback.print_exc()
-
-        map_id=cached_entry.get('map').get('beatmap_id')
+                traceback.print_exc()        
 
         if bot_msg:
             set_message_context(

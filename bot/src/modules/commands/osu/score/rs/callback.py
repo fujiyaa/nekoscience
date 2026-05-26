@@ -11,7 +11,8 @@ from telegram import Update, InputMediaPhoto, LinkPreviewOptions
 from telegram.ext import ContextTypes
 
 from .....external.osu_http import get_beatmap_title_from_file, get_beatmap_creator_from_file
-from .....actions.messages import reset_remove_timer, safe_query_answer, safe_edit_query, try_send
+from .....actions.messages import reset_remove_timer, safe_query_answer, try_send
+from .....actions.public_buttons import get_keyboard as get_pbk
 from .....systems.json_files import load_score_file
 from .....wrappers.score import process_score_and_image
 from .....wrappers.score_image_v2 import get_score_caption
@@ -74,14 +75,23 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await try_send(
             update.effective_message.edit_reply_markup,
             reply_markup=reply_markup
-        )
+        )        
+
+        score_id = str(session["scores"][new_index]["osu_api_data"]["id"])
+        entry = load_score_file(score_id)
+        map_id=entry.get('map').get('beatmap_id')
 
         reset_remove_timer(
             context.bot,
             update.effective_chat.id,
             message_id,
             RS_BUTTONS_TIMEOUT,
-            cleanup=lambda: user_sessions.pop(message_id, None)
+            cleanup=lambda: user_sessions.pop(message_id, None),
+            replace_with=get_pbk,
+            replace_args={
+                "state": "hidden",
+                "beatmap_id": map_id
+            }
         )
         return
     
@@ -198,7 +208,12 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             query.message.chat.id,
             query.message.message_id,
             RS_BUTTONS_TIMEOUT,
-            cleanup=lambda: user_sessions.pop(query.message.message_id, None)
+            cleanup=lambda: user_sessions.pop(query.message.message_id, None),
+            replace_with=get_pbk,
+            replace_args={
+                "state": "hidden",
+                "beatmap_id": map_id
+            }
         )
 
     except Exception:

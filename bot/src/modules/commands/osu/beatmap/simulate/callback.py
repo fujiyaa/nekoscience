@@ -5,6 +5,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from .....actions.messages import safe_query_answer
+from .....actions.public_buttons import get_keyboard as get_pkb
 
 from config import sessions_simulate
 
@@ -20,10 +21,11 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if query.data == "simulate_close":
         try:
+            reply_markup = get_pkb(beatmap_id=str(sess['beatmap']))
             await context.bot.edit_message_reply_markup(
                 chat_id=sess["chat_id"],
                 message_id=sess["message_id"],
-                reply_markup=None
+                reply_markup=reply_markup
             )
         except:
             pass

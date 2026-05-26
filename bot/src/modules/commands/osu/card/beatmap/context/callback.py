@@ -6,12 +6,12 @@ import traceback
 from telegram.ext import ContextTypes
 from telegram import Update, InputFile
 
+from ......actions.public_buttons import get_keyboard as get_pkb
 from ......actions.messages import safe_edit_query, safe_query_answer
 from ......actions.context import set_message_context
 from ......external.osu_http import fetch_txt_beatmaps
 from ......external.osu_api import get_osu_token, get_beatmap
 from ......actions.context import set_message_context
-from ..buttons import get_keyboard
 from ..processing_v1 import create_beatmap_image
 from ..utils import delayed_remove
 import temp
@@ -64,7 +64,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             with open(img_path, "rb") as f:
                 try:
-                    reply_markup = await get_keyboard(str(map_id))
+                    reply_markup = await get_pkb(str(map_id))
                     bot_msg = await context.bot.send_photo(
                         query.message.chat.id,
                         message_thread_id=query.message.message_thread_id,

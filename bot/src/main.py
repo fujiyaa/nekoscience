@@ -89,7 +89,7 @@ def register_callbacks(app):
         (callback_msk2,     r"^ms_page:"),
         (callback_sim,      r"^simulate_"),
         (callback_sim_ctx,  r"^sim_context:(map|cancel)"),
-        (callback_muz_ctx,  r"^muz_context:(map|cancel)"),
+        (callback_muz_ctx,  r"^muz_context:(map|pkbmap|cancel)"),
 
         # cards
         (callback_map_ctx,  r"^card_beatmap_context:(map|cancel)"),
@@ -116,7 +116,10 @@ def register_callbacks(app):
         (osu_chat_callback, r"^send_pm_with_link_to:"),
 
         # mod
-        (callback_modv,     r"^modv:")
+        (callback_modv,     r"^modv:"),
+
+        # public keyborad
+        (callback_pkb,      r"^pkb:")
     ]
 
     for handler, pattern in callbacks:

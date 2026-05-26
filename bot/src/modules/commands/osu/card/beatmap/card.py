@@ -14,7 +14,7 @@ from .....external.osu_http import fetch_txt_beatmaps
 from .....external.osu_api import get_osu_token, get_beatmap
 from .....actions.context import set_message_context, get_message_context
 from .context.buttons import get_context_keyboard
-from .buttons import get_keyboard
+from .....actions.public_buttons import get_keyboard as get_pkb
 from .processing_v1 import create_beatmap_image
 from .utils import delayed_remove
 import temp
@@ -132,7 +132,7 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
 
             with open(img_path, "rb") as f:
                 try:
-                    reply_markup = await get_keyboard(str(beatmap_id))
+                    reply_markup = get_pkb(beatmap_id=str(map_id))
                     bot_msg = await message.reply_photo(
                         InputFile(f), reply_markup = reply_markup
                     )

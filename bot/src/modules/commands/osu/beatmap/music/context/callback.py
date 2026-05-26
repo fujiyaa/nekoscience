@@ -3,7 +3,6 @@
 
 import os
 import asyncio
-import traceback
 
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -26,14 +25,21 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid_click = query.from_user.id
      
     parts = query.data.split(":")
-    # ["simulate_context", "map", "<map_id>", "<origin_user_id>"]
+    # ["muz_context", "map", "<map_id>", "<origin_user_id>"]
     action = parts[1]
     beatmap_id = str(parts[2])
     origin_uid = int(parts[3])
-    
-    if uid_click != origin_uid:
-            await safe_query_answer(query, text="Не твои кнопки")
-            return
+
+    if action == "pkbmap":
+        delete_origin = False
+    else:
+        delete_origin = True
+        
+    # так как delete это режим для public keyboard
+    if delete_origin: 
+        if uid_click != origin_uid:
+                await safe_query_answer(query, text="Не твои кнопки")
+                return
     
     beatmap_data = await get_beatmap(beatmap_id)
 
@@ -50,57 +56,106 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if action == "cancel":
         await safe_edit_query(query, text="`Отменено`", parse_mode="Markdown")
         return
+    
+    await handle_map_action(
+        update,
+        context,
+        beatmap_id,
+        send_audio,
+        download_osz_async,
+        beatmap_artists_and_audio_path,
+        get_beatmap_title_from_file,
+        get_beatmap_creator_from_file,
+        set_message_context,
+        OSU_SESSION,
+        OSZ_DIR,
+        delete_origin
+    )
 
-    if action == "map":   
-        try:                    
-            status_msg = await safe_edit_query(query, text="`Загрузка...`", parse_mode="Markdown")
-                    
-            max_attempts = 1
-            
-            result = None
+async def handle_map_action(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    beatmap_id: str,
+    send_audio,
+    download_osz_async,
+    beatmap_artists_and_audio_path,
+    get_beatmap_title_from_file,
+    get_beatmap_creator_from_file,
+    set_message_context,
+    OSU_SESSION,
+    OSZ_DIR,
+    delete_origin
+):
+    query = update.callback_query
+    origin_message = query.message
 
-            for _ in range(max_attempts):
-                try:
-                    result = await download_osz_async(
-                        beatmap_id,
-                        OSU_SESSION,
-                        OSZ_DIR
-                    )
-                    break
-                except Exception as e:
-                    print(e)
+    uid_click = query.from_user.id
+  
+    status_msg = None
 
-            if not result:
-                raise RuntimeError("Failed to download beatmap")
-            
-            mapset_id = str(result["mapset_id"])
-            base_path = result["path"]
+    try:
+        if delete_origin:
+            try:
+                await origin_message.edit_text(text="`Загрузка...`", parse_mode="Markdown")
+            except Exception:
+                pass
+        else:
+            status_msg = await query.message.reply_text(text="`Загрузка...`", parse_mode="Markdown")
 
-            title, artist, audio_name, bg_path = await beatmap_artists_and_audio_path(base_path)
+        result = await download_osz_async(
+            beatmap_id,
+            OSU_SESSION,
+            OSZ_DIR
+        )
 
-            audio_file_path = os.path.join(base_path, audio_name)
+        if not result:
+            raise RuntimeError("Download failed")
 
-            bot_msg = await send_audio(update, context, audio_file_path, title, artist, bg_path, beatmap_id)
+        mapset_id = str(result["mapset_id"])
+        base_path = result["path"]
 
-            map_id=int(beatmap_id)
+        title, artist, audio_name, bg_path = await beatmap_artists_and_audio_path(base_path)
 
-            if bot_msg:
-                set_message_context(
-                    bot_msg, 
-                    reply=False, 
-                    mapset_id=map_id,
-                    map_title=await get_beatmap_title_from_file(map_id),
-                    mapper_username=await get_beatmap_creator_from_file(map_id),
-                    origin_call_user_id=update.effective_user.id,
+        audio_file_path = os.path.join(base_path, audio_name)
+
+        bot_msg = await send_audio(
+            update,
+            context,
+            audio_file_path,
+            title,
+            artist,
+            bg_path,
+            beatmap_id
+        )
+
+        if bot_msg:
+            set_message_context(
+                bot_msg,
+                reply=False,
+                mapset_id=int(mapset_id),
+                map_title=await get_beatmap_title_from_file(mapset_id),
+                mapper_username=await get_beatmap_creator_from_file(mapset_id),
+                origin_call_user_id=uid_click,
+            )
+        if delete_origin:
+            try:
+                await asyncio.sleep(0.5)
+
+                await context.bot.delete_message(
+                    chat_id=origin_message.chat_id,
+                    message_id=origin_message.message_id
                 )
+            except Exception:
+                pass
 
-        except  Exception as e:
-            print(e)
+    except Exception as e:
+        print("handle_map_action error:", e)
 
-        try:
-            asyncio.create_task(delete_message_after_delay(context, status_msg.chat_id, status_msg.message_id, 1)) 
+    finally:
         
-
-
-        except Exception:
-            traceback.print_exc() 
+        if status_msg:
+            try:
+                await asyncio.sleep(1)
+                await status_msg.delete()
+            except Exception:
+                pass
