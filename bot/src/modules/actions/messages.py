@@ -188,7 +188,7 @@ async def delayed_remove(path, delay=5):
 
 #retries
 
-async def safe_query_answer(query, text=None, show_alert=True, retries=2, delay=1):
+async def safe_query_answer(query, text=None, show_alert=True, retries=1, delay=1):
     attempt = 0
     while attempt <= retries:
         try:
