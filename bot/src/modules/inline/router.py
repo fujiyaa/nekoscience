@@ -133,8 +133,15 @@ def format_map_results(data, query, search_term, seen_ids: set | None = None):
 
         kb = InlineKeyboardMarkup([
             [
-                InlineKeyboardButton("🔗 Direct", url=direct_url),
-                InlineKeyboardButton("🍥 Mirror", url=beatconnect_url),
+                InlineKeyboardButton(
+                    "🎶  Трек",
+                    callback_data=f"muz_context:inline:{mapset_id}:67"
+                ),
+                InlineKeyboardButton(
+                    "📨 Получить карту",
+                    callback_data=f"pm_mapset:{mapset_id}"
+                ),
+            ],[
                 InlineKeyboardButton(
                     "🔄 Поиск",
                     switch_inline_query_current_chat=f"map {search_term}"
@@ -145,8 +152,9 @@ def format_map_results(data, query, search_term, seen_ids: set | None = None):
         username = query.from_user.username or "user"
 
         message_text = (
-            f"@{username}  •  "
-            f"<a href=\"{mapset_url}\"><b>Mapset</b></a>  •  "
+            f"<a href=\"{direct_url}\"><b>🔗Директ</b></a>  "
+            f"<a href=\"{mapset_url}\"><b>🔗Сайт</b></a>  "
+            f"<a href=\"{beatconnect_url}\"><b>🍥Зеркало</b></a>  •  "
             f"id<code>{mapset_id}</code>"
         )
 

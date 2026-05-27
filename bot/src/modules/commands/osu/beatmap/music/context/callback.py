@@ -8,10 +8,9 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from ......external.osu_http import get_beatmap_title_from_file, get_beatmap_creator_from_file
-from ......external.osu_api import get_beatmap
+from ......external.osu_api import get_beatmap, get_beatmapset
 from ......actions.messages import safe_edit_query, safe_query_answer
 from ......actions.context import set_message_context
-from ......actions.messages import delete_message_after_delay
 from ......external.osu_and_meatconnect import download_osz_async
 from ..send_audio import send_audio
 from ..utils import beatmap_artists_and_audio_path
@@ -25,31 +24,43 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid_click = query.from_user.id
      
     parts = query.data.split(":")
-    # ["muz_context", "map", "<map_id>", "<origin_user_id>"]
+    # ["muz_context", "map|pkbmap|inline", "<map_id>", "<origin_user_id>"]
     action = parts[1]
     beatmap_id = str(parts[2])
     origin_uid = int(parts[3])
 
-    if action == "pkbmap":
+    if action == "pkbmap" or action == "inline":
         delete_origin = False
     else:
         delete_origin = True
         
-    # так как delete это режим для public keyboard
+    # так как delete это режим для обычной music
     if delete_origin:
         if uid_click != origin_uid:
                 await safe_query_answer(query, text="Не твои кнопки")
                 return
     
-    beatmap_data = await get_beatmap(beatmap_id)
+    if not action == "inline":
+        beatmap_data = await get_beatmap(beatmap_id)
 
-    if beatmap_data:
-        converted_mapset_id = (
-            beatmap_data.get("beatmapset_id")
-        )
+        if beatmap_data:
+            converted_mapset_id = (
+                beatmap_data.get("beatmapset_id")
+            )
 
-        if converted_mapset_id:
-            beatmap_id = converted_mapset_id
+            if converted_mapset_id:
+                beatmap_id = converted_mapset_id
+
+    elif action == "inline":
+        beatmap_data = await get_beatmapset(beatmap_id)
+
+        if beatmap_data:
+            
+            try:
+                beatmap_id = beatmap_data['beatmaps'][0]['id']
+            except:
+                pass
+
     
     await safe_query_answer(query, show_alert=False)
   
@@ -100,7 +111,19 @@ async def handle_map_action(
             except Exception:
                 pass
         else:
-            status_msg = await query.message.reply_text(text="`Загрузка...`", parse_mode="Markdown")
+            # query
+            if origin_message is not None:    
+                status_msg = await query.message.reply_text(text="`Загрузка...`", parse_mode="Markdown")
+
+            # inline
+            else:
+                status_msg = await context.bot.send_message(
+                    chat_id=update.effective_user.id, 
+                    text="`Загрузка...`", 
+                    parse_mode="Markdown"
+                )
+
+            
 
         result = await download_osz_async(
             beatmap_id,

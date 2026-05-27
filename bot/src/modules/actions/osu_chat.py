@@ -7,7 +7,7 @@ from telegram.ext import ContextTypes
 from .messages import safe_query_answer
 from ..systems.auth import check_osu_verified, get_osu_id
 from ..external.osu_api_chat import send_pm
-from ..external.osu_api import get_beatmap, get_osu_token
+from ..external.osu_api import get_beatmap, get_beatmapset
 from ..commands.service import set_name
 
 
@@ -18,7 +18,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     data = query.data
 
-    if data.startswith("send_pm_with_link_to:"):   
+    if data.startswith("pm_map:") or data.startswith("pm_mapset:"):   
         try:
             beatmap_id = int(data.split(":", 1)[1])
             # print(beatmap_id)
@@ -32,21 +32,32 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if osu_id: 
                 osu_id = str(osu_id) 
             else: 
+                await set_name(update, context)
                 return               
             
             await safe_query_answer(query,"🍉 Отправлено в личные сообщения (чат в игре)...")  
 
-            token = await get_osu_token()
-            map = await get_beatmap(beatmap_id, token)
+            if data.startswith("pm_map:"):
+                map = await get_beatmap(beatmap_id)
+                link = f"http://osu.ppy.sh/b/{str(beatmap_id)}"
+
+            elif data.startswith("pm_mapset:"):
+                map = {}
+                mapset = map['beatmapset'] = await get_beatmapset(beatmap_id)
+                beatmap_id = mapset['beatmaps'][0]['id']
+                link = f"http://osu.ppy.sh/b/{str(beatmap_id)}"                
             
 
             text = "Weakness ->>- ["
 
-            text += f"http://osu.ppy.sh/b/{str(beatmap_id)} " 
+            text += f"{link} " 
             
             text += f"{map['beatmapset']['artist']}  -  "
-            text += f"{map['beatmapset']['title']}  "  
-            text += f"[{map['version']}]"          
+            text += f"{map['beatmapset']['title']}  "
+            try:  
+                text += f"[{map['version']}]"
+            except:
+                text += f"[{mapset['beatmaps'][0]['version']}]"
                    
             text += "]     "
             

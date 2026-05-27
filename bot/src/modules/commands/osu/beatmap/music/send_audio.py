@@ -14,35 +14,58 @@ from telegram.error import TimedOut
 
 
 async def safe_reply_audio(
+    update,
     message,
+    context,
     kwargs,
     retries: int = 3
 ):
     last_error = None
 
+    send_methods = [
+        lambda: message.reply_audio(
+            **kwargs,
+            read_timeout=120,
+            write_timeout=120,
+            connect_timeout=30,
+            pool_timeout=30
+        ),
+
+        lambda: context.bot.send_audio(
+            chat_id=update.effective_user.id,
+            **kwargs,
+            read_timeout=120,
+            write_timeout=120,
+            connect_timeout=30,
+            pool_timeout=30
+        )
+    ]
+
     for attempt in range(1, retries + 1):
-        try:
-            print(f"[AUDIO SEND] attempt={attempt}")
+        print(f"[AUDIO SEND] attempt={attempt}")
 
-            return await message.reply_audio(
-                **kwargs,
-                read_timeout=120,
-                write_timeout=120,
-                connect_timeout=30,
-                pool_timeout=30
-            )
+        for method_index, method in enumerate(send_methods, start=1):
+            try:
+                print(f"[METHOD {method_index}] sending...")
 
-        except TimedOut as e:
-            last_error = e
+                return await method()
 
-            print(f"[TIMEOUT] attempt={attempt}")
-            traceback.print_exc()
+            except TimedOut as e:
+                last_error = e
 
-            await asyncio.sleep(2)
+                print(f"[TIMEOUT] attempt={attempt} method={method_index}")
+                traceback.print_exc()
 
-        except Exception:
-            traceback.print_exc()
-            raise
+                await asyncio.sleep(2)
+
+            except Exception as e:
+                last_error = e
+
+                print(f"[FAILED] attempt={attempt} method={method_index}")
+                traceback.print_exc()
+
+                # пробуем следующий метод
+                continue
 
     raise last_error
 
@@ -134,12 +157,16 @@ async def send_audio(
 
             if update.message is not None:
                 result = await safe_reply_audio(
+                    update,
                     update.message,
+                    context,
                     kwargs
                 )
             else:
                 result = await safe_reply_audio(
+                    update,
                     update.callback_query.message,
+                    context,
                     kwargs
                 )
 

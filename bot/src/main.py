@@ -89,7 +89,7 @@ def register_callbacks(app):
         (callback_msk2,     r"^ms_page:"),
         (callback_sim,      r"^simulate_"),
         (callback_sim_ctx,  r"^sim_context:(map|cancel)"),
-        (callback_muz_ctx,  r"^muz_context:(map|pkbmap|cancel)"),
+        (callback_muz_ctx,  r"^muz_context:(map|pkbmap|inline|cancel)"),
 
         # cards
         (callback_map_ctx,  r"^card_beatmap_context:(map|cancel)"),
@@ -113,7 +113,7 @@ def register_callbacks(app):
 
         # service
         (settings_handler,  r"^settings_"),                    
-        (osu_chat_callback, r"^send_pm_with_link_to:"),
+        (osu_chat_callback, r"^pm_(map|mapset):"),
 
         # mod
         (callback_modv,     r"^modv:"),

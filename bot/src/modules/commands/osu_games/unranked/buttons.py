@@ -271,7 +271,7 @@ def get_match_edit_keyboard(
                 ),
                 InlineKeyboardButton(
                     "📨 Получить карту",
-                    callback_data=f"send_pm_with_link_to:{beatmap_id}"
+                    callback_data=f"pm_map:{beatmap_id}"
                 ),
             ],
             [
@@ -290,7 +290,7 @@ def get_match_edit_keyboard(
                 ),
                 InlineKeyboardButton(
                     "📨 Получить карту",
-                    callback_data=f"send_pm_with_link_to:{beatmap_id}"
+                    callback_data=f"pm_map:{beatmap_id}"
                 ),           
             ],
             [
@@ -467,7 +467,7 @@ def get_pm_keyboard(beatmap_id: str):
         [
             InlineKeyboardButton(
                 "📨 Получить карту",
-                callback_data=f"send_pm_with_link_to:{beatmap_id}"
+                callback_data=f"pm_map:{beatmap_id}"
             )
         ]
     ]

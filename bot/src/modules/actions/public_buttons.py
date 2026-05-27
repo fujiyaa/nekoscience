@@ -26,7 +26,7 @@ def get_keyboard(state: str = 'hidden', beatmap_id: str = '0'):
                 ),
                 InlineKeyboardButton(
                     "📨 Получить карту",
-                    callback_data=f"send_pm_with_link_to:{beatmap_id}"
+                    callback_data=f"pm_map:{beatmap_id}"
                 )
             ]
         ]
