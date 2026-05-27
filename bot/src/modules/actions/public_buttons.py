@@ -9,7 +9,10 @@ state_tasks = {}  # msg_id -> task
 
 
 
-def get_keyboard(state: str = 'hidden', beatmap_id: str = '0'):     
+def get_keyboard(state: str = 'hidden', beatmap_id: str = '0', search_term: str = None):
+
+    if search_term is None:
+        search_term = beatmap_id
 
     if state == 'hidden':
         keyboard = [
@@ -19,15 +22,19 @@ def get_keyboard(state: str = 'hidden', beatmap_id: str = '0'):
         ]
     else:
         keyboard = [
-            [               
+            [         
                 InlineKeyboardButton(
-                    "🎶  Трек",
+                    "🎶 Трек",
+                    callback_data=f"pm_map:{beatmap_id}"
+                ),      
+                InlineKeyboardButton(
+                    "📨 Получить",
                     callback_data=f"muz_context:pkbmap:{beatmap_id}:67"
                 ),
                 InlineKeyboardButton(
-                    "📨 Получить карту",
-                    callback_data=f"pm_map:{beatmap_id}"
-                )
+                    "🔍",
+                    switch_inline_query_current_chat=f"map {search_term}"
+                ),                
             ]
         ]
 

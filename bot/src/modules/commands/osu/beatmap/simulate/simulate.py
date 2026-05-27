@@ -23,6 +23,8 @@ from config import sessions_simulate
 async def simulate(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await log_all_update(update)
 
+    map_id = None
+
     user_id = update.effective_user.id
     chat_id = update.effective_chat.id
     topic_id = getattr(update.effective_message, "message_thread_id", None)
@@ -31,38 +33,37 @@ async def simulate(update: Update, context: ContextTypes.DEFAULT_TYPE):
     match = OSU_MAP_REGEX.search(message_text)
 
     if not match:
-        message_context = get_message_context(update, reply=False)          
-        message_context_reply = get_message_context(update, reply=True)      
+        message_context = get_message_context(update, reply=False)
         if message_context:
-            m1 = m2 = None
+            message_context_reply = get_message_context(update, reply=True)
 
-            m1 = message_context["metadata"].get("map_id")
-            if message_context_reply:
-                m2 = message_context_reply["metadata"].get("map_id")
-       
-            if (m1 is not None) or (m2 is not None):
-                message_context_reply = get_message_context(update, reply=True)
-                               
-                await safe_send_message(
-                    update, 
-                    text=f"<code>Выбери карту...\n(или /simulate +ссылка)</code>", 
-                    reply_markup=get_context_keyboard(
-                        message_context,
-                        message_context_reply,
-                        update.effective_user.id,
-                    ),
-                    parse_mode="HTML"
-                )
-                return
+            await safe_send_message(
+                update, 
+                text=f"<code>Ты хочешь посмотреть</code> <b>  карточку  </b> <code>...</code>", 
+                reply_markup=await get_context_keyboard(
+                    message_context, 
+                    message_context_reply, 
+                    origin_user_id=update.effective_user.id, 
+                    origin_msg_id=update.effective_message.id
+                ),
+                parse_mode="HTML"
+            )
+    
+        if not message_context:
+            msg = await safe_send_message(update, text="`Нет карты в чате...`", parse_mode="Markdown")
 
-        msg = await update.message.reply_text(
-            "❌ Нужна ссылка на карту"
-        )
-        asyncio.create_task(delete_message_after_delay(context, msg.chat.id, msg.message_id, 5))
-        asyncio.create_task(delete_user_message(update, context, delay=4))
+            asyncio.create_task(delete_message_after_delay(context, msg.chat.id, msg.message_id, 10))
+            asyncio.create_task(delete_user_message(update, context, delay=10))
+        
         return
-    else:
+    
+    if match is None: 
+            return
+        
+    if map_id is None:
         beatmap_id = match.group(1) if match.group(1) else match.group(2)
+    else:
+        beatmap_id = map_id
 
     if user_id in sessions_simulate:
         try:

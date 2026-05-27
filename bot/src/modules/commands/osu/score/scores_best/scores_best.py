@@ -74,7 +74,7 @@ async def scores_best(update: Update, context: ContextTypes.DEFAULT_TYPE, user_r
         if not message_context:
             await safe_send_message(update, text="`Нет карты в чате...`", parse_mode="Markdown")
             await loading_msg.delete()
-            return       
+            return
 
     except Exception:
         traceback.print_exc() 

@@ -88,11 +88,11 @@ def register_callbacks(app):
         (callback_msk1,     r"^ms_(skill|mod|lazer|tol):"),
         (callback_msk2,     r"^ms_page:"),
         (callback_sim,      r"^simulate_"),
-        (callback_sim_ctx,  r"^sim_context:(map|cancel)"),
+        (callback_sim_ctx,  r"^sicxt:(map|cancel|ignore)"),
         (callback_muz_ctx,  r"^muz_context:(map|pkbmap|inline|cancel)"),
 
         # cards
-        (callback_map_ctx,  r"^card_beatmap_context:(map|cancel)"),
+        (callback_map_ctx,  r"^cbcxt:(map|cancel|ignore)"),
 
         # leaderboard
         (callback_lb,       r"^leaderboard_chat_"),

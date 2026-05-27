@@ -25,7 +25,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid_click = query.from_user.id
      
     parts = query.data.split(":")
-    # ["card_beatmap_context", "map", "<map_id>", "<origin_user_id>", "<origin_msg_id>"]
+    # ["cbcxt", "map", "<map_id>", "<origin_user_id>", "<origin_msg_id>"]
     action = parts[1]
     map_id = int(parts[2])
     origin_uid = int(parts[3])
@@ -34,12 +34,16 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if uid_click != origin_uid:
             await safe_query_answer(query, text="Не твои кнопки")
             return
-        
-    await safe_query_answer(query, show_alert=False)
-  
+          
     if action == "cancel":
         await safe_edit_query(query, text="`Отменено`", parse_mode="Markdown")
         return
+    
+    elif action == "ignore":
+        await safe_query_answer(query, text="Это название карты, ее сложности это кнопки ниже...", show_alert=True)
+        return
+        
+    await safe_query_answer(query, show_alert=False)
 
     if action == "map":   
         try:                    
@@ -64,7 +68,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             with open(img_path, "rb") as f:
                 try:
-                    reply_markup = await get_pkb(str(map_id))
+                    reply_markup = get_pkb(beatmap_id=str(map_id))
                     bot_msg = await context.bot.send_photo(
                         query.message.chat.id,
                         message_thread_id=query.message.message_thread_id,

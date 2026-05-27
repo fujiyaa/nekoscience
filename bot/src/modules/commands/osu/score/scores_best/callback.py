@@ -37,7 +37,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     
     elif action == "ignore":
-        await safe_query_answer(query, text="Это название карты, ее сложности это кнопки ниже...")
+        await safe_query_answer(query, text="Это название карты, ее сложности это кнопки ниже...", show_alert=True)
         return
     
     

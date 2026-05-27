@@ -38,39 +38,28 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
 
         if user_request:
             if not match:
-                message_context = get_message_context(update, reply=False)          
-                message_context_reply = get_message_context(update, reply=True)      
+                message_context = get_message_context(update, reply=False)
                 if message_context:
-                    m1 = m2 = None
-                    m1 = message_context["metadata"].get("map_id")
-                    if message_context_reply:
-                        m2 = message_context_reply["metadata"].get("map_id")
-            
-                    if (m1 is not None) or (m2 is not None):
-                        message_context_reply = get_message_context(update, reply=True)
-                                    
-                        await safe_send_message(
-                            update, 
-                            text=f"<code>Выбери карту...\n(или отправь ссылку)</code>", 
-                            reply_markup=get_context_keyboard(
-                                message_context,
-                                message_context_reply,
-                                update.effective_user.id,
-                                update.effective_message.id,
-                            ),
-                            parse_mode="HTML"
-                        )
-                        return
+                    message_context_reply = get_message_context(update, reply=True)
 
-                msg = await update.message.reply_text(
-                    text = (
-                        f"✖️ Для карточки нужна ссылка на карту\n\n"
-                        f"<i>Ищешь поиск карт? <code>/help inline</code></i>\n"
-                    ),                    
-                    parse_mode = "HTML"
-                )
-                asyncio.create_task(delete_message_after_delay(context, msg.chat.id, msg.message_id, 10))
-                asyncio.create_task(delete_user_message(update, context, delay=10))
+                    await safe_send_message(
+                        update, 
+                        text=f"<code>Ты хочешь посмотреть</code> <b>  карточку  </b> <code>...</code>", 
+                        reply_markup=await get_context_keyboard(
+                            message_context, 
+                            message_context_reply, 
+                            origin_user_id=update.effective_user.id, 
+                            origin_msg_id=update.effective_message.id
+                        ),
+                        parse_mode="HTML"
+                    )
+            
+                if not message_context:
+                    msg = await safe_send_message(update, text="`Нет карты в чате...`", parse_mode="Markdown")
+
+                    asyncio.create_task(delete_message_after_delay(context, msg.chat.id, msg.message_id, 10))
+                    asyncio.create_task(delete_user_message(update, context, delay=10))
+                
                 return
         
         if match is None: 

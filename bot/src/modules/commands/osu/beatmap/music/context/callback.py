@@ -52,15 +52,6 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 beatmap_id = converted_mapset_id
 
     elif action == "inline":
-        # beatmap_data = await get_beatmapset(beatmap_id)
-
-        # if beatmap_data:
-            
-        #     try:
-        #         beatmap_id = beatmap_data['beatmaps'][0]['id']
-        #     except:
-        #         pass
-
         # ожидается мапсет id?
         pass
 

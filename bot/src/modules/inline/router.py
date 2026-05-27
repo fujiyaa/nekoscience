@@ -143,7 +143,7 @@ def format_map_results(data, query, search_term, seen_ids: set | None = None):
                 ),
             ],[
                 InlineKeyboardButton(
-                    "🔄 Поиск",
+                    "🔄 повторить поиск",
                     switch_inline_query_current_chat=f"map {search_term}"
                 )
             ]
@@ -239,7 +239,7 @@ def format_profile_results(data, query, search_term, page):
 
         buttons.append(
             InlineKeyboardButton(
-                "🔄 Поиск",
+                "🔄 повторить поиск",
                 switch_inline_query_current_chat=f"user {search_term}"
             )
         )

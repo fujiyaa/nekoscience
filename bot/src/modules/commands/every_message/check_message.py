@@ -60,7 +60,7 @@ async def check_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             pass
             
         text_to_check = (update.effective_message.text or update.effective_message.caption or "").lower()
-        if "mapset" in text_to_check:            
+        if "зеркало" in text_to_check:            
             match = re.search(r'id(\d+)', text_to_check)
             if match:
                 mapset_id = int(match.group(1))
@@ -71,7 +71,7 @@ async def check_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     mapset_id=mapset_id,
                     origin_call_user_id=update.effective_user.id,
                 )
-        elif "profile" in text_to_check:            
+        if "profile" in text_to_check:            
             match = re.search(r'id(\d+)', text_to_check)
             if match:
                 username_text = int(match.group(1))
