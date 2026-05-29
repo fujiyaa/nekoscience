@@ -51,7 +51,7 @@ async def osu_link_score_handler(update: Update, context: ContextTypes.DEFAULT_T
     if not text: 
         return False
     
-    _filter = ['/b', '/u']
+    _filter = ['/b', '/u', '/topic', '/comments', '/forum']
     for f in _filter:
         if f in text:
             return False
