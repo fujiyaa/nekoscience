@@ -20,7 +20,7 @@ from .utils import delayed_remove
 import temp
 
 from config import USER_SETTINGS_FILE
-from config import OSU_MAP_REGEX, COOLDOWN_CARD_COMMAND
+from config import OSU_MAP_REGEX, OSU_MAP_REGEX_2, COOLDOWN_CARD_COMMAND
 
 
 
@@ -34,10 +34,11 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
 
         message_text = update.message.text.strip()
         match = OSU_MAP_REGEX.search(message_text)
+        match_2 = OSU_MAP_REGEX_2.search(message_text)
         message = update.message
 
         if user_request:
-            if not match:
+            if not match and not match_2:
                 message_context = get_message_context(update, reply=False)
                 if message_context:
                     message_context_reply = get_message_context(update, reply=True)
@@ -62,16 +63,17 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
                 
                 return
         
-        if match is None: 
+        if match is None and match_2 is None: 
             return
         
         if map_id is None:
-            beatmap_id = match.group(1) if match.group(1) else match.group(2)
+            if match:
+                beatmap_id = match.group(1) if match.group(1) else match.group(2)
+            if match_2:
+                beatmap_id = match_2.group(1) if match_2.group(1) else match_2.group(2)
         else:
             beatmap_id = map_id
     
-        if user_request: warn_text = f"⏳ Подождите {COOLDOWN_CARD_COMMAND} секунд"
-        else: warn_text = None
         can_run = await check_user_cooldown(
             command_name="render_score",
             user_id=str(update.effective_user.id),
@@ -86,9 +88,8 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
         print(e)
         return
     
-    
 
-    max_attempts = 3
+    max_attempts = 1
     if user_request:
         for _ in range(max_attempts):
             try:

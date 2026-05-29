@@ -31,6 +31,11 @@ async def osu_link_profile_handler(update: Update, context: ContextTypes.DEFAULT
     text = update.message.text or update.message.caption
     if not text:
         return False
+    
+    _filter = ['/b', '/s']
+    for f in _filter:
+        if f in text:
+            return False
 
     match = OSU_USER_REGEX.search(text)
     if not match:
@@ -45,6 +50,11 @@ async def osu_link_score_handler(update: Update, context: ContextTypes.DEFAULT_T
     text = update.message.text or update.message.caption
     if not text: 
         return False
+    
+    _filter = ['/b', '/u']
+    for f in _filter:
+        if f in text:
+            return False
 
     match = OSU_SCORE_REGEX.search(text)
     if not match:

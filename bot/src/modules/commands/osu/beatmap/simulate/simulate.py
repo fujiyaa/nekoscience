@@ -15,7 +15,7 @@ from .....external.localapi import get_map_stats_neko_api
 from .....actions.messages import delete_user_message, delete_message_after_delay, safe_send_message
 from .....actions.context import set_message_context, get_message_context
 
-from config import OSU_MAP_REGEX, PARAMS_TEMPLATE
+from config import OSU_MAP_REGEX, OSU_MAP_REGEX_2, PARAMS_TEMPLATE
 from config import sessions_simulate
 
 
@@ -31,8 +31,9 @@ async def simulate(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     message_text = update.message.text.strip()
     match = OSU_MAP_REGEX.search(message_text)
+    match_2 = OSU_MAP_REGEX_2.search(message_text)
 
-    if not match:
+    if not match and not match_2:
         message_context = get_message_context(update, reply=False)
         if message_context:
             message_context_reply = get_message_context(update, reply=True)
@@ -57,11 +58,14 @@ async def simulate(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         return
     
-    if match is None: 
+    if match is None and match_2 is None: 
             return
         
     if map_id is None:
-        beatmap_id = match.group(1) if match.group(1) else match.group(2)
+        if match:
+            beatmap_id = match.group(1) if match.group(1) else match.group(2)
+        if match_2:
+            beatmap_id = match_2.group(1) if match_2.group(1) else match_2.group(2)
     else:
         beatmap_id = map_id
 

@@ -181,6 +181,11 @@ OSU_MAP_REGEX = re.compile(
     re.IGNORECASE
 )
 
+OSU_MAP_REGEX_2 = re.compile(
+    r"(?:beatmaps/|b/)(\d+)",
+    re.IGNORECASE
+)
+
 OSU_MAPSET_REGEX = re.compile(
     r"https?://osu\.ppy\.sh/(?:beatmapsets/(\d+)(?:#\w+/\d+)?|b/(\d+))"
 )
