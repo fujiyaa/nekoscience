@@ -22,6 +22,7 @@ def register_commands(app):
         # beatmaps
         ("maps_skill", "ms"):               start_maps_skill,
         ("music",):                         start_beatmap_audio,
+        ("bg", "background"):               start_beatmap_assets,
         ("beatmaps", "b"):                  beatmaps,
         ("simulate",):                      simulate,
 
@@ -90,6 +91,7 @@ def register_callbacks(app):
         (callback_sim,      r"^simulate_"),
         (callback_sim_ctx,  r"^sicxt:(map|cancel|ignore)"),
         (callback_muz_ctx,  r"^muz_context:(map|pkbmap|inline|cancel)"),
+        (callback_ast_ctx,  r"^assets_ctx:(map|pkbmap|inline|cancel)"),
 
         # cards
         (callback_map_ctx,  r"^cbcxt:(map|cancel|ignore)"),

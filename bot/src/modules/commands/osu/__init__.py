@@ -2,14 +2,17 @@
 
 
 from .beatmap import (
-    start_maps_skill, start_beatmap_audio,
+    start_maps_skill, 
+    start_beatmap_audio,
+    start_beatmap_assets,
 
     beatmaps, simulate,
     
     callback_bms,
     callback_msk1, callback_msk2,
     callback_sim, callback_sim_ctx, 
-    callback_muz_ctx
+    callback_muz_ctx,
+    callback_ast_ctx
 )
 
 

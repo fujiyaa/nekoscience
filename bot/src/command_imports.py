@@ -8,12 +8,15 @@ from modules.commands.every_message.check_message import check_message
 from modules.commands.osu import (
 
     # beatmaps
-    start_maps_skill, start_beatmap_audio,
+    start_maps_skill, 
+    start_beatmap_audio,
+    start_beatmap_assets,
     beatmaps, simulate,    
     callback_bms,
     callback_msk1, callback_msk2,
     callback_sim, callback_sim_ctx, 
     callback_muz_ctx,
+    callback_ast_ctx,
 
     # cards
     start_card, start_skills, start_card_top5, start_beatmap_card,

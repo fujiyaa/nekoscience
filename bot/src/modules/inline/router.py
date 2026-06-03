@@ -132,13 +132,17 @@ def format_map_results(data, query, search_term, seen_ids: set | None = None):
         beatconnect_url = f"https://beatconnect.io/b/{mapset_id}"
 
         kb = InlineKeyboardMarkup([
-            [
+            [   
                 InlineKeyboardButton(
-                    "🎶  Трек",
+                    "🖼",
+                    callback_data=f"assets_ctx:inline:{mapset_id}:67"
+                ),
+                InlineKeyboardButton(
+                    "🎶",
                     callback_data=f"muz_context:inline:{mapset_id}:67"
                 ),
                 InlineKeyboardButton(
-                    "📨 Получить карту",
+                    "📨",
                     callback_data=f"pm_mapset:{mapset_id}"
                 ),
             ],[

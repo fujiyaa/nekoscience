@@ -22,14 +22,18 @@ def get_keyboard(state: str = 'hidden', beatmap_id: str = '0', search_term: str 
         ]
     else:
         keyboard = [
-            [         
+            [   
                 InlineKeyboardButton(
-                    "🎶 Трек",
-                    callback_data=f"pm_map:{beatmap_id}"
-                ),      
+                    "🖼",
+                    callback_data=f"assets_ctx:pkbmap:{beatmap_id}:67"
+                ),
                 InlineKeyboardButton(
-                    "📨 Получить",
+                    "🎶",
                     callback_data=f"muz_context:pkbmap:{beatmap_id}:67"
+                ),
+                InlineKeyboardButton(
+                    "📨",
+                    callback_data=f"pm_map:{beatmap_id}"
                 ),
                 InlineKeyboardButton(
                     "🔍",
@@ -66,7 +70,15 @@ def schedule_keyboard_reset(bot, chat_id, msg_id, beatmap_id, delay=10):
 
 async def map_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    await query.answer()
+    await query.answer(
+        text=(             
+            "🖼 - бекграунд\n"
+            "🎶 - музыка\n"
+            "📨 - отправить в осу\n"
+            "🔍 - поиск карт\n"
+        ),
+        show_alert=True
+    )
 
     data = query.data  # pkb:map:{beatmap_id}
 
