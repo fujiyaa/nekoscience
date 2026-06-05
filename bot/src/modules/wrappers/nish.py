@@ -160,7 +160,7 @@ def get_nish_text(user_data, best_pp):
 
         niche = niche_score(playcount)
 
-        if niche > 0.5:  # или любой твой порог “нишевости”
+        if niche > 0.5:
             niche_cards_count += 1
 
         weighted_pp = pp * (weight_percent / 100)
@@ -169,7 +169,7 @@ def get_nish_text(user_data, best_pp):
         niche_weighted_pp += weighted_pp * niche
         niche_sum += niche
 
-    print(f"[NICH DEBUG] niche_cards_count = {niche_cards_count} / {total}")
+    # print(f"niche_cards_count = {niche_cards_count} / {total}")
 
     niche_pp_percent = (
         (niche_weighted_pp / total_weighted_pp) * 100
@@ -247,7 +247,6 @@ def get_nish_text(user_data, best_pp):
         f"{row2_emoji:^{col3_width}}"
     )
 
-    # финальный разделитель
     final_separator = separator
 
     row3 = (
