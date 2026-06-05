@@ -10,9 +10,6 @@ def get_fire_text(
     if total_scores is None:
         total_scores = 0
 
-    # =========================
-    # активность
-    # =========================
     active_count = len(filtered_scores)
     active_per_day = active_count / days if days else 0
 
@@ -20,9 +17,6 @@ def get_fire_text(
     weighted_percent = (weighted_pp / user_total_pp) * 100 if user_total_pp else 0
     raw_percent = (raw_pp / weighted_pp) * 100 if weighted_pp else 0
 
-    # =========================
-    # эмодзи активности
-    # =========================
     def activity_emoji(p):
         if p < 2:
             return "💀"
@@ -78,12 +72,12 @@ def get_fire_text(
             f"{weighted_percent:.0f}%",
             contribution_emoji(weighted_percent)
         ),
-        (
-            "overflow",
-            f"{raw_pp:.0f}pp",
-            f"{raw_percent:.0f}%",
-            overflow_emoji(raw_percent)
-        ),
+        # (
+        #     "overflow",
+        #     f"{raw_pp:.0f}pp",
+        #     f"{raw_percent:.0f}%",
+        #     overflow_emoji(raw_percent)
+        # ),
     ]
 
     col1 = max(len(headers[0]), *(len(r[0]) for r in rows))
