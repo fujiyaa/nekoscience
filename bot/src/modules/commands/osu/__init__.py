@@ -33,7 +33,7 @@ from .leaderboard import (
 from .profile import (
     start_compare_profile, start_profile, start_average, 
     start_mappers, start_mods, start_anime, start_aimslop,
-    start_speedslop, start_minmax, start_fire,
+    start_speedslop, start_nish, start_minmax, start_fire,
 
     callback_avg, callback_prf_ctx
 ) 

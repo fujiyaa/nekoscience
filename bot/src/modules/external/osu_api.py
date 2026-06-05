@@ -129,6 +129,8 @@ async def get_top_100_scores(username: str, token: str = None, user_id: str = No
                 "stars": score.get('beatmap', {}).get('difficulty_rating'),
                 "passes": score.get('beatmap', {}).get('passcount'),
                 "plays": score.get('beatmap', {}).get('playcount'),
+                "plays": score.get('beatmap', {}).get('playcount'),
+                "mapset_plays": score.get('beatmapset', {}).get('play_count'),
                 "accuracy": score.get('accuracy'),
                 "misses": score.get('statistics', {}).get('count_miss'),
                 "combo": score.get('max_combo'),

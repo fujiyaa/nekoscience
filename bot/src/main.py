@@ -44,6 +44,7 @@ def register_commands(app):
         ("anime", "goon"):                  start_anime,
         ("aimslop", "aim"):                 start_aimslop,
         ("speedslop", "speed"):             start_speedslop,
+        ("nish", "nishometr"):                          start_nish,
         ("minmax", "mx"):                   start_minmax,
         ("ppfire", "firepp", "fire"):       start_fire,
         

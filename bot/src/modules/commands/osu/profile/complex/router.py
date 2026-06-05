@@ -36,6 +36,10 @@ async def start_speedslop(update, context):
     await log_all_update(update)
     asyncio.create_task(profile(update, context, 'speedslop'))
 
+async def start_nish(update, context):
+    await log_all_update(update)
+    asyncio.create_task(profile(update, context, 'nish'))
+
 async def start_minmax(update, context):
     await log_all_update(update)
     asyncio.create_task(profile(update, context, 'minmax'))
