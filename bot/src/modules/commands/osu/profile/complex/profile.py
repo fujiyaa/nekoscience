@@ -1,13 +1,11 @@
 
 
 
-import asyncio
 import traceback
 from telegram import Update
 from telegram.ext import ContextTypes
 
 from .....systems.cooldowns import check_user_cooldown
-from .....external.osu_api import get_osu_token, get_user_profile, get_top_100_scores
 from .response import send_message
 from .context import context_lookup
 
