@@ -64,6 +64,7 @@ def get_mc_status(ip, port=25565):
     return {
         "online": True,
         # "latency": status.latency,
-        "players": f"{status.players.online}/{status.players.max}",
+        # "players": f"{status.players.online}/{status.players.max}",
+        "players": f"{status.players.online}",
         "version": status.version.name
     }
