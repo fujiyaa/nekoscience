@@ -57,7 +57,7 @@ def register_commands(app):
         # osu_games
         ("challenge",):                     start_challenge,
         ("higherlower", "hl"):              start_higherlower_game,
-        ("unranked", "unrenked"):           start_unranked_game,
+        # ("unranked", "unrenked"):           start_unranked_game,
       
         # fun
         ("roll", "random"):                 roll,
@@ -65,6 +65,7 @@ def register_commands(app):
         ("doubt", "ban"):                   doubt,
         ("blacks",):                        blacks,
         ("reminders",):                     reminders_command,
+        ("economy", "eco", "gamble","e"):   ecos,
 
         # service
         ("start", "help"):                  start_help,
@@ -117,6 +118,9 @@ def register_callbacks(app):
         # service
         (settings_handler,  r"^settings_"),                    
         (osu_chat_callback, r"^pm_(map|mapset):"),
+
+        # fun 
+        (eco_callback,      r"^eco_"),
 
         # mod
         (callback_modv,     r"^modv:"),

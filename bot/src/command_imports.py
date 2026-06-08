@@ -48,7 +48,10 @@ from modules.commands.osu_games import (
 from modules.commands.fun import (
     doubt, blacks, 
     reminders_command, 
-    random_image, roll
+    random_image, roll,
+    ecos,
+
+    eco_callback
 )
 
 # service
