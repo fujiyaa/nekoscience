@@ -150,7 +150,7 @@ SHOP = {
     "all_potion_b": {
         "name": "🧴 Зелье всего B",
         "effect_name": all_potion_text,
-        "price": 25,
+        "price": 12700,
         "type": "зелье",
         "effect": {
             "coin_buff": 5.00,

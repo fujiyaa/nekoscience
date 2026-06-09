@@ -83,8 +83,13 @@ def add_xp(user_id: int, activity: str, xp: int):
 
     current_xp += xp
 
-    while current_xp >= level * 100:
-        current_xp -= level * 100
+    while True:
+        needed = xp_required(level)
+
+        if current_xp < needed:
+            break
+
+        current_xp -= needed
         level += 1
 
     cur.execute(
@@ -128,11 +133,11 @@ def get_progress(user_id: int, activity: str):
     conn.close()
 
     if not row:
-        return 1, 0, 100
+        return 1, 0, xp_required(1)
 
     level, xp = row
 
-    return level, xp, level * 100
+    return level, xp, xp_required(level)
 
 def get_luck_level(user_id: int, activity_name: str):
 
