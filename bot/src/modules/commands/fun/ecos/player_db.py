@@ -264,73 +264,73 @@ def reset_player(user_id):
     conn.close()
 
 
-def convert_skill(level, xp):
-    total_xp = xp
+# def convert_skill(level, xp):
+#     total_xp = xp
 
-    for lv in range(1, level):
-        total_xp += old_xp_required(lv)
+#     for lv in range(1, level):
+#         total_xp += old_xp_required(lv)
 
-    new_level = 1
+#     new_level = 1
 
-    while total_xp >= xp_required(new_level):
-        total_xp -= xp_required(new_level)
-        new_level += 1
+#     while total_xp >= xp_required(new_level):
+#         total_xp -= xp_required(new_level)
+#         new_level += 1
 
-    return new_level, total_xp
+#     return new_level, total_xp
 
-def migrate_levels():
-    conn = get_conn()
-    cur = conn.cursor()
+# def migrate_levels():
+#     conn = get_conn()
+#     cur = conn.cursor()
 
-    cur.execute("""
-        SELECT
-            telegram_id,
-            fish_level,
-            fish_xp,
-            mine_level,
-            mine_xp
-        FROM users
-    """)
+#     cur.execute("""
+#         SELECT
+#             telegram_id,
+#             fish_level,
+#             fish_xp,
+#             mine_level,
+#             mine_xp
+#         FROM users
+#     """)
 
-    rows = cur.fetchall()
+#     rows = cur.fetchall()
 
-    for (
-        user_id,
-        fish_level,
-        fish_xp,
-        mine_level,
-        mine_xp
-    ) in rows:
+#     for (
+#         user_id,
+#         fish_level,
+#         fish_xp,
+#         mine_level,
+#         mine_xp
+#     ) in rows:
 
-        new_fish_level, new_fish_xp = convert_skill(
-            fish_level,
-            fish_xp
-        )
+#         new_fish_level, new_fish_xp = convert_skill(
+#             fish_level,
+#             fish_xp
+#         )
 
-        new_mine_level, new_mine_xp = convert_skill(
-            mine_level,
-            mine_xp
-        )
+#         new_mine_level, new_mine_xp = convert_skill(
+#             mine_level,
+#             mine_xp
+#         )
 
-        cur.execute("""
-            UPDATE users
-            SET
-                fish_level = ?,
-                fish_xp = ?,
-                mine_level = ?,
-                mine_xp = ?
-            WHERE telegram_id = ?
-        """, (
-            new_fish_level,
-            new_fish_xp,
-            new_mine_level,
-            new_mine_xp,
-            user_id
-        ))
+#         cur.execute("""
+#             UPDATE users
+#             SET
+#                 fish_level = ?,
+#                 fish_xp = ?,
+#                 mine_level = ?,
+#                 mine_xp = ?
+#             WHERE telegram_id = ?
+#         """, (
+#             new_fish_level,
+#             new_fish_xp,
+#             new_mine_level,
+#             new_mine_xp,
+#             user_id
+#         ))
 
-    conn.commit()
-    conn.close()
+#     conn.commit()
+#     conn.close()
 
-    print("Migration complete")
+#     print("Migration complete")
 
-migrate_levels()
+# migrate_levels()
