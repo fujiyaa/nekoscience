@@ -209,7 +209,7 @@ SHOP = {
             "vanish_chance": 0.001
         },
     },
-    "all_potion_f": {
+    "all_potion_s": {
         "name": "🧴 Зелье всего S",
         "effect_name": all_potion_text,
         "price": 250000,
