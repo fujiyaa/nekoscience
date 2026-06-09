@@ -53,53 +53,179 @@ ACTIVITIES = {
 {"id": "fish_opah_small", "name": "🐟 Малый опах", "min_level": 6, "weight": 10, "coins": (50, 100), "xp": 45, "rarity": "редкое"},
 {"id": "fish_tench", "name": "🐟 Линь", "min_level": 4, "weight": 19, "coins": (25, 55), "xp": 28, "rarity": "редкое"},
 
+{"id": "fish_tsundere_koi", "name": "🎀 Цундере кои", "min_level": 12, "weight": 2, "coins": (120, 220), "xp": 100, "rarity": "очень редкое"},
+{"id": "fish_neko_salmon", "name": "🐱 Неко-лосось", "min_level": 14, "weight": 2, "coins": (140, 260), "xp": 120, "rarity": "очень редкое"},
+{"id": "fish_magical_girl_tuna", "name": "✨ Тунец волшебницы", "min_level": 15, "weight": 2, "coins": (150, 280), "xp": 130, "rarity": "очень редкое"},
+{"id": "fish_kitsune_eel", "name": "🦊 Лисий угорь", "min_level": 16, "weight": 2, "coins": (170, 300), "xp": 140, "rarity": "очень редкое"},
+{"id": "fish_sakura_carp", "name": "🌸 Сакура-карп", "min_level": 18, "weight": 2, "coins": (180, 320), "xp": 150, "rarity": "очень редкое"},
+{"id": "fish_maid_perch", "name": "☕ Горничная-окунь", "min_level": 20, "weight": 2, "coins": (200, 360), "xp": 170, "rarity": "очень редкое"},
+{"id": "fish_yandere_pike", "name": "🔪 Яндере-щука", "min_level": 22, "weight": 1, "coins": (240, 420), "xp": 200, "rarity": "очень редкое"},
+{"id": "fish_samurai_swordfish", "name": "⚔ Самурайская рыба-меч", "min_level": 24, "weight": 1, "coins": (260, 460), "xp": 220, "rarity": "очень редкое"},
+{"id": "fish_ninja_barracuda", "name": "🥷 Ниндзя-барракуда", "min_level": 25, "weight": 1, "coins": (280, 500), "xp": 240, "rarity": "очень редкое"},
+{"id": "fish_spirit_koi", "name": "👻 Духовный кои", "min_level": 27, "weight": 1, "coins": (300, 550), "xp": 260, "rarity": "очень редкое"},
+{"id": "fish_moon_princess", "name": "🌙 Лунная принцесса", "min_level": 30, "weight": 1, "coins": (350, 650), "xp": 300, "rarity": "очень редкое"},
+{"id": "fish_dragon_waifu", "name": "🐉 Драконья вайфу", "min_level": 32, "weight": 1, "coins": (400, 750), "xp": 340, "rarity": "очень редкое"},
+{"id": "fish_mecha_tuna", "name": "🤖 Меха-тунец", "min_level": 35, "weight": 1, "coins": (500, 900), "xp": 400, "rarity": "очень редкое"},
+{"id": "fish_holy_miko", "name": "⛩ Священная мико", "min_level": 38, "weight": 1, "coins": (650, 1200), "xp": 500, "rarity": "очень редкое"},
+{"id": "fish_oni_catfish", "name": "👹 Они-сом", "min_level": 40, "weight": 1, "coins": (800, 1500), "xp": 600, "rarity": "очень редкое"},
+{"id": "fish_cosmic_idol", "name": "🎤 Космический идол", "min_level": 42, "weight": 1, "coins": (1000, 1800), "xp": 700, "rarity": "очень редкое"},
+{"id": "fish_void_chan", "name": "🖤 Пустота-тян", "min_level": 45, "weight": 1, "coins": (1300, 2400), "xp": 850, "rarity": "очень редкое"},
+{"id": "fish_galaxy_koi", "name": "🌌 Галактический кои", "min_level": 47, "weight": 1, "coins": (1600, 2800), "xp": 1000, "rarity": "очень редкое"},
+{"id": "fish_anime_protagonist", "name": "⭐ Рыба-протагонист", "min_level": 50, "weight": 1, "coins": (2500, 4500), "xp": 1500, "rarity": "очень редкое"},
+{"id": "fish_goddess_of_ocean", "name": "👑 Богиня океана", "min_level": 50, "weight": 1, "coins": (3000, 5500), "xp": 1800, "rarity": "очень редкое"},
+
 {"id": "fish_mahi_mahi", "name": "🐟 Махи-махи", "min_level": 10, "weight": 14, "coins": (60, 120), "xp": 55, "rarity": "редкое"},
 {"id": "fish_red_snapper", "name": "🐟 Красный снэппер", "min_level": 12, "weight": 13, "coins": (70, 140), "xp": 60, "rarity": "редкое"},
 {"id": "fish_groupers", "name": "🐟 Групер", "min_level": 15, "weight": 12, "coins": (80, 160), "xp": 70, "rarity": "редкое"},
 {"id": "fish_tilapia", "name": "🐟 Тилапия", "min_level": 10, "weight": 18, "coins": (55, 110), "xp": 50, "rarity": "редкое"},
 {"id": "fish_catfish_nile", "name": "🐡 Нильский сом", "min_level": 18, "weight": 10, "coins": (100, 200), "xp": 85, "rarity": "редкое"},
-
 {"id": "fish_arapaima", "name": "🐟 Арапайма", "min_level": 25, "weight": 6, "coins": (180, 350), "xp": 150, "rarity": "легендарное"},
 {"id": "fish_pirarucu", "name": "🐟 Пираруку", "min_level": 28, "weight": 5, "coins": (200, 400), "xp": 170, "rarity": "легендарное"},
 {"id": "fish_peacock_bass", "name": "🐟 Павлин-басс", "min_level": 14, "weight": 11, "coins": (90, 180), "xp": 80, "rarity": "редкое"},
 {"id": "fish_pacu", "name": "🐟 Паку", "min_level": 16, "weight": 10, "coins": (85, 170), "xp": 75, "rarity": "редкое"},
 {"id": "fish_payara", "name": "🦈 Паяра (рыба-вампир)", "min_level": 22, "weight": 7, "coins": (140, 280), "xp": 120, "rarity": "легендарное"},
-
 {"id": "fish_european_seabass", "name": "🐟 Европейский лаврак", "min_level": 11, "weight": 15, "coins": (65, 130), "xp": 60, "rarity": "редкое"},
 {"id": "fish_atlantic_cod", "name": "🐟 Атлантическая треска", "min_level": 13, "weight": 14, "coins": (75, 150), "xp": 65, "rarity": "редкое"},
 {"id": "fish_halibut_pacific", "name": "🐟 Тихоокеанский палтус", "min_level": 20, "weight": 9, "coins": (120, 240), "xp": 100, "rarity": "редкое"},
 {"id": "fish_sailfish", "name": "🗡 Парусник", "min_level": 30, "weight": 4, "coins": (250, 500), "xp": 200, "rarity": "легендарное"},
 {"id": "fish_marlin_blue", "name": "🗡 Голубой марлин", "min_level": 35, "weight": 3, "coins": (300, 600), "xp": 250, "rarity": "легендарное"},
-
 {"id": "fish_wahoo", "name": "🐟 Ваху", "min_level": 18, "weight": 9, "coins": (110, 220), "xp": 95, "rarity": "редкое"},
 {"id": "fish_king_mackerel", "name": "🐟 Королевская макрель", "min_level": 15, "weight": 11, "coins": (90, 180), "xp": 80, "rarity": "редкое"},
 {"id": "fish_trevally_giant", "name": "🐟 Гигантский каранкс", "min_level": 27, "weight": 6, "coins": (190, 380), "xp": 160, "rarity": "легендарное"},
 {"id": "fish_mahimahi_giant", "name": "🐟 Гигантский махи-махи", "min_level": 22, "weight": 7, "coins": (160, 320), "xp": 140, "rarity": "легендарное"},
 {"id": "fish_ocean_sunfish", "name": "☀️ Рыба-луна", "min_level": 40, "weight": 2, "coins": (400, 800), "xp": 300, "rarity": "легендарное"},
-
 {"id": "fish_megalodon", "name": "🦈 Мегалодон", "min_level": 35, "weight": 1, "coins": (800, 1500), "xp": 500, "rarity": "легендарное"},
 {"id": "fish_leviathan", "name": "🐉 Левиафан", "min_level": 45, "weight": 1, "coins": (1200, 2500), "xp": 800, "rarity": "легендарное"},
 {"id": "fish_kraken_tentacle", "name": "🦑 Щупальце Кракена", "min_level": 40, "weight": 2, "coins": (900, 1800), "xp": 600, "rarity": "легендарное"},
 {"id": "fish_ancient_sturgeon", "name": "🐟 Древний осётр", "min_level": 32, "weight": 3, "coins": (500, 900), "xp": 350, "rarity": "легендарное"},
 {"id": "fish_void_fish", "name": "🌌 Пустотная рыба", "min_level": 50, "weight": 1, "coins": (1500, 3000), "xp": 1000, "rarity": "легендарное"},
-
 {"id": "fish_phantom_marlin", "name": "👻 Призрачный марлин", "min_level": 38, "weight": 2, "coins": (1000, 2000), "xp": 650, "rarity": "легендарное"},
 {"id": "fish_dragonfish_abyssal", "name": "🐉 Глубинный драконохвост", "min_level": 42, "weight": 2, "coins": (1100, 2100), "xp": 700, "rarity": "легендарное"},
 {"id": "fish_solar_whale", "name": "☀️ Солнечный кит", "min_level": 48, "weight": 1, "coins": (2000, 4000), "xp": 1200, "rarity": "легендарное"},
 {"id": "fish_moon_eel", "name": "🌙 Лунный угорь", "min_level": 36, "weight": 2, "coins": (950, 1900), "xp": 620, "rarity": "легендарное"},
 {"id": "fish_storm_swordfish", "name": "⛈ Штормовой рыба-меч", "min_level": 33, "weight": 3, "coins": (700, 1400), "xp": 500, "rarity": "легендарное"},
-
 {"id": "fish_abyss_goliath", "name": "🌊 Голиаф бездны", "min_level": 44, "weight": 1, "coins": (1300, 2600), "xp": 900, "rarity": "легендарное"},
 {"id": "fish_crystal_carp", "name": "💎 Хрустальный карп", "min_level": 31, "weight": 3, "coins": (600, 1200), "xp": 400, "rarity": "легендарное"},
 {"id": "fish_time_salmon", "name": "⏳ Временной лосось", "min_level": 50, "weight": 1, "coins": (1800, 3600), "xp": 1100, "rarity": "легендарное"},
 {"id": "fish_spectral_barracuda", "name": "👁 Спектральная барракуда", "min_level": 39, "weight": 2, "coins": (1000, 2100), "xp": 680, "rarity": "легендарное"},
 {"id": "fish_emperor_koi", "name": "👑 Императорский кои", "min_level": 34, "weight": 2, "coins": (850, 1700), "xp": 550, "rarity": "легендарное"},
-
 {"id": "fish_black_hole_fish", "name": "🕳 Рыба-чёрная дыра", "min_level": 50, "weight": 1, "coins": (2500, 5000), "xp": 1500, "rarity": "легендарное"},
 {"id": "fish_thunder_whale_shark", "name": "⚡ Грозовой кит-акула", "min_level": 46, "weight": 1, "coins": (1600, 3200), "xp": 1000, "rarity": "легендарное"},
 {"id": "fish_ancient_leviathan", "name": "🏛 Древний левиафан", "min_level": 50, "weight": 1, "coins": (3000, 6000), "xp": 2000, "rarity": "легендарное"},
 {"id": "fish_eternal_eel", "name": "♾ Вечный угорь", "min_level": 47, "weight": 1, "coins": (1700, 3400), "xp": 1100, "rarity": "легендарное"},
 {"id": "fish_godfish", "name": "🪶 Божественная рыба", "min_level": 50, "weight": 1, "coins": (5000, 10000), "xp": 3000, "rarity": "легендарное"},
+
+
+{"id": "fish_perch_epic", "name": "🌑 Теневой окунь", "min_level": 1, "weight": 12, "coins": (18, 30), "xp": 18, "rarity": "эпическое"},
+{"id": "fish_carp_epic", "name": "🌑 Лунный карп", "min_level": 1, "weight": 10, "coins": (22, 35), "xp": 22, "rarity": "эпическое"},
+
+{"id": "fish_eel_epic", "name": "🌑 Буревестник-угорь", "min_level": 2, "weight": 9, "coins": (28, 45), "xp": 28, "rarity": "эпическое"},
+{"id": "fish_bass_epic", "name": "🌑 Глубинный басс", "min_level": 3, "weight": 8, "coins": (25, 40), "xp": 25, "rarity": "эпическое"},
+
+{"id": "fish_bream_epic", "name": "🌑 Серый лещ туманов", "min_level": 3, "weight": 7, "coins": (30, 50), "xp": 30, "rarity": "эпическое"},
+{"id": "fish_salmon_epic", "name": "🌑 Тёмный лосось", "min_level": 4, "weight": 7, "coins": (35, 60), "xp": 35, "rarity": "эпическое"},
+
+{"id": "fish_pike_epic", "name": "🌑 Хищная тень-щука", "min_level": 5, "weight": 6, "coins": (45, 80), "xp": 45, "rarity": "эпическое"},
+{"id": "fish_piranha_epic", "name": "🌑 Кровавая пирамида", "min_level": 5, "weight": 6, "coins": (40, 75), "xp": 40, "rarity": "эпическое"},
+
+{"id": "fish_tuna_epic", "name": "🌑 Штормовой тунец", "min_level": 6, "weight": 5, "coins": (50, 90), "xp": 50, "rarity": "эпическое"},
+{"id": "fish_halibut_epic", "name": "🌑 Ледяной палтус", "min_level": 6, "weight": 5, "coins": (55, 95), "xp": 55, "rarity": "эпическое"},
+
+{"id": "fish_electric_eel_epic", "name": "🌑 Грозовой угорь", "min_level": 7, "weight": 4, "coins": (70, 120), "xp": 70, "rarity": "эпическое"},
+{"id": "fish_blobfish_epic", "name": "🌑 Искажённая глубина", "min_level": 7, "weight": 4, "coins": (65, 115), "xp": 65, "rarity": "эпическое"},
+
+{"id": "fish_swordfish_epic", "name": "🌑 Чёрный клинок", "min_level": 8, "weight": 3, "coins": (90, 150), "xp": 90, "rarity": "эпическое"},
+{"id": "fish_goldfish_epic", "name": "🌑 Поглощённая золото", "min_level": 9, "weight": 3, "coins": (120, 220), "xp": 120, "rarity": "эпическое"},
+
+{"id": "fish_catfish_giant_epic", "name": "🌑 Титан глубин", "min_level": 10, "weight": 3, "coins": (110, 200), "xp": 110, "rarity": "эпическое"},
+
+{"id": "fish_arowana_epic", "name": "🌑 Хищная аравана", "min_level": 6, "weight": 4, "coins": (75, 130), "xp": 75, "rarity": "эпическое"},
+{"id": "fish_zander_epic", "name": "🌑 Теневая судачья стая", "min_level": 5, "weight": 4, "coins": (70, 125), "xp": 70, "rarity": "эпическое"},
+
+{"id": "fish_grayling_epic", "name": "🌑 Морозный хариус", "min_level": 6, "weight": 4, "coins": (80, 140), "xp": 80, "rarity": "эпическое"},
+
+{"id": "fish_snakehead_epic", "name": "🌑 Ядовитый змееголов", "min_level": 7, "weight": 3, "coins": (100, 180), "xp": 100, "rarity": "эпическое"},
+
+{"id": "fish_manta_ray_epic", "name": "🌑 Призрачная манта", "min_level": 9, "weight": 2, "coins": (150, 260), "xp": 150, "rarity": "эпическое"},
+
+{"id": "fish_red_snapper_epic", "name": "🌑 Алый глубинный снэппер", "min_level": 12, "weight": 3, "coins": (180, 320), "xp": 180, "rarity": "эпическое"},
+
+{"id": "fish_groupers_epic", "name": "🌑 Каменный группер", "min_level": 15, "weight": 2, "coins": (220, 400), "xp": 220, "rarity": "эпическое"},
+
+{"id": "fish_mahi_mahi_epic", "name": "🌑 Плазменный махи-махи", "min_level": 10, "weight": 3, "coins": (140, 250), "xp": 140, "rarity": "эпическое"},
+
+{"id": "fish_arapaima_epic", "name": "🌑 Полуночная арапайма", "min_level": 25, "weight": 2, "coins": (500, 900), "xp": 500, "rarity": "эпическое"},
+
+{"id": "fish_sailfish_epic", "name": "🌑 Теневой парусник", "min_level": 30, "weight": 1, "coins": (800, 1400), "xp": 800, "rarity": "эпическое"},
+
+{"id": "fish_megalodon_epic", "name": "🌑 Прототип мегалодона", "min_level": 35, "weight": 1, "coins": (1200, 2200), "xp": 1200, "rarity": "эпическое"},
+
+{"id": "fish_void_fish_epic", "name": "🌑 Эхо пустоты", "min_level": 50, "weight": 1, "coins": (4000, 8000), "xp": 2500, "rarity": "эпическое"},
+
+
+{"id": "fish_perch_veryrare", "name": "🌫 Туманный окунь", "min_level": 3, "weight": 18, "coins": (20, 35), "xp": 22, "rarity": "очень редкое"},
+{"id": "fish_carp_veryrare", "name": "🌫 Глубинный карп", "min_level": 3, "weight": 16, "coins": (25, 45), "xp": 28, "rarity": "очень редкое"},
+
+{"id": "fish_som_veryrare", "name": "🌫 Тихий сом бездны", "min_level": 4, "weight": 14, "coins": (35, 60), "xp": 35, "rarity": "очень редкое"},
+{"id": "fish_lesh_veryrare", "name": "🌫 Затонувший лещ", "min_level": 4, "weight": 15, "coins": (30, 55), "xp": 32, "rarity": "очень редкое"},
+
+{"id": "fish_pike_veryrare", "name": "🌫 Оскаленная щука тумана", "min_level": 5, "weight": 12, "coins": (50, 90), "xp": 50, "rarity": "очень редкое"},
+{"id": "fish_ugor_veryrare", "name": "🌫 Электрический призрачный угорь", "min_level": 5, "weight": 10, "coins": (60, 110), "xp": 60, "rarity": "очень редкое"},
+
+{"id": "fish_tuna_veryrare", "name": "🌫 Буревестный тунец", "min_level": 6, "weight": 10, "coins": (80, 140), "xp": 75, "rarity": "очень редкое"},
+{"id": "fish_salmon_veryrare", "name": "🌫 Северный лосось теней", "min_level": 6, "weight": 11, "coins": (70, 130), "xp": 70, "rarity": "очень редкое"},
+
+{"id": "fish_swordfish_veryrare", "name": "🌫 Ржавый клинок океана", "min_level": 8, "weight": 6, "coins": (120, 200), "xp": 120, "rarity": "очень редкое"},
+{"id": "fish_electric_eel_veryrare", "name": "🌫 Разрядный угорь", "min_level": 7, "weight": 8, "coins": (110, 190), "xp": 110, "rarity": "очень редкое"},
+
+{"id": "fish_goldfish_veryrare", "name": "🌫 Потускневшая золотая рыбка", "min_level": 9, "weight": 5, "coins": (180, 300), "xp": 160, "rarity": "очень редкое"},
+{"id": "fish_blobfish_veryrare", "name": "🌫 Давление глубин", "min_level": 7, "weight": 7, "coins": (140, 240), "xp": 130, "rarity": "очень редкое"},
+
+{"id": "fish_catfish_giant_veryrare", "name": "🌫 Старый гигант сомов", "min_level": 10, "weight": 4, "coins": (200, 350), "xp": 180, "rarity": "очень редкое"},
+
+{"id": "fish_arowana_veryrare", "name": "🌫 Зеркальная аравана", "min_level": 6, "weight": 8, "coins": (100, 180), "xp": 95, "rarity": "очень редкое"},
+{"id": "fish_zander_veryrare", "name": "🌫 Серый хищник глубин", "min_level": 5, "weight": 9, "coins": (90, 160), "xp": 85, "rarity": "очень редкое"},
+
+{"id": "fish_manta_ray_veryrare", "name": "🌫 Тень манты", "min_level": 9, "weight": 3, "coins": (250, 420), "xp": 220, "rarity": "очень редкое"},
+
+{"id": "fish_arapaima_veryrare", "name": "🌫 Огромная арапайма тумана", "min_level": 25, "weight": 2, "coins": (900, 1600), "xp": 800, "rarity": "очень редкое"},
+{"id": "fish_megalodon_veryrare", "name": "🌫 Реликтовый мегалодон", "min_level": 35, "weight": 1, "coins": (2000, 3500), "xp": 1500, "rarity": "очень редкое"},
+{"id": "fish_void_fish_veryrare", "name": "🌫 Стабильная пустота", "min_level": 50, "weight": 1, "coins": (6000, 10000), "xp": 3000, "rarity": "очень редкое"},
+
+
+{"id": "trash_boot_old", "name": "👢 Старая сапога", "min_level": 1, "weight": 2, "coins": (0, 2), "xp": 1, "rarity": "обычное"},
+{"id": "trash_can_lid", "name": "🪣 Крышка от ведра", "min_level": 1, "weight": 2, "coins": (0, 2), "xp": 1, "rarity": "обычное"},
+{"id": "trash_plastic_bag", "name": "🛍 Пакет из глубин", "min_level": 1, "weight": 1, "coins": (0, 1), "xp": 1, "rarity": "обычное"},
+{"id": "trash_algae", "name": "🌿 Комок водорослей", "min_level": 1, "weight": 3, "coins": (0, 1), "xp": 1, "rarity": "обычное"},
+{"id": "trash_bottle_cap", "name": "🔵 Пластиковая крышка", "min_level": 1, "weight": 2, "coins": (0, 1), "xp": 1, "rarity": "обычное"},
+
+{"id": "trash_wood_plank", "name": "🪵 Гнилая доска", "min_level": 1, "weight": 2, "coins": (0, 3), "xp": 2, "rarity": "обычное"},
+{"id": "trash_rope_knot", "name": "🪢 Узел старой верёвки", "min_level": 2, "weight": 2, "coins": (0, 2), "xp": 1, "rarity": "обычное"},
+{"id": "trash_can_rusty", "name": "🪨 Ржавая банка", "min_level": 2, "weight": 2, "coins": (0, 3), "xp": 2, "rarity": "обычное"},
+
+{"id": "trash_sock", "name": "🧦 Одинокий носок", "min_level": 2, "weight": 1, "coins": (0, 1), "xp": 1, "rarity": "обычное"},
+{"id": "trash_tire_piece", "name": "🛞 Кусок шины", "min_level": 3, "weight": 2, "coins": (1, 3), "xp": 2, "rarity": "обычное"},
+
+{"id": "trash_fishing_line", "name": "🎣 Спутанная леска", "min_level": 3, "weight": 2, "coins": (0, 2), "xp": 2, "rarity": "обычное"},
+{"id": "trash_hook_old", "name": "🪝 Ржавый крючок", "min_level": 3, "weight": 1, "coins": (1, 4), "xp": 3, "rarity": "обычное"},
+
+{"id": "trash_tin_can", "name": "🥫 Пустая банка", "min_level": 3, "weight": 2, "coins": (0, 3), "xp": 2, "rarity": "обычное"},
+{"id": "trash_glass_shard", "name": "🪞 Осколок стекла", "min_level": 4, "weight": 1, "coins": (1, 5), "xp": 3, "rarity": "обычное"},
+
+{"id": "trash_broken_watch", "name": "⌚ Поломанные часы", "min_level": 4, "weight": 1, "coins": (2, 6), "xp": 4, "rarity": "обычное"},
+{"id": "trash_metal_scrap", "name": "⚙️ Металлолом", "min_level": 4, "weight": 2, "coins": (1, 4), "xp": 3, "rarity": "обычное"},
+
+{"id": "trash_shoe_single", "name": "👟 Один кроссовок", "min_level": 4, "weight": 1, "coins": (1, 5), "xp": 3, "rarity": "обычное"},
+{"id": "trash_lighter_wet", "name": "🔥 Мокрая зажигалка", "min_level": 5, "weight": 1, "coins": (2, 6), "xp": 4, "rarity": "обычное"},
+
+{"id": "trash_phone_old", "name": "📱 Утопленный телефон", "min_level": 5, "weight": 1, "coins": (5, 10), "xp": 6, "rarity": "обычное"},
+{"id": "trash_camera_underwater", "name": "📷 Камера без души", "min_level": 5, "weight": 1, "coins": (3, 8), "xp": 5, "rarity": "обычное"},
+
+{"id": "trash_anchor_small", "name": "⚓ Сломанный якорь", "min_level": 5, "weight": 1, "coins": (4, 10), "xp": 6, "rarity": "обычное"},
+
+{"id": "trash_fake_pearl", "name": "🦪 Поддельная жемчужина", "min_level": 4, "weight": 1, "coins": (10, 20), "xp": 8, "rarity": "обычное"},
+
+
 ]
     },
 
