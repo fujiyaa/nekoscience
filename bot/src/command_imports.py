@@ -69,7 +69,6 @@ from modules.inline import (
 # other callbacks
 from modules.commands.service.settings.callback import callback as settings_handler
 from modules.actions.osu_chat import callback as osu_chat_callback
-# from modules.inline import callback as settings_handler
 from modules.actions.public_buttons import map_callback as callback_pkb
 
 from modules.commands.moderation import (
