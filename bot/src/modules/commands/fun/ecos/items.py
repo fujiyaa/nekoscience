@@ -159,7 +159,7 @@ SHOP = {
         },
     },
     "xp_potion_a": {
-        "name": "🧪 Зелье опыта B",
+        "name": "🧪 Зелье опыта A",
         "effect_name": xp_potion_text,
         "price": 50000,
         "type": "зелье",

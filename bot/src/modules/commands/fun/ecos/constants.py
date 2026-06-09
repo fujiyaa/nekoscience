@@ -11,10 +11,10 @@ STORAGE_PAGE_SIZE = 8
 MAX_NEGATIVE_BALANCE = -500
 
 def level_multiplier(level):
-    return 1 + (level * 0.08)
+    return 1 + (level * 0.04)
 
 def xp_required(level):
-    return int(100 * (level ** 1.9))
+    return int(100 * (level ** 2.0))
 
-def old_xp_required(level):
-    return level * 100
+# def old_xp_required(level):
+#     return level * 100
