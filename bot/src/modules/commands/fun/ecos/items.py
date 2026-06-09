@@ -159,7 +159,7 @@ SHOP = {
         },
     },
     "xp_potion_a": {
-        "name": "🧪 Зелье опыта A",
+        "name": "🧪 Зелье опыта B",
         "effect_name": xp_potion_text,
         "price": 50000,
         "type": "зелье",
@@ -178,7 +178,7 @@ SHOP = {
             "vanish_chance": 0.009
         },
     },
-    "all_potion_f": {
+    "all_potion_a": {
         "name": "🧴 Зелье всего A",
         "effect_name": all_potion_text,
         "price": 35000,
