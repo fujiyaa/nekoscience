@@ -221,13 +221,13 @@ SHOP = {
         },
     },
     "random_potion_x": {
-        "name": "🧪 Радиоктивное зелье",
+        "name": "🧪 Радиоактивное зелье",
         "effect_name": "Эффекты неизвестны\nМожет сломаться",
-        "price": 1000000,
-        "type": "зелье",
+        "price": 10000000,
+        "type": "зелье, казино",
         "effect": {
-            "random_buff": 25.0,
-            "vanish_chance": 0.001
+            "random_buff": 250.0,
+            "vanish_chance": 0.99
         },
     }, 
     "collectable_1": {
@@ -242,12 +242,32 @@ SHOP = {
     },
     "collectable_2": {
         "name": "🧲 Магнит денег (слабый)",
-        "effect_name": "Талисман\nСлабый бафф денег\nМожет сломаться",
-        "price": 25000,
+        "effect_name": "Талисман\nСлабый бафф денег\nМожет сломаться\n(но маловероятно)",
+        "price": 35000,
         "type": "талисман",
         "effect": {
-            "coin_buff": 2.0,
-            "vanish_chance": 0.0001
+            "coin_buff": 2.5,
+            "vanish_chance": 0.00001
+        },
+    },
+    "collectable_3": {
+        "name": "🧲 Магнит опыта (слабый)",
+        "effect_name": "Талисман\nСлабый бафф опыта\nМожет сломаться\n(но маловероятно)",
+        "price": 5000,
+        "type": "талисман",
+        "effect": {
+            "xp_buff": 1.2,
+            "vanish_chance": 0.00005
+        },
+    },
+    "collectable_4": {
+        "name": "⚛️ Стабильный тотем",
+        "effect_name": "Талисман\nСлабый рандом денег\nМожет сломаться\n(но маловероятно)",
+        "price": 7500,
+        "type": "талисман, казино",
+        "effect": {
+            "coin_multiplier_random": 1.5,
+            "vanish_chance": 0.000001
         },
     },
     "trade_b": {
@@ -493,6 +513,28 @@ SHOP = {
             "trade_type": "mine",
             "trade_multiplier": 50,
             "vanish_chance": 0.001
+        },
+    },
+    "item_trade_fish_x": {
+        "name": "💎 Продажа рыбы (?)",
+        "effect_name": "Бафф стоимости продажи\n(из хранилища)\n+немного казино\nМожет сломаться",
+        "price": 1000000,
+        "type": "торговля, казино",
+        "effect": {
+            "trade_type": "fish",
+            "trade_multiplier": 100,
+            "vanish_chance": 0.5
+        },
+    },
+    "item_trade_mine_x": {
+        "name": "💎 Продажа шахты (?)",
+        "effect_name": "Бафф стоимости продажи\n(из хранилища)\n+немного казино\nМожет сломаться",
+        "price": 2000000,
+        "type": "торговля, казино",
+        "effect": {
+            "trade_type": "mine",
+            "trade_multiplier": 75,
+            "vanish_chance": 0.5
         },
     },
     "item_reset_capsule": {
