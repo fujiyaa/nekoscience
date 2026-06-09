@@ -118,76 +118,49 @@ ACTIVITIES = {
 
 {"id": "fish_perch_epic", "name": "🌑 Теневой окунь", "min_level": 1, "weight": 12, "coins": (18, 30), "xp": 18, "rarity": "эпическое"},
 {"id": "fish_carp_epic", "name": "🌑 Лунный карп", "min_level": 1, "weight": 10, "coins": (22, 35), "xp": 22, "rarity": "эпическое"},
-
 {"id": "fish_eel_epic", "name": "🌑 Буревестник-угорь", "min_level": 2, "weight": 9, "coins": (28, 45), "xp": 28, "rarity": "эпическое"},
 {"id": "fish_bass_epic", "name": "🌑 Глубинный басс", "min_level": 3, "weight": 8, "coins": (25, 40), "xp": 25, "rarity": "эпическое"},
-
 {"id": "fish_bream_epic", "name": "🌑 Серый лещ туманов", "min_level": 3, "weight": 7, "coins": (30, 50), "xp": 30, "rarity": "эпическое"},
 {"id": "fish_salmon_epic", "name": "🌑 Тёмный лосось", "min_level": 4, "weight": 7, "coins": (35, 60), "xp": 35, "rarity": "эпическое"},
-
 {"id": "fish_pike_epic", "name": "🌑 Хищная тень-щука", "min_level": 5, "weight": 6, "coins": (45, 80), "xp": 45, "rarity": "эпическое"},
 {"id": "fish_piranha_epic", "name": "🌑 Кровавая пирамида", "min_level": 5, "weight": 6, "coins": (40, 75), "xp": 40, "rarity": "эпическое"},
-
 {"id": "fish_tuna_epic", "name": "🌑 Штормовой тунец", "min_level": 6, "weight": 5, "coins": (50, 90), "xp": 50, "rarity": "эпическое"},
 {"id": "fish_halibut_epic", "name": "🌑 Ледяной палтус", "min_level": 6, "weight": 5, "coins": (55, 95), "xp": 55, "rarity": "эпическое"},
-
 {"id": "fish_electric_eel_epic", "name": "🌑 Грозовой угорь", "min_level": 7, "weight": 4, "coins": (70, 120), "xp": 70, "rarity": "эпическое"},
 {"id": "fish_blobfish_epic", "name": "🌑 Искажённая глубина", "min_level": 7, "weight": 4, "coins": (65, 115), "xp": 65, "rarity": "эпическое"},
-
 {"id": "fish_swordfish_epic", "name": "🌑 Чёрный клинок", "min_level": 8, "weight": 3, "coins": (90, 150), "xp": 90, "rarity": "эпическое"},
 {"id": "fish_goldfish_epic", "name": "🌑 Поглощённая золото", "min_level": 9, "weight": 3, "coins": (120, 220), "xp": 120, "rarity": "эпическое"},
-
 {"id": "fish_catfish_giant_epic", "name": "🌑 Титан глубин", "min_level": 10, "weight": 3, "coins": (110, 200), "xp": 110, "rarity": "эпическое"},
-
 {"id": "fish_arowana_epic", "name": "🌑 Хищная аравана", "min_level": 6, "weight": 4, "coins": (75, 130), "xp": 75, "rarity": "эпическое"},
 {"id": "fish_zander_epic", "name": "🌑 Теневая судачья стая", "min_level": 5, "weight": 4, "coins": (70, 125), "xp": 70, "rarity": "эпическое"},
-
 {"id": "fish_grayling_epic", "name": "🌑 Морозный хариус", "min_level": 6, "weight": 4, "coins": (80, 140), "xp": 80, "rarity": "эпическое"},
-
 {"id": "fish_snakehead_epic", "name": "🌑 Ядовитый змееголов", "min_level": 7, "weight": 3, "coins": (100, 180), "xp": 100, "rarity": "эпическое"},
-
 {"id": "fish_manta_ray_epic", "name": "🌑 Призрачная манта", "min_level": 9, "weight": 2, "coins": (150, 260), "xp": 150, "rarity": "эпическое"},
-
 {"id": "fish_red_snapper_epic", "name": "🌑 Алый глубинный снэппер", "min_level": 12, "weight": 3, "coins": (180, 320), "xp": 180, "rarity": "эпическое"},
-
 {"id": "fish_groupers_epic", "name": "🌑 Каменный группер", "min_level": 15, "weight": 2, "coins": (220, 400), "xp": 220, "rarity": "эпическое"},
-
 {"id": "fish_mahi_mahi_epic", "name": "🌑 Плазменный махи-махи", "min_level": 10, "weight": 3, "coins": (140, 250), "xp": 140, "rarity": "эпическое"},
-
 {"id": "fish_arapaima_epic", "name": "🌑 Полуночная арапайма", "min_level": 25, "weight": 2, "coins": (500, 900), "xp": 500, "rarity": "эпическое"},
-
 {"id": "fish_sailfish_epic", "name": "🌑 Теневой парусник", "min_level": 30, "weight": 1, "coins": (800, 1400), "xp": 800, "rarity": "эпическое"},
-
 {"id": "fish_megalodon_epic", "name": "🌑 Прототип мегалодона", "min_level": 35, "weight": 1, "coins": (1200, 2200), "xp": 1200, "rarity": "эпическое"},
-
 {"id": "fish_void_fish_epic", "name": "🌑 Эхо пустоты", "min_level": 50, "weight": 1, "coins": (4000, 8000), "xp": 2500, "rarity": "эпическое"},
 
 
 {"id": "fish_perch_veryrare", "name": "🌫 Туманный окунь", "min_level": 3, "weight": 18, "coins": (20, 35), "xp": 22, "rarity": "очень редкое"},
 {"id": "fish_carp_veryrare", "name": "🌫 Глубинный карп", "min_level": 3, "weight": 16, "coins": (25, 45), "xp": 28, "rarity": "очень редкое"},
-
 {"id": "fish_som_veryrare", "name": "🌫 Тихий сом бездны", "min_level": 4, "weight": 14, "coins": (35, 60), "xp": 35, "rarity": "очень редкое"},
 {"id": "fish_lesh_veryrare", "name": "🌫 Затонувший лещ", "min_level": 4, "weight": 15, "coins": (30, 55), "xp": 32, "rarity": "очень редкое"},
-
 {"id": "fish_pike_veryrare", "name": "🌫 Оскаленная щука тумана", "min_level": 5, "weight": 12, "coins": (50, 90), "xp": 50, "rarity": "очень редкое"},
 {"id": "fish_ugor_veryrare", "name": "🌫 Электрический призрачный угорь", "min_level": 5, "weight": 10, "coins": (60, 110), "xp": 60, "rarity": "очень редкое"},
-
 {"id": "fish_tuna_veryrare", "name": "🌫 Буревестный тунец", "min_level": 6, "weight": 10, "coins": (80, 140), "xp": 75, "rarity": "очень редкое"},
 {"id": "fish_salmon_veryrare", "name": "🌫 Северный лосось теней", "min_level": 6, "weight": 11, "coins": (70, 130), "xp": 70, "rarity": "очень редкое"},
-
 {"id": "fish_swordfish_veryrare", "name": "🌫 Ржавый клинок океана", "min_level": 8, "weight": 6, "coins": (120, 200), "xp": 120, "rarity": "очень редкое"},
 {"id": "fish_electric_eel_veryrare", "name": "🌫 Разрядный угорь", "min_level": 7, "weight": 8, "coins": (110, 190), "xp": 110, "rarity": "очень редкое"},
-
 {"id": "fish_goldfish_veryrare", "name": "🌫 Потускневшая золотая рыбка", "min_level": 9, "weight": 5, "coins": (180, 300), "xp": 160, "rarity": "очень редкое"},
 {"id": "fish_blobfish_veryrare", "name": "🌫 Давление глубин", "min_level": 7, "weight": 7, "coins": (140, 240), "xp": 130, "rarity": "очень редкое"},
-
 {"id": "fish_catfish_giant_veryrare", "name": "🌫 Старый гигант сомов", "min_level": 10, "weight": 4, "coins": (200, 350), "xp": 180, "rarity": "очень редкое"},
-
 {"id": "fish_arowana_veryrare", "name": "🌫 Зеркальная аравана", "min_level": 6, "weight": 8, "coins": (100, 180), "xp": 95, "rarity": "очень редкое"},
 {"id": "fish_zander_veryrare", "name": "🌫 Серый хищник глубин", "min_level": 5, "weight": 9, "coins": (90, 160), "xp": 85, "rarity": "очень редкое"},
-
 {"id": "fish_manta_ray_veryrare", "name": "🌫 Тень манты", "min_level": 9, "weight": 3, "coins": (250, 420), "xp": 220, "rarity": "очень редкое"},
-
 {"id": "fish_arapaima_veryrare", "name": "🌫 Огромная арапайма тумана", "min_level": 25, "weight": 2, "coins": (900, 1600), "xp": 800, "rarity": "очень редкое"},
 {"id": "fish_megalodon_veryrare", "name": "🌫 Реликтовый мегалодон", "min_level": 35, "weight": 1, "coins": (2000, 3500), "xp": 1500, "rarity": "очень редкое"},
 {"id": "fish_void_fish_veryrare", "name": "🌫 Стабильная пустота", "min_level": 50, "weight": 1, "coins": (6000, 10000), "xp": 3000, "rarity": "очень редкое"},
@@ -198,31 +171,22 @@ ACTIVITIES = {
 {"id": "trash_plastic_bag", "name": "🛍 Пакет из глубин", "min_level": 1, "weight": 1, "coins": (0, 1), "xp": 1, "rarity": "обычное"},
 {"id": "trash_algae", "name": "🌿 Комок водорослей", "min_level": 1, "weight": 3, "coins": (0, 1), "xp": 1, "rarity": "обычное"},
 {"id": "trash_bottle_cap", "name": "🔵 Пластиковая крышка", "min_level": 1, "weight": 2, "coins": (0, 1), "xp": 1, "rarity": "обычное"},
-
 {"id": "trash_wood_plank", "name": "🪵 Гнилая доска", "min_level": 1, "weight": 2, "coins": (0, 3), "xp": 2, "rarity": "обычное"},
 {"id": "trash_rope_knot", "name": "🪢 Узел старой верёвки", "min_level": 2, "weight": 2, "coins": (0, 2), "xp": 1, "rarity": "обычное"},
 {"id": "trash_can_rusty", "name": "🪨 Ржавая банка", "min_level": 2, "weight": 2, "coins": (0, 3), "xp": 2, "rarity": "обычное"},
-
 {"id": "trash_sock", "name": "🧦 Одинокий носок", "min_level": 2, "weight": 1, "coins": (0, 1), "xp": 1, "rarity": "обычное"},
 {"id": "trash_tire_piece", "name": "🛞 Кусок шины", "min_level": 3, "weight": 2, "coins": (1, 3), "xp": 2, "rarity": "обычное"},
-
 {"id": "trash_fishing_line", "name": "🎣 Спутанная леска", "min_level": 3, "weight": 2, "coins": (0, 2), "xp": 2, "rarity": "обычное"},
 {"id": "trash_hook_old", "name": "🪝 Ржавый крючок", "min_level": 3, "weight": 1, "coins": (1, 4), "xp": 3, "rarity": "обычное"},
-
 {"id": "trash_tin_can", "name": "🥫 Пустая банка", "min_level": 3, "weight": 2, "coins": (0, 3), "xp": 2, "rarity": "обычное"},
 {"id": "trash_glass_shard", "name": "🪞 Осколок стекла", "min_level": 4, "weight": 1, "coins": (1, 5), "xp": 3, "rarity": "обычное"},
-
 {"id": "trash_broken_watch", "name": "⌚ Поломанные часы", "min_level": 4, "weight": 1, "coins": (2, 6), "xp": 4, "rarity": "обычное"},
 {"id": "trash_metal_scrap", "name": "⚙️ Металлолом", "min_level": 4, "weight": 2, "coins": (1, 4), "xp": 3, "rarity": "обычное"},
-
 {"id": "trash_shoe_single", "name": "👟 Один кроссовок", "min_level": 4, "weight": 1, "coins": (1, 5), "xp": 3, "rarity": "обычное"},
 {"id": "trash_lighter_wet", "name": "🔥 Мокрая зажигалка", "min_level": 5, "weight": 1, "coins": (2, 6), "xp": 4, "rarity": "обычное"},
-
 {"id": "trash_phone_old", "name": "📱 Утопленный телефон", "min_level": 5, "weight": 1, "coins": (5, 10), "xp": 6, "rarity": "обычное"},
 {"id": "trash_camera_underwater", "name": "📷 Камера без души", "min_level": 5, "weight": 1, "coins": (3, 8), "xp": 5, "rarity": "обычное"},
-
 {"id": "trash_anchor_small", "name": "⚓ Сломанный якорь", "min_level": 5, "weight": 1, "coins": (4, 10), "xp": 6, "rarity": "обычное"},
-
 {"id": "trash_fake_pearl", "name": "🦪 Поддельная жемчужина", "min_level": 4, "weight": 1, "coins": (10, 20), "xp": 8, "rarity": "обычное"},
 
 
@@ -239,6 +203,121 @@ ACTIVITIES = {
         "fail_chance": 0.10,
 
         "loot": [
+
+{"id": "mine_stick_normal", "name": "🪵 Палка", "min_level": 1, "weight": 70, "coins": (2, 5), "xp": 2, "rarity": "обычное"},
+{"id": "mine_root_normal", "name": "🌱 Корень", "min_level": 1, "weight": 68, "coins": (2, 5), "xp": 2, "rarity": "обычное"},
+{"id": "mine_broken_brick_normal", "name": "🧱 Обломок кирпича", "min_level": 1, "weight": 65, "coins": (3, 6), "xp": 3, "rarity": "обычное"},
+{"id": "mine_dirt_chunk_normal", "name": "🟫 Ком земли", "min_level": 1, "weight": 85, "coins": (1, 3), "xp": 1, "rarity": "обычное"},
+{"id": "mine_dry_mud_normal", "name": "🟤 Засохшая грязь", "min_level": 1, "weight": 80, "coins": (1, 4), "xp": 1, "rarity": "обычное"},
+
+{"id": "mine_old_nail_normal", "name": "📎 Старый гвоздь", "min_level": 2, "weight": 60, "coins": (3, 7), "xp": 3, "rarity": "обычное"},
+{"id": "mine_rusty_bolt_normal", "name": "🔩 Ржавый болт", "min_level": 2, "weight": 58, "coins": (3, 8), "xp": 3, "rarity": "обычное"},
+{"id": "mine_small_pebble_normal", "name": "🪨 Галька", "min_level": 2, "weight": 75, "coins": (2, 5), "xp": 2, "rarity": "обычное"},
+{"id": "mine_broken_tile_normal", "name": "🧱 Осколок плитки", "min_level": 2, "weight": 55, "coins": (4, 8), "xp": 4, "rarity": "обычное"},
+{"id": "mine_old_rope_normal", "name": "🪢 Старая верёвка", "min_level": 2, "weight": 50, "coins": (4, 9), "xp": 4, "rarity": "обычное"},
+
+{"id": "mine_bone_fragment_normal", "name": "🦴 Костяной осколок", "min_level": 3, "weight": 45, "coins": (5, 10), "xp": 5, "rarity": "обычное"},
+{"id": "mine_ceramic_shard_normal", "name": "🏺 Черепок", "min_level": 3, "weight": 50, "coins": (4, 10), "xp": 4, "rarity": "обычное"},
+{"id": "mine_old_coin_normal", "name": "🪙 Старая монета", "min_level": 3, "weight": 35, "coins": (6, 12), "xp": 6, "rarity": "обычное"},
+{"id": "mine_scrap_metal_normal", "name": "⚙️ Металлолом", "min_level": 3, "weight": 42, "coins": (5, 11), "xp": 5, "rarity": "обычное"},
+{"id": "mine_broken_handle_normal", "name": "🪓 Сломанная рукоять", "min_level": 3, "weight": 40, "coins": (5, 10), "xp": 5, "rarity": "обычное"},
+
+{"id": "mine_worn_pick_head_normal", "name": "⛏️ Старая кирка", "min_level": 4, "weight": 35, "coins": (8, 15), "xp": 7, "rarity": "обычное"},
+{"id": "mine_chain_link_normal", "name": "⛓️ Звено цепи", "min_level": 4, "weight": 38, "coins": (7, 14), "xp": 7, "rarity": "обычное"},
+{"id": "mine_rusty_horseshoe_normal", "name": "🐴 Ржавая подкова", "min_level": 4, "weight": 30, "coins": (8, 16), "xp": 8, "rarity": "обычное"},
+{"id": "mine_old_bucket_normal", "name": "🪣 Старое ведро", "min_level": 4, "weight": 28, "coins": (8, 18), "xp": 8, "rarity": "обычное"},
+{"id": "mine_cracked_lantern_normal", "name": "🏮 Треснувший фонарь", "min_level": 4, "weight": 25, "coins": (10, 18), "xp": 8, "rarity": "обычное"},
+
+{"id": "mine_miner_glove_normal", "name": "🧤 Потёртая перчатка", "min_level": 5, "weight": 25, "coins": (10, 20), "xp": 10, "rarity": "обычное"},
+{"id": "mine_old_helmet_normal", "name": "⛑️ Старый шлем", "min_level": 5, "weight": 22, "coins": (12, 22), "xp": 10, "rarity": "обычное"},
+{"id": "mine_tool_fragment_normal", "name": "🔧 Обломок инструмента", "min_level": 5, "weight": 24, "coins": (10, 21), "xp": 9, "rarity": "обычное"},
+{"id": "mine_copper_wire_normal", "name": "🧵 Медный провод", "min_level": 5, "weight": 20, "coins": (12, 24), "xp": 10, "rarity": "обычное"},
+{"id": "mine_old_lock_normal", "name": "🔒 Старый замок", "min_level": 5, "weight": 18, "coins": (15, 25), "xp": 12, "rarity": "обычное"},
+
+{"id": "mine_old_coin_rare", "name": "🪙 Старая монета", "min_level": 1, "weight": 18, "coins": (15, 30), "xp": 12, "rarity": "редкое"},
+{"id": "mine_rusty_nail_rare", "name": "📎 Ржавый гвоздь", "min_level": 1, "weight": 16, "coins": (12, 25), "xp": 10, "rarity": "редкое"},
+{"id": "mine_broken_ring_rare", "name": "💍 Сломанное кольцо", "min_level": 1, "weight": 12, "coins": (18, 35), "xp": 14, "rarity": "редкое"},
+{"id": "mine_glass_shard_rare", "name": "🔹 Цветной осколок стекла", "min_level": 1, "weight": 15, "coins": (10, 22), "xp": 9, "rarity": "редкое"},
+{"id": "mine_copper_button_rare", "name": "🔘 Медная пуговица", "min_level": 1, "weight": 14, "coins": (14, 28), "xp": 11, "rarity": "редкое"},
+
+{"id": "mine_fossil_shell_rare", "name": "🐚 Окаменелая ракушка", "min_level": 2, "weight": 13, "coins": (20, 40), "xp": 15, "rarity": "редкое"},
+{"id": "mine_ancient_bolt_rare", "name": "🔩 Древний болт", "min_level": 2, "weight": 12, "coins": (18, 38), "xp": 14, "rarity": "редкое"},
+{"id": "mine_miner_badge_rare", "name": "🎖 Шахтёрский жетон", "min_level": 2, "weight": 10, "coins": (25, 45), "xp": 18, "rarity": "редкое"},
+{"id": "mine_crystal_fragment_rare", "name": "✨ Кристальный осколок", "min_level": 2, "weight": 9, "coins": (28, 50), "xp": 20, "rarity": "редкое"},
+{"id": "mine_old_key_rare", "name": "🗝 Старый ключ", "min_level": 2, "weight": 11, "coins": (22, 42), "xp": 16, "rarity": "редкое"},
+
+{"id": "mine_silver_coin_rare", "name": "🥈 Серебряная монета", "min_level": 3, "weight": 8, "coins": (35, 65), "xp": 25, "rarity": "редкое"},
+{"id": "mine_mysterious_relic_rare", "name": "📿 Странная реликвия", "min_level": 3, "weight": 7, "coins": (40, 75), "xp": 28, "rarity": "редкое"},
+{"id": "mine_glowing_stone_rare", "name": "💠 Светящийся камень", "min_level": 3, "weight": 9, "coins": (30, 60), "xp": 22, "rarity": "редкое"},
+{"id": "mine_old_compass_rare", "name": "🧭 Сломанный компас", "min_level": 3, "weight": 7, "coins": (38, 70), "xp": 26, "rarity": "редкое"},
+{"id": "mine_bronze_medal_rare", "name": "🥉 Бронзовая медаль", "min_level": 3, "weight": 6, "coins": (45, 80), "xp": 30, "rarity": "редкое"},
+
+{"id": "mine_gem_fragment_rare", "name": "💎 Осколок самоцвета", "min_level": 4, "weight": 6, "coins": (50, 90), "xp": 35, "rarity": "редкое"},
+{"id": "mine_golden_button_rare", "name": "🟡 Золотая пуговица", "min_level": 4, "weight": 5, "coins": (55, 95), "xp": 38, "rarity": "редкое"},
+{"id": "mine_ancient_coin_rare", "name": "🏛 Древняя монета", "min_level": 4, "weight": 5, "coins": (60, 100), "xp": 40, "rarity": "редкое"},
+{"id": "mine_miner_lantern_rare", "name": "🏮 Старинный фонарь", "min_level": 4, "weight": 4, "coins": (65, 110), "xp": 42, "rarity": "редкое"},
+{"id": "mine_ore_sample_rare", "name": "🔬 Богатый образец руды", "min_level": 4, "weight": 5, "coins": (55, 105), "xp": 40, "rarity": "редкое"},
+
+{"id": "mine_tiny_ruby_rare", "name": "♦️ Маленький рубин", "min_level": 5, "weight": 4, "coins": (70, 130), "xp": 50, "rarity": "редкое"},
+{"id": "mine_tiny_sapphire_rare", "name": "🔷 Маленький сапфир", "min_level": 5, "weight": 4, "coins": (75, 140), "xp": 52, "rarity": "редкое"},
+{"id": "mine_moon_fragment_rare", "name": "🌙 Лунный осколок", "min_level": 5, "weight": 3, "coins": (80, 150), "xp": 55, "rarity": "редкое"},
+{"id": "mine_star_fragment_rare", "name": "⭐ Звёздный осколок", "min_level": 5, "weight": 3, "coins": (85, 160), "xp": 58, "rarity": "редкое"},
+{"id": "mine_treasure_cache_rare", "name": "📦 Тайник шахтёра", "min_level": 5, "weight": 2, "coins": (100, 180), "xp": 65, "rarity": "редкое"},
+
+{"id": "mine_moonstone_veryrare", "name": "🌙 Лунный камень", "min_level": 5, "weight": 4, "coins": (120, 200), "xp": 70, "rarity": "очень редкое"},
+{"id": "mine_forgotten_medal_veryrare", "name": "🎖 Забытая медаль", "min_level": 5, "weight": 4, "coins": (130, 220), "xp": 75, "rarity": "очень редкое"},
+
+{"id": "mine_star_quartz_veryrare", "name": "⭐ Звёздный кварц", "min_level": 6, "weight": 3, "coins": (150, 260), "xp": 85, "rarity": "очень редкое"},
+{"id": "mine_crystal_heart_veryrare", "name": "💖 Кристальное сердце", "min_level": 6, "weight": 3, "coins": (160, 280), "xp": 90, "rarity": "очень редкое"},
+
+{"id": "mine_sunstone_veryrare", "name": "☀️ Солнечный камень", "min_level": 7, "weight": 3, "coins": (180, 320), "xp": 100, "rarity": "очень редкое"},
+{"id": "mine_royal_emerald_veryrare", "name": "🟢 Королевский изумруд", "min_level": 7, "weight": 2, "coins": (200, 350), "xp": 110, "rarity": "очень редкое"},
+
+{"id": "mine_ancient_relic_veryrare", "name": "🏛 Древняя реликвия", "min_level": 8, "weight": 2, "coins": (240, 400), "xp": 130, "rarity": "очень редкое"},
+{"id": "mine_dragon_scale_veryrare", "name": "🐉 Окаменевшая чешуя дракона", "min_level": 8, "weight": 2, "coins": (260, 450), "xp": 140, "rarity": "очень редкое"},
+
+{"id": "mine_phantom_gem_veryrare", "name": "👻 Фантомный самоцвет", "min_level": 9, "weight": 2, "coins": (300, 520), "xp": 160, "rarity": "очень редкое"},
+{"id": "mine_void_pearl_veryrare", "name": "⚫ Жемчужина пустоты", "min_level": 9, "weight": 1, "coins": (350, 600), "xp": 180, "rarity": "очень редкое"},
+
+{"id": "mine_arcane_crystal_veryrare", "name": "🔮 Арканический кристалл", "min_level": 10, "weight": 1, "coins": (400, 700), "xp": 220, "rarity": "очень редкое"},
+{"id": "mine_celestial_fragment_veryrare", "name": "✨ Небесный фрагмент", "min_level": 10, "weight": 1, "coins": (450, 800), "xp": 250, "rarity": "очень редкое"},
+{"id": "mine_ancient_crown_gem_veryrare", "name": "👑 Самоцвет древней короны", "min_level": 10, "weight": 1, "coins": (500, 900), "xp": 280, "rarity": "очень редкое"},
+
+
+{"id": "mine_twilight_crystal_epic", "name": "🌆 Сумеречный кристалл", "min_level": 10, "weight": 3, "coins": (600, 1000), "xp": 300, "rarity": "эпическое"},
+{"id": "mine_astral_shard_epic", "name": "✨ Астральный осколок", "min_level": 10, "weight": 2, "coins": (650, 1100), "xp": 320, "rarity": "эпическое"},
+
+{"id": "mine_mana_core_epic", "name": "🔮 Ядро маны", "min_level": 11, "weight": 2, "coins": (700, 1200), "xp": 350, "rarity": "эпическое"},
+{"id": "mine_crimson_gem_epic", "name": "🔺 Багровый самоцвет", "min_level": 11, "weight": 2, "coins": (750, 1300), "xp": 360, "rarity": "эпическое"},
+
+{"id": "mine_frost_heart_epic", "name": "❄️ Сердце льда", "min_level": 12, "weight": 2, "coins": (800, 1400), "xp": 380, "rarity": "эпическое"},
+{"id": "mine_ember_core_epic", "name": "🔥 Ядро углей", "min_level": 12, "weight": 2, "coins": (850, 1450), "xp": 390, "rarity": "эпическое"},
+
+{"id": "mine_sky_diamond_epic", "name": "💎 Небесный алмаз", "min_level": 13, "weight": 2, "coins": (900, 1500), "xp": 420, "rarity": "эпическое"},
+{"id": "mine_thunder_ore_epic", "name": "⚡ Грозовая руда", "min_level": 13, "weight": 2, "coins": (950, 1600), "xp": 430, "rarity": "эпическое"},
+
+{"id": "mine_dragon_bone_epic", "name": "🦴 Кость дракона", "min_level": 14, "weight": 2, "coins": (1000, 1700), "xp": 450, "rarity": "эпическое"},
+{"id": "mine_phantom_crystal_epic", "name": "👻 Призрачный кристалл", "min_level": 14, "weight": 2, "coins": (1050, 1800), "xp": 470, "rarity": "эпическое"},
+
+{"id": "mine_royal_sapphire_epic", "name": "🔷 Королевский сапфир", "min_level": 15, "weight": 2, "coins": (1150, 1900), "xp": 500, "rarity": "эпическое"},
+{"id": "mine_void_ember_epic", "name": "🌑 Уголь пустоты", "min_level": 15, "weight": 1, "coins": (1200, 2000), "xp": 520, "rarity": "эпическое"},
+
+{"id": "mine_starlight_core_epic", "name": "⭐ Ядро звёздного света", "min_level": 16, "weight": 1, "coins": (1300, 2200), "xp": 550, "rarity": "эпическое"},
+{"id": "mine_ancient_rune_epic", "name": "📜 Древняя руна", "min_level": 16, "weight": 1, "coins": (1350, 2300), "xp": 570, "rarity": "эпическое"},
+
+{"id": "mine_black_opal_epic", "name": "⚫ Чёрный опал", "min_level": 17, "weight": 1, "coins": (1450, 2500), "xp": 600, "rarity": "эпическое"},
+{"id": "mine_soul_fragment_epic", "name": "👁 Фрагмент души", "min_level": 17, "weight": 1, "coins": (1500, 2600), "xp": 620, "rarity": "эпическое"},
+
+{"id": "mine_abyss_pearl_epic", "name": "🌊 Жемчужина бездны", "min_level": 18, "weight": 1, "coins": (1600, 2800), "xp": 650, "rarity": "эпическое"},
+{"id": "mine_meteor_ore_epic", "name": "☄️ Метеоритная руда", "min_level": 18, "weight": 1, "coins": (1700, 2900), "xp": 680, "rarity": "эпическое"},
+
+{"id": "mine_dimensional_gem_epic", "name": "🌀 Пространственный самоцвет", "min_level": 19, "weight": 1, "coins": (1800, 3100), "xp": 720, "rarity": "эпическое"},
+{"id": "mine_celestial_core_epic", "name": "🌌 Небесное ядро", "min_level": 19, "weight": 1, "coins": (1900, 3300), "xp": 750, "rarity": "эпическое"},
+
+{"id": "mine_eternal_crystal_epic", "name": "♾ Вечный кристалл", "min_level": 20, "weight": 1, "coins": (2200, 3800), "xp": 850, "rarity": "эпическое"},
+{"id": "mine_world_heart_epic", "name": "🌍 Сердце мира", "min_level": 20, "weight": 1, "coins": (2500, 4200), "xp": 900, "rarity": "эпическое"},
+
+
 {"id": "mine_kamen", "name": "🪨 Камень", "min_level": 1, "weight": 80, "coins": (5, 10), "xp": 5, "rarity": "обычное"},
 {"id": "mine_gravel", "name": "🪨 Гравий", "min_level": 1, "weight": 75, "coins": (4, 8), "xp": 4, "rarity": "обычное"},
 {"id": "mine_clay", "name": "🟤 Глина", "min_level": 2, "weight": 60, "coins": (6, 12), "xp": 6, "rarity": "обычное"},
