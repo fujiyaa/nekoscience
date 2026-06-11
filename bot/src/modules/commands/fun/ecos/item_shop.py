@@ -194,14 +194,12 @@ def remove_item(user_id: int, item_id: str, amount: int = 1):
     conn = get_conn()
     cur = conn.cursor()
 
-    # уменьшаем количество
     cur.execute("""
         UPDATE inventory_items
         SET amount = amount - ?
         WHERE telegram_id = ? AND item_id = ?
     """, (amount, user_id, item_id))
 
-    # удаляем если 0
     cur.execute("""
         DELETE FROM inventory_items
         WHERE telegram_id = ? AND item_id = ?

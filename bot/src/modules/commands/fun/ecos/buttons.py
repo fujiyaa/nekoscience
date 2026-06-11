@@ -46,9 +46,15 @@ def get_actions_keyboard(owner_id):
     return InlineKeyboardMarkup([
         [
             InlineKeyboardButton("🎣 Рыбалка", callback_data=f"eco_fish:{owner_id}")
+        ,
+        
+            InlineKeyboardButton("⛏️ Шахта", callback_data=f"eco_mine:{owner_id}")
         ],
         [
-            InlineKeyboardButton("⛏️ Шахта", callback_data=f"eco_mine:{owner_id}")
+            InlineKeyboardButton("🌲 Лес", callback_data=f"eco_forest:{owner_id}")
+        ,
+        
+            InlineKeyboardButton("⚔️ Сражение", callback_data=f"eco_battle:{owner_id}")
         ],
         [
             InlineKeyboardButton("⬅️ Назад", callback_data=f"eco_main_menu:{owner_id}")

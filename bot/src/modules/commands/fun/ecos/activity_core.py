@@ -110,6 +110,24 @@ def add_xp(user_id: int, activity: str, xp: int):
     conn.commit()
     conn.close()
 
+def set_activity_level(user_id: int, activity: str, new_level: int):
+
+    level_field = ACTIVITIES[activity]["level_field"]
+    xp_field = ACTIVITIES[activity]["xp_field"]
+
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute(f"""
+        UPDATE users
+        SET
+            {level_field} = ?,
+            {xp_field} = ?
+        WHERE telegram_id = ?
+    """, (new_level, 0, user_id))
+
+    conn.commit()
+    conn.close()
 
 def get_progress(user_id: int, activity: str):
 
@@ -141,12 +159,7 @@ def get_progress(user_id: int, activity: str):
 
 def get_luck_level(user_id: int, activity_name: str):
 
-    field_map = {
-        "fish": "fish_luck_level",
-        "mine": "mine_luck_level",
-    }
-
-    field = field_map[activity_name]
+    field = f"{activity_name}_luck_level"
 
     return get_user_field(
         user_id,
@@ -156,12 +169,7 @@ def get_luck_level(user_id: int, activity_name: str):
 
 def get_tool_level(user_id: int, activity_name: str):
 
-    field_map = {
-        "fish": "fish_tool_level",
-        "mine": "mine_tool_level",
-    }
-
-    field = field_map[activity_name]
+    field = f"{activity_name}_tool_level"
 
     return get_user_field(
         user_id,

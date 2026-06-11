@@ -158,7 +158,7 @@ def apply_tool_luck(tool_level: int, loot_table: list):
         elif rarity == "легендарное":
             weight *= (1 + (luck_power - 1) * 2.2)
 
-        modified_table.append((item, int(weight)))
+        modified_table.append((item, weight))
 
     fail_modifier = max(1 - (tool_level - 1) * 0.04, 0.6)
 
@@ -193,7 +193,7 @@ def roll_loot(
             "легендарное": 0.18
         }.get(rarity, 0)
 
-        weight = max(1, int(base_weight * luck_bonus))
+        weight = max(MIN_LOOT_WEIGHT, base_weight * luck_bonus)
 
         weighted_loot.append((item, weight))
 
@@ -211,20 +211,22 @@ def roll_loot(
         return None, None, 0, 0, "fail"
 
     # 4. roll
-    total_weight = sum(w for _, w in weighted_loot)
-    roll = random.randint(1, total_weight)
+    chosen_item = random.choices(
+        [item for item, _ in weighted_loot],
+        weights=[weight for _, weight in weighted_loot],
+        k=1
+    )[0]
 
-    current = 0
+    coins = random.randint(*chosen_item["coins"])
+    xp = chosen_item["xp"]
 
-    for item, weight in weighted_loot:
-        current += weight
-        if roll <= current:
-            coins = random.randint(*item["coins"])
-            xp = item["xp"]
-            return item["id"], item["name"], coins, xp, item["rarity"]
-
-    item = random.choice(loot_table)
-    return item["id"], item["name"], random.randint(*item["coins"]), item["xp"], item["rarity"]
+    return (
+        chosen_item["id"],
+        chosen_item["name"],
+        coins,
+        xp,
+        chosen_item["rarity"]
+    )
 
 async def do_activity(query, activity_name):
 
@@ -236,24 +238,13 @@ async def do_activity(query, activity_name):
     now = int(time.time())
     last = get_last_activity(user_id, activity_name)
 
+    tool_level = get_tool_level(user_id, activity_name)
 
-    tool_level = get_tool_level(
-        user_id,
-        activity_name
-    )
+    cooldown_mult = max(1 - (tool_level - 1) * 0.05, 0.30)
 
-    cooldown_mult = max(
-        1 - (tool_level - 1) * 0.05,
-        0.30
-    )
+    cooldown = int(ACTIVITIES[activity_name]["cooldown"] * cooldown_mult)
 
-    cooldown = int(
-        ACTIVITIES[activity_name]["cooldown"] *
-        cooldown_mult
-    )
-
-
-    if now - last < cooldown:        
+    if now - last < cooldown:
         activity_title_text = ACTIVITIES[activity_name]["name"]
         text = (
             f"<b>{user_name}</b>\n\n"
@@ -270,17 +261,9 @@ async def do_activity(query, activity_name):
 
     set_last_activity(user_id, activity_name)
 
-    level, _, _ = get_progress(
-        user_id,
-        activity_name
-    )
-
+    level, _, _ = get_progress(user_id, activity_name)
     balance = get_balance(user_id)
-    
-    luck_level = get_luck_level(
-        user_id,
-        activity_name
-    )
+    luck_level = get_luck_level(user_id, activity_name)
 
     item_id, item_name, coins, xp, rarity = roll_loot(
         activity_name,
@@ -289,22 +272,15 @@ async def do_activity(query, activity_name):
         tool_level
     )
 
-    activity_fail_action_text = ACTIVITIES[activity_name]["fail_action"]
-
     if rarity == "fail":
-        level, current_xp, needed_xp = get_progress(
-            user_id,
-            activity_name
-        )
-        
+        level, current_xp, needed_xp = get_progress(user_id, activity_name)
+
         text = (
             f"<b>{user_name}</b> <code>(lvl. {level})</code>\n"
             f"<code>- левел ап: {current_xp}/{needed_xp}</code>\n"
-            f"<code>- баланс: {balance}</code>\n"            
+            f"<code>- баланс: {balance}</code>\n"
             f"\n"
-            # f"{activity_title_text}\n"        
-            # f"\n"
-            f"{activity_fail_action_text}\n"
+            f"{ACTIVITIES[activity_name]['fail_action']}\n"
         )
 
         await query.edit_message_text(
@@ -313,23 +289,15 @@ async def do_activity(query, activity_name):
             reply_markup=get_actions_keyboard(user_id)
         )
         return
-    
+
     mult = RARITY_MULTIPLIER.get(rarity, 1.0)
 
     coins = int(coins * level_multiplier(level) * mult)
     xp = int(xp * level_multiplier(level) * mult)
 
-    add_storage_item(
-        user_id,
-        item_id=item_id,
-        amount=1
-    )
+    add_storage_item(user_id, item_id=item_id, amount=1)
 
-    base = {
-        "xp": xp,
-        "coins": coins
-    }
-
+    base = {"xp": xp, "coins": coins}
     final_xp, final_coins, log = apply_effects(user_id, base, {
         "activity": activity_name
     })
@@ -337,28 +305,36 @@ async def do_activity(query, activity_name):
     inventory = get_inventory(user_id)
 
     reset_item = None
+    casino_capsules = []
 
     for item_id, amount in inventory:
         item = SHOP.get(item_id)
         if not item:
             continue
 
-        if item.get("effect", {}).get("reset_stats"):
+        effect = item.get("effect", {})
+
+        if effect.get("reset_stats"):
             reset_item = item_id
-            break
-    
+
+        if effect.get("double_or_nothing"):
+            affected = effect.get("affected_thing", "")
+            affected_set = set(x.strip() for x in affected.split(","))
+            
+            casino_capsules.append({
+                "item_id": item_id,
+                "affected": affected_set
+            })
+
     penalty_text = ""
 
     if reset_item:
-        penalty_text += (
-            "\n<code>- использован сброс\n(предмет)</code>"
-        )
+        penalty_text += "\n<code>- использован сброс\n(предмет)</code>"
 
         reset_player(user_id)
-
         clear_inventory(user_id)
         clear_storage(user_id)
-                      
+
         final_xp = 0
         final_coins = 0
 
@@ -367,54 +343,110 @@ async def do_activity(query, activity_name):
             "item": reset_item
         })
 
-    future_balance = balance + final_coins    
+    future_balance = balance + final_coins
 
     if future_balance <= MAX_NEGATIVE_BALANCE:
         final_xp = 0
-        penalty_text += (
-            "\n<code>- опыт не получен\n(негативный баланс)</code>"
+        penalty_text += "\n<code>- опыт не получен\n(негативный баланс)</code>"
+
+
+    capsule_log = []
+    level_change = None
+    reset_balance_trigger = False
+
+    targets = {
+        "coin": final_coins,
+        "xp": final_xp
+    }
+
+    for capsule in casino_capsules:
+        success = random.random() < 0.5
+        affected = capsule["affected"]
+
+        remove_item(user_id, capsule["item_id"], 1)
+
+        capsule_name = SHOP.get(capsule["item_id"], {}).get("name", "капсула")
+
+        result_text = "✔️ Double" if success else "❌ Nothing"
+
+        if "level" in affected:
+            level_change = {
+                "success": success,
+                "value": 2 if success else 1
+            }
+
+        for t in affected:
+            if t not in targets:
+                continue
+
+            if success:
+                targets[t] *= 2
+            else:
+                targets[t] = 0
+
+                if t == "coin":
+                    reset_balance_trigger = True
+
+        # if affected == {"coin", "xp"} and success:
+        #     targets["coin"] = -abs(targets["coin"])
+        #     targets["xp"] = -abs(targets["xp"])
+
+        capsule_log.append(
+            f"<code>- {capsule_name}: {result_text}</code>"
         )
 
-    # print(json.dumps(log, indent=4, ensure_ascii=False))
+    if reset_balance_trigger:
+        reset_balance(user_id)
+
+    if level_change:
+        if level_change["success"]:
+            new_level = level * 2
+        else:
+            new_level = 1
+            targets["xp"] = 0
+
+        set_activity_level(user_id, activity_name, new_level)
+
+    final_coins = targets["coin"]
+    final_xp = targets["xp"]
 
     add_coins(user_id, final_coins)
     add_xp(user_id, activity_name, final_xp)
 
-    level, current_xp, needed_xp = get_progress(
-        user_id,
-        activity_name
-    )
-    
-    raity_emoji = RARITY_EMOJI.get(rarity, "⚪")    
-    activity_good_action_text = ACTIVITIES[activity_name]["good_action"]
+    level, current_xp, needed_xp = get_progress(user_id, activity_name)
 
+    rarity_emoji = RARITY_EMOJI.get(rarity, "⚪")
+
+    balance = get_balance(user_id)
     broken_items_text = ""
+    double_text = ""
 
     if log["broken"]:
-        broken_names = []
-
-        for item_id in log["broken"]:
-            item = SHOP.get(item_id)
-            broken_names.append(item["name"] if item else item_id)
+        broken_names = [
+            SHOP.get(i, {}).get("name", i)
+            for i in log["broken"]
+        ]
 
         broken_items_text = (
             "\n\n💥 Сломались предметы:\n" +
-            "\n".join(f"<code>- {name}</code>" for name in broken_names)
+            "\n".join(f"<code>- {n}</code>" for n in broken_names)
         )
+
+    if capsule_log:
+        double_text = "\n\nПотрачено:\n" + "\n".join(capsule_log)
 
     text = (
         f"<b>{user_name}</b> <code>(lvl. {level})</code>\n"
-        f"<code>- баланс: {balance + final_coins}</code>\n"
+        f"<code>- баланс: {balance}</code>\n"
         f"<code>- левел ап: {current_xp}/{needed_xp}</code>\n"
-        f"\n"        
-        # f"{activity_title_text}\n"        
-        # f"\n"
-        f"{activity_good_action_text}: <b>{item_name}</b>\n"
-        f"<code>- {raity_emoji} редкость: {rarity}</code>\n"
-        f"<code>- 🪙 деньги: {final_coins} </code>\n"
+        f"\n"
+        f"{ACTIVITIES[activity_name]['good_action']}: <b>{item_name}</b>\n"
+        f"<code>- {rarity_emoji} редкость: {rarity}</code>\n"
+        f"<code>- 🪙 деньги: {final_coins}</code>\n"
         f"<code>- ⭐️ опыт: {final_xp} XP</code>\n"
-        f"{penalty_text}" 
+        f"{penalty_text}"
         f"{broken_items_text}"
+        f"{double_text}"
     )
 
     await query.edit_message_text(

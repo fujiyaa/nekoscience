@@ -21,6 +21,8 @@ from .storage import *
 
 
 init_db()
+migrate_add_forest()
+migrate_add_battle()
 build_item_index()
 
 async def main_menu(update, context):
@@ -130,6 +132,12 @@ async def economy_callback(update, context):
 
     elif data == "eco_mine":
         await do_activity(query, "mine")
+
+    elif data == "eco_forest":
+        await do_activity(query, "forest")
+
+    elif data == "eco_battle":
+        await do_activity(query, "battle")
 
     elif data == "eco_inventory":
         await show_inventory(query, owner_id)

@@ -6,7 +6,7 @@ ACTIVITIES = {
         "cooldown": 20,
         "level_field": "fish_level",
         "xp_field": "fish_xp",
-        "fail_chance": 0.30,
+        "fail_chance": 0.33,
 
         "loot": [
 {"id": "fish_okun", "name": "🐟 Окунь", "min_level": 1, "weight": 70, "coins": (6, 12), "xp": 6, "rarity": "обычное"},
@@ -16,20 +16,20 @@ ACTIVITIES = {
 {"id": "fish_pike", "name": "🐊 Щука", "min_level": 5, "weight": 20, "coins": (25, 50), "xp": 25, "rarity": "редкое"},
 {"id": "fish_ugor", "name": "🐍 Угорь", "min_level": 2, "weight": 15, "coins": (30, 60), "xp": 30, "rarity": "редкое"},
 {"id": "fish_tuna", "name": "🐟 Тунец", "min_level": 6, "weight": 18, "coins": (35, 70), "xp": 35, "rarity": "редкое"},
-{"id": "fish_swordfish", "name": "🗡 Рыба-меч", "min_level": 8, "weight": 8, "coins": (70, 130), "xp": 60, "rarity": "легендарное"},
-{"id": "fish_electric_eel", "name": "⚡ Электрический угорь", "min_level": 7, "weight": 10, "coins": (60, 120), "xp": 55, "rarity": "легендарное"},
-{"id": "fish_goldfish", "name": "🐠 Золотая рыбка", "min_level": 9, "weight": 3, "coins": (150, 300), "xp": 80, "rarity": "легендарное"},
+{"id": "fish_swordfish", "name": "🗡 Рыба-меч", "min_level": 8, "weight": 3, "coins": (70, 130), "xp": 60, "rarity": "легендарное"},
+{"id": "fish_electric_eel", "name": "⚡ Электрический угорь", "min_level": 7, "weight": 5, "coins": (60, 120), "xp": 55, "rarity": "легендарное"},
+{"id": "fish_goldfish", "name": "🐠 Золотая рыбка", "min_level": 9, "weight": 1, "coins": (150, 300), "xp": 80, "rarity": "легендарное"},
 
-{"id": "fish_catfish_giant", "name": "🐡 Гигантский сом", "min_level": 10, "weight": 5, "coins": (120, 220), "xp": 90, "rarity": "легендарное"},
+{"id": "fish_catfish_giant", "name": "🐡 Гигантский сом", "min_level": 10, "weight": 3, "coins": (120, 220), "xp": 90, "rarity": "легендарное"},
 {"id": "fish_salmon", "name": "🐟 Лосось", "min_level": 4, "weight": 35, "coins": (18, 35), "xp": 18, "rarity": "редкое"},
 {"id": "fish_bass", "name": "🐟 Басс", "min_level": 3, "weight": 45, "coins": (10, 18), "xp": 10, "rarity": "обычное"},
 {"id": "fish_mackerel", "name": "🐟 Скумбрия", "min_level": 2, "weight": 55, "coins": (8, 16), "xp": 8, "rarity": "обычное"},
-{"id": "fish_halibut", "name": "🐟 Палтус", "min_level": 6, "weight": 20, "coins": (40, 80), "xp": 40, "rarity": "редкое"},
-{"id": "fish_sturgeon", "name": "🐟 Осётр", "min_level": 8, "weight": 12, "coins": (80, 150), "xp": 70, "rarity": "легендарное"},
+{"id": "fish_halibut", "name": "🐟 Палтус", "min_level": 6, "weight": 2, "coins": (40, 80), "xp": 40, "rarity": "редкое"},
+{"id": "fish_sturgeon", "name": "🐟 Осётр", "min_level": 8, "weight": 2, "coins": (80, 150), "xp": 70, "rarity": "легендарное"},
 {"id": "fish_piranha", "name": "🩸 Пиранья", "min_level": 5, "weight": 18, "coins": (20, 45), "xp": 25, "rarity": "редкое"},
 {"id": "fish_clownfish", "name": "🐠 Рыба-клоун", "min_level": 1, "weight": 65, "coins": (5, 10), "xp": 5, "rarity": "обычное"},
-{"id": "fish_blobfish", "name": "🫠 Рыба-капля", "min_level": 7, "weight": 6, "coins": (50, 110), "xp": 50, "rarity": "легендарное"},
-{"id": "fish_manta_ray", "name": "🪶 Скаты-манта", "min_level": 9, "weight": 4, "coins": (100, 200), "xp": 85, "rarity": "легендарное"},
+{"id": "fish_blobfish", "name": "🫠 Рыба-капля", "min_level": 7, "weight": 1, "coins": (50, 110), "xp": 50, "rarity": "легендарное"},
+{"id": "fish_manta_ray", "name": "🪶 Скаты-манта", "min_level": 9, "weight": 1, "coins": (100, 200), "xp": 85, "rarity": "легендарное"},
 
 {"id": "fish_arowana", "name": "🐟 Аравана", "min_level": 6, "weight": 14, "coins": (45, 90), "xp": 40, "rarity": "редкое"},
 {"id": "fish_zander", "name": "🐟 Судак", "min_level": 5, "weight": 16, "coins": (35, 70), "xp": 35, "rarity": "редкое"},
@@ -74,8 +74,8 @@ ACTIVITIES = {
 {"id": "fish_anime_protagonist", "name": "⭐ Рыба-протагонист", "min_level": 50, "weight": 1, "coins": (2500, 4500), "xp": 1500, "rarity": "очень редкое"},
 {"id": "fish_goddess_of_ocean", "name": "👑 Богиня океана", "min_level": 50, "weight": 1, "coins": (3000, 5500), "xp": 1800, "rarity": "очень редкое"},
 
-{"id": "fish_mahi_mahi", "name": "🐟 Махи-махи", "min_level": 10, "weight": 14, "coins": (60, 120), "xp": 55, "rarity": "редкое"},
-{"id": "fish_red_snapper", "name": "🐟 Красный снэппер", "min_level": 12, "weight": 13, "coins": (70, 140), "xp": 60, "rarity": "редкое"},
+{"id": "fish_mahi_mahi", "name": "🐟 Махи-махи", "min_level": 10, "weight": 9, "coins": (60, 120), "xp": 55, "rarity": "редкое"},
+{"id": "fish_red_snapper", "name": "🐟 Красный снэппер", "min_level": 10, "weight": 13, "coins": (70, 140), "xp": 60, "rarity": "редкое"},
 {"id": "fish_groupers", "name": "🐟 Групер", "min_level": 15, "weight": 12, "coins": (80, 160), "xp": 70, "rarity": "редкое"},
 {"id": "fish_tilapia", "name": "🐟 Тилапия", "min_level": 10, "weight": 18, "coins": (55, 110), "xp": 50, "rarity": "редкое"},
 {"id": "fish_catfish_nile", "name": "🐡 Нильский сом", "min_level": 18, "weight": 10, "coins": (100, 200), "xp": 85, "rarity": "редкое"},
@@ -189,7 +189,17 @@ ACTIVITIES = {
 {"id": "trash_anchor_small", "name": "⚓ Сломанный якорь", "min_level": 5, "weight": 1, "coins": (4, 10), "xp": 6, "rarity": "обычное"},
 {"id": "trash_fake_pearl", "name": "🦪 Поддельная жемчужина", "min_level": 4, "weight": 1, "coins": (10, 20), "xp": 8, "rarity": "обычное"},
 
+{"id": "fish_coin_chest_1", "name": "💼 Сундук денег I", "min_level": 2, "weight": 0.10, "coins": (100, 1000), "xp": 0, "rarity": "обычное"},
+{"id": "fish_coin_chest_2", "name": "💼 Сундук денег II", "min_level": 10, "weight": 0.01, "coins": (1000, 5000), "xp": 0, "rarity": "редкое"},
+{"id": "fish_coin_chest_3", "name": "💼 Сундук денег III", "min_level": 20, "weight": 0.001, "coins": (5000, 15000), "xp": 0, "rarity": "очень редкое"},
+{"id": "fish_coin_chest_4", "name": "💼 Сундук денег IV", "min_level": 35, "weight": 0.001, "coins": (15000, 40000), "xp": 0, "rarity": "эпическое"},
+{"id": "fish_coin_chest_5", "name": "💼 Сундук денег V", "min_level": 60, "weight": 0.001, "coins": (40000, 75000), "xp": 0, "rarity": "легендарное"},
 
+{"id": "fish_xp_chest_1", "name": "💼 Сундук опыта I", "min_level": 2, "weight": 0.10, "coins": (0, 0), "xp": 100, "rarity": "обычное"},
+{"id": "fish_xp_chest_2", "name": "💼 Сундук опыта II", "min_level": 10, "weight": 0.01, "coins": (0, 0), "xp": 500, "rarity": "редкое"},
+{"id": "fish_xp_chest_3", "name": "💼 Сундук опыта III", "min_level": 20, "weight": 0.001, "coins": (0, 0), "xp": 1500, "rarity": "очень редкое"},
+{"id": "fish_xp_chest_4", "name": "💼 Сундук опыта IV", "min_level": 35, "weight": 0.001, "coins": (0, 0), "xp": 2500, "rarity": "эпическое"},
+{"id": "fish_xp_chest_5", "name": "💼 Сундук опыта V", "min_level": 60, "weight": 0.001, "coins": (0, 0), "xp": 10000, "rarity": "легендарное"},
 ]
     },
 
@@ -200,7 +210,7 @@ ACTIVITIES = {
         "cooldown": 50,
         "level_field": "mine_level",
         "xp_field": "mine_xp",
-        "fail_chance": 0.10,
+        "fail_chance": 0.05,
 
         "loot": [
 
@@ -388,9 +398,478 @@ ACTIVITIES = {
 {"id": "mine_world_seed", "name": "🌱 Семя мира", "min_level": 75, "weight": 1, "coins": (6000, 10000), "xp": 3000, "rarity": "легендарное"},
 {"id": "mine_reality_fragment", "name": "🧩 Фрагмент реальности", "min_level": 80, "weight": 1, "coins": (7000, 12000), "xp": 3400, "rarity": "легендарное"},
 {"id": "mine_god_ore", "name": "🪶 Божественная руда", "min_level": 90, "weight": 1, "coins": (9000, 15000), "xp": 4000, "rarity": "легендарное"},
-{"id": "mine_true_void", "name": "🕳 Истинная пустота", "min_level": 100, "weight": 1, "coins": (12000, 20000), "xp": 5000, "rarity": "легендарное"}
+{"id": "mine_true_void", "name": "🕳 Истинная пустота", "min_level": 100, "weight": 1, "coins": (12000, 20000), "xp": 5000, "rarity": "легендарное"},
+
+
+{"id": "mine_coin_chest_1", "name": "💼 Сундук денег I", "min_level": 2, "weight": 0.10, "coins": (100, 1000), "xp": 0, "rarity": "обычное"},
+{"id": "mine_coin_chest_2", "name": "💼 Сундук денег II", "min_level": 10, "weight": 0.01, "coins": (1000, 5000), "xp": 0, "rarity": "редкое"},
+{"id": "mine_coin_chest_3", "name": "💼 Сундук денег III", "min_level": 20, "weight": 0.001, "coins": (5000, 15000), "xp": 0, "rarity": "очень редкое"},
+{"id": "mine_coin_chest_4", "name": "💼 Сундук денег IV", "min_level": 35, "weight": 0.001, "coins": (15000, 40000), "xp": 0, "rarity": "эпическое"},
+{"id": "mine_coin_chest_5", "name": "💼 Сундук денег V", "min_level": 60, "weight": 0.001, "coins": (40000, 75000), "xp": 0, "rarity": "легендарное"},
+
+{"id": "mine_xp_chest_1", "name": "💼 Сундук опыта I", "min_level": 1, "weight": 0.50, "coins": (0, 0), "xp": 150, "rarity": "обычное"},
+{"id": "mine_xp_chest_2", "name": "💼 Сундук опыта II", "min_level": 3, "weight": 0.05, "coins": (0, 0), "xp": 250, "rarity": "редкое"},
+{"id": "mine_xp_chest_3", "name": "💼 Сундук опыта III", "min_level": 6, "weight": 0.25, "coins": (0, 0), "xp": 850, "rarity": "очень редкое"},
+{"id": "mine_xp_chest_4", "name": "💼 Сундук опыта IV", "min_level": 10, "weight": 0.15, "coins": (0, 0), "xp": 1200, "rarity": "эпическое"},
+{"id": "mine_xp_chest_5", "name": "💼 Сундук опыта V", "min_level": 20, "weight": 0.25, "coins": (0, 0), "xp": 3000, "rarity": "легендарное"},
         ]
-    }   
+    },
+
+    "forest": {
+        "name": "🌲 Лес",
+        "good_action": "Обнаружено",
+        "fail_action": "Ничего не обнаружено",
+        "cooldown": 200,
+        "level_field": "forest_level",
+        "xp_field": "forest_xp",
+        "fail_chance": 0.0025,
+
+        "loot": [
+
+    {"id": "forest_dry_leaf_osu", "name": "🍂 Лист с прицелом osu!", "min_level": 1, "weight": 95, "coins": (0, 2), "xp": 1, "rarity": "обычное"},
+    {"id": "forest_cursor_dust", "name": "🖱 Пыль курсора", "min_level": 1, "weight": 94, "coins": (0, 2), "xp": 1, "rarity": "обычное"},
+    {"id": "forest_miss_echo", "name": "❌ Эхо промаха (miss)", "min_level": 1, "weight": 93, "coins": (0, 1), "xp": 1, "rarity": "обычное"},
+    {"id": "forest_wooden_combo_break", "name": "💔 Деревянный combo break", "min_level": 1, "weight": 92, "coins": (0, 2), "xp": 1, "rarity": "обычное"},
+    {"id": "forest_1pp_dream", "name": "⭐ Сон о +1 PP", "min_level": 1, "weight": 90, "coins": (0, 3), "xp": 1, "rarity": "обычное"},
+
+    {"id": "forest_approach_circle_stone", "name": "🪨 Камень как approach circle", "min_level": 2, "weight": 88, "coins": (1, 3), "xp": 2, "rarity": "обычное"},
+    {"id": "forest_slider_ribbon", "name": "🎯 Лента от слайдера", "min_level": 2, "weight": 87, "coins": (1, 3), "xp": 2, "rarity": "обычное"},
+    {"id": "forest_300_golden_leaf", "name": "🍃 Лист ‘300’", "min_level": 2, "weight": 86, "coins": (1, 4), "xp": 2, "rarity": "обычное"},
+    {"id": "forest_spinner_dust", "name": "🌀 Пыль от спиннера", "min_level": 2, "weight": 85, "coins": (1, 3), "xp": 2, "rarity": "обычное"},
+    {"id": "forest_low_accuracy_stone", "name": "🪨 Камень с 72% accuracy", "min_level": 2, "weight": 84, "coins": (1, 4), "xp": 2, "rarity": "обычное"},
+
+    {"id": "forest_hidden_miss", "name": "❌ Спрятанный miss", "min_level": 3, "weight": 82, "coins": (2, 5), "xp": 3, "rarity": "обычное"},
+    {"id": "forest_combo_1_fragment", "name": "💔 Осколок комбо x1", "min_level": 3, "weight": 81, "coins": (2, 5), "xp": 3, "rarity": "обычное"},
+    {"id": "forest_map_restart_leaf", "name": "🍃 Лист кнопки Retry", "min_level": 3, "weight": 80, "coins": (2, 6), "xp": 3, "rarity": "обычное"},
+    {"id": "forest_rank_d_dust", "name": "🌫 Пыль ранга D", "min_level": 3, "weight": 79, "coins": (2, 5), "xp": 3, "rarity": "обычное"},
+    {"id": "forest_offset_error_stone", "name": "🪨 Камень с input lag", "min_level": 3, "weight": 78, "coins": (2, 6), "xp": 3, "rarity": "обычное"},
+
+    {"id": "forest_pp_less_than_one", "name": "⭐ PP меньше единицы", "min_level": 4, "weight": 76, "coins": (3, 7), "xp": 4, "rarity": "обычное"},
+    {"id": "forest_osu_cursor_ghost", "name": "🖱 Призрак курсора osu!", "min_level": 4, "weight": 75, "coins": (3, 7), "xp": 4, "rarity": "обычное"},
+    {"id": "forest_broken_aim_stick", "name": "🎯 Сломанная точность", "min_level": 4, "weight": 74, "coins": (3, 8), "xp": 4, "rarity": "обычное"},
+    {"id": "forest_failed_full_combo", "name": "💔 Несостоявшийся FC", "min_level": 4, "weight": 73, "coins": (3, 7), "xp": 4, "rarity": "обычное"},
+    {"id": "forest_map_unknown_artist", "name": "🎵 Карта без автора", "min_level": 4, "weight": 72, "coins": (3, 8), "xp": 4, "rarity": "обычное"},
+
+    {"id": "forest_perfect_miss", "name": "❌ Идеальный miss", "min_level": 5, "weight": 70, "coins": (4, 10), "xp": 5, "rarity": "обычное"},
+    {"id": "forest_rank_f_leaf", "name": "🍃 Лист ранга F (не существует, но есть)", "min_level": 5, "weight": 69, "coins": (4, 10), "xp": 5, "rarity": "обычное"},
+    {"id": "forest_0_5_accuracy_stone", "name": "🪨 Камень с 0.5% accuracy", "min_level": 5, "weight": 68, "coins": (4, 11), "xp": 5, "rarity": "обычное"},
+    {"id": "forest_afk_combo", "name": "💤 AFK-комбо", "min_level": 5, "weight": 67, "coins": (4, 10), "xp": 5, "rarity": "обычное"},
+    {"id": "forest_lost_beatmap_fragment", "name": "🎵 Фрагмент удалённой beatmap", "min_level": 5, "weight": 66, "coins": (4, 11), "xp": 5, "rarity": "обычное"},
+
+    {"id": "forest_rank_e_leaf", "name": "🍃 Лист ранга E (почти прогресс)", "min_level": 5, "weight": 65, "coins": (4, 10), "xp": 5, "rarity": "обычное"},
+    {"id": "forest_cursor_drift", "name": "🖱 Дрейф курсора", "min_level": 5, "weight": 64, "coins": (4, 9), "xp": 5, "rarity": "обычное"},
+    {"id": "forest_combo_2_fragment", "name": "💔 Осколок комбо x2", "min_level": 5, "weight": 63, "coins": (4, 10), "xp": 5, "rarity": "обычное"},
+    {"id": "forest_input_delay_stone", "name": "🪨 Камень с задержкой ввода", "min_level": 5, "weight": 62, "coins": (4, 11), "xp": 5, "rarity": "обычное"},
+    {"id": "forest_ghost_note", "name": "🎵 Призрачная нота", "min_level": 5, "weight": 61, "coins": (4, 10), "xp": 5, "rarity": "обычное"},
+
+    {"id": "forest_slider_break_leaf", "name": "🍃 Лист сломанного слайдера", "min_level": 6, "weight": 60, "coins": (5, 12), "xp": 6, "rarity": "обычное"},
+    {"id": "forest_300_that_became_100", "name": "❌ ‘300’, ставший 100", "min_level": 6, "weight": 59, "coins": (5, 12), "xp": 6, "rarity": "обычное"},
+    {"id": "forest_spinner_dizzy_stone", "name": "🌀 Камень головокружения", "min_level": 6, "weight": 58, "coins": (5, 13), "xp": 6, "rarity": "обычное"},
+    {"id": "forest_map_restart_residue", "name": "🔁 Остаток кнопки Retry", "min_level": 6, "weight": 57, "coins": (5, 12), "xp": 6, "rarity": "обычное"},
+    {"id": "forest_acc_80_leaf", "name": "🍂 Лист с 80% accuracy", "min_level": 6, "weight": 56, "coins": (5, 13), "xp": 6, "rarity": "обычное"},
+
+    {"id": "forest_hidden_miss_cluster", "name": "❌ Кластер скрытых miss’ов", "min_level": 7, "weight": 55, "coins": (6, 14), "xp": 7, "rarity": "обычное"},
+    {"id": "forest_combo_3_shadow", "name": "💔 Тень комбо x3", "min_level": 7, "weight": 54, "coins": (6, 14), "xp": 7, "rarity": "обычное"},
+    {"id": "forest_lag_spike_rock", "name": "🪨 Камень лаг-спайка", "min_level": 7, "weight": 53, "coins": (6, 15), "xp": 7, "rarity": "обычное"},
+    {"id": "forest_perfect_that_never_was", "name": "⭐ Идеальный, которого не было", "min_level": 7, "weight": 52, "coins": (6, 14), "xp": 7, "rarity": "обычное"},
+    {"id": "forest_rank_dust", "name": "🌫 Пыль ранга C", "min_level": 7, "weight": 51, "coins": (6, 15), "xp": 7, "rarity": "обычное"},
+
+    {"id": "forest_cursor_afterimage", "name": "🖱 Послесвечение курсора", "min_level": 8, "weight": 50, "coins": (7, 16), "xp": 8, "rarity": "обычное"},
+    {"id": "forest_break_time_stone", "name": "🪨 Камень паузы (Break Time)", "min_level": 8, "weight": 49, "coins": (7, 16), "xp": 8, "rarity": "обычное"},
+    {"id": "forest_unstable_aim_leaf", "name": "🍃 Лист нестабильного аима", "min_level": 8, "weight": 48, "coins": (7, 17), "xp": 8, "rarity": "обычное"},
+    {"id": "forest_combo_bait", "name": "🎯 Ловушка комбо", "min_level": 8, "weight": 47, "coins": (7, 16), "xp": 8, "rarity": "обычное"},
+    {"id": "forest_90acc_regret", "name": "😐 Сожаление 90% accuracy", "min_level": 8, "weight": 46, "coins": (7, 17), "xp": 8, "rarity": "обычное"},
+
+    {"id": "forest_map_that_changes_inputs", "name": "🎵 Карта, меняющая ввод", "min_level": 9, "weight": 45, "coins": (8, 18), "xp": 9, "rarity": "обычное"},
+    {"id": "forest_miss_that_feels_intentional", "name": "❌ Мисс, который выглядит намеренным", "min_level": 9, "weight": 44, "coins": (8, 18), "xp": 9, "rarity": "обычное"},
+    {"id": "forest_slider_friction", "name": "🎯 Трение слайдера", "min_level": 9, "weight": 43, "coins": (8, 19), "xp": 9, "rarity": "обычное"},
+    {"id": "forest_rank_b_delusion", "name": "🏆 Иллюзия ранга B", "min_level": 9, "weight": 42, "coins": (8, 18), "xp": 9, "rarity": "обычное"},
+    {"id": "forest_cursor_lost_path", "name": "🖱 Курсор, потерявший путь", "min_level": 9, "weight": 41, "coins": (8, 19), "xp": 9, "rarity": "обычное"},
+
+    {"id": "forest_replay_that_fails", "name": "🎥 Риплей, который хуже оригинала", "min_level": 10, "weight": 40, "coins": (9, 20), "xp": 10, "rarity": "обычное"},
+    {"id": "forest_combo_fake_memory", "name": "💔 Ложная память комбо", "min_level": 10, "weight": 39, "coins": (9, 20), "xp": 10, "rarity": "обычное"},
+    {"id": "forest_acc_drop_event", "name": "📉 Событие падения accuracy", "min_level": 10, "weight": 38, "coins": (9, 21), "xp": 10, "rarity": "обычное"},
+    {"id": "forest_osu_soundless_hit", "name": "🔇 Беззвучный hit circle", "min_level": 10, "weight": 37, "coins": (9, 20), "xp": 10, "rarity": "обычное"},
+    {"id": "forest_rank_evolution_fail", "name": "📊 Эволюция ранга, которая не произошла", "min_level": 10, "weight": 36, "coins": (9, 21), "xp": 10, "rarity": "обычное"},
+
+
+
+    {"id": "forest_dry_leaf_1", "name": "🍂 Сухой лист", "min_level": 1, "weight": 90, "coins": (1, 3), "xp": 1, "rarity": "обычное"},
+    {"id": "forest_small_stone_1", "name": "🪨 Маленький камень", "min_level": 1, "weight": 88, "coins": (1, 4), "xp": 1, "rarity": "обычное"},
+    {"id": "forest_dust_clump_1", "name": "🌫 Комок пыли", "min_level": 1, "weight": 85, "coins": (0, 2), "xp": 1, "rarity": "обычное"},
+    {"id": "forest_twisted_grass_1", "name": "🌿 Скрученная трава", "min_level": 1, "weight": 87, "coins": (1, 3), "xp": 1, "rarity": "обычное"},
+    {"id": "forest_broken_bark_1", "name": "🪵 Кусок коры", "min_level": 1, "weight": 86, "coins": (1, 4), "xp": 1, "rarity": "обычное"},
+
+    {"id": "forest_wet_leaf_2", "name": "🍃 Влажный лист", "min_level": 2, "weight": 82, "coins": (2, 5), "xp": 2, "rarity": "обычное"},
+    {"id": "forest_ant_piece_2", "name": "🐜 Фрагмент муравья", "min_level": 2, "weight": 80, "coins": (1, 4), "xp": 2, "rarity": "обычное"},
+    {"id": "forest_old_seed_2", "name": "🌰 Старое семя", "min_level": 2, "weight": 79, "coins": (2, 6), "xp": 2, "rarity": "обычное"},
+    {"id": "forest_rotten_branch_2", "name": "🌿 Гнилая ветка", "min_level": 2, "weight": 81, "coins": (1, 5), "xp": 2, "rarity": "обычное"},
+    {"id": "forest_stone_chip_2", "name": "🪨 Каменная крошка", "min_level": 2, "weight": 83, "coins": (1, 4), "xp": 2, "rarity": "обычное"},
+
+    {"id": "forest_bug_shell_3", "name": "🐞 Панцирь жука", "min_level": 3, "weight": 78, "coins": (3, 7), "xp": 3, "rarity": "обычное"},
+    {"id": "forest_dirt_clump_3", "name": "🟤 Ком земли", "min_level": 3, "weight": 77, "coins": (2, 6), "xp": 3, "rarity": "обычное"},
+    {"id": "forest_bent_stick_3", "name": "🪵 Кривая палка", "min_level": 3, "weight": 79, "coins": (2, 5), "xp": 3, "rarity": "обычное"},
+    {"id": "forest_dead_grass_3", "name": "🌾 Сухая трава", "min_level": 3, "weight": 80, "coins": (2, 6), "xp": 3, "rarity": "обычное"},
+    {"id": "forest_empty_shell_3", "name": "🐚 Пустая скорлупа", "min_level": 3, "weight": 76, "coins": (3, 7), "xp": 3, "rarity": "обычное"},
+
+    {"id": "forest_mold_piece_4", "name": "🟢 Плесень", "min_level": 4, "weight": 75, "coins": (3, 8), "xp": 4, "rarity": "обычное"},
+    {"id": "forest_fallen_seed_4", "name": "🌱 Упавшее семя", "min_level": 4, "weight": 74, "coins": (3, 9), "xp": 4, "rarity": "обычное"},
+    {"id": "forest_cracked_stone_4", "name": "🪨 Треснувший камень", "min_level": 4, "weight": 76, "coins": (2, 7), "xp": 4, "rarity": "обычное"},
+    {"id": "forest_worm_trace_4", "name": "🪱 След червя", "min_level": 4, "weight": 73, "coins": (3, 8), "xp": 4, "rarity": "обычное"},
+    {"id": "forest_old_leaf_pile_4", "name": "🍂 Груда старых листьев", "min_level": 4, "weight": 72, "coins": (2, 6), "xp": 4, "rarity": "обычное"},
+
+    {"id": "forest_rot_fiber_5", "name": "🧵 Гнилая волокнистая масса", "min_level": 5, "weight": 70, "coins": (4, 10), "xp": 5, "rarity": "обычное"},
+    {"id": "forest_stone_dust_5", "name": "🪨 Каменная пыль", "min_level": 5, "weight": 71, "coins": (3, 9), "xp": 5, "rarity": "обычное"},
+    {"id": "forest_broken_acorn_5", "name": "🌰 Раздавленный желудь", "min_level": 5, "weight": 69, "coins": (4, 11), "xp": 5, "rarity": "обычное"},
+    {"id": "forest_damp_bark_5", "name": "🪵 Сырая кора", "min_level": 5, "weight": 68, "coins": (4, 10), "xp": 5, "rarity": "обычное"},
+    {"id": "forest_insect_remains_5", "name": "🪲 Остатки насекомого", "min_level": 5, "weight": 67, "coins": (3, 9), "xp": 5, "rarity": "обычное"},
+
+
+
+    {"id": "forest_moss_1", "name": "🌿 Обычный мох", "min_level": 1, "weight": 80, "coins": (3, 8), "xp": 4, "rarity": "обычное"},
+    {"id": "forest_leaf_gold", "name": "🍂 Золотой лист", "min_level": 2, "weight": 70, "coins": (5, 12), "xp": 6, "rarity": "обычное"},
+    {"id": "forest_acorn", "name": "🌰 Дикий желудь", "min_level": 3, "weight": 75, "coins": (4, 10), "xp": 5, "rarity": "обычное"},
+    {"id": "forest_bark_piece", "name": "🪵 Кусок коры", "min_level": 4, "weight": 72, "coins": (6, 14), "xp": 7, "rarity": "обычное"},
+    {"id": "forest_mushroom_common", "name": "🍄 Лесной гриб", "min_level": 5, "weight": 68, "coins": (7, 15), "xp": 8, "rarity": "обычное"},
+
+    {"id": "forest_feather", "name": "🪶 Перо лесной птицы", "min_level": 10, "weight": 55, "coins": (10, 22), "xp": 12, "rarity": "обычное"},
+    {"id": "forest_resin", "name": "🟤 Смола дерева", "min_level": 12, "weight": 50, "coins": (12, 25), "xp": 14, "rarity": "обычное"},
+    {"id": "forest_root_piece", "name": "🌱 Корень древнего дерева", "min_level": 14, "weight": 48, "coins": (15, 28), "xp": 16, "rarity": "обычное"},
+    {"id": "forest_broken_branch", "name": "🌿 Сломанная ветка", "min_level": 16, "weight": 52, "coins": (13, 26), "xp": 15, "rarity": "обычное"},
+    {"id": "forest_insect_shell", "name": "🐞 Панцирь лесного жука", "min_level": 18, "weight": 45, "coins": (16, 30), "xp": 18, "rarity": "обычное"},
+
+    {"id": "forest_old_compass", "name": "🧭 Сломанный компас", "min_level": 20, "weight": 35, "coins": (20, 40), "xp": 22, "rarity": "обычное"},
+    {"id": "forest_worn_cloth", "name": "🧺 Изношенная ткань", "min_level": 22, "weight": 38, "coins": (18, 38), "xp": 20, "rarity": "обычное"},
+    {"id": "forest_stone_carved", "name": "🪨 Камень с узором", "min_level": 24, "weight": 32, "coins": (25, 45), "xp": 25, "rarity": "обычное"},
+    {"id": "forest_bottle_empty", "name": "🍾 Пустая бутылка", "min_level": 26, "weight": 30, "coins": (22, 42), "xp": 24, "rarity": "обычное"},
+    {"id": "forest_old_rope", "name": "🪢 Старая верёвка", "min_level": 28, "weight": 28, "coins": (24, 48), "xp": 26, "rarity": "обычное"},
+
+    {"id": "forest_whisper_leaf", "name": "🍃 Шепчущий лист", "min_level": 30, "weight": 20, "coins": (30, 60), "xp": 35, "rarity": "обычное"},
+    {"id": "forest_ancient_seed", "name": "🌱 Семя неизвестного дерева", "min_level": 32, "weight": 18, "coins": (35, 65), "xp": 38, "rarity": "обычное"},
+    {"id": "forest_faded_map", "name": "🗺 Потускневшая карта", "min_level": 34, "weight": 16, "coins": (40, 70), "xp": 42, "rarity": "обычное"},
+    {"id": "forest_eye_stone", "name": "👁 Камень с “глазом”", "min_level": 36, "weight": 14, "coins": (45, 80), "xp": 45, "rarity": "обычное"},
+    {"id": "forest_dry_flower", "name": "🌸 Засохший цветок", "min_level": 38, "weight": 15, "coins": (38, 75), "xp": 40, "rarity": "обычное"},
+
+    {"id": "forest_echo_bark", "name": "🪵 Кора с эхом", "min_level": 40, "weight": 10, "coins": (50, 90), "xp": 55, "rarity": "обычное"},
+    {"id": "forest_forest_dust", "name": "🌫 Пыль леса", "min_level": 42, "weight": 9, "coins": (55, 95), "xp": 58, "rarity": "обычное"},
+    {"id": "forest_lost_name_tag", "name": "🏷 Потерянная бирка", "min_level": 44, "weight": 8, "coins": (60, 100), "xp": 60, "rarity": "обычное"},
+    {"id": "forest_silent_ring", "name": "💍 Беззвучное кольцо", "min_level": 46, "weight": 6, "coins": (70, 120), "xp": 70, "rarity": "обычное"},
+    {"id": "forest_unknown_fragment", "name": "🧩 Неизвестный фрагмент", "min_level": 50, "weight": 5, "coins": (80, 140), "xp": 80, "rarity": "обычное"},
+
+
+
+    {"id": "forest_glowing_moss", "name": "🌿 Светящийся мох", "min_level": 1, "weight": 25, "coins": (20, 45), "xp": 30, "rarity": "редкое"},
+    {"id": "forest_wind_seed", "name": "🌬 Семя ветра", "min_level": 3, "weight": 22, "coins": (25, 50), "xp": 35, "rarity": "редкое"},
+    {"id": "forest_silver_leaf", "name": "🍃 Серебряный лист", "min_level": 5, "weight": 20, "coins": (30, 60), "xp": 40, "rarity": "редкое"},
+    {"id": "forest_living_branch", "name": "🌿 Живая ветвь", "min_level": 7, "weight": 18, "coins": (35, 70), "xp": 45, "rarity": "редкое"},
+    {"id": "forest_owl_eye_stone", "name": "🪨 Камень с глазом совы", "min_level": 10, "weight": 15, "coins": (40, 80), "xp": 50, "rarity": "редкое"},
+
+    {"id": "forest_spore_cluster", "name": "🍄 Споровый кластер", "min_level": 12, "weight": 14, "coins": (45, 90), "xp": 60, "rarity": "редкое"},
+    {"id": "forest_bark_scroll", "name": "🪵 Кора-свиток", "min_level": 14, "weight": 12, "coins": (55, 100), "xp": 70, "rarity": "редкое"},
+    {"id": "forest_feather_light", "name": "🪶 Перо без веса", "min_level": 16, "weight": 10, "coins": (60, 110), "xp": 75, "rarity": "редкое"},
+    {"id": "forest_insect_amber", "name": "🟠 Янтарный жук", "min_level": 18, "weight": 9, "coins": (70, 120), "xp": 80, "rarity": "редкое"},
+    {"id": "forest_root_memory", "name": "🌱 Корень памяти", "min_level": 20, "weight": 8, "coins": (80, 130), "xp": 90, "rarity": "редкое"},
+
+    {"id": "forest_bent_space_stick", "name": "🪄 Искривлённая ветка", "min_level": 22, "weight": 7, "coins": (90, 150), "xp": 100, "rarity": "редкое"},
+    {"id": "forest_echo_bottle", "name": "🍾 Бутылка с эхом", "min_level": 24, "weight": 6, "coins": (100, 160), "xp": 110, "rarity": "редкое"},
+    {"id": "forest_fog_crystal", "name": "🌫 Кристалл тумана", "min_level": 26, "weight": 5, "coins": (120, 180), "xp": 120, "rarity": "редкое"},
+    {"id": "forest_shadow_leaf", "name": "🌑 Теневой лист", "min_level": 28, "weight": 4, "coins": (130, 200), "xp": 130, "rarity": "редкое"},
+    {"id": "forest_directionless_compass", "name": "🧭 Компас без направления", "min_level": 30, "weight": 3, "coins": (150, 220), "xp": 150, "rarity": "редкое"},
+
+    {"id": "forest_whispering_bark", "name": "🪵 Шепчущая кора", "min_level": 32, "weight": 3, "coins": (170, 250), "xp": 180, "rarity": "редкое"},
+    {"id": "forest_lost_song_fragment", "name": "🎵 Фрагмент забытой песни", "min_level": 34, "weight": 2.5, "coins": (200, 280), "xp": 200, "rarity": "редкое"},
+    {"id": "forest_animal_shadow", "name": "🐾 След зверя без зверя", "min_level": 36, "weight": 2, "coins": (220, 300), "xp": 220, "rarity": "редкое"},
+    {"id": "forest_blooming_stone", "name": "🪨 Цветущий камень", "min_level": 38, "weight": 1.8, "coins": (250, 340), "xp": 240, "rarity": "редкое"},
+    {"id": "forest_tree_eye", "name": "🌳 Глаз дерева", "min_level": 40, "weight": 1.5, "coins": (280, 380), "xp": 260, "rarity": "редкое"},
+
+    {"id": "forest_reality_pollen", "name": "🌸 Пыльца реальности", "min_level": 42, "weight": 1.2, "coins": (300, 420), "xp": 300, "rarity": "редкое"},
+    {"id": "forest_time_splinter", "name": "⏳ Осколок времени", "min_level": 44, "weight": 1.0, "coins": (350, 480), "xp": 340, "rarity": "редкое"},
+    {"id": "forest_void_leaf", "name": "🌌 Пустотный лист", "min_level": 46, "weight": 0.8, "coins": (400, 550), "xp": 380, "rarity": "редкое"},
+    {"id": "forest_memory_seed", "name": "🧠 Семя памяти леса", "min_level": 48, "weight": 0.6, "coins": (450, 600), "xp": 420, "rarity": "редкое"},
+    {"id": "forest_deep_whisper_core", "name": "🌿 Ядро глубокого шёпота", "min_level": 50, "weight": 0.5, "coins": (500, 700), "xp": 500, "rarity": "редкое"},
+
+
+    {"id": "forest_breath_tree", "name": "🌳 Дерево, которое дышит", "min_level": 1, "weight": 6, "coins": (80, 150), "xp": 120, "rarity": "очень редкое"},
+    {"id": "forest_floating_leaf", "name": "🍃 Лист, который не падает", "min_level": 3, "weight": 5, "coins": (90, 160), "xp": 130, "rarity": "очень редкое"},
+    {"id": "forest_soundless_bird", "name": "🐦 Птица без звука", "min_level": 5, "weight": 4.5, "coins": (100, 180), "xp": 140, "rarity": "очень редкое"},
+    {"id": "forest_reverse_root", "name": "🌱 Корень, растущий вверх", "min_level": 7, "weight": 4, "coins": (110, 200), "xp": 160, "rarity": "очень редкое"},
+    {"id": "forest_time_lichen", "name": "🪵 Лишайник времени", "min_level": 10, "weight": 3.8, "coins": (120, 220), "xp": 180, "rarity": "очень редкое"},
+
+    {"id": "forest_shadow_sapling", "name": "🌑 Саженец из тени", "min_level": 12, "weight": 3.5, "coins": (140, 250), "xp": 200, "rarity": "очень редкое"},
+    {"id": "forest_echo_deer_track", "name": "🦌 След оленя, которого нет", "min_level": 14, "weight": 3.2, "coins": (160, 270), "xp": 220, "rarity": "очень редкое"},
+    {"id": "forest_glass_mushroom", "name": "🍄 Стеклянный гриб", "min_level": 16, "weight": 3.0, "coins": (180, 300), "xp": 240, "rarity": "очень редкое"},
+    {"id": "forest_whispering_vines", "name": "🌿 Лианы, которые говорят", "min_level": 18, "weight": 2.7, "coins": (200, 320), "xp": 260, "rarity": "очень редкое"},
+    {"id": "forest_broken_moonlight", "name": "🌙 Сломанный лунный свет", "min_level": 20, "weight": 2.5, "coins": (220, 350), "xp": 280, "rarity": "очень редкое"},
+
+    {"id": "forest_unborn_seed", "name": "🌱 Несозревшее семя будущего", "min_level": 22, "weight": 2.2, "coins": (250, 380), "xp": 320, "rarity": "очень редкое"},
+    {"id": "forest_frozen_wind", "name": "🌬 Замёрзший ветер", "min_level": 24, "weight": 2.0, "coins": (280, 420), "xp": 350, "rarity": "очень редкое"},
+    {"id": "forest_unseen_path", "name": "🛤 Дорога, которой нет", "min_level": 26, "weight": 1.8, "coins": (300, 450), "xp": 380, "rarity": "очень редкое"},
+    {"id": "forest_eye_of_forest", "name": "👁 Глаз леса", "min_level": 28, "weight": 1.6, "coins": (350, 500), "xp": 420, "rarity": "очень редкое"},
+    {"id": "forest_lost_second", "name": "⏳ Потерянная секунда", "min_level": 30, "weight": 1.4, "coins": (380, 550), "xp": 450, "rarity": "очень редкое"},
+
+    {"id": "forest_root_that_remembers", "name": "🌳 Корень, который помнит тебя", "min_level": 32, "weight": 1.2, "coins": (420, 600), "xp": 500, "rarity": "очень редкое"},
+    {"id": "forest_singing_bark", "name": "🪵 Поющая кора", "min_level": 34, "weight": 1.0, "coins": (450, 650), "xp": 550, "rarity": "очень редкое"},
+    {"id": "forest_mirror_leaf", "name": "🍃 Зеркальный лист", "min_level": 36, "weight": 0.9, "coins": (500, 700), "xp": 600, "rarity": "очень редкое"},
+    {"id": "forest_animal_without_body", "name": "🐾 След без тела", "min_level": 38, "weight": 0.8, "coins": (550, 750), "xp": 650, "rarity": "очень редкое"},
+    {"id": "forest_bloom_in_dark", "name": "🌸 Цветение во тьме", "min_level": 40, "weight": 0.7, "coins": (600, 800), "xp": 700, "rarity": "очень редкое"},
+
+    {"id": "forest_reality_splinter_tree", "name": "🌳 Дерево-осколок реальности", "min_level": 42, "weight": 0.6, "coins": (700, 900), "xp": 850, "rarity": "очень редкое"},
+    {"id": "forest_time_bloom", "name": "⏳ Цветение времени", "min_level": 44, "weight": 0.5, "coins": (800, 1000), "xp": 950, "rarity": "очень редкое"},
+    {"id": "forest_void_fruit", "name": "🌌 Плод пустоты", "min_level": 46, "weight": 0.4, "coins": (900, 1200), "xp": 1100, "rarity": "очень редкое"},
+    {"id": "forest_memory_forest_fragment", "name": "🧠 Фрагмент лесной памяти", "min_level": 48, "weight": 0.3, "coins": (1000, 1400), "xp": 1250, "rarity": "очень редкое"},
+    {"id": "forest_world_whisper_core", "name": "🌿 Ядро шёпота мира", "min_level": 50, "weight": 0.2, "coins": (1200, 1600), "xp": 1500, "rarity": "очень редкое"},
+
+
+    {"id": "forest_world_tree_sapling", "name": "🌳 Саженец мирового дерева", "min_level": 50, "weight": 0.5, "coins": (8000, 12000), "xp": 10000, "rarity": "легендарное"},
+    {"id": "forest_root_of_all_paths", "name": "🌱 Корень всех путей", "min_level": 52, "weight": 0.45, "coins": (8500, 12500), "xp": 10500, "rarity": "легендарное"},
+    {"id": "forest_leaf_that_contains_forest", "name": "🍃 Лист, в котором есть весь лес", "min_level": 54, "weight": 0.4, "coins": (9000, 13000), "xp": 11000, "rarity": "легендарное"},
+    {"id": "forest_echo_of_creation", "name": "🌀 Эхо сотворения", "min_level": 56, "weight": 0.35, "coins": (9500, 14000), "xp": 12000, "rarity": "легендарное"},
+    {"id": "forest_branch_before_time", "name": "🌿 Ветка до времени", "min_level": 58, "weight": 0.3, "coins": (10000, 15000), "xp": 13000, "rarity": "легендарное"},
+
+    {"id": "forest_forest_inside_seed", "name": "🌱 Лес внутри семени", "min_level": 60, "weight": 0.25, "coins": (11000, 16000), "xp": 14000, "rarity": "легендарное"},
+    {"id": "forest_tree_without_beginning", "name": "🌳 Дерево без начала", "min_level": 62, "weight": 0.2, "coins": (12000, 17000), "xp": 15000, "rarity": "легендарное"},
+    {"id": "forest_shadow_of_world", "name": "🌑 Тень мира", "min_level": 64, "weight": 0.18, "coins": (13000, 18000), "xp": 16000, "rarity": "легендарное"},
+    {"id": "forest_path_between_worlds", "name": "🛤 Путь между мирами", "min_level": 66, "weight": 0.15, "coins": (14000, 19000), "xp": 17500, "rarity": "легендарное"},
+    {"id": "forest_breath_of_forest_god", "name": "🌿 Дыхание лесного бога", "min_level": 68, "weight": 0.12, "coins": (15000, 20000), "xp": 19000, "rarity": "легендарное"},
+
+    {"id": "forest_memory_that_walks", "name": "🧠 Память, которая ходит", "min_level": 70, "weight": 0.1, "coins": (16000, 22000), "xp": 20000, "rarity": "легендарное"},
+    {"id": "forest_root_network_universe", "name": "🌱 Корневая сеть вселенной", "min_level": 72, "weight": 0.08, "coins": (18000, 24000), "xp": 22000, "rarity": "легендарное"},
+    {"id": "forest_leaf_of_infinite_forest", "name": "🍃 Лист бесконечного леса", "min_level": 74, "weight": 0.06, "coins": (20000, 26000), "xp": 24000, "rarity": "легендарное"},
+    {"id": "forest_tree_that_remembers_everything", "name": "🌳 Дерево, которое помнит всё", "min_level": 76, "weight": 0.05, "coins": (22000, 28000), "xp": 26000, "rarity": "легендарное"},
+    {"id": "forest_voice_of_soil", "name": "🌱 Голос почвы", "min_level": 78, "weight": 0.04, "coins": (24000, 30000), "xp": 28000, "rarity": "легендарное"},
+
+    {"id": "forest_reality_bending_branch", "name": "🌿 Ветка, меняющая реальность", "min_level": 80, "weight": 0.03, "coins": (26000, 32000), "xp": 30000, "rarity": "легендарное"},
+    {"id": "forest_time_forest_loop", "name": "⏳ Петля леса и времени", "min_level": 82, "weight": 0.025, "coins": (28000, 35000), "xp": 33000, "rarity": "легендарное"},
+    {"id": "forest_eye_of_all_trees", "name": "👁 Глаз всех деревьев", "min_level": 84, "weight": 0.02, "coins": (30000, 38000), "xp": 36000, "rarity": "легендарное"},
+    {"id": "forest_world_seed_awakened", "name": "🌱 Пробуждённое семя мира", "min_level": 86, "weight": 0.015, "coins": (32000, 42000), "xp": 40000, "rarity": "легендарное"},
+    {"id": "forest_forest_without_end", "name": "🌳 Лес без конца", "min_level": 88, "weight": 0.01, "coins": (35000, 45000), "xp": 45000, "rarity": "легендарное"},
+
+    {"id": "forest_core_of_nature", "name": "🌿 Ядро природы", "min_level": 90, "weight": 0.008, "coins": (38000, 50000), "xp": 50000, "rarity": "легендарное"},
+    {"id": "forest_world_root_singularity", "name": "🌱 Сингулярность корня мира", "min_level": 92, "weight": 0.006, "coins": (42000, 55000), "xp": 55000, "rarity": "легендарное"},
+    {"id": "forest_last_tree_before_reality", "name": "🌳 Последнее дерево перед реальностью", "min_level": 94, "weight": 0.004, "coins": (48000, 60000), "xp": 60000, "rarity": "легендарное"},
+    {"id": "forest_forest_that_breathes_you", "name": "🌿 Лес, который дышит тобой", "min_level": 96, "weight": 0.003, "coins": (52000, 65000), "xp": 70000, "rarity": "легендарное"},
+    {"id": "forest_origin_of_all_forest", "name": "🌱 Исток всех лесов", "min_level": 100, "weight": 0.001, "coins": (60000, 80000), "xp": 90000, "rarity": "легендарное"},
+
+
+{"id": "forest_coin_chest_1", "name": "💼 Сундук денег I", "min_level": 2, "weight": 0.10, "coins": (100, 1000), "xp": 0, "rarity": "обычное"},
+{"id": "forest_coin_chest_2", "name": "💼 Сундук денег II", "min_level": 10, "weight": 0.01, "coins": (1000, 5000), "xp": 0, "rarity": "редкое"},
+{"id": "forest_coin_chest_3", "name": "💼 Сундук денег III", "min_level": 20, "weight": 0.001, "coins": (5000, 15000), "xp": 0, "rarity": "очень редкое"},
+{"id": "forest_coin_chest_4", "name": "💼 Сундук денег IV", "min_level": 35, "weight": 0.001, "coins": (15000, 40000), "xp": 0, "rarity": "эпическое"},
+{"id": "forest_coin_chest_5", "name": "💼 Сундук денег V", "min_level": 60, "weight": 0.001, "coins": (40000, 75000), "xp": 0, "rarity": "легендарное"},
+
+{"id": "forest_xp_chest_1", "name": "💼 Сундук опыта I", "min_level": 1, "weight": 0.50, "coins": (0, 0), "xp": 150, "rarity": "обычное"},
+{"id": "forest_xp_chest_2", "name": "💼 Сундук опыта II", "min_level": 3, "weight": 0.05, "coins": (0, 0), "xp": 250, "rarity": "редкое"},
+{"id": "forest_xp_chest_3", "name": "💼 Сундук опыта III", "min_level": 6, "weight": 0.25, "coins": (0, 0), "xp": 850, "rarity": "очень редкое"},
+{"id": "forest_xp_chest_4", "name": "💼 Сундук опыта IV", "min_level": 10, "weight": 0.15, "coins": (0, 0), "xp": 1200, "rarity": "эпическое"},
+{"id": "forest_xp_chest_5", "name": "💼 Сундук опыта V", "min_level": 20, "weight": 0.25, "coins": (0, 0), "xp": 3000, "rarity": "легендарное"},
+        ]
+    },
+
+    "battle": {
+        "name": "⚔️ Сражение",
+        "good_action": "Найдено",
+        "fail_action": "Ничего не найдено",
+        "cooldown": 500,
+        "level_field": "battle_level",
+        "xp_field": "battle_xp",
+        "fail_chance": 0.05,
+
+        "loot": [
+
+    {"id": "battle_dirt_clump_1", "name": "🟤 Комок выжженной земли", "min_level": 1, "weight": 95, "coins": (0, 3), "xp": 1, "rarity": "обычное"},
+    {"id": "battle_rust_shard_1", "name": "🪨 Осколок ржавого металла", "min_level": 1, "weight": 93, "coins": (1, 4), "xp": 1, "rarity": "обычное"},
+    {"id": "battle_burned_cloth_1", "name": "🧵 Обгоревшая ткань", "min_level": 1, "weight": 92, "coins": (1, 3), "xp": 1, "rarity": "обычное"},
+    {"id": "battle_cracked_stone_1", "name": "🪨 Треснувший камень", "min_level": 1, "weight": 94, "coins": (0, 2), "xp": 1, "rarity": "обычное"},
+    {"id": "battle_arrow_fragment_1", "name": "🏹 Фрагмент стрелы", "min_level": 1, "weight": 91, "coins": (1, 4), "xp": 1, "rarity": "обычное"},
+
+    {"id": "battle_broken_shield_2", "name": "🛡 Обломок щита", "min_level": 10, "weight": 85, "coins": (2, 6), "xp": 2, "rarity": "обычное"},
+    {"id": "battle_blood_stained_rock_2", "name": "🪨 Камень с засохшей кровью", "min_level": 12, "weight": 84, "coins": (2, 5), "xp": 2, "rarity": "обычное"},
+    {"id": "battle_torn_banner_2", "name": "🏴 Разорванное знамя", "min_level": 14, "weight": 83, "coins": (2, 6), "xp": 2, "rarity": "обычное"},
+    {"id": "battle_scorched_ground_2", "name": "🔥 Выжженная земля", "min_level": 16, "weight": 86, "coins": (1, 5), "xp": 2, "rarity": "обычное"},
+    {"id": "battle_dull_blade_piece_2", "name": "⚔️ Тупой обломок клинка", "min_level": 18, "weight": 82, "coins": (3, 7), "xp": 2, "rarity": "обычное"},
+
+    {"id": "battle_empty_helmet_3", "name": "⛑ Пустой шлем", "min_level": 20, "weight": 78, "coins": (3, 8), "xp": 3, "rarity": "обычное"},
+    {"id": "battle_shattered_crossbow_3", "name": "🏹 Разбитый арбалет", "min_level": 22, "weight": 77, "coins": (4, 9), "xp": 3, "rarity": "обычное"},
+    {"id": "battle_metal_scrap_3", "name": "🪶 Металлический лом", "min_level": 24, "weight": 76, "coins": (3, 8), "xp": 3, "rarity": "обычное"},
+    {"id": "battle_battlefield_dust_3", "name": "🌫 Пыль поля боя", "min_level": 26, "weight": 79, "coins": (2, 7), "xp": 3, "rarity": "обычное"},
+    {"id": "battle_crushed_pike_3", "name": "🪓 Раздавленное копьё", "min_level": 28, "weight": 75, "coins": (4, 10), "xp": 3, "rarity": "обычное"},
+
+    {"id": "battle_war_drum_fragment_4", "name": "🥁 Осколок боевого барабана", "min_level": 30, "weight": 70, "coins": (5, 12), "xp": 4, "rarity": "обычное"},
+    {"id": "battle_shield_rivet_4", "name": "🛡 Заклёпка щита", "min_level": 32, "weight": 69, "coins": (4, 11), "xp": 4, "rarity": "обычное"},
+    {"id": "battle_burnt_arrow_bundle_4", "name": "🏹 Сгоревший пучок стрел", "min_level": 34, "weight": 68, "coins": (5, 13), "xp": 4, "rarity": "обычное"},
+    {"id": "battle_crater_stone_4", "name": "🪨 Камень из воронки", "min_level": 36, "weight": 67, "coins": (5, 12), "xp": 4, "rarity": "обычное"},
+    {"id": "battle_broken_standard_pole_4", "name": "🏴 Обломок древка знамени", "min_level": 38, "weight": 66, "coins": (6, 14), "xp": 4, "rarity": "обычное"},
+
+    {"id": "battle_silent_armor_fragment_5", "name": "🪶 Фрагмент беззвучной брони", "min_level": 40, "weight": 60, "coins": (6, 15), "xp": 5, "rarity": "обычное"},
+    {"id": "battle_memory_rust_5", "name": "🧠 Ржавчина памяти войны", "min_level": 42, "weight": 58, "coins": (7, 16), "xp": 5, "rarity": "обычное"},
+    {"id": "battle_shattered_command_stone_5", "name": "🪨 Осколок командного камня", "min_level": 44, "weight": 57, "coins": (8, 18), "xp": 5, "rarity": "обычное"},
+    {"id": "battle_faded_war_flag_5", "name": "🏴 Выцветшее знамя войны", "min_level": 46, "weight": 55, "coins": (8, 20), "xp": 5, "rarity": "обычное"},
+    {"id": "battle_dead_zone_dust_5", "name": "🌫 Пыль мёртвой зоны", "min_level": 50, "weight": 50, "coins": (10, 25), "xp": 5, "rarity": "обычное"},
+
+    {"id": "battle_world_ash_50", "name": "🌫 Пепел исчезнувшей армии", "min_level": 50, "weight": 85, "coins": (5, 15), "xp": 3, "rarity": "обычное"},
+    {"id": "battle_melted_blade_50", "name": "⚔️ Оплавленный клинок", "min_level": 52, "weight": 83, "coins": (6, 18), "xp": 3, "rarity": "обычное"},
+    {"id": "battle_crushed_plate_50", "name": "🛡 Раздавленная бронепластина", "min_level": 54, "weight": 82, "coins": (7, 20), "xp": 3, "rarity": "обычное"},
+    {"id": "battle_old_war_coin_50", "name": "🪙 Монета старой войны", "min_level": 56, "weight": 80, "coins": (8, 22), "xp": 3, "rarity": "обычное"},
+    {"id": "battle_bone_dust_50", "name": "🦴 Костная пыль", "min_level": 58, "weight": 86, "coins": (5, 12), "xp": 3, "rarity": "обычное"},
+
+    {"id": "battle_crater_fragment_60", "name": "🪨 Фрагмент боевой воронки", "min_level": 60, "weight": 78, "coins": (10, 25), "xp": 4, "rarity": "обычное"},
+    {"id": "battle_scorched_banner_60", "name": "🏴 Обугленное знамя", "min_level": 62, "weight": 76, "coins": (12, 28), "xp": 4, "rarity": "обычное"},
+    {"id": "battle_frozen_blood_60", "name": "🩸 Замёрзшая кровь на камне", "min_level": 64, "weight": 74, "coins": (10, 24), "xp": 4, "rarity": "обычное"},
+    {"id": "battle_rusted_standard_core_60", "name": "🪶 Сердцевина знамени", "min_level": 66, "weight": 72, "coins": (14, 30), "xp": 4, "rarity": "обычное"},
+    {"id": "battle_broken_order_medal_60", "name": "🏅 Сломанная медаль ордена", "min_level": 68, "weight": 70, "coins": (15, 35), "xp": 4, "rarity": "обычное"},
+
+    {"id": "battle_echo_shield_70", "name": "🛡 Щит с эхом битвы", "min_level": 70, "weight": 65, "coins": (18, 40), "xp": 5, "rarity": "обычное"},
+    {"id": "battle_war_dust_70", "name": "🌫 Пыль войны", "min_level": 72, "weight": 63, "coins": (20, 45), "xp": 5, "rarity": "обычное"},
+    {"id": "battle_dead_commander_tag_70", "name": "🏷 Метка погибшего командира", "min_level": 74, "weight": 60, "coins": (22, 50), "xp": 5, "rarity": "обычное"},
+    {"id": "battle_shattered_war_map_70", "name": "🗺 Разорванная карта фронта", "min_level": 76, "weight": 58, "coins": (25, 55), "xp": 5, "rarity": "обычное"},
+    {"id": "battle_voided_armour_piece_70", "name": "🪶 Пустая бронепластина", "min_level": 78, "weight": 55, "coins": (28, 60), "xp": 5, "rarity": "обычное"},
+
+    {"id": "battle_last_signal_fragment_80", "name": "📡 Фрагмент последнего сигнала", "min_level": 80, "weight": 50, "coins": (30, 70), "xp": 5, "rarity": "обычное"},
+    {"id": "battle_silent_battlefield_rock_80", "name": "🪨 Камень без звука", "min_level": 82, "weight": 48, "coins": (35, 75), "xp": 5, "rarity": "обычное"},
+    {"id": "battle_broken_oath_shard_80", "name": "🧩 Осколок клятвы", "min_level": 84, "weight": 45, "coins": (40, 80), "xp": 5, "rarity": "обычное"},
+    {"id": "battle_war_memory_dust_80", "name": "🧠 Пыль военной памяти", "min_level": 86, "weight": 42, "coins": (45, 90), "xp": 5, "rarity": "обычное"},
+    {"id": "battle_faded_command_flag_80", "name": "🏴 Выцветший флаг командования", "min_level": 88, "weight": 40, "coins": (50, 95), "xp": 5, "rarity": "обычное"},
+
+    {"id": "battle_endless_war_sand_90", "name": "🌫 Песок бесконечной войны", "min_level": 90, "weight": 35, "coins": (55, 110), "xp": 5, "rarity": "обычное"},
+    {"id": "battle_fragment_of_last_order_90", "name": "📜 Фрагмент последнего приказа", "min_level": 92, "weight": 30, "coins": (60, 120), "xp": 5, "rarity": "обычное"},
+    {"id": "battle_broken_world_weapon_90", "name": "⚔️ Оружие сломанного мира", "min_level": 94, "weight": 28, "coins": (70, 130), "xp": 5, "rarity": "обычное"},
+    {"id": "battle_void_battlefield_core_90", "name": "🕳 Ядро пустого поля боя", "min_level": 96, "weight": 25, "coins": (80, 150), "xp": 5, "rarity": "обычное"},
+    {"id": "battle_last_remaining_echo_100", "name": "🌀 Последнее оставшееся эхо войны", "min_level": 100, "weight": 20, "coins": (100, 200), "xp": 5, "rarity": "обычное"},
+
+    {"id": "battle_lucky_bullet_1", "name": "🔫 Пуля, которая передумала лететь", "min_level": 1, "weight": 18, "coins": (40, 90), "xp": 60, "rarity": "редкое"},
+    {"id": "battle_dramatic_stone_1", "name": "🪨 Камень, который упал с пафосом", "min_level": 3, "weight": 17, "coins": (45, 95), "xp": 70, "rarity": "редкое"},
+    {"id": "battle_sus_shield_1", "name": "🛡 Щит, который выглядит подозрительно живым", "min_level": 5, "weight": 16, "coins": (50, 100), "xp": 80, "rarity": "редкое"},
+    {"id": "battle_critical_miss_sword_1", "name": "⚔️ Меч, который всегда промахивается критически", "min_level": 7, "weight": 15, "coins": (55, 110), "xp": 90, "rarity": "редкое"},
+    {"id": "battle_404_arrow_1", "name": "🏹 Стрела 404: цель не найдена", "min_level": 10, "weight": 14, "coins": (60, 120), "xp": 100, "rarity": "редкое"},
+
+    {"id": "battle_ping_pong_armor_10", "name": "🛡 Броня, которая отражает здравый смысл", "min_level": 12, "weight": 13, "coins": (70, 130), "xp": 120, "rarity": "редкое"},
+    {"id": "battle_screaming_banner_10", "name": "🏴 Знамя, которое орёт при касании", "min_level": 14, "weight": 12, "coins": (80, 140), "xp": 140, "rarity": "редкое"},
+    {"id": "battle_tactical_spoon_10", "name": "🥄 Тактическая ложка (очень опасна)", "min_level": 16, "weight": 11, "coins": (90, 150), "xp": 160, "rarity": "редкое"},
+    {"id": "battle_moral_damage_stone_10", "name": "🪨 Камень морального урона", "min_level": 18, "weight": 10, "coins": (100, 160), "xp": 180, "rarity": "редкое"},
+    {"id": "battle_skill_issue_shard_10", "name": "🧩 Осколок “skill issue”", "min_level": 20, "weight": 9, "coins": (110, 170), "xp": 200, "rarity": "редкое"},
+
+    {"id": "battle_unskippable_cutscene_fragment_20", "name": "📺 Фрагмент нескипаемой катсцены", "min_level": 22, "weight": 8, "coins": (120, 180), "xp": 230, "rarity": "редкое"},
+    {"id": "battle_cringe_helmet_20", "name": "⛑ Шлем стыда", "min_level": 24, "weight": 7, "coins": (130, 190), "xp": 260, "rarity": "редкое"},
+    {"id": "battle_op_weapon_nerf_history_20", "name": "📜 История нерфов оружия", "min_level": 26, "weight": 6.5, "coins": (140, 200), "xp": 280, "rarity": "редкое"},
+    {"id": "battle_rage_quit_essence_20", "name": "💢 Сущность ливнувшего игрока", "min_level": 28, "weight": 6, "coins": (150, 220), "xp": 300, "rarity": "редкое"},
+    {"id": "battle_desync_fragment_20", "name": "🌀 Фрагмент рассинхрона реальности", "min_level": 30, "weight": 5.5, "coins": (160, 240), "xp": 330, "rarity": "редкое"},
+
+    {"id": "battle_ping_lag_core_30", "name": "📡 Ядро пинга (999ms)", "min_level": 32, "weight": 5, "coins": (180, 260), "xp": 360, "rarity": "редкое"},
+    {"id": "battle_rng_suspicious_30", "name": "🎲 Подозрительный RNG-кусок", "min_level": 34, "weight": 4.5, "coins": (200, 280), "xp": 400, "rarity": "редкое"},
+    {"id": "battle_tryhard_soul_30", "name": "🧠 Душа tryhard’а", "min_level": 36, "weight": 4, "coins": (220, 300), "xp": 430, "rarity": "редкое"},
+    {"id": "battle_meta_break_shard_30", "name": "🧩 Осколок сломанной меты", "min_level": 38, "weight": 3.5, "coins": (240, 320), "xp": 460, "rarity": "редкое"},
+    {"id": "battle_matchmaking_curse_30", "name": "🧿 Проклятие матчмейкинга", "min_level": 40, "weight": 3, "coins": (260, 350), "xp": 500, "rarity": "редкое"},
+
+    {"id": "battle_server_lag_relic_40", "name": "🖥 Реликт серверного лага", "min_level": 42, "weight": 2.5, "coins": (300, 380), "xp": 550, "rarity": "редкое"},
+    {"id": "battle_balance_patch_fragment_40", "name": "⚖️ Фрагмент патча баланса, который ничего не исправил", "min_level": 44, "weight": 2.2, "coins": (320, 420), "xp": 600, "rarity": "редкое"},
+    {"id": "battle_toxic_chat_echo_40", "name": "💬 Эхо токсичного чата", "min_level": 46, "weight": 2, "coins": (350, 450), "xp": 650, "rarity": "редкое"},
+    {"id": "battle_perfect_defeat_memory_40", "name": "🧠 Память идеального поражения", "min_level": 48, "weight": 1.8, "coins": (380, 500), "xp": 700, "rarity": "редкое"},
+    {"id": "battle_god_mode_glitch_50", "name": "👑 Глитч режима бога (но без бога)", "min_level": 50, "weight": 1.5, "coins": (450, 600), "xp": 800, "rarity": "редкое"},
+
+    {"id": "battle_error_of_victory_1", "name": "🏆 Ошибка победы (победа не найдена)", "min_level": 1, "weight": 3.5, "coins": (200, 400), "xp": 300, "rarity": "очень редкое"},
+    {"id": "battle_banned_sword_1", "name": "⚔️ Меч, который забанили в реальности", "min_level": 3, "weight": 3.2, "coins": (250, 450), "xp": 350, "rarity": "очень редкое"},
+    {"id": "battle_unloaded_shield_1", "name": "🛡 Щит, который не загрузился полностью", "min_level": 5, "weight": 3.0, "coins": (300, 500), "xp": 400, "rarity": "очень редкое"},
+    {"id": "battle_admin_ping_1", "name": "📡 Пинг администратора (ответа нет)", "min_level": 7, "weight": 2.8, "coins": (350, 550), "xp": 450, "rarity": "очень редкое"},
+    {"id": "battle_glitched_ranking_1", "name": "🏆 Рейтинг, который сломал таблицу лидеров", "min_level": 10, "weight": 2.5, "coins": (400, 600), "xp": 500, "rarity": "очень редкое"},
+
+    {"id": "battle_time_not_synced_10", "name": "⏳ Время, которое не синхронизировано", "min_level": 12, "weight": 2.3, "coins": (500, 700), "xp": 650, "rarity": "очень редкое"},
+    {"id": "battle_damage_overflow_10", "name": "💥 Переполнение урона", "min_level": 14, "weight": 2.1, "coins": (550, 750), "xp": 700, "rarity": "очень редкое"},
+    {"id": "battle_memory_leak_core_10", "name": "🧠 Ядро утечки памяти мира", "min_level": 16, "weight": 2.0, "coins": (600, 800), "xp": 750, "rarity": "очень редкое"},
+    {"id": "battle_input_not_registered_10", "name": "🎮 Ввод, который не зарегистрирован", "min_level": 18, "weight": 1.8, "coins": (650, 850), "xp": 800, "rarity": "очень редкое"},
+    {"id": "battle_false_victory_flag_10", "name": "🏳 Флаг ложной победы", "min_level": 20, "weight": 1.7, "coins": (700, 900), "xp": 850, "rarity": "очень редкое"},
+
+    {"id": "battle_match_desync_artifact_20", "name": "🌀 Артефакт рассинхрона матча", "min_level": 22, "weight": 1.6, "coins": (800, 1000), "xp": 1000, "rarity": "очень редкое"},
+    {"id": "battle_disabled_hitbox_20", "name": "📦 Отключённый хитбокс", "min_level": 24, "weight": 1.5, "coins": (850, 1100), "xp": 1100, "rarity": "очень редкое"},
+    {"id": "battle_suppressed_crit_20", "name": "💢 Подавленный критический удар", "min_level": 26, "weight": 1.4, "coins": (900, 1200), "xp": 1200, "rarity": "очень редкое"},
+    {"id": "battle_system_refusal_20", "name": "⚙️ Отказ системы (без объяснений)", "min_level": 28, "weight": 1.3, "coins": (950, 1300), "xp": 1300, "rarity": "очень редкое"},
+    {"id": "battle_hidden_patch_fragment_20", "name": "📜 Фрагмент скрытого патча", "min_level": 30, "weight": 1.2, "coins": (1000, 1400), "xp": 1400, "rarity": "очень редкое"},
+
+    {"id": "battle_unstable_lore_piece_30", "name": "📖 Нестабильный фрагмент лора", "min_level": 32, "weight": 1.1, "coins": (1100, 1500), "xp": 1600, "rarity": "очень редкое"},
+    {"id": "battle_ai_decision_glitch_30", "name": "🤖 Глитч решения ИИ мира", "min_level": 34, "weight": 1.0, "coins": (1200, 1600), "xp": 1800, "rarity": "очень редкое"},
+    {"id": "battle_rewritten_outcome_30", "name": "✏️ Переписанный исход боя", "min_level": 36, "weight": 0.9, "coins": (1300, 1700), "xp": 2000, "rarity": "очень редкое"},
+    {"id": "battle_removed_rule_fragment_30", "name": "🚫 Фрагмент удалённого правила мира", "min_level": 38, "weight": 0.8, "coins": (1400, 1800), "xp": 2200, "rarity": "очень редкое"},
+    {"id": "battle_probability_break_30", "name": "🎲 Сломанная вероятность", "min_level": 40, "weight": 0.7, "coins": (1500, 2000), "xp": 2500, "rarity": "очень редкое"},
+
+    {"id": "battle_world_stack_overflow_40", "name": "🖥 Переполнение мира", "min_level": 42, "weight": 0.6, "coins": (1700, 2200), "xp": 2800, "rarity": "очень редкое"},
+    {"id": "battle_authority_null_40", "name": "👑 Null-авторитет системы", "min_level": 44, "weight": 0.5, "coins": (1900, 2400), "xp": 3200, "rarity": "очень редкое"},
+    {"id": "battle_final_sync_error_40", "name": "🔄 Финальная ошибка синхронизации", "min_level": 46, "weight": 0.4, "coins": (2100, 2600), "xp": 3600, "rarity": "очень редкое"},
+    {"id": "battle_unwritten_winner_40", "name": "📜 Ненаписанный победитель", "min_level": 48, "weight": 0.3, "coins": (2400, 3000), "xp": 4200, "rarity": "очень редкое"},
+    {"id": "battle_system_awareness_50", "name": "🧠 Осознание системы (она заметила тебя)", "min_level": 50, "weight": 0.2, "coins": (3000, 4000), "xp": 5000, "rarity": "очень редкое"},
+
+    {"id": "battle_admin_war_relic_50", "name": "👑 Реликт админской войны", "min_level": 50, "weight": 1.5, "coins": (5000, 8000), "xp": 8000, "rarity": "эпическое"},
+    {"id": "battle_unreal_patch_note_50", "name": "📜 Нереальный патчноут, который изменил прошлое", "min_level": 52, "weight": 1.4, "coins": (5200, 8500), "xp": 8500, "rarity": "эпическое"},
+    {"id": "battle_banned_reality_flag_50", "name": "🚫 Флаг запрещённой реальности", "min_level": 54, "weight": 1.3, "coins": (5500, 9000), "xp": 9000, "rarity": "эпическое"},
+    {"id": "battle_matchmaking_god_error_50", "name": "🧿 Ошибка божественного матчмейкинга", "min_level": 56, "weight": 1.2, "coins": (6000, 9500), "xp": 9500, "rarity": "эпическое"},
+    {"id": "battle_kill_feed_paradox_50", "name": "📡 Парадокс киллфида (кто-то умер до боя)", "min_level": 58, "weight": 1.1, "coins": (6500, 10000), "xp": 10000, "rarity": "эпическое"},
+
+    {"id": "battle_time_desync_crown_60", "name": "⏳ Корона рассинхрона времени", "min_level": 60, "weight": 1.0, "coins": (7000, 11000), "xp": 11000, "rarity": "эпическое"},
+    {"id": "battle_world_authority_fragment_60", "name": "🧠 Фрагмент авторитета мира", "min_level": 62, "weight": 0.95, "coins": (7500, 12000), "xp": 12000, "rarity": "эпическое"},
+    {"id": "battle_unrendered_victory_60", "name": "🏆 Невизуализированная победа", "min_level": 64, "weight": 0.9, "coins": (8000, 13000), "xp": 13000, "rarity": "эпическое"},
+    {"id": "battle_patch_that_erased_rules_60", "name": "📜 Патч, который удалил правила", "min_level": 66, "weight": 0.85, "coins": (8500, 14000), "xp": 14000, "rarity": "эпическое"},
+    {"id": "battle_ai_forgot_battle_60", "name": "🤖 ИИ забыл, что это битва", "min_level": 68, "weight": 0.8, "coins": (9000, 15000), "xp": 15000, "rarity": "эпическое"},
+
+    {"id": "battle_memory_of_server_70", "name": "🖥 Память сервера, который это всё видел", "min_level": 70, "weight": 0.75, "coins": (10000, 16000), "xp": 16000, "rarity": "эпическое"},
+    {"id": "battle_broken_cosmic_rank_70", "name": "🏆 Сломанный космический ранг", "min_level": 72, "weight": 0.7, "coins": (11000, 17000), "xp": 17000, "rarity": "эпическое"},
+    {"id": "battle_reality_admin_console_70", "name": "🧑‍💻 Админ-консоль реальности", "min_level": 74, "weight": 0.65, "coins": (12000, 18000), "xp": 18000, "rarity": "эпическое"},
+    {"id": "battle_unstable_world_seed_70", "name": "🌱 Нестабильное семя мира", "min_level": 76, "weight": 0.6, "coins": (13000, 20000), "xp": 20000, "rarity": "эпическое"},
+    {"id": "battle_battlefield_soul_70", "name": "💀 Душа поля битвы", "min_level": 78, "weight": 0.55, "coins": (14000, 22000), "xp": 22000, "rarity": "эпическое"},
+
+    {"id": "battle_godless_command_80", "name": "📡 Команда без бога", "min_level": 80, "weight": 0.5, "coins": (15000, 24000), "xp": 24000, "rarity": "эпическое"},
+    {"id": "battle_deleted_law_fragment_80", "name": "🚫 Фрагмент удалённого закона", "min_level": 82, "weight": 0.45, "coins": (16000, 26000), "xp": 26000, "rarity": "эпическое"},
+    {"id": "battle_unbalanced_divinity_80", "name": "⚖️ Несбалансированная божественность", "min_level": 84, "weight": 0.4, "coins": (18000, 28000), "xp": 28000, "rarity": "эпическое"},
+    {"id": "battle_serverless_war_80", "name": "🖥 Война без сервера", "min_level": 86, "weight": 0.35, "coins": (20000, 30000), "xp": 30000, "rarity": "эпическое"},
+    {"id": "battle_origin_of_defeat_80", "name": "🧠 Источник поражения всего мира", "min_level": 88, "weight": 0.3, "coins": (22000, 33000), "xp": 33000, "rarity": "эпическое"},
+
+    {"id": "battle_end_of_balance_90", "name": "⚖️ Конец баланса", "min_level": 90, "weight": 0.25, "coins": (25000, 36000), "xp": 36000, "rarity": "эпическое"},
+    {"id": "battle_reality_patch_zero_90", "name": "📜 Патч реальности 0.0 (ничего не исправил)", "min_level": 92, "weight": 0.2, "coins": (28000, 40000), "xp": 40000, "rarity": "эпическое"},
+    {"id": "battle_system_final_breath_90", "name": "🫀 Последний вдох системы", "min_level": 94, "weight": 0.15, "coins": (32000, 45000), "xp": 45000, "rarity": "эпическое"},
+    {"id": "battle_god_error_stack_90", "name": "👑 Stack-ошибка бога", "min_level": 96, "weight": 0.1, "coins": (36000, 50000), "xp": 50000, "rarity": "эпическое"},
+    {"id": "battle_final_battle_not_found_100", "name": "❌ Финальная битва не найдена", "min_level": 100, "weight": 0.05, "coins": (50000, 80000), "xp": 65000, "rarity": "эпическое"},
+
+    {"id": "battle_admin_has_left_the_game_50", "name": "👑 Админ вышел из игры", "min_level": 50, "weight": 0.05, "coins": (80000, 120000), "xp": 100000, "rarity": "легендарное"},
+    {"id": "battle_winner_screen_bug_50", "name": "🏆 Экран победы, который завис навсегда", "min_level": 52, "weight": 0.045, "coins": (85000, 125000), "xp": 110000, "rarity": "легендарное"},
+    {"id": "battle_reality_disconnect_50", "name": "📡 Отключение от реальности", "min_level": 54, "weight": 0.04, "coins": (90000, 130000), "xp": 120000, "rarity": "легендарное"},
+    {"id": "battle_patch_notes_written_in_blood_50", "name": "📜 Патчноуты, написанные кровью системы", "min_level": 56, "weight": 0.035, "coins": (95000, 140000), "xp": 130000, "rarity": "легендарное"},
+    {"id": "battle_matchmaking_final_judgement_50", "name": "⚖️ Финальный суд матчмейкинга", "min_level": 58, "weight": 0.03, "coins": (100000, 150000), "xp": 140000, "rarity": "легендарное"},
+
+    {"id": "battle_skill_issue_ascended_60", "name": "🧠 Вознесённый skill issue", "min_level": 60, "weight": 0.028, "coins": (110000, 160000), "xp": 160000, "rarity": "легендарное"},
+    {"id": "battle_ping_is_god_60", "name": "📡 Пинг, который стал богом", "min_level": 62, "weight": 0.025, "coins": (120000, 170000), "xp": 180000, "rarity": "легендарное"},
+    {"id": "battle_rage_quit_prophecy_60", "name": "💢 Пророчество rage quit’а", "min_level": 64, "weight": 0.022, "coins": (130000, 180000), "xp": 200000, "rarity": "легендарное"},
+    {"id": "battle_broken_meta_holy_book_60", "name": "📖 Священная книга сломанной меты", "min_level": 66, "weight": 0.02, "coins": (140000, 190000), "xp": 220000, "rarity": "легендарное"},
+    {"id": "battle_uninstall_button_appears_60", "name": "🖱 Кнопка удаления игры, которая появилась сама", "min_level": 68, "weight": 0.018, "coins": (150000, 200000), "xp": 240000, "rarity": "легендарное"},
+
+    {"id": "battle_afk_god_throne_70", "name": "👑 Трон AFK-бога", "min_level": 70, "weight": 0.016, "coins": (160000, 220000), "xp": 260000, "rarity": "легендарное"},
+    {"id": "battle_server_is_praying_70", "name": "🖥 Сервер, который молится", "min_level": 72, "weight": 0.014, "coins": (170000, 240000), "xp": 280000, "rarity": "легендарное"},
+    {"id": "battle_lag_forged_excalibur_70", "name": "⚔️ Экскалибур, выкованный из лага", "min_level": 74, "weight": 0.012, "coins": (180000, 260000), "xp": 300000, "rarity": "легендарное"},
+    {"id": "battle_world_admin_password_leaked_70", "name": "🔑 Пароль админа мира (утёк)", "min_level": 76, "weight": 0.01, "coins": (200000, 280000), "xp": 320000, "rarity": "легендарное"},
+    {"id": "battle_balance_team_fired_itself_70", "name": "⚖️ Баланс-команда уволила саму себя", "min_level": 78, "weight": 0.009, "coins": (220000, 300000), "xp": 340000, "rarity": "легендарное"},
+
+    {"id": "battle_reality_is_on_fire_80", "name": "🔥 Реальность в огне, но работает", "min_level": 80, "weight": 0.008, "coins": (240000, 320000), "xp": 360000, "rarity": "легендарное"},
+    {"id": "battle_you_are_the_patch_80", "name": "🧩 Ты — тот самый патч", "min_level": 82, "weight": 0.007, "coins": (260000, 340000), "xp": 380000, "rarity": "легендарное"},
+    {"id": "battle_dev_console_of_god_80", "name": "🧑‍💻 Консоль разработчика бога", "min_level": 84, "weight": 0.006, "coins": (280000, 360000), "xp": 400000, "rarity": "легендарное"},
+    {"id": "battle_last_error_before_creation_80", "name": "❌ Последняя ошибка перед созданием мира", "min_level": 86, "weight": 0.005, "coins": (300000, 380000), "xp": 450000, "rarity": "легендарное"},
+    {"id": "battle_system_accepts_defeat_80", "name": "⚖️ Система признаёт поражение", "min_level": 88, "weight": 0.004, "coins": (320000, 400000), "xp": 500000, "rarity": "легендарное"},
+
+    {"id": "battle_final_boss_is_empty_90", "name": "👁 Финальный босс — пустота", "min_level": 90, "weight": 0.003, "coins": (350000, 450000), "xp": 600000, "rarity": "легендарное"},
+    {"id": "battle_you_won_but_nothing_changed_90", "name": "🏆 Ты победил, но ничего не изменилось", "min_level": 92, "weight": 0.0025, "coins": (380000, 500000), "xp": 700000, "rarity": "легендарное"},
+    {"id": "battle_world_exe_has_stopped_90", "name": "💥 world.exe перестал отвечать", "min_level": 94, "weight": 0.002, "coins": (420000, 550000), "xp": 800000, "rarity": "легендарное"},
+    {"id": "battle_admin_is_now_player_90", "name": "👑 Админ теперь игрок", "min_level": 96, "weight": 0.0015, "coins": (480000, 600000), "xp": 900000, "rarity": "легендарное"},
+    {"id": "battle_reality_has_no_more_updates_100", "name": "📜 Реальность больше не обновляется", "min_level": 100, "weight": 0.001, "coins": (600000, 1000000), "xp": 1200000, "rarity": "легендарное"},
+
+
+{"id": "battle_coin_chest_1", "name": "💼 Сундук денег I", "min_level": 2, "weight": 0.10, "coins": (100, 1000), "xp": 0, "rarity": "обычное"},
+{"id": "battle_coin_chest_2", "name": "💼 Сундук денег II", "min_level": 10, "weight": 0.01, "coins": (1000, 5000), "xp": 0, "rarity": "редкое"},
+{"id": "battle_coin_chest_3", "name": "💼 Сундук денег III", "min_level": 20, "weight": 0.001, "coins": (5000, 15000), "xp": 0, "rarity": "очень редкое"},
+{"id": "battle_coin_chest_4", "name": "💼 Сундук денег IV", "min_level": 35, "weight": 0.001, "coins": (15000, 40000), "xp": 0, "rarity": "эпическое"},
+{"id": "battle_coin_chest_5", "name": "💼 Сундук денег V", "min_level": 60, "weight": 0.001, "coins": (40000, 75000), "xp": 0, "rarity": "легендарное"},
+
+{"id": "battle_xp_chest_1", "name": "💼 Сундук опыта I", "min_level": 1, "weight": 0.50, "coins": (0, 0), "xp": 150, "rarity": "обычное"},
+{"id": "battle_xp_chest_2", "name": "💼 Сундук опыта II", "min_level": 3, "weight": 0.05, "coins": (0, 0), "xp": 250, "rarity": "редкое"},
+{"id": "battle_xp_chest_3", "name": "💼 Сундук опыта III", "min_level": 6, "weight": 0.25, "coins": (0, 0), "xp": 850, "rarity": "очень редкое"},
+{"id": "battle_xp_chest_4", "name": "💼 Сундук опыта IV", "min_level": 10, "weight": 0.15, "coins": (0, 0), "xp": 1200, "rarity": "эпическое"},
+{"id": "battle_xp_chest_5", "name": "💼 Сундук опыта V", "min_level": 20, "weight": 0.25, "coins": (0, 0), "xp": 3000, "rarity": "легендарное"},
+        ]
+    }
 }
 
 STORAGE_ITEMS_INDEX = {}
