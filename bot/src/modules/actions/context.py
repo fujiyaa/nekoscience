@@ -5,7 +5,7 @@ from ..systems import context_db as db
 EXPIRATION = 30 * 24 * 3600
 
 
-def _extract_ids(obj: Update | Message, reply: bool = False) -> Dict[str, Optional[int]]:
+def _extract_ids(obj: Update | Message | Dict, reply: bool = False) -> Dict[str, Optional[int]]:
    
     if isinstance(obj, Update):
         msg = obj.effective_message
@@ -13,6 +13,17 @@ def _extract_ids(obj: Update | Message, reply: bool = False) -> Dict[str, Option
     elif isinstance(obj, Message):
         msg = obj
         chat = obj.chat
+    elif isinstance(obj, Dict):
+        try:                           
+            return {
+                "chat_id": obj['result']['chat']['id'],
+                "topic_id": None,
+                "message_id": obj["result"]["message_id"],
+                "is_supergroup": obj['result']['chat']['type'].endswith("group")
+            }
+        except:
+            raise TypeError(f"Dict err in context extract (neko)")
+        
     else:
         raise TypeError(f"Unsupported type: {type(obj)}")
 

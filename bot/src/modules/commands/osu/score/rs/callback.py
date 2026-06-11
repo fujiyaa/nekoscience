@@ -13,6 +13,7 @@ from telegram.ext import ContextTypes
 from .....external.osu_http import get_beatmap_title_from_file, get_beatmap_creator_from_file
 from .....actions.messages import reset_remove_timer, safe_query_answer, try_send
 from .....actions.public_buttons import get_keyboard as get_pbk
+from .....actions.rich import edit_rich_message
 from .....systems.json_files import load_score_file
 from .....wrappers.score import process_score_and_image
 from .....wrappers.score_image_v2 import get_score_caption
@@ -181,10 +182,17 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 prefer_large_media=True,
                 show_above_text=True
             )
-            bot_msg = await query.edit_message_text(
-                text=caption,
-                parse_mode='HTML',
-                link_preview_options=link_preview,
+            # bot_msg = await query.edit_message_text(
+            #     text=caption,
+            #     parse_mode='HTML',
+            #     link_preview_options=link_preview,
+            #     reply_markup=reply_markup
+            # )
+
+            bot_msg = await edit_rich_message(
+                update,
+                query.message.id,
+                caption,
                 reply_markup=reply_markup
             )
 
@@ -205,8 +213,8 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
         reset_remove_timer(
             context.bot,
-            query.message.chat.id,
-            query.message.message_id,
+            bot_msg["result"]["chat"]["id"],
+            bot_msg["result"]["message_id"],
             RS_BUTTONS_TIMEOUT,
             cleanup=lambda: user_sessions.pop(query.message.message_id, None),
             replace_with=get_pbk,

@@ -107,14 +107,21 @@ async def rs(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         await loading_msg.delete()
 
-        message_id = msg.message_id
+        # message_id = msg.message_id
+        message_id = msg["result"]["message_id"]
         user_sessions[message_id] = local_session        
         session = user_sessions[message_id]
 
         reply_markup = await get_keyboard(session["index"], len(session["scores"]), message_id)
         
-        msg = await try_send(
-            msg.edit_reply_markup, 
+        # msg = await try_send(
+        #     msg.edit_reply_markup, 
+        #     reply_markup=reply_markup
+        # )
+
+        msg = await context.bot.edit_message_reply_markup(
+            msg["result"]["chat"]["id"],
+            msg["result"]["message_id"],
             reply_markup=reply_markup
         )
 

@@ -5,13 +5,16 @@ import io
 import html
 import temp
 import traceback
+from datetime import datetime
 from telegram import Update, InputMediaPhoto, LinkPreviewOptions
 
 from ..utils import text_format
 from ..external.osu_http import beatmap
 from ..utils.osu_conversions import get_mods_info, apply_mods_to_stats
 from ..wrappers.beatmap import create_beatmap_image
+# from ..wrappers.score_image_v2 import get_score_caption
 from ..utils.calculate import caclulte_cached_entry
+from ..actions.rich import rich_reply, edit_rich_message
 
 from config import USER_SETTINGS_FILE
 
@@ -55,6 +58,11 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
     base_cs = lazer_data.get("DA_values", {}).get("circle_size", base_values["cs"])
     base_od = lazer_data.get("DA_values", {}).get("overall_difficulty",base_values["od"])
     base_hp = lazer_data.get("DA_values", {}).get("drain_rate", base_values["hp"])
+
+    map_ar = map.get("cs", {}) or 0
+    map_cs = map.get("ar", {}) or 0
+    map_od = map.get("od", {}) or 0
+    map_hp = map.get("hp", {}) or 0
     
     pp = neko_api_calc.get("pp")
     max_pp = neko_api_calc.get("no_choke_pp")
@@ -96,8 +104,10 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
     
     username = user.get("username")
     pp_text = user.get('total_pp', '0')
-    global_rank_text = f"(#{user.get('global_rank'):,}" if user.get("global_rank") else "(#????"        
-    rank_text = f"{username}: {pp_text}pp {global_rank_text})"
+    pp_profile_text_alt = pp_text
+    # global_rank_text = f"(#{user.get('global_rank'):,}" if user.get("global_rank") else "(#????"
+    global_rank_text_alt = f"#{user.get('global_rank'):,}" if user.get("global_rank") else "#????" 
+    # rank_text = f"{username}: {pp_text}pp {global_rank_text})"    
     country_flag = text_format.country_code_to_flag(country_code = user.get("country_code")) 
 
     beatmap_escaped = html.escape(map.get('beatmap_full'))
@@ -108,17 +118,17 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
         try_text = f"<i><b>- Try #{try_count}</b></i>"
 
     if not image_todo_flag:         
-        user_link = f'<a href="https://osu.ppy.sh/users/{osu_score.get("user_id")}">{country_flag} <b>{rank_text}</b></a>\n\n'  
+        # user_link = f'<a href="https://osu.ppy.sh/users/{osu_score.get("user_id")}">{country_flag} <b>{rank_text}</b></a>\n\n'  
 
         map_id = map.get('beatmap_id')
         map_url = f"https://osu.ppy.sh/b/{map_id}"
         map_text = f'<a href="{map_url}">{beatmap_escaped} [{stars:.2f}★]</a> {try_text}\n\n'
-        spacer = '\n'
+        # spacer = '\n'
     else:        
-        user_link = f''  
+        # user_link = f''  
 
         map_text = f''
-        spacer = '\n'
+        # spacer = '\n'
 
     bpm, ar, od, cs, hp = apply_mods_to_stats(
         expected_bpm, base_ar, base_od, base_cs, base_hp,
@@ -139,6 +149,10 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
 
     if not rank == "F" and not failed:
         pp_text = f'<b>{pp:.1f}</b>/{perfect_pp:.1f} <s>({max_pp:.1f}pp)</s>'
+        pp_text_alt = f'<b>{pp:.2f}</b> <s>({max_pp:.2f})</s>'
+
+        if int(pp) == int(max_pp):
+            pp_text_alt = f'<b>{pp:.2f}</b>'
     else:
         if lazer:
             hit300 = osu_score.get("count_300") or 0
@@ -151,9 +165,11 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
 
             progress = (hits / max_hits) * 100 if max_hits else 0
             pp_text = f'<code>Fail ({progress:.0f}%)</code>  ~<b>{pp:.1f}pp</b> '
+            pp_text_alt = f'<code>Фейл ({progress:.0f}%)</code>  ~<b>{pp:.2f}</b> '
         else:
             rank = "F"
             pp_text = f'<code>Fail ~{pp:.1f}pp </code>'
+            pp_text_alt = f'<code>Фейл ~{pp:.2f}</code>'
 
     score_url = f"https://osu.ppy.sh/scores/{osu_api_data.get('id')}"
     score_date = text_format.format_osu_date(osu_api_data.get('date'), today=is_recent)
@@ -162,17 +178,58 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
     status = map.get('status')
     mapper = map.get("mapper")
 
-    miss, miss_text = osu_score.get('count_miss'), '\n'
-    if miss:
-        miss_text = f"<b> • {osu_score.get('count_miss')}</b>❌\n"
+    # miss, miss_text = osu_score.get('count_miss'), '\n'
+    # if miss:
+    #     miss_text = f"<b> • {osu_score.get('count_miss')}</b>❌\n"
 
-    caption = (
-        f'{user_link}{map_text}<b><i><a href="{score_url}">{rank}</a></i>  {mods_text}   {accuracy_display}</b>    <code>{score_date}</code>{spacer}'
-        f"{pp_text} • {combo_text}{miss_text}"
-        f"<code>{text_format.seconds_to_hhmmss(length)} • CS:{cs:g} AR:{ar:g} OD:{od:g} BPM:{bpm:g}</code>\n\n"
-        f'⦿ <a href="{map_url}">Mapset</a> by {mapper} • {status.capitalize()}  <a href="https://myangelfujiya.ru/weakness/direct?id={map_id}">🔗</a>\n'
-        )          
-    # &set_id={set_id} вырезано из ссылки директа
+    # caption = (
+    #     f'{user_link}{map_text}<b><i><a href="{score_url}">{rank}</a></i>  {mods_text}   {accuracy_display}</b>    <code>{score_date}</code>{spacer}'
+    #     f"{pp_text} • {combo_text}{miss_text}"
+    #     f"<code>{text_format.seconds_to_hhmmss(length)} • CS:{cs:g} AR:{ar:g} OD:{od:g} BPM:{bpm:g}</code>\n\n"
+    #     f'⦿ <a href="{map_url}">Mapset</a> by {mapper} • {status.capitalize()}  <a href="https://myangelfujiya.ru/weakness/direct?id={map_id}">🔗</a>\n'
+    #     )      
+ 
+
+    iso_time = osu_api_data.get('date')
+    unix_time = iso_to_unix(iso_time)
+
+    hit300 = osu_score.get("count_300") or "<code>0</code>"
+    hit100 = osu_score.get("count_100") or "<code>0</code>"
+    hit50 = osu_score.get("count_50") or "<code>0</code>"
+    hit_miss = osu_score.get('count_miss') or "<code>0</code>"
+    # length_text = text_format.seconds_to_hhmmss(length)
+
+    # extra_caption = await get_score_caption(cached_entry)
+
+    caption = f"""   
+<h3><a href="https://osu.ppy.sh/users/{osu_score.get("user_id")}">{country_flag} <b>{username}: </b></a>{pp_profile_text_alt}pp <sup>{global_rank_text_alt}</sup><h2>
+
+
+<tg-collage>
+<img src="{map.get('card2x_url')}"/>
+</tg-collage>
+
+<details><summary>{map_text}</summary>
+
+| Длина | BPM |
+|:-:|:-:|
+|{text_format.seconds_to_hhmmss(length)}|{bpm:g}|
+
+| CS | AR | OD | HP |
+|:-:|:-:|:-:|:-:|
+|{map_cs:.1f}|{map_ar:.1f}|{map_od:.1f}|{map_hp:.1f}|
+<aside><a href="{map_url}">Mapset (ссылка)</a> by {mapper} • {status.capitalize()} <a href="https://myangelfujiya.ru/weakness/direct?id={map_id}">🔗</a></aside>
+</details>
+
+<h2> <a href="{score_url}">{rank}</a> {mods_text} 〰️ <tg-time unix="{unix_time}" format="r">{score_date}</tg-time>, {status.capitalize()}</h2>
+
+|Точность|PP|Комбо| 
+|:-:|:-:|:-:|
+|{accuracy_display}|{pp_text_alt}|{combo_text}|
+
+|🔵 {hit300}|🟢 {hit100}|🟡 {hit50}|❌ {hit_miss}|
+|:-:|:-:|:-:|:-:|
+|{cs:g}<sub>CS</sub>|{ar:g}<sub>AR</sub>|{od:g}<sub>OD</sub>|<sub><code>{bpm:g} BPM</code></sub>|"""
 
     img_path = None
     if image_todo_flag:
@@ -195,13 +252,13 @@ async def send_score(
     rs_bg_render = False # for now ...
     img_path, caption = await process_score_and_image(cached_entry, image_todo_flag=rs_bg_render, is_recent=is_recent)
 
-    link_preview = LinkPreviewOptions(
-        url=cached_entry.get('map').get('card2x_url'),
-        is_disabled=False,
-        prefer_small_media=False,
-        prefer_large_media=True,
-        show_above_text=True
-    )
+    # link_preview = LinkPreviewOptions(
+    #     url=cached_entry.get('map').get('card2x_url'),
+    #     is_disabled=False,
+    #     prefer_small_media=False,
+    #     prefer_large_media=True,
+    #     show_above_text=True
+    # )
 
     try:
         if query:
@@ -212,10 +269,16 @@ async def send_score(
                 await query.edit_message_reply_markup(reply_markup=reply_markup)
                 return await query.edit_message_media(media=media)
             else:
-                return await query.edit_message_text(
-                    text=caption,
-                    parse_mode="HTML",
-                    link_preview_options=link_preview,
+                # return await query.edit_message_text(
+                #     text=caption,
+                #     parse_mode="HTML",
+                #     link_preview_options=link_preview,
+                #     reply_markup=reply_markup
+                # )
+
+                return await edit_rich_message(
+                    update.callback_query.message.id,
+                    caption,
                     reply_markup=reply_markup
                 )
         else:
@@ -227,11 +290,26 @@ async def send_score(
                     reply_markup=reply_markup
                 )
             else:
-                return await update.message.reply_text(
+                # return await update.message.reply_text(
+                #     caption,
+                #     parse_mode="HTML",
+                #     link_preview_options=link_preview,
+                #     reply_markup=reply_markup
+                # )                
+            
+                return await rich_reply(
+                    update,
                     caption,
-                    parse_mode="HTML",
-                    link_preview_options=link_preview,
                     reply_markup=reply_markup
                 )
     except Exception:
         traceback.print_exc()
+
+
+def iso_to_unix(iso_str: str) -> int:
+    dt = datetime.fromisoformat(iso_str.replace("Z", "+00:00"))
+    return int(dt.timestamp())
+
+def pretty_time(iso_str: str) -> str:
+    dt = datetime.fromisoformat(iso_str.replace("Z", "+00:00"))
+    return dt.strftime("%d %b %Y %H:%M")
