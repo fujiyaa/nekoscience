@@ -21,8 +21,8 @@ from .storage import *
 
 
 init_db()
-migrate_add_forest()
-migrate_add_battle()
+# migrate_add_forest()
+# migrate_add_battle()
 build_item_index()
 
 async def main_menu(update, context):
