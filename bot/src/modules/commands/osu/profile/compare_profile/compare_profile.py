@@ -52,8 +52,14 @@ async def compare_profile(update: Update, context: ContextTypes.DEFAULT_TYPE, us
             username1, username2 = parse_pc(args_text, saved_osu_name)
 
             if not username1:
-                await set_name(update, context)
-                await temp_message.delete()
+                await context.bot.edit_message_text(
+                    chat_id=update.effective_chat.id,
+                    message_id=temp_message.message_id,
+                    text=("Против себя: `/pc ник1 (в том числе с пробелами)`\n\n" 
+                          "Два ника: `/pc ник1 ник2`\n" 
+                          "Два ника: `/pc #ник1 #ник2 (для ников с пробелами)`"),
+                    parse_mode="Markdown"
+                )
                 return
             if not username1 or not username2:
                 await context.bot.edit_message_text(
