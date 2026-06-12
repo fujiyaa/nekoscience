@@ -240,7 +240,7 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
 
 <details><summary>{sep} {hit300} {sep} {hit100} {sep} {hit50} {sep} {hit_miss} -  {status.capitalize()}</summary>
 
-|🔵 {hit300}|🟢 {hit100}|🟡 {hit50}|❌ {hit_miss}|
+|{hit300} 🔵|{hit100} 🟢|{hit50} 🟡|{hit_miss}|
 |:-:|:-:|:-:|:-:|
 |{cs:g}<sub>CS</sub>|{ar:g}<sub>AR</sub>|{od:g}<sub>OD</sub>|<sub><code>{bpm:g} BPM</code></sub>|
 
