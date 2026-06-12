@@ -68,8 +68,8 @@ def format_stats(user, best_pp):
     level = float(f"{stats['level']['current']}.{stats['level']['progress']}")
     hours = stats["play_time"] // 3600
     medals = len(user["user_achievements"])
-    ss_count = stats.get("grade_counts", {}).get("ss", 0)
-    s_count = stats.get("grade_counts", {}).get("s", 0)
+    ss_count = stats.get("grade_counts", {}).get("ss", 0) + stats.get("grade_counts", {}).get("ssh", 0)
+    s_count = stats.get("grade_counts", {}).get("s", 0) + stats.get("grade_counts", {}).get("sh", 0)
     a_count = stats.get("grade_counts", {}).get("a", 0)
     monthly = user.get('monthly_playcounts', [])
 
