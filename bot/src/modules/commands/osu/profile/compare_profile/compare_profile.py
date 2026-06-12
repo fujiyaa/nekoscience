@@ -12,6 +12,7 @@ from .....systems.logging import log_all_update
 from .....systems.auth import check_osu_verified
 from .....external.osu_api import get_osu_token, get_user_profile, get_top_100_scores
 from .....utils.text_format import format_stats, make_header, row
+from .....actions.rich import edit_rich_message
 
 from config import COOLDOWN_STATS_COMMANDS
 
@@ -90,47 +91,162 @@ async def compare_profile(update: Update, context: ContextTypes.DEFAULT_TYPE, us
             p1 = format_stats(user1, top1)
             p2 = format_stats(user2, top2)
 
-            header, sep = make_header(p1['name'], p2['name'])
-            table = [header, sep]
+            def fmt(v):
+                if isinstance(v, float):
+                    return float(f"{v:.2f}".rstrip("0").rstrip("."))
+                return v
+            
+            def fmt_value(v, fmt):
+                if fmt is None:
+                    return str(v)
 
-            table.append(row(p1['rank'], "Rank", p2['rank'], higher_is_better=False, preffix="#", fmt="{:,}"))
-            table.append(row(p1['peak_rank'], "Peak rank", p2['peak_rank'], higher_is_better=False, preffix="#", fmt="{:,}"))
-            table.append(row(p1['pp'], "PP", p2['pp'], higher_is_better=True, suffix="pp", fmt="{:,.0f}"))
-            table.append(row(p1['acc'], "Accuracy", p2['acc'], higher_is_better=True, suffix="%", fmt="{:,.2f}"))
-            table.append(row(p1['level'], "Level", p2['level'], higher_is_better=True, fmt="{:.2f}"))
-            table.append(row(p1['hours'], "Playtime", p2['hours'], higher_is_better=True, suffix="hrs", fmt="{:,}"))
-            table.append(row(p1['playcount'], "Playcount", p2['playcount'], higher_is_better=True, fmt="{:,}"))
-            table.append(row(p1['max_count'], "PC peak", p2['max_count'], higher_is_better=True, fmt="{:,}"))
-            table.append(row(p1['maps'], "Maps played", p2['maps'], higher_is_better=True, fmt="{:,}"))
-            # table.append(row(p1['anime_bg_counter'], "Anime top%", p2['anime_bg_counter'], higher_is_better=False, suffix="%", fmt="{:,}"))
-            table.append(row(p1['ranked_score']/1e9, "Ranked score", p2['ranked_score']/1e9, higher_is_better=True, suffix="bn", fmt="{:.2f}"))
-            table.append(row(p1['total_score']/1e9, "Total score", p2['total_score']/1e9, higher_is_better=True, suffix="bn", fmt="{:.2f}"))
-            table.append(row(p1['total_hits'], "Total hits", p2['total_hits'], higher_is_better=True, fmt="{:,}"))
-            table.append(row(p1['hpp'], "Hits/play", p2['hpp'], higher_is_better=True, fmt="{:,.2f}"))
-            table.append(row(p1['ss'], "SS count", p2['ss'], higher_is_better=True, fmt="{:,}"))
-            table.append(row(p1['s'], "S count", p2['s'], higher_is_better=True, fmt="{:,}"))
-            table.append(row(p1['a'], "A count", p2['a'], higher_is_better=True, fmt="{:,}"))
-            table.append(row(p1['max_combo'], "Max Combo", p2['max_combo'], higher_is_better=True, fmt="{:,}"))
-            table.append(row(p1['medals'], "Medals", p2['medals'], higher_is_better=True, fmt="{:,}"))
-            table.append(row(p1['top1_pp'], "Top1 PP", p2['top1_pp'], higher_is_better=True, suffix="pp", fmt="{:,.2f}"))
-            table.append(row(p1['pp_diff'], "PP spread", p2['pp_diff'], higher_is_better=True, suffix="pp", fmt="{:,.2f}"))
-            table.append(row(p1['pp_avg_all'], "Avg PP", p2['pp_avg_all'], higher_is_better=True, suffix="pp", fmt="{:,.2f}"))
-            table.append(row(p1['avg_pp_per_month'], "PP per month", p2['avg_pp_per_month'], higher_is_better=True, suffix="pp", fmt="{:,.2f}"))
-            table.append(row(p1['avg_count_per_month'], "PC per month", p2['avg_count_per_month'], higher_is_better=True, fmt="{:,.0f}"))
-            table.append(row(p1['join_date'], "Join date", p2['join_date'], higher_is_better=False, is_date=True))
-            table.append(row(p1['followers'], "Followers", p2['followers'], higher_is_better=True, fmt="{:,}"))
-            table.append(row(p1['mapping'], "Mapping subs", p2['mapping'], higher_is_better=True, fmt="{:,}"))
-            table.append(row(p1['posts'], "Forum posts", p2['posts'], higher_is_better=True, fmt="{:,}"))
-            table.append(row(p1['replays'], "Replays seen", p2['replays'], higher_is_better=True, fmt="{:,}"))
+                try:
+                    if isinstance(v, (int, float)) and "bn" not in fmt:
+                        return fmt.format(v)
+                    return fmt.format(v)
+                except:
+                    return str(v)
 
-            text = "```\n" + "\n".join(table) + "\n```"
+            p1_score = 0
+            p2_score = 0
 
-            await context.bot.edit_message_text(
-                chat_id=update.effective_chat.id,
+            def format_cell(label, key, higher_is_better, fmt, p1, p2, scale=1.0, suffix=None):
+
+                nonlocal p1_score, p2_score
+
+                a = p1.get(key)
+                b = p2.get(key)
+
+                if isinstance(a, (int, float)) and scale != 1.0:
+                    a = a / scale
+                    b = b / scale
+
+                va = fmt_value(a, fmt)
+                vb = fmt_value(b, fmt)
+
+                if key == "join_date":
+                    return f"| {label} | {va} | {vb} |"
+
+                if not isinstance(a, (int, float)) or not isinstance(b, (int, float)):
+                    return f"| {label} | {va} | {vb} |"
+
+                if higher_is_better:
+                    win_a = a > b
+                    win_b = b > a
+                else:
+                    win_a = a < b
+                    win_b = b < a
+
+                def wrap(v, tag):
+                    return f"<{tag}>{v}</{tag}>"
+
+                if win_a:
+                    va = wrap(va, "b")
+                    vb = wrap(vb, "code")
+                    p1_score += 1
+                elif win_b:
+                    va = wrap(va, "code")
+                    vb = wrap(vb, "b")
+                    p2_score += 1
+
+                return f"| {label} | {va} | {vb} |"
+
+
+            rows_config = [                       
+                ("Рейтинг", "rank", False, "{:,}"),                
+                ("PP", "pp", True, "{:,.0f}"),
+                ("Топскор", "top1_pp", True, "{:,.2f}"),
+                ("Точность", "acc", True, "{:,.2f}"),                
+                ("Макс. комбо", "max_combo", True, "{:,}"),                
+                ("Попад./игру", "hpp", True, "{:,.2f}"), 
+                ("Игры", "playcount", True, "{:,}"),
+                ("Плейтайм", "hours", True, "{:,}"),
+                ("Карт сыграно", "maps", True, "{:,}"),
+                
+                ("PP разброс", "pp_diff", True, "{:,.2f}"),
+                ("Среднее PP", "pp_avg_all", True, "{:,.2f}"),
+                ("PP в месяц", "avg_pp_per_month", True, "{:,.2f}"),
+                ("Игр в месяц", "avg_count_per_month", True, "{:,.0f}"),
+                ("Игры (пик)", "max_count", True, "{:,}"),
+                ("Попаданий", "total_hits", True, "{:,}"),
+                ("SS", "ss", True, "{:,}"),
+                ("S", "s", True, "{:,}"),
+                ("A", "a", True, "{:,}"),
+
+                ("Макс. рейтинг", "peak_rank", False, "{:,}"), 
+                ("Уровень", "level", True, "{:.2f}"),
+                ("Медали", "medals", True, "{:,}"),                                   
+                ("Рейт. очки (млрд)", "ranked_score", True, "{:.2f}", 1e9, "bn"),
+                ("Всего очков(млрд)", "total_score", True, "{:.2f}", 1e9, "bn"),
+                ("Фолловеры", "followers", True, "{:,}"),
+                ("Маппинг ф-ры", "mapping", True, "{:,}"),
+                ("Форум посты", "posts", True, "{:,}"),
+                ("Просм. реплеев", "replays", True, "{:,}"),
+                ("Регистрация", "join_date", False, None),
+            ]
+
+            table = [
+                f"| | {p1['name']} | {p2['name']} |",
+                "|:--|:-:|:-:|",
+            ]
+
+            for item in rows_config:
+                if len(item) == 4:
+                    label, key, hib, fmt = item
+                    scale = 1.0
+                elif len(item) == 6:
+                    label, key, hib, fmt, scale, suffix = item
+                else:
+                    label, key, hib, fmt, scale, suffix = (*item, 1.0, None)
+
+                table.append(
+                    format_cell(label, key, hib, fmt, p1, p2, scale)
+                )
+
+            winner_text = ""
+
+            if p1_score > p2_score:
+                winner_text = f"{p1['name']} побеждает {p1_score}:{p2_score}"
+            elif p2_score > p1_score:
+                winner_text = f"{p2['name']} побеждает {p2_score}:{p1_score}"
+            else:
+                winner_text = f"ничья {p1_score}:{p2_score}"
+
+            text = "\n".join(table)
+
+            tables = split_markdown_table(text, splits=[9, 18])
+
+            table1, table2, table3 = tables
+
+            text = f"""
+<details open>
+<summary>📊 {winner_text}</summary>
+
+{table1}
+
+</details>
+
+<details>
+<summary>📈 Раздел динамичности</summary>
+
+{table2} 
+
+</details>
+
+<details>
+<summary>👥 Социальное и гринд</summary>
+
+{table3}
+
+</details>
+"""
+
+            await edit_rich_message(
+                update,
                 message_id=temp_message.message_id,
-                text=text,
-                parse_mode="Markdown"
+                markdown=text
             )
+
             return
         
         except Exception as e:
@@ -169,3 +285,31 @@ def parse_pc(args_text: str, saved_name: str | None):
         return saved_name, " ".join(parts)
 
     return None, None
+
+def split_markdown_table(text: str, splits: list[int]):
+
+    lines = text.strip().split("\n")
+
+    header = lines[0]
+    align = lines[1]
+    rows = lines[2:]
+
+    result = []
+
+    prev = 0
+    for idx, split in enumerate(splits + [len(rows)]):
+
+        chunk = rows[prev:split]
+        if not chunk:
+            prev = split
+            continue
+
+        if idx == 0:
+            part = [header, align] + chunk
+        else:
+            part = [chunk[0], align] + chunk[1:]
+
+        result.append("\n".join(part))
+        prev = split
+
+    return result

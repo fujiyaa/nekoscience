@@ -1,7 +1,7 @@
     
 
 
-from ..utils.text_format import country_code_to_flag
+from .userlink_rich import get_rich_userlink
 
 from config import AIMSLOP_IDS
 
@@ -52,66 +52,19 @@ def get_aimslop_text(user_data, best_pp):
         row1_emoji = percent_emoji(aimslop_percent)
         row2_emoji = percent_emoji(aimslop_weighted_percent)
 
-        col1_header = "Аимслоп"
-        col2_header = "N"
-        col3_header = "%"
-        col4_header = "чек"
+        gwb_url = "https://docs.google.com/spreadsheets/d/1k-l8SVROL6bnL035mmBAOnTwLWxkw7GWUGDIEFHgXzE/edit?gid=1661256767#gid=1661256767"
 
-        row1_label = "карт в топ100"
-        row1_n = f"{counter}/{total}"
-        row1_p = f"{aimslop_percent:.0f}%"
+        return f"""
+{get_rich_userlink(user_data)}
 
-        row2_label = "pp слопа"
-        row2_n = f"{aimslop_weighted_pp:.0f}pp"
-        row2_p = f"{aimslop_weighted_percent:.0f}%"
+| Аимслоп | N | % | ✓ |
+|:--------|--:|--:|:-:|
+| Карт в топ100 | <b>{counter}</b><code>/{total}</code> | {aimslop_percent:.0f}% | {row1_emoji} |
+| PP аимслопа | <b>{aimslop_weighted_pp:.0f}</b>pp | {aimslop_weighted_percent:.0f}% | {row2_emoji} |
 
-        col1_width = max(len(col1_header), len(row1_label), len(row2_label))
-        col2_width = max(len(col2_header), len(row1_n), len(row2_n))
-        col3_width = max(len(col3_header), len(row1_p), len(row2_p))
-        col4_width = max(len(col4_header), len(row1_emoji), len(row2_emoji))
-
-        header = (
-            f"{col1_header:<{col1_width}} | "
-            f"{col2_header:^{col2_width}} | "
-            f"{col3_header:^{col3_width}} | "
-            f"{col4_header:^{col4_width}}"
-        )
-
-        separator = (
-            f"{'-'*col1_width}-+-"
-            f"{'-'*col2_width}-+-"
-            f"{'-'*col3_width}-+-"
-            f"{'-'*col4_width}"
-        )
-
-        row1 = (
-            f"{row1_label:<{col1_width}} | "
-            f"{row1_n:>{col2_width}} | "
-            f"{row1_p:>{col3_width}} | "
-            f"{row1_emoji:^{col4_width}}"
-        )
-
-        row2 = (
-            f"{row2_label:<{col1_width}} | "
-            f"{row2_n:>{col2_width}} | "
-            f"{row2_p:>{col3_width}} | "
-            f"{row2_emoji:^{col4_width}}"
-        )
-
-        table_text = "\n".join([header, separator, row1, row2])
-
-        username = user_data["username"]
-        stats = user_data["statistics"]
-        pp_text = f"{stats.get('pp')}" if stats.get("pp") else "0"
-        global_rank_text = f"(#{stats.get('global_rank'):,}" if stats.get("global_rank") else "(#????"
-        country_rank_text = (
-            f"  {user_data['country_code']}#{stats.get('country_rank'):,})"
-            if stats.get("country_rank") else f"  {user_data['country_code']}#???)"
-        )
-        rank_text = f"{username}: {pp_text}pp {global_rank_text}{country_rank_text}"
-        country_flag = country_code_to_flag(user_data["country_code"])
-
-        user_id = f"https://osu.ppy.sh/users/{user_data['id']}"
-        user_link = f'<a href="{user_id}">{country_flag} <b>{rank_text}</b></a>'
-
-        return f"{user_link}\n\n<pre>{table_text}</pre>"
+<details>
+- <b>Карт в топ100</b> - количество из топ100 игрока, аимслоп определяется по <a href="{gwb_url}"><b>Таблице 🔗</b></a>
+- <b>PP слопа</b> - сумма скоров, которые вошли в аимслоп список (сохраняется оригинальное взвешивание)
+- Чем больше аимслопа тем хуже эмодзи.
+</details>
+"""

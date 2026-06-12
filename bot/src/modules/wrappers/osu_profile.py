@@ -1,23 +1,15 @@
     
 
 
-from ..utils.text_format import country_code_to_flag, format_osu_date2
+from ..utils.text_format import format_osu_date2
+from ..wrappers.userlink_rich import get_rich_userlink
 
 
 
 def get_profile_text(user_data):
     
-    if isinstance(user_data, dict):                
-        username = user_data["username"]
-        stats = user_data["statistics"]
-        pp_text = f"{stats.get('pp')}" if stats.get("pp") else "0"
-        global_rank_text = f"(#{stats.get('global_rank'):,}" if stats.get("global_rank") else "(#????"
-        country_rank_text = (
-            f"  {user_data['country_code']}#{stats.get('country_rank'):,})"
-            if stats.get("country_rank") else f"  {user_data['country_code']}#???)"
-        )
-        rank_text = f"{username}: {pp_text}pp {global_rank_text}{country_rank_text}"
-        country_flag = country_code_to_flag(user_data["country_code"])
+    if isinstance(user_data, dict):
+        stats = user_data["statistics"]        
 
         hours = user_data['statistics']['play_time'] // 3600
         plays = stats.get('play_count') if stats.get('play_count') else "0"                
@@ -44,18 +36,25 @@ def get_profile_text(user_data):
             peak_rank = 0           
             peak_date = '-'
 
-        joined = format_osu_date2(user_data['join_date'], "%Y-%m-%d %H:%M:%S")
+        joined = format_osu_date2(user_data['join_date'], "%Y-%m-%d %H:%M:%S", True, "ru")
 
-        user_id = f"https://osu.ppy.sh/users/{user_data['id']}"
-        user_link = f'<a href="{user_id}">{country_flag} <b>{rank_text}</b></a>'
     else:
         return None             
     
-    return (
-        f"{user_link}\n\n"
-        f"Accuracy: <code> {accuracy:.2f}%</code>  •  Level:<code> {level}</code>\n"
-        f"Playcount: <code> {plays:,}</code>   (<code>{hours} hrs</code>)\n"
-        f"Medals: <code> {medals} </code> •  Team: {team_link}\n"
-        f"Peak rank: <code> #{peak_rank:,}</code>   {peak_date}\n\n"
-        f"⦿ Joined {joined}\n\n"
-    ) 
+    return f"""
+{get_rich_userlink(user_data)}
+
+<tg-collage>
+  <img src="{user_data['cover_url']}"/>
+</tg-collage>
+
+- ### Макс. рейтинг: <code> #{peak_rank:,}   {peak_date}</code>
+</hr>
+- ### Игр: <code> {plays:,}</code>   (<code>{hours} ч.</code>)
+</hr>
+- ### Точность: <code> {accuracy:.2f}%</code> •<code>  </code>Уровень:<code> {level}</code>
+</hr>
+- ### Медалей: <code> {medals} </code> •<code>  </code>Команда: {team_link}
+</hr>
+- Зарегистрирован {joined}
+"""

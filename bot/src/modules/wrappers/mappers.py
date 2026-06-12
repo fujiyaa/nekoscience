@@ -1,7 +1,8 @@
     
 
 
-from ..utils.text_format import country_code_to_flag
+from .userlink_rich import get_rich_userlink
+
 from collections import defaultdict
 
 
@@ -30,7 +31,7 @@ def get_mappers_text(user_data, best_pp):
             reverse=True
         )
 
-        top_mappers = sorted_mappers[:10]
+        top_mappers = sorted_mappers[:100]
 
         mapper_width = max(len(mapper) for mapper, _ in top_mappers) if top_mappers else 0
         pp_width = max(len(f"{data['pp_sum']:.2f}") for _, data in top_mappers) if top_mappers else 0
@@ -45,20 +46,38 @@ def get_mappers_text(user_data, best_pp):
                 f"{mapper:<{mapper_width}} | {data['pp_sum']:>{pp_width}.2f} | {data['count']:>{count_width}}"
             )
 
-        table_text = "\n".join(table_lines)
+        top5 = top_mappers[:5]
+        rest = top_mappers[5:]
 
-        username = user_data["username"]
-        stats = user_data["statistics"]
-        pp_text = f"{stats.get('pp')}" if stats.get("pp") else "0"
-        global_rank_text = f"(#{stats.get('global_rank'):,}" if stats.get("global_rank") else "(#????"
-        country_rank_text = (
-            f"  {user_data['country_code']}#{stats.get('country_rank'):,})"
-            if stats.get("country_rank") else f"  {user_data['country_code']}#???)"
+        top5_rows = "\n".join(
+            f"| {mapper} | {data['pp_sum']:.2f} | {data['count']} |"
+            for mapper, data in top5
         )
-        rank_text = f"{username}: {pp_text}pp {global_rank_text}{country_rank_text}"
-        country_flag = country_code_to_flag(user_data["country_code"])
 
-        user_id = f"https://osu.ppy.sh/users/{user_data['id']}"
-        user_link = f'<a href="{user_id}">{country_flag} <b>{rank_text}</b></a>'
+        rest_rows = "\n".join(
+            f"| {mapper} | {data['pp_sum']:.2f} | {data['count']} |"
+            for mapper, data in rest
+        )
+        table_title ="Маппер | PP | кол-во в топ100 |"
+        details = ""
+        if rest:
+            details = f"""
+<details>
+<summary>...ещё {len(rest)}</summary>
 
-        return f"{user_link}\n\n<pre>{table_text}</pre>"
+{table_title}
+|:-------|---:|--:|
+{rest_rows}
+
+</details>
+"""
+
+        return f"""
+{get_rich_userlink(user_data)}
+
+{table_title}
+|:-------|---:|--:|
+{top5_rows}
+
+{details}
+"""

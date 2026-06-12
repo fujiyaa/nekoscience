@@ -7,6 +7,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from .....actions.context import set_message_context
+from .....actions.rich import edit_rich_query, edit_rich_message
 from .....external.osu_api import get_user_profile, get_top_100_scores
 from .....actions.messages import safe_edit_query
 from .....wrappers.osu_profile import get_profile_text
@@ -88,12 +89,18 @@ async def send_message(
             )
             return
     
-        bot_msg = await context.bot.edit_message_text(
-            chat_id=update.effective_chat.id,
+        # bot_msg = await context.bot.edit_message_text(
+        #     chat_id=update.effective_chat.id,
+        #     message_id=temp_id,
+        #     text=text,
+        #     parse_mode=parse_mode,
+        #     disable_web_page_preview=True
+        # )
+
+        bot_msg = await edit_rich_message(
+            update,
             message_id=temp_id,
-            text=text,
-            parse_mode=parse_mode,
-            disable_web_page_preview=True
+            markdown=text
         )
 
         if bot_msg:
@@ -128,13 +135,18 @@ async def send_query(
             parse_mode="Markdown"
         )
         return
-
-    bot_msg = await safe_edit_query(
+    
+    bot_msg = await edit_rich_query(
         query,
-        text=text,
-        parse_mode=parse_mode,
-        disable_web_page_preview=True,
+        markdown=text
     )
+
+    # bot_msg = await safe_edit_query(
+    #     query,
+    #     text=text,
+    #     parse_mode=parse_mode,
+    #     disable_web_page_preview=True,
+    # )
 
     if bot_msg:
         set_message_context(

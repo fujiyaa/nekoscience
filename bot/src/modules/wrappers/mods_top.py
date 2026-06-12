@@ -1,69 +1,93 @@
 
 
 
-from collections import Counter, defaultdict
+from collections import Counter
 
-from ..utils.text_format import format_blocks_percent, format_blocks_pp, country_code_to_flag
+from .userlink_rich import get_rich_userlink
 from ..utils.osu_conversions import format_mods
 
 
 
-def get_mods_top(user_data, scores):   
+def get_mods_top(user_data, scores):
+
+    if not isinstance(scores, list) or not scores:
+        return None
+
+    mod_counter = Counter()
+    combo_counter = Counter()
+    combo_pp_weighted_sum = Counter()
+
+    for score in scores:
+        mods = score.get("mods", [])
+        combo = format_mods(mods)
+
+        if mods:
+            for m in mods:
+                mod_counter[m] += 1
+        else:
+            mod_counter["NM"] += 1
+
+        combo_counter[combo] += 1
+
+        pp = score.get("pp", 0.0) or 0.0
+        weight = score.get("weight_percent", 0.0) or 0.0
+
+        combo_pp_weighted_sum[combo] += pp * (weight / 100)
+
+    total = len(scores)
+
+    mod_table = pair_table(mod_counter, total, True, "Мод", "%")
+    combo_table = pair_table(combo_counter, total, True, "Комбинация", "%")
+    profit_table = pair_table(combo_pp_weighted_sum, None, False, "Комбинация", "PP")
+
+    return f"""
+{get_rich_userlink(user_data)}
+
+<details open><summary>⦿ Любимые моды в топ100</summary>
+{mod_table}
+</details>
+<details><summary>🔀 Любимые комбинации</summary>
+{combo_table}
+</details>
+<details><summary>💰 Профит комбинации (pp)</summary>
+{profit_table}
+</details>"""
     
-    if isinstance(scores, list) and scores:
-        mod_counter = Counter()
-        combo_counter = Counter()
-        # combo_pp_sum = defaultdict(float)
-        combo_pp_weighted_sum = defaultdict(float)
+def pair_table(counter, total=None, is_percent=True, title_left="Mod", title_right="Usage"):
+    items = list(counter.most_common())
 
-        for score in scores:
-            mods = score.get("mods", [])
-            combo = format_mods(mods)
+    mid = (len(items) + 1) // 2
+    left_col = items[:mid]
+    right_col = items[mid:]
 
-            if mods:
-                for m in mods:
-                    mod_counter[m] += 1
-            else:
-                mod_counter["NM"] += 1
+    def fmt(item):
+        key, val = item
 
-            combo_counter[combo] += 1
+        if is_percent:
+            val = (val / total * 100) if total else 0
+            return f"{key} {val:.1f}%"
+        else:
+            return f"{key} {float(val):.1f}"
 
-            pp_value = score.get("pp", 0.0) or 0.0
-            weight_percent = score.get("weight_percent", 0.0) or 0.0
+    def split(cell):
+        parts = cell.rsplit(" ", 1)
+        if len(parts) == 2:
+            return parts[0], parts[1]
+        return cell, "-"
 
-            # combo_pp_sum[combo] += pp_value
-            combo_pp_weighted_sum[combo] += pp_value * (weight_percent / 100)
+    rows = []
 
-        total_scores = len(scores)
+    for i in range(len(left_col)):
+        left = fmt(left_col[i])
+        right = fmt(right_col[i]) if i < len(right_col) else "-"
 
-        fav_mods_str = format_blocks_percent(mod_counter, total_scores, per_row=4)
-        fav_combos_str = format_blocks_percent(combo_counter, total_scores, per_row=3)
-        # profit_combos_str = format_blocks_pp(combo_pp_sum, per_row=3)
-        weighted_combos_str = format_blocks_pp(combo_pp_weighted_sum, per_row=3)
+        l_mod, l_val = split(left)
+        r_mod, r_val = split(right)
 
-        username = user_data["username"]                
-        stats = user_data["statistics"]
+        rows.append(f"| {l_mod} | {l_val} | {r_mod} | {r_val} |")
 
-        pp_text = f"{stats.get('pp')}" if stats.get("pp") else "0"
-        global_rank_text = f"(#{stats.get('global_rank'):,}" if stats.get("global_rank") else "(#????"
-        country_rank_text = (
-            f"  {user_data['country_code']}#{stats.get('country_rank'):,})"
-            if stats.get("country_rank") else f"  {user_data['country_code']}#???)"
-        )
-
-        rank_text = f"{username}: {pp_text}pp {global_rank_text}{country_rank_text}"
-        country_flag = country_code_to_flag(user_data["country_code"])
-
-        user_id = f"https://osu.ppy.sh/users/{user_data['id']}"
-        user_link = f'<a href="{user_id}">{country_flag} <b>{rank_text}</b></a>'                
-        
-        text = (
-            f"{user_link}\n\n"
-            "⦿ <b><u>Top100 mods:</u></b>\n\n"
-            f"<b>Favourite mods</b>\n{fav_mods_str}\n\n"
-            f"<b>Favourite mod combinations</b>\n{fav_combos_str}\n\n"
-            # f"<b>Profitable mod combinations (pp)</b>\n{profit_combos_str}\n\n"
-            f"<b>Profitable mod combinations (pp)</b>\n{weighted_combos_str}"
-        )
-
-        return text
+    return "\n".join([
+        f"| {title_left} | {title_right} | {title_left} | {title_right} |",
+        "|:--|:-:|:--|:-:|",
+        *rows
+    ])

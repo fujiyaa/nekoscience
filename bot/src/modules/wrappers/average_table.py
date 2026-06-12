@@ -5,53 +5,63 @@ from ..systems.translations import DEFAULT_SCORES_PROP as SP
 
 
 
-def get_average_table(table_data, lang):
+def get_average_table(table_data, lang, split_index=None):
     formatted_table_data = {}
+
     for key, values in table_data.items():
         formatted_values = []
-        for v in values:
+
+        for v in values:     
             if isinstance(v, str):
-                formatted_values.append(v)
-            elif key == "Length":
-                formatted_values.append(_format_time(v))
+                formatted_values.append(v)            
             elif isinstance(v, float):
                 formatted_values.append(f"{v:.2f}")
             else:
                 formatted_values.append(str(v))
+
         formatted_table_data[key] = formatted_values
 
     headers = [
-        "", 
-        SP.get('Minimum')[lang], 
-        SP.get('Average')[lang], 
+        SP.get('Minimum')[lang],
+        SP.get('Average')[lang],
         SP.get('Maximum')[lang]
     ]
-    rows = [[key, *values] for key, values in formatted_table_data.items()]
 
-    col_widths = [
-        max(len(str(headers[i])), max(len(str(row[i])) for row in rows))
-        for i in range(len(headers))
-    ]
+    items = list(formatted_table_data.items())
 
-    def fmt_row(row):
-        return " | ".join(
-            str(row[i]).ljust(col_widths[i]) if i == 0 else str(row[i]).center(col_widths[i])
-            for i in range(len(row))
-        )
+    if split_index is None:
+        split_index = len(items)
 
-    header_line = fmt_row(headers)
-    sep_line = "-+-".join("-" * w for w in col_widths)
-    table_lines = [header_line, sep_line] + [fmt_row(row) for row in rows]
+    core_items = items[:split_index]
+    stat_items = items[split_index:]
 
-    table = "\n".join(table_lines)
+    def build_table(rows_items, floating_header=False):
+        if not rows_items:
+            return ""
 
-    return table
+        rows = [[key, *values] for key, values in rows_items]
 
-def _format_time(seconds):
-    if isinstance(seconds, str):
-        return seconds
-    m, s = divmod(int(round(seconds)), 60)
-    h, m = divmod(m, 60)
-    if h > 0:
-        return f"{h}:{m:02d}:{s:02d}"
-    return f"{m}:{s:02d}"
+        header = f"| | {headers[0]} | {headers[1]} | {headers[2]} |"
+        align = "|:--|:-:|:-:|:-:|"
+
+        lines = []
+
+        if floating_header:
+            # первая строка как “разделитель секции”
+            first = rows[0]
+            lines.append(f"| {first[0]} | {first[1]} | {first[2]} | {first[3]} |")
+            lines.append(align)
+            rows = rows[1:]
+        else:
+            lines.append(header)
+            lines.append(align)
+
+        for row in rows:
+            lines.append(f"| {row[0]} | {row[1]} | {row[2]} | {row[3]} |")
+
+        return "\n".join(lines)
+
+    core_table = build_table(core_items)
+    stat_table = build_table(stat_items, floating_header=True)
+
+    return core_table, stat_table

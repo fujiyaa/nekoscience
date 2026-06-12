@@ -1,4 +1,8 @@
-from ..utils.text_format import country_code_to_flag
+
+
+
+from .userlink_rich import get_rich_userlink
+
 
 
 def get_nish_text(user_data, best_pp):
@@ -189,119 +193,128 @@ def get_nish_text(user_data, best_pp):
     row2_emoji = percent_emoji(avg_map_niche)
     row3_emoji = percent_emoji(total_niche)
 
-    col1_header = "Нишевость"
-    col2_header = "N"
-    col3_header = "чек"
+    nish_rank = f"<i>Результат:</i>\n<code>{niche_title(niche_pp_percent, avg_map_niche, total_niche)}</code>"
 
-    row1_label = "нишевых pp"
-    row1_n = f"{niche_weighted_pp:.0f}pp"
+    return f"""
+{get_rich_userlink(user_data)}
 
-    row2_label = "средняя нишевость"
-    row2_n = f"{avg_map_niche/100:.2f}"
+| Нишевость | % | ✓ |
+|:--|--:|:-:|
+| нишевых РР | {niche_weighted_pp:.0f}pp | {row1_emoji} |
+| средняя нишевость | {avg_map_niche/100:.2f} | {row2_emoji} |
+| итого нишевости | {total_niche:.1f} | {row3_emoji} |
 
-    row3_label = "всего нишевости"
-    row3_n = f"{total_niche:.1f}"
+<details><summary>{nish_rank}</summary>
 
-    col1_width = max(
-        len(col1_header),
-        len(row1_label),
-        len(row2_label),
-        len(row3_label),
-    )
+### мяу... как эта штука вообще работает? (=ω=)
 
-    col2_width = max(
-        len(col2_header),
-        len(row1_n),
-        len(row2_n),
-        len(row3_n),
-    )
+ну смотри!!
 
-    col3_width = max(
-        len(col3_header),
-        len(row1_emoji),
-        len(row2_emoji),
-        len(row3_emoji),
-    )
+я залезла в твой топ-100 и начала проверять, насколько странные карты ты себе понабивал... потому что некоторые люди играют обычный фарм, а некоторые находят карту, которую последний раз открывали ещё при динозаврах... >_<
 
-    header = (
-        f"{col1_header:<{col1_width}} | "
-        f"{col2_header:^{col2_width}} | "
-        f"{col3_header:^{col3_width}}"
-    )
+---
 
-    separator = (
-        f"{'-'*col1_width}-+-"
-        f"{'-'*col2_width}-+-"
-        f"{'-'*col3_width}"
-    )
+### 🍞 шаг 1. насколько карта "подвальная"
 
-    row1 = (
-        f"{row1_label:<{col1_width}} | "
-        f"{row1_n:<{col2_width}} | "
-        f"{row1_emoji:^{col3_width}}"
-    )
+у каждой карты есть примерное количество прохождений.
 
-    row2 = (
-        f"{row2_label:<{col1_width}} | "
-        f"{row2_n:<{col2_width}} | "
-        f"{row2_emoji:^{col3_width}}"
-    )
+* если карту почти никто не трогал, то она получает **максимум нишевости!!**
+* если её играли вообще все кому не лень, то она считается обычной метовой картой и почти ничего не даёт.
 
-    final_separator = separator
+короче...
 
-    row3 = (
-        f"{row3_label:<{col1_width}} | "
-        f"{row3_n:<{col2_width}} | "
-        f"{row3_emoji:^{col3_width}}"
-    )
+> меньше людей играло → больше ниша ↑
 
-    table_text = "\n".join([
-        header,
-        separator,
-        row1,
-        row2,
-        final_separator,
-        row3,
-    ])
+---
 
-    username = user_data["username"]
-    stats = user_data["statistics"]
+### 💸 шаг 2. сколько PP эта ниша реально приносит
 
-    pp_text = f"{stats.get('pp')}" if stats.get("pp") else "0"
+потом я смотрю не просто на карты...
 
-    global_rank_text = (
-        f"(#{stats.get('global_rank'):,}"
-        if stats.get("global_rank")
-        else "(#????"
-    )
+а на **PP**, который ты с них получил.
 
-    country_rank_text = (
-        f"  {user_data['country_code']}#{stats.get('country_rank'):,})"
-        if stats.get("country_rank")
-        else f"  {user_data['country_code']}#???)"
-    )
+если твой топ держится на странных картах, которые никто не знает...
 
-    rank_text = (
-        f"{username}: "
-        f"{pp_text}pp "
-        f"{global_rank_text}"
-        f"{country_rank_text}"
-    )
+то показатель начинает довольно мурлыкать.
 
-    country_flag = country_code_to_flag(user_data["country_code"])
+если же почти весь PP приехал с очередных Sotarks, Reform, Log Off Now и прочих жителей первой страницы osu!direct...
 
-    user_id = f"https://osu.ppy.sh/users/{user_data['id']}"
+ну... мяу...
 
-    user_link = (
-        f'<a href="{user_id}">'
-        f'{country_flag} <b>{rank_text}</b>'
-        f"</a>"
-    )
+---
 
-    niche_rank = f"<i>Результат:</i>\n<code>{niche_title(niche_pp_percent, avg_map_niche, total_niche)}</code>"
+### 📚 шаг 3. средняя странность топа
 
-    return (
-        f"{user_link}\n\n"
-        f"<pre>{table_text}</pre>\n\n"
-        f"{niche_rank}"
-    )
+дальше считается просто средняя нишевость всех карт.
+
+без разницы, сколько PP они дают.
+
+это уже показывает не силу профиля, а насколько ты вообще любишь копаться в архивах вместо того, чтобы жать Install на очередной Recommended Difficulty.
+
+---
+
+### 🧪 шаг 4. итог
+
+в конце я смешиваю:
+
+* сколько PP построено на нишевых картах;
+* насколько нишевые сами карты.
+
+и получается общий показатель.
+
+поэтому невозможно стать великим нишевиком, случайно поставив одну древнюю карту на 17pp.
+
+и невозможно выглядеть метовым только потому, что несколько популярных карт попали в топ.
+
+---
+
+### 🏷 а титул??
+
+он собирается из **трёх кусочков**, как конструктор.
+
+**первая часть** показывает, насколько нишевый твой PP.
+
+**вторая** говорит, насколько странный сам пул карт.
+
+**третья** определяет итоговую сущность твоего профиля.
+
+поэтому можно получить что-нибудь вроде...
+
+> 📚 Библиотечный глубинно нишевый архивист
+
+или
+
+> ⚡ Эффективный поверхностный юзер
+
+или вообще
+
+> 🕳 ... аномально нишевый шина
+
+да... последнее тоже существует.
+
+не спрашивай.
+
+---
+
+### ⚠️ важное мяу
+
+нишометр **не измеряет скилл**.
+
+он вообще не говорит, хороший ты игрок или нет.
+
+он просто отвечает на очень важный вопрос человечества:
+
+> **"ты фармила... или ты опять откопал карту с 14 фаворитами и 300к плейкаунта?"**
+
+и да...
+
+если итог получился очень высоким...
+
+поздравляю.
+
+ты официально живёшь где-то глубоко в osu!forums и, вероятно, знаешь больше никнеймов забытых мапперов, чем имён собственных родственников. =＾● ⋏ ●＾=
+
+(помогите)
+</details>
+"""
+

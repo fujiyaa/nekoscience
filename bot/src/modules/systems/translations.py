@@ -245,6 +245,10 @@ TRANSLATIONS = {
     "settings_allow_direct": {
         "en": "Allow private messages",
         "ru": "Личные сообщения от бота"
+    },
+    "...5 more": {
+        "en": "...5 more",
+        "ru": "...ещё 5"
     }
 }
 

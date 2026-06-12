@@ -3,7 +3,7 @@
 
 import aiohttp
 
-from telegram import Update
+from telegram import Update, CallbackQuery
 
 from config import TOKEN
 
@@ -92,6 +92,34 @@ async def edit_rich_message(
     payload = {
         "chat_id": update.effective_chat.id,
         "message_id": message_id,
+        "rich_message": {
+            "markdown": markdown
+        }
+    }
+
+    if reply_markup:
+        payload["reply_markup"] = reply_markup.to_dict()
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, json=payload) as resp:
+            data = await resp.json()
+
+            if not data.get("ok"):
+                raise Exception(f"editRichMessage failed: {data}")
+
+            return data
+        
+async def edit_rich_query(
+    query: CallbackQuery,
+    markdown: str,
+    reply_markup=None,    
+    # message_thread_id: int | None = None,
+):
+    url = f"https://api.telegram.org/bot{TOKEN}/editMessageText"
+
+    payload = {
+        "chat_id": query.message.chat.id,
+        "message_id": query.message.message_id,
         "rich_message": {
             "markdown": markdown
         }
