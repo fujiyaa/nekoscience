@@ -229,7 +229,7 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
 |:-:|:-:|:-:|
 |{text_format.seconds_to_hhmmss(length)}|{bpm:g}|{max_hits}|
 
-<aside><a href="{map_url}">Mapset (ссылка)</a> by {mapper} • {status.capitalize()} <a href="https://myangelfujiya.ru/weakness/direct?id={map_id}">🔗</a></aside>
+<aside><a href="{map_url}">{status.capitalize()} сет от {mapper} 🔗</a> • <a href="https://myangelfujiya.ru/weakness/direct?id={map_id}">direct🔗</a></aside>
 </details>
 
 <h3> <a href="{score_url}">{rank}</a> {mods_text} 〰️ <tg-time unix="{unix_time}" format="r">{score_date}</tg-time></h3>
@@ -248,6 +248,7 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
 |:------:|:-----:|
 | {legacy_total_score:,} | {lazer_total_score:,} |
 
+<aside>{score_url}</aside>
 </details>"""
 
     img_path = None
