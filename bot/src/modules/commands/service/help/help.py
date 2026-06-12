@@ -243,9 +243,10 @@ MP3 из карты
 </details>
 """
 
-            await send_rich_message(
+            await send_rich_message(                 
                 chat_id=update.effective_chat.id,
-                markdown=markdown
+                markdown=markdown,
+                message_thread_id=getattr(update.message, "message_thread_id", None)
             )
         
     except Exception as e:

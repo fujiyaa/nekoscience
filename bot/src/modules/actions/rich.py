@@ -9,8 +9,13 @@ from config import TOKEN
 
 
 
-async def send_rich_message(chat_id: int, markdown: str):
-    url = f"https://api.telegram.org/bot{TOKEN}/sendRichMessage"
+async def send_rich_message(
+    chat_id: int, 
+    markdown: str,
+    message_thread_id: int | None = None,
+    
+):
+    url = f"https://api.telegram.org/bot{TOKEN}/sendRichMessage"   
 
     payload = {
         "chat_id": chat_id,
@@ -18,6 +23,9 @@ async def send_rich_message(chat_id: int, markdown: str):
             "markdown": markdown
         }
     }
+
+    if message_thread_id is not None:
+        payload["message_thread_id"] = message_thread_id
 
     async with aiohttp.ClientSession() as session:
         async with session.post(url, json=payload) as resp:
@@ -35,6 +43,7 @@ async def rich_reply(
     disable_notification=False,
     protect_content=False,
     message_effect_id=None,
+    message_thread_id: int | None = None,
 ):
     url = f"https://api.telegram.org/bot{TOKEN}/sendRichMessage"
 
@@ -44,6 +53,9 @@ async def rich_reply(
             "markdown": markdown
         }
     }
+
+    if message_thread_id is not None:
+        payload["message_thread_id"] = message_thread_id
 
     if reply_markup:
         payload["reply_markup"] = reply_markup.to_dict()
@@ -72,7 +84,8 @@ async def edit_rich_message(
     update: Update,
     message_id: int,
     markdown: str,
-    reply_markup=None,
+    reply_markup=None,    
+    # message_thread_id: int | None = None,
 ):
     url = f"https://api.telegram.org/bot{TOKEN}/editMessageText"
 

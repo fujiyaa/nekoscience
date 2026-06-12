@@ -17,7 +17,7 @@ def _extract_ids(obj: Update | Message | Dict, reply: bool = False) -> Dict[str,
         try:                           
             return {
                 "chat_id": obj['result']['chat']['id'],
-                "topic_id": None,
+                "topic_id": obj["result"].get("message_thread_id"),
                 "message_id": obj["result"]["message_id"],
                 "is_supergroup": obj['result']['chat']['type'].endswith("group")
             }

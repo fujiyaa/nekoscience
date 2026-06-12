@@ -59,8 +59,8 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
     base_od = lazer_data.get("DA_values", {}).get("overall_difficulty",base_values["od"])
     base_hp = lazer_data.get("DA_values", {}).get("drain_rate", base_values["hp"])
 
-    map_ar = map.get("cs", {}) or 0
-    map_cs = map.get("ar", {}) or 0
+    map_cs = map.get("cs", {}) or 0
+    map_ar = map.get("ar", {}) or 0
     map_od = map.get("od", {}) or 0
     map_hp = map.get("hp", {}) or 0
     
@@ -196,10 +196,20 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
     hit300 = osu_score.get("count_300") or "<code>0</code>"
     hit100 = osu_score.get("count_100") or "<code>0</code>"
     hit50 = osu_score.get("count_50") or "<code>0</code>"
-    hit_miss = osu_score.get('count_miss') or "<code>0</code>"
+    hit_miss = osu_score.get('count_miss') or 0
+    max_hits = osu_statistics_max['great']
     # length_text = text_format.seconds_to_hhmmss(length)
 
+    if hit_miss == 0:
+        hit_miss = "<code>0✖️</code>"
+    else:
+        hit_miss = f"{hit_miss}❌"
+
     # extra_caption = await get_score_caption(cached_entry)
+    lazer_total_score = lazer_data.get("total_score")
+    legacy_total_score = osu_score.get("score_legacy")
+
+    sep = "<code>..</code>"
 
     caption = f"""   
 <h3><a href="https://osu.ppy.sh/users/{osu_score.get("user_id")}">{country_flag} <b>{username}: </b></a>{pp_profile_text_alt}pp <sup>{global_rank_text_alt}</sup><h2>
@@ -211,25 +221,34 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
 
 <details><summary>{map_text}</summary>
 
-| Длина | BPM |
-|:-:|:-:|
-|{text_format.seconds_to_hhmmss(length)}|{bpm:g}|
-
 | CS | AR | OD | HP |
 |:-:|:-:|:-:|:-:|
 |{map_cs:.1f}|{map_ar:.1f}|{map_od:.1f}|{map_hp:.1f}|
+
+| Длина | BPM | Объекты |
+|:-:|:-:|:-:|
+|{text_format.seconds_to_hhmmss(length)}|{bpm:g}|{max_hits}|
+
 <aside><a href="{map_url}">Mapset (ссылка)</a> by {mapper} • {status.capitalize()} <a href="https://myangelfujiya.ru/weakness/direct?id={map_id}">🔗</a></aside>
 </details>
 
-<h2> <a href="{score_url}">{rank}</a> {mods_text} 〰️ <tg-time unix="{unix_time}" format="r">{score_date}</tg-time>, {status.capitalize()}</h2>
+<h3> <a href="{score_url}">{rank}</a> {mods_text} 〰️ <tg-time unix="{unix_time}" format="r">{score_date}</tg-time></h3>
 
 |Точность|PP|Комбо| 
 |:-:|:-:|:-:|
 |{accuracy_display}|{pp_text_alt}|{combo_text}|
 
+<details><summary>{sep} {hit300} {sep} {hit100} {sep} {hit50} {sep} {hit_miss} -  {status.capitalize()}</summary>
+
 |🔵 {hit300}|🟢 {hit100}|🟡 {hit50}|❌ {hit_miss}|
 |:-:|:-:|:-:|:-:|
-|{cs:g}<sub>CS</sub>|{ar:g}<sub>AR</sub>|{od:g}<sub>OD</sub>|<sub><code>{bpm:g} BPM</code></sub>|"""
+|{cs:g}<sub>CS</sub>|{ar:g}<sub>AR</sub>|{od:g}<sub>OD</sub>|<sub><code>{bpm:g} BPM</code></sub>|
+
+| Score (стд) | Score (лазер) |
+|:------:|:-----:|
+| {legacy_total_score:,} | {lazer_total_score:,} |
+
+</details>"""
 
     img_path = None
     if image_todo_flag:
@@ -300,7 +319,8 @@ async def send_score(
                 return await rich_reply(
                     update,
                     caption,
-                    reply_markup=reply_markup
+                    reply_markup=reply_markup,
+                    message_thread_id=getattr(update.message, "message_thread_id", None)
                 )
     except Exception:
         traceback.print_exc()
