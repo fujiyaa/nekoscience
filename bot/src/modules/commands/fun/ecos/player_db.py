@@ -101,7 +101,7 @@ def ensure_user(user_id: int, user_name: str):
     conn.close()
 
 
-def get_top_players(limit=10):
+def get_top_players(limit=50):
     conn = get_conn()
     cur = conn.cursor()
 
@@ -123,6 +123,49 @@ def get_top_players(limit=10):
     conn.close()
 
     return rows[:20]
+
+def get_top_players_by_ids(telegram_ids: list[int]):
+    if not telegram_ids:
+        return {}
+
+    conn = get_conn()
+    cur = conn.cursor()
+
+    placeholders = ",".join(["?"] * len(telegram_ids))
+
+    cur.execute(f"""
+        SELECT
+            telegram_name,
+            fish_level,
+            mine_level,
+            forest_level,
+            battle_level,
+            telegram_id,
+            (fish_level + mine_level + forest_level + battle_level) as total_level
+        FROM users
+        WHERE telegram_id IN ({placeholders})
+        ORDER BY total_level DESC
+    """, telegram_ids)
+
+    rows = cur.fetchall()
+    conn.close()
+
+    result = {}
+
+    for place, row in enumerate(rows, start=1):
+        telegram_name, fish, mine, forest, battle, tg_id, total = row
+
+        result[tg_id] = {
+            "place": place,
+            "telegram_name": telegram_name,
+            "total_level": total,
+            "fish_level": fish,
+            "mine_level": mine,
+            "forest_level": forest,
+            "battle_level": battle,
+        }
+
+    return result
 
 async def show_top_players(query, owner_id):
 

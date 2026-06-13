@@ -5,9 +5,10 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 profile = "👤 Профиль"
 ranks = "📊 Ранки"
-plays = "🎮 Игры"
+plays = "📉 Динамичность"
 score = "🧮 Очки"
-social = "👥 Социальная хрень"
+social = "👥 Социальное"
+top100 = "из топ 100.."
 botgames = "✴️ Игры бота"
 
 def get_keyboard(keyboard_type: str, user_id: int):
@@ -16,20 +17,23 @@ def get_keyboard(keyboard_type: str, user_id: int):
             [
                 InlineKeyboardButton(profile, 
                 callback_data=f"leaderboard_chat_group_profile:{user_id}"),
-
-                InlineKeyboardButton(ranks, 
-                callback_data=f"leaderboard_chat_group_ranks:{user_id}"),
+                
+                InlineKeyboardButton(social, 
+                callback_data=f"leaderboard_chat_group_social:{user_id}"),
             ],
             [
-                InlineKeyboardButton(plays, 
-                callback_data=f"leaderboard_chat_group_plays:{user_id}"),          
+                InlineKeyboardButton(ranks, 
+                callback_data=f"leaderboard_chat_group_ranks:{user_id}"),          
 
                 InlineKeyboardButton(score, 
                 callback_data=f"leaderboard_chat_group_score:{user_id}"),
             ],
-            [
-                InlineKeyboardButton(social, 
-                callback_data=f"leaderboard_chat_group_social:{user_id}")
+            [                
+                InlineKeyboardButton(plays, 
+                callback_data=f"leaderboard_chat_group_plays:{user_id}"),
+
+                InlineKeyboardButton(top100, 
+                callback_data=f"leaderboard_chat_group_top100:{user_id}")
             ],
             [
                 InlineKeyboardButton(botgames, 

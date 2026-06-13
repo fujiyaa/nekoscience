@@ -41,6 +41,27 @@ async def get_skills_by_scores(scores: dict = {}) -> dict | bool:
     
     else:
         return False
+    
+async def get_skills_by_scores_v2(scores: dict = {}) -> dict | bool:
+    """
+    skills для топчата
+
+    """
+    try:
+        payload = await _scores_to_payload(scores)
+
+        if payload:
+            payload = {
+                "mode": "Osu",
+                "scores": payload
+            }
+            
+        skills = await get_pp_parts_neko_api(payload)
+
+        return skills["acc"], skills["aim"], skills["speed"]
+
+    except:
+        return 0, 0, 0
 
 async def _get_beatmaps(scores: dict = {}) -> bool:
 

@@ -1,3 +1,48 @@
+
+
+
+from datetime import datetime, timezone, timedelta
+
+
+
+def get_fire_value(best_pp: dict, days = 90):
+    
+    now = datetime.now(timezone.utc)    
+    month_ago = now - timedelta(days=days)
+
+    total_pp = 0.0
+    count = 0
+    pp_list = []
+    
+    for score in best_pp:
+        date_str = score.get('time')
+        if not date_str:
+            continue
+
+        try:
+            created_at = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+        except:
+            continue
+
+        if created_at < month_ago:
+            continue
+
+        pp = score.get("pp")
+
+        if isinstance(pp, (int, float)):
+            total_pp += pp
+            count += 1
+            pp_list.append(pp)
+
+    pp_list.sort(reverse=True)
+
+    weighted_pp = 0.0
+    for i, pp in enumerate(pp_list):
+        weighted_pp += pp * (0.95 ** i)
+
+    return weighted_pp
+
+
 def get_fire_text(
     period_text,
     days,

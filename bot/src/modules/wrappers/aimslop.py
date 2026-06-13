@@ -7,8 +7,8 @@ from config import AIMSLOP_IDS
 
 
 
-def get_aimslop_text(user_data, best_pp):
-    
+def get_aimslop_values(best_pp):
+
     if isinstance(best_pp, list) and best_pp:
               
         total = len(best_pp)
@@ -35,26 +35,33 @@ def get_aimslop_text(user_data, best_pp):
             if total_weighted_pp else 0
         )
 
-        def percent_emoji(p):
-            if p < 1:
-                return '✅'
-            elif p < 20:
-                return '🟢'
-            elif p < 30:
-                return '🟡'
-            elif p < 50:
-                return '🟠'
-            elif p < 70:
-                return '❗️'
-            else:
-                return '‼️'
+        return aimslop_weighted_percent, aimslop_percent, counter, total, aimslop_weighted_pp
 
-        row1_emoji = percent_emoji(aimslop_percent)
-        row2_emoji = percent_emoji(aimslop_weighted_percent)
 
-        gwb_url = "https://docs.google.com/spreadsheets/d/1k-l8SVROL6bnL035mmBAOnTwLWxkw7GWUGDIEFHgXzE/edit?gid=1661256767#gid=1661256767"
+def get_aimslop_text(user_data, best_pp):
+    
+    aimslop_weighted_percent, aimslop_percent, counter, total, aimslop_weighted_pp = get_aimslop_values(best_pp)
 
-        return f"""
+    def percent_emoji(p):
+        if p < 1:
+            return '✅'
+        elif p < 20:
+            return '🟢'
+        elif p < 30:
+            return '🟡'
+        elif p < 50:
+            return '🟠'
+        elif p < 70:
+            return '❗️'
+        else:
+            return '‼️'
+
+    row1_emoji = percent_emoji(aimslop_percent)
+    row2_emoji = percent_emoji(aimslop_weighted_percent)
+
+    gwb_url = "https://docs.google.com/spreadsheets/d/1k-l8SVROL6bnL035mmBAOnTwLWxkw7GWUGDIEFHgXzE/edit?gid=1661256767#gid=1661256767"
+
+    return f"""
 {get_rich_userlink(user_data)}
 
 | Аимслоп | N | % | ✓ |

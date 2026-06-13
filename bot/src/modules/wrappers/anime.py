@@ -5,7 +5,7 @@ from .userlink_rich import get_rich_userlink
 
 
 
-def get_anime_text(user_data, best_pp):
+def get_anime_values(best_pp):
     
     if isinstance(best_pp, list) and best_pp:
               
@@ -21,7 +21,13 @@ def get_anime_text(user_data, best_pp):
         anime_percent = (anime_bg_counter / total) * 100 if total else 0
         other_percent = (not_anime_bg_counter / total) * 100 if total else 0
 
-        return f"""
+        return anime_percent, other_percent
+    
+def get_anime_text(user_data, best_pp):
+    
+    anime_percent, other_percent = get_anime_values(best_pp)
+
+    return f"""
 {get_rich_userlink(user_data)}
 
 | Аниме фоны в топ100 | % |

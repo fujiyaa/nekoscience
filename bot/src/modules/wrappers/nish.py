@@ -5,6 +5,67 @@ from .userlink_rich import get_rich_userlink
 
 
 
+# для топчата
+def get_nish_total(best_pp):
+
+    if not (isinstance(best_pp, list) and best_pp):
+        return None
+
+    def niche_score(playcount, low=450_000, high=550_000):
+
+        if not playcount:
+            return 1.0
+
+        if playcount <= low:
+            return 1.0
+
+        if playcount >= high:
+            return 0.0
+        
+        return 1 - ((playcount - low) / (high - low))
+
+    total = len(best_pp)
+
+    niche_weighted_pp = 0.0
+    total_weighted_pp = 0.0
+    niche_sum = 0.0
+
+    niche_cards_count = 0
+
+    for score in best_pp:
+
+        pp = float(score.get("pp", 0))
+        weight_percent = float(score.get("weight_percent", 0))
+        playcount = score.get("mapset_plays") or 0
+
+        niche = niche_score(playcount)
+
+        if niche > 0.5:
+            niche_cards_count += 1
+
+        weighted_pp = pp * (weight_percent / 100)
+
+        total_weighted_pp += weighted_pp
+        niche_weighted_pp += weighted_pp * niche
+        niche_sum += niche
+
+    niche_pp_percent = (
+        (niche_weighted_pp / total_weighted_pp) * 100
+        if total_weighted_pp
+        else 0
+    )
+
+    avg_map_niche = (
+        (niche_sum / total) * 100
+        if total
+        else 0
+    )
+
+    total_niche = (niche_pp_percent + avg_map_niche) / 2
+
+    return total_niche
+
+
 def get_nish_text(user_data, best_pp):
 
     if not (isinstance(best_pp, list) and best_pp):

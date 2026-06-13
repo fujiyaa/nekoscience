@@ -7,7 +7,7 @@ from config import SPEEDSLOP_IDS
 
 
 
-def get_speedslop_text(user_data, best_pp):
+def get_speedslop_values(best_pp):
     
     if isinstance(best_pp, list) and best_pp:
               
@@ -34,27 +34,33 @@ def get_speedslop_text(user_data, best_pp):
             (speedslop_weighted_pp / total_weighted_pp) * 100
             if total_weighted_pp else 0
         )
+        
+        return speedslop_percent, speedslop_weighted_percent, counter, total, speedslop_weighted_pp
+    
+def get_speedslop_text(user_data, best_pp):
+    
+    speedslop_percent, speedslop_weighted_percent, counter, total, speedslop_weighted_pp = get_speedslop_values(best_pp)
 
-        def percent_emoji(p):
-            if p < 1:
-                return '✅'
-            elif p < 20:
-                return '🟢'
-            elif p < 30:
-                return '🟡'
-            elif p < 50:
-                return '🟠'
-            elif p < 70:
-                return '❗️'
-            else:
-                return '‼️'
+    def percent_emoji(p):
+        if p < 1:
+            return '✅'
+        elif p < 20:
+            return '🟢'
+        elif p < 30:
+            return '🟡'
+        elif p < 50:
+            return '🟠'
+        elif p < 70:
+            return '❗️'
+        else:
+            return '‼️'
 
-        row1_emoji = percent_emoji(speedslop_percent)
-        row2_emoji = percent_emoji(speedslop_weighted_percent)
+    row1_emoji = percent_emoji(speedslop_percent)
+    row2_emoji = percent_emoji(speedslop_weighted_percent)
 
-        gwb_url = "https://docs.google.com/spreadsheets/d/1YEbQv9Jpe2ORh4ZHNIZmkeF2fvHku6t2H1LkAUbM06M/edit?gid=1661256767#gid=1661256767"
+    gwb_url = "https://docs.google.com/spreadsheets/d/1YEbQv9Jpe2ORh4ZHNIZmkeF2fvHku6t2H1LkAUbM06M/edit?gid=1661256767#gid=1661256767"
 
-        return f"""
+    return f"""
 {get_rich_userlink(user_data)}
 
 | Аимслоп | N | % | ✓ |

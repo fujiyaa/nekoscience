@@ -1,49 +1,44 @@
 
 
 
-from telegram import Update, MessageEntity
+from telegram import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 
-from .....actions.messages import safe_send_message, safe_edit_query
+from .....actions.rich import edit_rich_query
 
 
 
-async def send(update: Update, stats_batch: dict = None, caption: str = ''):
+async def send(query: CallbackQuery, stats_batch: dict = None, caption: str = ''):
     if not stats_batch:
-        try:
-            await safe_edit_query(
-                update.callback_query, 
-                "Нет данных",
-                parse_mode="HTML"
-            )
-        except:
-            await safe_send_message(
-                update,
-                "Нет данных",
-                parse_mode="HTML"
-            )     
-        return
-    
-    try:
-        def tg_len(text: str) -> int:
-            return len(text.encode("utf-16-le")) // 2
-        
-        entities = [
-            MessageEntity(
-                type="expandable_blockquote",
-                offset=0,                     
-                length=tg_len(caption)    
-            )
-        ]        
-        await safe_edit_query(
-            update.callback_query, 
-            caption,
-            parse_mode="HTML",
-            entities=entities
+                
+        keyboard = [
+            [
+                InlineKeyboardButton("⬅️ Назад",
+                callback_data=f"leaderboard_chat_back:{query.from_user.id}")
+            ]
+        ]
+
+        reply_markup=InlineKeyboardMarkup(keyboard)        
+        text = "### <code>Нет данных</code>"
+
+        await edit_rich_query(
+            query,
+            markdown=text,
+            reply_markup=reply_markup
         )
-    except:
-        await safe_send_message(
-            update,
-            caption,
-            parse_mode="HTML",
-            # reply_markup=pagination
-        )         
+
+        return
+           
+    keyboard = [
+        [
+            InlineKeyboardButton("⬅️ Назад",
+            callback_data=f"leaderboard_chat_back:{query.from_user.id}")
+        ]
+    ]
+
+    reply_markup=InlineKeyboardMarkup(keyboard)
+
+    await edit_rich_query(
+        query,
+        markdown=caption,
+        reply_markup=reply_markup
+    )

@@ -18,9 +18,7 @@ async def _check_member(bot, chat_id, uid):
             return uid, None
 
 async def check_all(bot, chat_id, user_ids):
-    """   
-    Какие тг id есть в группе, из osu_verified 
-    
+    """ 
     :param bot: тг бот
     :param chat_id: id группы
     :param user_ids: список из osu_verified 

@@ -52,7 +52,105 @@ async def get_user_profile(username: str, token: str = None) -> dict | None:
     print('🔻 API request (get_user_profile)')
     async with aiohttp.ClientSession() as session:
         data = await fetch_with_timeout(session, url, headers)
-        return data               
+        return data  
+
+async def get_top_100_scores_batch(
+    user_ids: list[int],
+    limit: int = 100,
+    mode: str = "osu", 
+    plain_addition: bool = True,
+    plain_limit: int = 30,
+) -> dict[int, list[dict] | None]:
+
+    token = await try_request(get_osu_token, retries=3, delay=1)
+
+    headers = {
+        "Authorization": f"Bearer {token}",
+        # "x-api-version": "20240529",
+        # "Accept": "application/json"
+    }
+
+    async with aiohttp.ClientSession() as session:
+        print("🔻 API request (get_top_100_scores_batch)")
+
+        async def fetch_user_scores(user_id: int):
+            try:
+                url = f"https://osu.ppy.sh/api/v2/users/{user_id}/scores/best?mode={mode}&limit={limit}"
+
+                data = await fetch_with_timeout(
+                    session,
+                    url,
+                    headers=headers
+                )
+
+                if not data:
+                    return user_id, None
+               
+                results = []
+                for score in data:
+                    mapper_name = score.get("beatmapset", {}).get("creator", "Unknown")
+                    version = score.get("beatmap", {}).get("version", "")
+                    if "'" in version:
+                        mapper_name = version.split("'", 1)[0].strip()
+                    lazer = True
+                    stable = is_legacy_score(score)
+                    if stable:
+                        lazer = False
+
+                    is_anime_bg = score.get('beatmapset', {}).get('anime_cover', False)
+
+                    results.append({
+                        'beatmap_url': score.get("beatmap", {}).get("url"),
+                        "pp": score.get("pp"),
+                        "weight_percent": score.get("weight", {}).get("percentage"),
+                        "mods": score.get("mods", []),
+                        "mapper": mapper_name,
+                        "OD": score.get('beatmap', {}).get('accuracy'),
+                        "AR": score.get('beatmap', {}).get('ar'),
+                        "CS": score.get('beatmap', {}).get('cs'),
+                        "HP": score.get('beatmap', {}).get('drain'),
+                        "bpm": score.get('beatmap', {}).get('bpm'),                
+                        "length": score.get('beatmap', {}).get('hit_length'),
+                        "stars": score.get('beatmap', {}).get('difficulty_rating'),
+                        "passes": score.get('beatmap', {}).get('passcount'),
+                        "plays": score.get('beatmap', {}).get('playcount'),
+                        "plays": score.get('beatmap', {}).get('playcount'),
+                        "mapset_plays": score.get('beatmapset', {}).get('play_count'),
+                        "accuracy": score.get('accuracy'),
+                        "misses": score.get('statistics', {}).get('count_miss'),
+                        "combo": score.get('max_combo'),
+                        "beatmap_id": score.get('beatmap', {}).get('id'),
+                        "score_stats": score.get('statistics', {}),
+                        "version": score.get('beatmap', {}).get('version'),
+                        "title": score.get('beatmapset', {}).get('title'),
+                        "lazer": lazer,
+                        "rank": score.get('rank', 'D'),
+                        "artist": score.get('beatmapset', {}).get('artist'),
+                        "time": score.get("created_at") or score.get("ended_at"),
+                        "is_anime_bg": is_anime_bg,
+                    })
+
+                if plain_addition:
+                    plain = data[:plain_limit]
+                else:
+                    plain = None
+
+                return user_id, {
+                    "top_100": results,
+                    "plain": plain,
+                }
+
+            except Exception as e:
+                print(f"[top100 batch error] user_id={user_id}: {e}")
+                return user_id, None
+
+        tasks = [fetch_user_scores(uid) for uid in user_ids]
+        results = await asyncio.gather(*tasks)
+
+        return {
+            uid: data
+            for uid, data in results
+        }
 
 async def get_best_pp_by_username(username: str, token: str = None) -> float | None:
     if token is None:
@@ -141,7 +239,7 @@ async def get_top_100_scores(username: str, token: str = None, user_id: str = No
                 "lazer": lazer,
                 "rank": score.get('rank', 'D'),
                 "artist": score.get('beatmapset', {}).get('artist'),
-                "time": score.get('created_at', ''),
+                "time": score.get("created_at") or score.get("ended_at"),
                 "is_anime_bg": is_anime_bg,
             })
 

@@ -3,6 +3,12 @@
 
 import math
 
+from .....wrappers.nish import get_nish_total
+from .....wrappers.ppfire import get_fire_value
+from .....wrappers.anime import get_anime_values
+from .....wrappers.speedslop import get_speedslop_values
+from .....wrappers.aimslop import get_aimslop_values
+from .....external.local_skills import get_skills_by_scores_v2
 
 
 def format_dynamic(value, max_significant=2):
@@ -20,14 +26,44 @@ def format_dynamic(value, max_significant=2):
 
     return formatted.rstrip("0").rstrip(".")
 
+
+
+def format_header_ecos(prop):
+
+    return f"""
+| Топ чата | {prop} | LVL |
+|:--|:-:|:-:|
+"""
+def row_to_header_ecos(row):
+    
+    return f"""{row}
+|:--|:-:|:-:|
+"""
+
+
+def format_header(prop):
+
+    return f"""
+| Топ чата | {prop} |
+|:--|:-:|
+"""
+def row_to_header(row):
+    
+    return f"""{row}
+|:--|:-:|
+"""
+
 def format_caption(i, country_code, name, prop_value, prop_pre, prop_post):
+
     if isinstance(prop_value, float):
         value = format_dynamic(prop_value)
     else:
         value = f"{prop_value:,}"
-    return f"{i}. {country_code} {name} - {prop_pre}{value}{prop_post}"
 
-def format_stats(user):
+    return f"| <code> #{i} </code>  {country_code} {name} | {prop_pre}{value}{prop_post} |" 
+
+
+def format_profile_stats(user):    
     stats = user.get("statistics") or {}
     grade_counts = stats.get("grade_counts") or {}
     monthly_counts = user.get("monthly_playcounts") or []
@@ -111,3 +147,28 @@ def format_stats(user):
         "hits_per_hour": hits_per_hour,
         "minutes_per_play": minutes_per_play
     }
+
+async def format_top_100_stats(scores):  
+    
+    acc, aim, speed = await get_skills_by_scores_v2(scores['plain'])
+    
+    return {
+        "top_100_ppfire": get_fire_value(scores['top_100']),
+        "top_100_nish": get_nish_total(scores['top_100']),
+        "top_100_anime": get_anime_values(scores['top_100'])[0],
+        "top_100_aimslop": get_aimslop_values(scores['top_100'])[4],
+        "top_100_speedslop": get_speedslop_values(scores['top_100'])[4],
+        "top_100_skill_all": acc + aim + speed,
+        "top_100_skill_speed": speed,
+        "top_100_skill_aim": aim,
+        "top_100_skill_accuracy": acc,                 
+    }
+
+async def format_stats(item):
+    profile = format_profile_stats(item['profile'])
+    top_100 = await format_top_100_stats(item['top_100'])
+
+    result = top_100.copy()
+    result.update(profile)
+
+    return result

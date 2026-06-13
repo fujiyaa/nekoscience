@@ -1,119 +1,193 @@
-from telegram import Update
-from telegram.ext import ContextTypes
+from telegram import CallbackQuery
 
+from ....fun.ecos.player_db import get_top_players_by_ids
 from .....utils.text_format import country_code_to_flag
-from .format import format_stats, format_caption
-from .fetch import get_profiles
+from .format import *
 from .send import send
-from .....external.localapi import read_file_neko
 
 
 
-async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE, 
-                      caption: str, 
-                      prop: str, 
-                      prop_pre: str, prop_post: str, 
-                      top_n: int = 100,
-                      value_formatter=lambda x: x):
-
-    profiles = await get_profiles(update, context)
+async def leaderboard_engine(
+    query: CallbackQuery,
+    raw_data: dict,
+    action: dict
+):  
     stats_batch = []
+    total_batch = None
 
-    for item in profiles:
-        stats = format_stats(item)
-        stats_batch.append({
-            prop: stats.get(prop),
-            'name': stats.get('name'),
-            'country_code': stats.get('country_code'),
-        })
+    prop=action.get("prop", "score")
+    mode=action.get("provider", "profiles")
 
-    stats_batch = sorted(
-        stats_batch,
-        key=lambda x: float(x.get(prop) or 0),
-        reverse=True
-    )
+    if mode == "profiles":
+        for item in raw_data:
+            stats_batch.append({
+                prop: item.get(prop),
+                "name": item.get("name"),
+                "country_code": item.get("country_code"),
+            })
 
-    text = f"Chat Leaderboard: {caption}\n\n"
+    elif mode.startswith("file_"):
+        members = raw_data.get('members')
+                
+        file_data = raw_data["data"]
 
-    for i, item in enumerate(stats_batch[:top_n], start=1):
-        value = value_formatter(item.get(prop))
+        leaderboard_current = []
+        leaderboard_total = []
+
+        for osu_id, user in file_data.items():
+            tg_id = user["telegram"]["id"]
+
+            if str(tg_id) not in members:
+                continue
+
+            osu_name = user["osu"]["username"]
+            tg_name = user["telegram"]["username"]
+            points = user["v1"]["points"]
+
+            base = {
+                "name": osu_name,
+                "tg": tg_name,
+                "country_code": user["osu"].get("country_code", "")
+            }
+
+            if mode.endswith("challenge"):
+                current_score = points.get("current_season", 0)
+                # total_score = current_score + points.get("previous_seasons", 0)
+
+                leaderboard_current.append({
+                    **base,
+                    prop: current_score
+                })
+
+                # leaderboard_total.append({
+                #     **base,
+                #     prop: total_score
+                # })
+
+            elif mode.endswith("higherlower"):
+                leaderboard_current.append({
+                    **base,
+                    prop: points.get("best_score", 0)
+                })
+
+        stats_batch = leaderboard_current
+       
+        stats_batch = sorted(
+            stats_batch,
+            key=lambda x: float(x.get(prop) or 0),
+            reverse=True
+        )
+
+    elif mode.startswith("ecos"):
+        members = raw_data.get('members')
+
+        top_map = get_top_players_by_ids(members)
+
+        sorted_items = sorted(
+            top_map.items(),
+            key=lambda x: x[1]["place"]
+        )
+
+        text = ""
+
+        text += format_header_ecos(action.get("title", "?"))
+
+        for tg_id, data in sorted_items[:5]:
+            text += (
+                f"|<code> #{data['place']} </code>  {data['telegram_name']} "
+                f"| <sup>🎣 {data['fish_level']} ⛏️ {data['mine_level']} 🌲 {data['forest_level']} ⚔️ {data['battle_level']} </sup>"
+                f"| <b>{data['total_level']}</b>|\n"
+            )
+
+
+        if len(sorted_items)>5:
+            
+            text += "\n\n"
+
+            tg_id, data = sorted_items[5]
+            
+            row = (
+                f"|<code> #{data['place']} </code>  {data['telegram_name']} "
+                f"| 🎣 {data['fish_level']} ⛏️ {data['mine_level']} 🌲 {data['forest_level']} ⚔️ {data['battle_level']} "
+                f"| <b>{data['total_level']}</b> |"
+            )
+
+            text += f"<details><summary>...ещё {len(sorted_items)-5}</summary>\n\n"
+            
+            text += row_to_header_ecos(row)
+
+            row = format_caption(
+                6,
+                country_code_to_flag(item.get("country_code", "")),
+                item.get("name", "unknown"),
+                item.get(prop),
+                action.get("pre", ""),
+                action.get("post", "")
+            )
+
+            text += "</details>"
+
+
+        await send(query, sorted_items, text)
+        return
+
+    if stats_batch:
+        stats_batch = sorted(
+            stats_batch,
+            key=lambda x: float(x.get(prop) or 0),
+            reverse=True
+        )
+    else:
+        stats_batch = []
+
+
+
+    text = ""
+    text += format_header(f'{action.get("title", "?")} {action.get("extra_title", "")}')
+
+    for i, item in enumerate(stats_batch[:5], start=1):
+        value = item.get(prop)
+
         text += format_caption(
             i,
-            country_code_to_flag(item.get('country_code', '')),
-            item.get('name', 'unknown'),
+            country_code_to_flag(item.get("country_code", "")),
+            item.get("name", "unknown"),
             value,
-            prop_pre, prop_post
+            action.get("pre", ""),
+            action.get("post", ""),
+        ) + "\n"
+
+    text += "\n\n"   
+
+    if len(stats_batch)>5:
+
+        item = stats_batch[5]
+
+        row = format_caption(
+            6,
+            country_code_to_flag(item.get("country_code", "")),
+            item.get("name", "unknown"),
+            item.get(prop),
+            action.get("pre", ""),
+            action.get("post", "")
         )
-        text += "\n"
 
-    await send(update, stats_batch, text)
-
-async def leaderboard_with_json(update: Update, context: ContextTypes.DEFAULT_TYPE, 
-                      caption: str, 
-                      d_file: str):
-
-    profiles = await get_profiles(update, context)
-    
-    chat_ids = {item.get('id') for item in profiles}
-
-    response = await read_file_neko(d_file)
-    data = response.get("current", {})
-
-    leaderboard_current = []
-    leaderboard_total = []
-
-    for osu_id, user in data.items():
-        tg_id = user["osu"]["id"]
-        if tg_id not in chat_ids:
-            continue
-
-        osu_name = user["osu"]["username"]
-        tg_name = user["telegram"]["username"]
-        points = user["v1"]["points"]
-
-        if d_file != 'file_osugames_higherlower':
-            current_score = points.get("current_season", 0)
-
-            total_score = current_score + points.get("previous_seasons", 0)
-
-            leaderboard_current.append({
-                "osu": osu_name,
-                "tg": tg_name,
-                "score": current_score
-            })
-
-            leaderboard_total.append({
-                "osu": osu_name,
-                "tg": tg_name,
-                "score": total_score
-            })
+        text += f"<details><summary>...ещё {len(stats_batch)-5}</summary>\n\n"
         
-        else:
-            current_score = points.get("best_score", 0)
+        text += row_to_header(row)
 
-            leaderboard_current.append({
-                "osu": osu_name,
-                "tg": tg_name,
-                "score": current_score
-            })                
+        for i, item in enumerate(stats_batch[6:], start=7):
+            value = item.get(prop)
 
-    leaderboard_current = sorted(leaderboard_current, key=lambda x: x["score"], reverse=True)[:10]
-    if d_file != 'file_osugames_higherlower':
-        leaderboard_total   = sorted(leaderboard_total, key=lambda x: x["score"], reverse=True)[:3]
-        
-    medals = ["🥇", "🥈", "🥉"]
-    text = f"{caption}\n\n"
-    text += "⭐ Этот сезон:\n\n"
-    for i, entry in enumerate(leaderboard_current, 1):
-        prefix = medals[i-1] if i <= 3 else f"  {i} "
-        text += f"{prefix} {entry['osu']} ({entry['tg']}) - {entry['score']} очков\n"
+            text += format_caption(
+                i,
+                country_code_to_flag(item.get("country_code", "")),
+                item.get("name", "unknown"),
+                value,
+                action.get("pre", ""),
+                action.get("post", "")
+            ) + "\n"
 
-    if d_file != 'file_osugames_higherlower':
-        text += "\n\n🏆 Топ за все время\n\n"
-        for i, entry in enumerate(leaderboard_total, 1):
-            prefix = medals[i-1] if i <= 3 else f"{i}."
-            text += f"{prefix} {entry['osu']} ({entry['tg']}) - {entry['score']} очков\n"   
+        text += "</details>"
 
-    
-    await send(update, text, text)       
-
+    await send(query, stats_batch, text)

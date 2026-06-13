@@ -7,7 +7,7 @@ import traceback
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from .....actions.messages import safe_send_message
+from .....actions.rich import rich_reply
 from .....systems.cooldowns import check_user_cooldown
 from .....systems.logging import log_all_update
 from .buttons import get_keyboard
@@ -29,18 +29,16 @@ async def leaderboard_chat(update: Update, context: ContextTypes.DEFAULT_TYPE, u
         )
     if not can_run:
         return
-    MAX_ATTEMPTS = 3
     
     try:    
-        text = "🏆 Топ чата"
+        text = "### 🏆 Топ чата <code> - выбeри раздел</code>"
         reply_markup = get_keyboard("select_group", update.effective_message.from_user.id)                
         
-        await safe_send_message(
+        await rich_reply(
             update,
-            text,
-            parse_mode="HTML",
+            markdown=text,
             reply_markup=reply_markup
-        )          
+        )
         
         return
 

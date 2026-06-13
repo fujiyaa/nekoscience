@@ -9,13 +9,12 @@ from telegram.ext import ContextTypes
 from .....actions.messages import safe_query_answer, safe_edit_query
 from .....actions.rich import edit_rich_query
 from .....external.osu_http import fetch_txt_beatmaps
-from .....external.osu_api import get_user_scores
+from .....external.osu_api import get_user_scores, get_user_profile
 from .....utils.osu_conversions import apply_mods_to_stats, get_mods_info
 from .....wrappers.average_table import get_average_table
 from .....wrappers.minmax_table import get_minmax_table
-from .....wrappers.user import get_user_link
 from .....wrappers.ppfire import get_fire_text
-from .....wrappers.userlink_rich import get_rich_userlink_from_entry
+from .....wrappers.userlink_rich import get_rich_userlink
 from .....utils.calculate import caclulte_cached_entry, calculate_beatmap_attr
 import temp
 
@@ -84,6 +83,16 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 ),
                 timeout=10
             )
+
+            user_data = await get_user_profile(osu_username)
+
+            if not (isinstance(user_data, dict) and user_data):
+                await safe_edit_query(
+                    query, 
+                    text=f"`{T.get('No data...')[lang]}`", 
+                    parse_mode="Markdown"
+                )
+                return
 
             if not (isinstance(recent_scores, list) and recent_scores):
                 await safe_edit_query(
@@ -156,11 +165,10 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 for i, pp in enumerate(pp_list):
                     weighted_pp += pp * (0.95 ** i)
 
-
                 user = recent_scores[0].get('user')    
                 live_total_pp =  user.get('total_pp', '0')
 
-                user_link = get_rich_userlink_from_entry(recent_scores[0])
+                user_link = get_rich_userlink(user_data)
 
                 table = get_fire_text(
                     period_text=period_text,
@@ -170,7 +178,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     raw_pp=raw_pp,
                     weighted_pp=weighted_pp,
                     user_total_pp=float(live_total_pp)
-                )
+                )                
 
                 burned_pp = live_total_pp - weighted_pp                   
                 text = f"""
@@ -331,7 +339,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 SP.get('OD')[lang]:       calc_stats('OD', ods),
             }
 
-            user_link = get_rich_userlink_from_entry(recent_scores[0])
+            user_link = get_rich_userlink(user_data)
 
             if use_ids:
                 core_table, stat_table = get_minmax_table(table_data, lang, split_index=6)
