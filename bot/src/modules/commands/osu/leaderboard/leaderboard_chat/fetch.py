@@ -15,8 +15,8 @@ from .....systems.auth import (
     get_all_osu_verified_telegram_ids,
 )
 
-CHAT_CACHE_TTL = 20 * 60
-USER_CACHE_TTL = 20 * 60
+CHAT_CACHE_TTL = 24 * 60 * 60
+USER_CACHE_TTL = 6 * 60 * 60
 
 _chat_cache = {}
 _user_cache = {}
