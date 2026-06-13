@@ -37,7 +37,8 @@ async def leaderboard_chat(update: Update, context: ContextTypes.DEFAULT_TYPE, u
         await rich_reply(
             update,
             markdown=text,
-            reply_markup=reply_markup
+            reply_markup=reply_markup,
+            message_thread_id=update.message.message_thread_id
         )
         
         return
