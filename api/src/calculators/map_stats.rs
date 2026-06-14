@@ -58,6 +58,8 @@ pub async fn calculate_map_stats(
     let mut map_path = PathBuf::from(base_folder);
     map_path.push(format!("{}.osu", payload.map_path));
 
+    // let map_path = PathBuf::from("E:/fa/nekoscience/bot/src/cache/beatmaps\\5315004.osu");
+
     let map = match rosu_pp::Beatmap::from_path(&map_path) {
         Ok(m) => m,
         Err(e) => {
@@ -102,12 +104,21 @@ pub async fn calculate_map_stats(
     let max_combo = diff_attrs.max_combo();
 
     // Calculate performance attributes
-    let mut performance = rosu_pp::Performance::new(diff_attrs)
-    
-    .lazer(lazer)
-    .combo(payload.combo.unwrap_or(max_combo))
-    .misses(payload.misses.unwrap_or(0))
-    .accuracy(payload.accuracy.unwrap_or(100.0));
+    let mut performance = rosu_pp::Performance::new(diff_attrs)    
+        .lazer(lazer)
+        .combo(payload.combo.unwrap_or(max_combo))
+        .misses(payload.misses.unwrap_or(0))
+        .accuracy(payload.accuracy.unwrap_or(100.0));
+
+    if let Some(n300) = payload.n300 {
+        performance = performance.n300(n300);
+    }
+    if let Some(n100) = payload.n100 {
+        performance = performance.n100(n100);
+    }
+    if let Some(n50) = payload.n50 {
+        performance = performance.n50(n50);
+    }
 
     if clock_rate != 1.0 {
         performance = performance.clock_rate(clock_rate);
@@ -226,19 +237,19 @@ mod tests {
     async fn test_calculate_map_stats_basic() {
         let payload = PpRequest {
             map_path: "4839949".to_string(),
-            n300: Some(0),
-            n100: Some(0),
+            n300: Some(667),
+            n100: Some(10),
             n50: Some(0),
-            misses: Some(0),
-            mods: Some("HR".to_string()),
+            misses: Some(1),
+            mods: Some("NM".to_string()),
             combo: Some(0),
-            accuracy: Some(0.0),
+            accuracy: Some(100.0),
             lazer: Some(true),
             clock_rate: Some(1.0),
-            custom_ar: Some(10.0),
-            custom_cs: Some(5.68),
+            custom_ar: Some(9.0),
+            custom_cs: Some(3.8),
             custom_hp: Some(4.5),
-            custom_od: Some(11.5),
+            custom_od: Some(8.0),
         };
 
         let response = calculate_map_stats(AxumJson(payload)).await;

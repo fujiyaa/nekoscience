@@ -17,7 +17,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     sess = sessions_simulate.get(user_id)
 
     if not sess or sess["message_id"] != query.message.message_id:
-        return await safe_query_answer(query, "❌ Это меню не для вас")
+        return await safe_query_answer(query, "❌ Чужие кнопки или не актуально")
 
     if query.data == "simulate_close":
         try:
@@ -47,15 +47,38 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await safe_query_answer(query, text=None, show_alert=False)
     sess["waiting"] = param_name
 
-    if sess.get("hint_id"):
-        try:
-            await context.bot.delete_message(chat_id=sess["chat_id"], message_id=sess["hint_id"])
-        except:
-            pass
+    mode = 'send'
+    if sess.get("hint_id"): mode = 'edit'
+       
 
-    hint_msg = await context.bot.send_message(
-        sess["chat_id"],
-        message_thread_id=sess["topic_id"],
-        text=f"👉 @{query.from_user.username or query.from_user.first_name}, {schema[param_name]['msg']}"
-    )
+    minmax = ''
+    min = schema[param_name].get('min', '')
+    if min != "":
+        min = f'от {min}'
+
+    max = schema[param_name].get('max', '')
+    if max != "":
+        max = f'до {max}'
+
+    if min != "" or max != "":
+        minmax = f'({min} {max})'
+    
+    text=f"@{query.from_user.username or query.from_user.first_name}, напиши {schema[param_name]['msg']} {minmax}"
+
+    if mode == 'send':
+
+        hint_msg = await context.bot.send_message(
+            chat_id=sess["chat_id"],
+            message_thread_id=sess["topic_id"],
+            text=text
+        )
+
+    else:
+
+        hint_msg = await context.bot.edit_message_text(
+            chat_id=sess["chat_id"],
+            message_id=sess["hint_id"],
+            text=text
+        )
+
     sess["hint_id"] = hint_msg.message_id

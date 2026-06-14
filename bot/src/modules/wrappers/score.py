@@ -151,7 +151,12 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
         pp_text = f'<b>{pp:.1f}</b>/{perfect_pp:.1f} <s>({max_pp:.1f}pp)</s>'
         pp_text_alt = f'<b>{pp:.2f}</b> <s>({max_pp:.2f})</s>'
 
+        choke_title = 'Чоук'
+        choke_value = pp - max_pp
+        choke_value = f'{choke_value:.2f}'
+
         if int(pp) == int(max_pp):
+            choke_title = choke_value = "<code>-</code>"
             pp_text_alt = f'<b>{pp:.2f}</b>'
     else:
         if lazer:
@@ -247,8 +252,7 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
 
 | <code>Автор (сет)</code> | <a href="{map_url}">{truncate(mapper)}</a> 🔗 | <code>ID карты</code> | <code>{map_id}</code> |
 |:--:|:------------:|:--:|:------------:|
-| <code>CS</code> | <b>{map_cs:g}</b> | <code>OD</code> | <b>{map_od:g}</b> |
-| <code>AR</code> | <b>{map_ar:g}</b> | <code>HP</code> | <b>{map_hp:g}</b> |
+|{map_cs:g}<sub>CS</sub>|{map_ar:g}<sub>AR</sub>|{map_od:g}<sub>OD</sub>|{map_hp:g}<sub>HP</sub>|
 | <code>Объекты</code> | {max_hits} | <code>Статус</code> | {status.capitalize()} |
 
 </details>
@@ -261,17 +265,15 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
 
 <details><summary> {sep} {hit_miss} -  {status.capitalize()}</summary>
 
-|{hit300} 🔵|{hit100} 🟢|{hit50} 🟡|{hit_miss}|
+|{hit300}<sub>300</sub>|{hit100}<sub>100</sub>|{hit50}<sub>50</sub>|{hit_miss}|
 |:-:|:-:|:-:|:-:|
-|{cs:g}<sub>CS</sub>|{ar:g}<sub>AR</sub>|{od:g}<sub>OD</sub>|{hp:g}<sub>HP</sub>|
+|{format_stat("CS", map_cs, cs)}|{format_stat("AR", map_ar, ar)}|{format_stat("OD", map_od, od)}|{format_stat("HP", map_hp, hp)}|
+| <code>Макс. PP</code> | {perfect_pp:.2f} | <code>Длина</code> | {text_format.seconds_to_hhmmss(length)} |
+| <code>{choke_title}</code> | {choke_value} | <code>BPM</code> | {bpm:g} |
 
-|<code>Длина</code> | {text_format.seconds_to_hhmmss(length)} | <code>Макс. PP</code> | {perfect_pp:.2f} | 
+| <code>Лазер</code> | {result['1']} | <code>Стебйл</code> | <u>{result['2']}</u> |
 |:--:|:------------:|:--:|:------------:|
-|<code>BPM</code> | {bpm:g} | <code>-</code> | <code>-</code> | 
-| <code>Лазер</code> | {result['1']} | <code>Лазер-CL</code> | {result['3']} |
-| <code>Стебйл</code> | <u>{result['2']}</u> | <code>Лазер-NM</code> | {result['4']} |
-
-<aside>{score_url}</aside>
+| <code>Лазер-CL</code> | {result['3']} | <code>Ссылка</code> | <a href="{score_url}">🔗</a> |
 </details>"""
 
     img_path = None
@@ -362,3 +364,13 @@ def truncate(text: str, length: int = 6):
     if len(text) <= length:
         return text
     return text[:length] + ".."
+
+def format_stat(name, base, modified):
+    if modified > base:
+        icon = "🔺"
+    elif modified < base:
+        icon = "🔻"
+    else:
+        icon = ""
+
+    return f"{icon}{modified:g}<sub>{name}</sub>"

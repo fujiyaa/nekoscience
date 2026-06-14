@@ -19,6 +19,6 @@ def get_simulate_keyboard(user_id):
                 row.append(InlineKeyboardButton(keys[i + j], callback_data=f"simulate_{keys[i + j]}"))
         buttons.append(row)
 
-    buttons.append([InlineKeyboardButton("☑️", callback_data="simulate_close")])
+    buttons.append([InlineKeyboardButton("☑️ Закрыть", callback_data="simulate_close")])
 
     return InlineKeyboardMarkup(buttons)

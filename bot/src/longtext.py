@@ -443,7 +443,7 @@ UNRANKED_TUTORIAL = [
 PARAMS_TEMPLATE = {
     "Моды": {
         "type": "mods",
-        "msg": "моды, например HR или dtHD...",
+        "msg": "моды (HR, hddt..)",
         "default": "NM"
     },
     # "Комбо": {
@@ -454,43 +454,75 @@ PARAMS_TEMPLATE = {
     # },
     "Точность": {
         "type": "accuracy",
-        "msg": "точность, например 80 или 96,5",
-        "default": "100"
+        "msg": "точность",
+        "min": 0.0,
+        "max": 0.0,
+        "default": 100.0
     },
     "Скорость": {
         "type": "rate",
-        "msg": "рейт чендж лазера, например 1 или 1.35",
-        "default": "1"
+        "msg": "множитель DT",
+        "min": 0.5,
+        "max": 2.0,
+        "default": 1.0
     },
     "Лазер": {
         "type": "lazer",
-        "msg": "лазер? да/нет",
-        "default": "True"
+        "msg": "лазер или нет (да/нет)",
+        "default": True
     },
     "300": {
         "type": "300k",
-        "msg": "количество 300 (good)",
-        "min": "0",
-        "default": "1"
+        "msg": "количество 300",
+        "min": 0,
+        "default": 0
     },
     "100": {
         "type": "100k",
-        "msg": "количество 100 (ok)",
-        "min": "0",
-        "default": "0"
+        "msg": "количество 100",
+        "min": 0,
+        "default": 0
     },    
     "50": {
         "type": "50k",
-        "msg": "количество 50 (meh)",
-        "min": "0",
-        "default": "0"
+        "msg": "количество 50",
+        "min": 0,
+        "default": 0
     },
     "мисс": {
         "type": "miss",
         "msg": "количество миссов",
-        "min": "0",
-        "default": "0"
-    }
+        "min": 0,
+        "default": 0
+    },
+    "cs": {
+        "type": "cs",
+        "msg": "CS",
+        "min": 0,
+        "default": 0,
+        "max": 11
+    },
+    "ar": {
+        "type": "ar",
+        "msg": "AR",
+        "min": 0,
+        "default": 0,
+        "max": 11
+    },
+    "od": {
+        "type": "od",
+        "msg": "OD",
+        "min": 0,
+        "default": 0,
+        "max": 11
+    },
+    "hp": {
+        "type": "hp",
+        "msg": "HP",
+        "min": 0,
+        "default": 0,
+        "max": 11
+    },
 }
 
 UNLUCKY_MESSAGES = [ "Не повезло", "Ничего", "Пусто"]

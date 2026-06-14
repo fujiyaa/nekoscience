@@ -1,18 +1,21 @@
 
 
 
-import traceback
+import traceback, html
 
-from telegram import Update, LinkPreviewOptions
+from telegram import Update
 from telegram.ext import ContextTypes
 
 from ......systems.logging import log_all_update
-from ..utils import calculate_rank, format_text
+from ..utils import calculate_rank, format_text, truncate
 from ..buttons import get_simulate_keyboard
-from ......external.osu_http import beatmap, get_beatmap_title_from_file, get_beatmap_creator_from_file
+from ......actions.rich import edit_rich_query
 from ......external.localapi import get_map_stats_neko_api
+from ......external.osu_api import get_beatmap
+from ......external.osu_http import beatmap
 from ......actions.messages import safe_edit_query, safe_query_answer
 from ......actions.context import set_message_context
+from ..simulate import skills
 
 from config import PARAMS_TEMPLATE
 from config import sessions_simulate
@@ -47,6 +50,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:                    
             await safe_edit_query(query, text="`Загрузка...`", parse_mode="Markdown")
 
+            user_name = update.effective_user.name
             user_id = update.effective_user.id
             chat_id = update.effective_chat.id
             topic_id = getattr(update.effective_message, "message_thread_id", None)
@@ -58,24 +62,41 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 except:
                     pass
                 del sessions_simulate[user_id]
-
+                 
+            acc_u, aim_u, speed_u = await skills(user_id)
+            
+            map = await get_beatmap(map_id)
+            
             user_params = {k: v.copy() for k, v in PARAMS_TEMPLATE.items()}
+            
+            mapset = map.get('beatmapset', {})
+
+            map_url = map.get('url')
+            status = map.get('status', 'status').capitalize()
+            hit_length = map.get('hit_length', 0)
+            version = map.get('version', 'version')
+            artist = mapset.get('artist', 'artist')
+            creator = mapset.get('creator', 'creator')
+            title = mapset.get('title', 'title')
+            cover_url = mapset.get('covers', {}).get('slimcover@2x')
+
+            cover_rich_block = ""
+            if cover_url is not None:
+                cover_rich_block = f'\n<tg-collage>\n<img src="{cover_url}"/>\n</tg-collage>\n'
+
+            full_title = f"{artist} - {title} [{version}]"
+            beatmap_escaped = html.escape(full_title)
 
             path, values = await beatmap(map_id)
-            stats = {
-                "n300": None,
-                "n100": None,
-                "n50": None,
-            }
 
             #neko API 
             payload = {
                 "map_path": str(map_id), 
                 
-                "n300": 0,
-                "n100": 0,
-                "n50": 0,
-                "misses": 0,                   
+                "n300": None,
+                "n100": None,
+                "n50": None,
+                "misses": None,                   
                 
                 "mods": str(""), 
                 "combo": int(0),      
@@ -113,14 +134,23 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             except Exception as e:
                 print(f"neko API failed: {e}")
 
-
-            user_params["300"]["max"] = n300 
-            user_params["300"]["default"] = n300
-            user_params["100"]["max"] = n300
-            user_params["50"]["max"] = n300
-            user_params["мисс"]["max"] = n300
+            user_params["300"]["max"] = n300 or 0
+            user_params["300"]["default"] = n300 or 0
+            user_params["100"]["max"] = n300 or 0
+            user_params["50"]["max"] = n300 or 0
+            user_params["мисс"]["max"] = n300 or 0
+            user_params["cs"]["default"] = values.get("cs", 0)
+            user_params["ar"]["default"] = values.get("ar", 0)
+            user_params["od"]["default"] = values.get("od", 0)
+            user_params["hp"]["default"] = values.get("hp", 0)
 
             sessions_simulate[user_id] = {
+                "username": user_name,
+                "status": status,
+                "creator": truncate(creator),
+                "map_url": map_url,
+                "beatmap_escaped": beatmap_escaped,
+                "cover_rich_block": cover_rich_block,
                 "chat_id": chat_id,
                 "message_id": None,
                 "topic_id":topic_id,
@@ -128,10 +158,11 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "waiting": None,
                 "hint_id": None,
                 "schema": user_params,
-                "path": path,
                 "beatmap": map_id,
-                "values": values,
                 "map_combo": max_combo,
+                "hit_length": hit_length,
+                "hit_length_updated": hit_length,
+                "api_mode_accuracy": True, 
                 "300_changed": False,
                 "100_changed": False,
                 "50_changed": False,
@@ -141,34 +172,28 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "aim":aim,
                 "acc":acc,
                 "speed":speed,
+                "acc_u": acc_u,
+                "aim_u": aim_u,
+                "speed_u": speed_u
             }
 
-            link_preview = LinkPreviewOptions(
-                url=f"https://osu.ppy.sh/b/{map_id}",
-                is_disabled=False,
-                prefer_small_media=True,
-                prefer_large_media=False,
-                show_above_text=True
+            bot_msg = await edit_rich_query(
+                query, 
+                markdown=format_text(user_id, pp, max_pp, stars, max_combo, expected_bpm, n300, n100, n50, expected_miss), 
+                reply_markup=get_simulate_keyboard(user_id),
             )
 
-            bot_msg = await safe_edit_query(query, 
-                format_text(user_id, pp, max_pp, stars, max_combo, expected_bpm, n300, n100, n50, expected_miss), 
-                reply_markup=get_simulate_keyboard(user_id),
-                parse_mode="Markdown",
-                link_preview_options=link_preview,
-            )
-            sessions_simulate[user_id]["message_id"] = bot_msg.message_id
+            sessions_simulate[user_id]["message_id"] = bot_msg["result"]["message_id"]
 
             if bot_msg:
                 set_message_context(
                     bot_msg, 
                     reply=False, 
                     map_id=int(map_id),
-                    map_title=await get_beatmap_title_from_file(map_id),
-                    mapper_username=await get_beatmap_creator_from_file(map_id), 
+                    map_title=full_title,
+                    mapper_username=creator, 
                     origin_call_user_id=update.effective_user.id,
                 )
-
 
         except Exception:
             traceback.print_exc() 

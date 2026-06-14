@@ -4,17 +4,23 @@
 import re
 import asyncio
 
-from telegram import Update, LinkPreviewOptions
-from telegram.ext import ContextTypes
-
+from telegram import Update
+from .....utils.osu_conversions import get_mods_info, apply_mods_to_stats
 from .actions import clear_s_chat
+from .....actions.messages import delete_user_message
 from .utils import calc_accuracy, calculate_rank, update_hits, format_text
 from .buttons import get_simulate_keyboard
 from .....external.localapi import get_map_stats_neko_api
 from .....actions.messages import delete_user_message
+from .....actions.rich import edit_rich_message
 
 from config import VALID_MODS, INVALID_MODS_COMBINATIONS, ABSOLUTELY_FORBIDDEN
 from config import sessions_simulate
+from typing import Callable, Any
+
+Validator = Callable[[str, dict], Any]
+
+format_error_text = "❌ Неверный формат"
 
 
 
@@ -23,286 +29,341 @@ async def start_simulate_text_handler(update, context):
         asyncio.create_task(simulate_text_handler(update, context))            
     except Exception as e: print(e)
 
-async def simulate_text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def simulate_text_handler(update: Update, context):
     user_id = update.effective_user.id
     sess = sessions_simulate.get(user_id)
 
     if not sess or not sess["waiting"]:
         return
 
-    param_name = sess["waiting"]
-    info = sess["schema"][param_name]   
-    value = update.message.text.strip()
+    param = sess["waiting"]
+    info = sess["schema"][param]
+
+    ok, value, error = await parse_input(update, context, sess, info)
+
+    if not ok:
+        return
     
-  
-    if info["type"] == "mods":
-        cleaned = re.sub(r"\s+", "", value)  
-        if not re.fullmatch(r"[A-Za-z]{2,}", cleaned):
-            msg = await update.message.reply_text(
-                "❌ Неверный формат"
+    decide_api_mode(sess, info)
+
+    apply_value(sess, param, info, value)
+
+    await cleanup_messages(update, context, sess)
+
+    await recalculate_simulation(sess)
+
+    await render_simulation(update, context, sess)
+
+async def parse_input(update, context, sess, info):
+    validator = VALIDATORS[info["type"]]
+
+    try:
+        value = validator(update.message.text.strip(), info)
+
+        return True, value, None
+
+    except ValueError as e:
+        hint_msg = await context.bot.edit_message_text(
+            chat_id=sess["chat_id"],
+            message_id=sess["hint_id"],
+            text=f'{e}, выбери параметр для редактирования заново'
+        )
+        await delete_user_message(update, context, 1)
+        sess["waiting"] = None
+        return False, None, str(e)
+    
+def validate_accuracy(text, info) -> float:
+    text = text.replace(",", ".")
+
+    try:
+        value = float(text)
+    except ValueError:
+        raise ValueError(f"{format_error_text}")
+
+    if not 0 <= value <= 100:
+        raise ValueError(f"{format_error_text}")
+
+    return float(value)
+
+def validate_float(text, info) -> float:
+    text = text.replace(",", ".")
+
+    try:
+        value = float(text)
+    except ValueError:
+        raise ValueError(f"{format_error_text}")
+
+    if not info["min"] <= value <= info["max"]:
+        raise ValueError(f"{format_error_text}")
+
+    return float(value)
+
+def validate_rate(text, info) -> float:
+    text = text.replace(",", ".")
+
+    try:
+        value = float(text)
+    except ValueError:
+        raise ValueError(f"{format_error_text}")
+
+    if not 0.5 <= value <= 2:
+        raise ValueError(f"{format_error_text}")
+
+    return float(value)
+
+def validate_int(text, info) -> int:
+    if not text.isdigit():
+        raise ValueError(f"{format_error_text}")
+
+    value = int(text)
+
+    if not info["min"] <= value <= info["max"]:
+        raise ValueError(f"{format_error_text}")
+
+    return int(value)
+
+def validate_bool(text, info) -> bool:
+    text = text.strip().lower()
+
+    true_values = {"да", "yes", "true", "1"}
+    false_values = {"нет", "no", "false", "0"}
+
+    if text in true_values:
+        return True
+    if text in false_values:
+        return False
+
+    raise ValueError(f"{format_error_text}")
+
+def validate_mods(text, info):
+    cleaned = re.sub(r"\s+", "", text)
+
+    if not re.fullmatch(r"[A-Za-z]{2,}", cleaned):
+        raise ValueError(f"{format_error_text}")
+
+    pairs = re.findall(r"[A-Za-z]{2}", cleaned)
+
+    if not pairs:
+        raise ValueError(f"{format_error_text}")
+
+    seen = set()
+    unique = []
+
+    for mod in pairs:
+        mod = mod.upper()
+
+        if mod not in VALID_MODS:
+            raise ValueError(f"❌ Недопустимый мод: {mod}")
+
+        if mod not in seen:
+            seen.add(mod)
+            unique.append(mod)
+
+    mods = set(unique)
+
+    for forbidden in INVALID_MODS_COMBINATIONS:
+        if forbidden.issubset(mods):
+            raise ValueError(
+                f"❌ Эти моды не могут встречаться вместе: {', '.join(forbidden)}"
             )
-            clear_s_chat(update, context, msg.chat.id, msg.message_id, 0, 5)
-            return
 
-        pairs = re.findall(r"[A-Za-z]{2}", cleaned)
-        if not pairs:
-            msg = await update.message.reply_text(
-                "❌ Неверный формат"
-            )
-            clear_s_chat(update, context, msg.chat.id, msg.message_id, 0, 5)
-            return
+    if ABSOLUTELY_FORBIDDEN & mods and len(unique) > 1:
+        raise ValueError(
+            "❌ NM не может сочетаться ни с чем"
+        )
 
-        seen = set()
-        unique_pairs = []
-        for p in pairs:
-            up = p.upper()
-            if up not in VALID_MODS:
-                msg = await update.message.reply_text(f"❌ Недопустимый мод: {up}")
-                clear_s_chat(update, context, msg.chat.id, msg.message_id, 0, 5)
-                return
-            if up not in seen:
-                seen.add(up)
-                unique_pairs.append(up)
+    return "".join(unique)
 
-        pairs_set = set(unique_pairs)
-        for forbidden in INVALID_MODS_COMBINATIONS:
-            if forbidden.issubset(pairs_set):
-                msg = await update.message.reply_text(
-                    f"❌ Эти моды не могут встречаться вместе: {', '.join(forbidden)}"
-                )
-                clear_s_chat(update, context, msg.chat.id, msg.message_id, 0, 5)
-                return
-            
-        if ABSOLUTELY_FORBIDDEN & set(unique_pairs):
-            if len(unique_pairs) > 1:
-                msg = await update.message.reply_text(
-                    "❌ NM не может сочетаться ни с чем"
-                )
-                clear_s_chat(update, context, msg.chat.id, msg.message_id, 0, 5)
-                return
+def apply_value(sess, param, info, value):
 
-        value = "".join(unique_pairs)
-        num = str(value)
-    elif info["type"] == "accuracy":
-        value_clean = value.replace(",", ".")
-        
-        try:
-            num = float(value_clean)
-        except ValueError:
-            msg = await update.message.reply_text("❌ Неверный формат: нужно число от 0 до 100")
-            clear_s_chat(update, context, msg.chat.id, msg.message_id, 0, 5)
-            return
-
-        if not (0 <= num <= 100):
-            msg = await update.message.reply_text("❌ Число должно быть от 0 до 100")
-            clear_s_chat(update, context, msg.chat.id, msg.message_id, 0, 5)
-            return
-    elif info["type"] == "rate":
-        value_clean = value.replace(",", ".")
-        
-        try:
-            num = float(value_clean)
-        except ValueError:
-            msg = await update.message.reply_text("❌ Неверный формат: нужно число от 0 до 100")
-            clear_s_chat(update, context, msg.chat.id, msg.message_id, 0, 5)
-            return
-
-        if not (0.5 <= num <= 2):
-            msg = await update.message.reply_text("❌ Число должно быть от 0.50 до 2.00")
-            clear_s_chat(update, context, msg.chat.id, msg.message_id, 0, 5)
-            return
-    elif info["type"] == "combo":
-        value_clean = value.strip()
-
-        if not value_clean.isdigit():
-            msg = await update.message.reply_text("❌ Неверный формат: нужно целое число")
-            clear_s_chat(update, context, msg.chat.id, msg.message_id, 0, 5)
-            return
-        if not (int(info["min"]) <= int(value_clean) <= int(info["max"])): 
-            msg = await update.message.reply_text(f"❌ Неверный формат: сейчас комбо может быть от {info['min']} до {info['max']}")
-            clear_s_chat(update, context, msg.chat.id, msg.message_id, 0, 5)
-            return
-        num = int(value_clean)
-    elif info["type"] == "300k":
-        value_clean = value.strip()
-
-        if not value_clean.isdigit():
-            msg = await update.message.reply_text("❌ Неверный формат: нужно целое число")
-            clear_s_chat(update, context, msg.chat.id, msg.message_id, 0, 5)
-            return
-        if not (int(info["min"]) <= int(value_clean) <= int(info["max"])):
-            msg = await update.message.reply_text(f"❌ Неверный формат: сейчас может быть от {info['min']} до {info['max']}")
-            clear_s_chat(update, context, msg.chat.id, msg.message_id, 0, 5)
-            return
-        num = int(value_clean)
-    elif info["type"] == "100k":
-        value_clean = value.strip()
-
-        
-        if not value_clean.isdigit():
-            msg = await update.message.reply_text("❌ Неверный формат: нужно целое число")
-            clear_s_chat(update, context, msg.chat.id, msg.message_id, 0, 5)
-            return
-        if not (int(info["min"]) <= int(value_clean) <= int(info["max"])):
-            msg = await update.message.reply_text(f"❌ Неверный формат: сейчас может быть от {info['min']} до {info['max']}")
-            clear_s_chat(update, context, msg.chat.id, msg.message_id, 0, 5)
-            return
-        num = int(value_clean)
-    elif info["type"] == "50k":
-        value_clean = value.strip()
-
-        if not value_clean.isdigit():
-            msg = await update.message.reply_text("❌ Неверный формат: нужно целое число")
-            clear_s_chat(update, context, msg.chat.id, msg.message_id, 0, 5)
-            return
-        if not (int(info["min"]) <= int(value_clean) <= int(info["max"])):
-            msg = await update.message.reply_text(f"❌ Неверный формат: сейчас может быть от {info['min']} до {info['max']}")
-            clear_s_chat(update, context, msg.chat.id, msg.message_id, 0, 5)
-            return
-        num = int(value_clean)
-    elif info["type"] == "miss":
-        value_clean = value.strip()
-
-        if not value_clean.isdigit():
-            msg = await update.message.reply_text("❌ Неверный формат: нужно целое число")
-            clear_s_chat(update, context, msg.chat.id, msg.message_id, 0, 5)
-            return
-        if not (int(info["min"]) <= int(value_clean) <= int(info["max"])):
-            msg = await update.message.reply_text(f"❌ Неверный формат: сейчас может быть от {info['min']} до {info['max']}")
-            clear_s_chat(update, context, msg.chat.id, msg.message_id, 0, 5)
-            return
-        num = int(value_clean)
-    elif info["type"] == "lazer":
-        value_clean = value.strip().lower() 
-
-        true_values = {"да", "yes", "true", "1"}
-        false_values = {"нет", "no", "false", "0"}
-
-        if value_clean in true_values:
-            value = True
-        elif value_clean in false_values:
-            value = False
-        else:
-            msg = await update.message.reply_text(
-                "❌ Неверный формат: допустимо только Да/Нет или True/False"
-            )
-            clear_s_chat(update, context, msg.chat.id, msg.message_id, 0, 5)
-            return
-        num = value
-
-
-    value = num
-
-    if info["type"] == "miss" or info["type"] == "100k" or info["type"] == "50k" or info["type"] == "300k":
-        update_hits(sess, info["type"], int(value))
-    else:   
-        sess["params"][param_name] = value
+    if info["type"] in {
+        "miss",
+        "300k",
+        "100k",
+        "50k"
+    }:
+        update_hits(sess, info["type"], value)
+    else:
+        sess["params"][param] = value
         sess["waiting"] = None
 
-    if sess.get("hint_id"):
-        try:
-            await context.bot.delete_message(chat_id=sess["chat_id"], message_id=sess["hint_id"])
-        except:
-            pass
-        sess["hint_id"] = None
-    
-    asyncio.create_task(delete_user_message(update, context, delay=0))
-    try:        
-        acc = sess["params"].get("Точность")
-        miss = sess["params"].get("мисс")    
-        stats = {
-            "n300": sess["params"].get("300"),
-            "n100": sess["params"].get("100"),
-            "n50": sess["params"].get("50"),
-        }
-        if info["type"] == 'accuracy':
-            stats = {
+def build_payload(sess):
+
+    payload = {
+
+        "map_path": str(sess["beatmap"]),
+
+        "mods": sess["params"]["Моды"],
+
+        "combo": int(sess["params"].get("Комбо") or 0),
+
+        "accuracy": sess["params"]["Точность"],
+
+        "lazer": sess["params"]["Лазер"],
+
+        "clock_rate": sess["params"]["Скорость"],
+
+        "custom_ar": sess["params"]["ar"],
+
+        "custom_cs": sess["params"]["cs"],
+
+        "custom_hp": sess["params"]["hp"],
+
+        "custom_od": sess["params"]["od"],
+    }
+
+    if sess['api_mode_accuracy']:
+        payload.update({
             "n300": None,
             "n100": None,
             "n50": None,
-            }      
-            sess["300_changed"] = False
-            sess["100_changed"] = False
-            sess["50_changed"] = False
-            sess["miss_changed"] = False
-        if info["type"] == "miss" or info["type"] == "100k" or info["type"] == "50k" or info["type"] == "300k":
-            acc = None
+            "misses": None,
+        })
+    
+    else:
+        payload.update({
+            "n300": int(sess["params"]["300"]),
+            "n100": int(sess["params"]["100"]),
+            "n50": int(sess["params"]["50"]),
+            "misses": sess["params"]["мисс"],
+        })
 
-        #neko API 
-        payload = {
-            "map_path": str(sess["beatmap"]), 
-            
-            "n300": int(v) if (v := stats["n300"]) is not None else 0,
-            "n100": int(v) if (v := stats["n100"]) is not None else 0,
-            "n50": int(v) if (v := stats["n50"]) is not None else 0,
-            "misses": int(miss or 0),                   
-            
-            "mods": str(sess["params"].get("Моды")), 
-            "combo": int(sess["params"].get("Комбо") or 0),      
-            "accuracy": float(acc or 0),    
-            
-            "lazer": bool(sess["params"].get("Лазер")),          
-            "clock_rate": float(sess["params"].get("Скорость") or 1.0),  
+    return payload
 
-            "custom_ar": float(sess['values'].get("ar") or 0.0),
-            "custom_cs": float(sess['values'].get("cs") or 0.0),
-            "custom_hp": float(sess['values'].get("hp") or 0.0),
-            "custom_od": float(sess['values'].get("od") or 0.0),
-        }
+def decide_api_mode(sess, info):
+    
+    if info["type"] in {
+        "miss",
+        "300k",
+        "100k",
+        "50k"
+    }: 
+        sess['api_mode_accuracy'] = False
 
+    elif info["type"] == "accuracy":
+        sess['api_mode_accuracy'] = True
+    
+
+def apply_pp_result(sess, data):
+
+    sess["pp"] = data["pp"]
+    sess["no_choke_pp"] = data["no_choke_pp"]
+    sess["perfect_pp"] = data["perfect_pp"]
+
+    sess["star_rating"] = data["star_rating"]
+    sess["perfect_combo"] = data["perfect_combo"]
+    sess["expected_bpm"] = data["expected_bpm"]
+
+    sess["acc"] = data["acc"]
+    sess["aim"] = data["aim"]
+    sess["speed"] = data["speed"]
+
+    sess["params"]["300"] = data["n300"]
+    sess["params"]["100"] = data["n100"]
+    sess["params"]["50"] = data["n50"]
+    sess["params"]["мисс"] = data["misses"]
+
+    sess["params"]["Точность"] = calc_accuracy(
+        data["n300"],
+        data["n100"],
+        data["n50"],
+        data["misses"],
+    )
+
+    sess["grade"] = calculate_rank(
+        data["n300"],
+        data["n100"],
+        data["n50"],
+        data["misses"],
+        sess["params"]["Лазер"],
+    )
+
+async def cleanup_messages(update, context, sess):
+    if sess.get("hint_id"):
         try:
-            pp_data = await get_map_stats_neko_api(payload)
+            await context.bot.delete_message(
+                chat_id=sess["chat_id"],
+                message_id=sess["hint_id"],
+            )
+        except:
+            pass
 
-            pp = pp_data.get("pp")
-            choke = pp_data.get("no_choke_pp")
-            max_pp = pp_data.get("perfect_pp")
+        sess["hint_id"] = None
 
-            stars = pp_data.get("star_rating")
-            max_combo = pp_data.get("perfect_combo")
-            expected_bpm = pp_data.get("expected_bpm")
+    asyncio.create_task(
+        delete_user_message(update, context, delay=0)
+    )
 
-            n300 = pp_data.get("n300")
-            n100 = pp_data.get("n100") 
-            n50 = pp_data.get("n50")
-            expected_miss = pp_data.get("misses")
+async def recalculate_simulation(sess):
+    payload = build_payload(sess)
 
-            skill_aim = pp_data.get("aim")
-            skill_acc = pp_data.get("acc")
-            skill_speed = pp_data.get("speed")
+    try:
+        data = await get_map_stats_neko_api(payload)
 
-        except Exception as e:
-            print(f"neko API failed: {e}")    
-        
-              
+    except RuntimeError as e:
+        print(f"[neko API error] {e}")
 
+        sess["api_error"] = True
+        return
 
-        sess["acc"] = skill_acc
-        sess["aim"] = skill_aim
-        sess["speed"] = skill_speed
+    apply_pp_result(sess, data)
 
-        sess["params"]["300"] = n300
-        sess["params"]["100"] = n100
-        sess["params"]["50"] = n50
-        sess["params"]["мисс"] = expected_miss
-        sess["params"]["Точность"] = calc_accuracy(n300, n100, n50, expected_miss)
-        sess["grade"] = calculate_rank(n300, n100, n50, miss, sess["params"]["Лазер"])
+    apply_attrs(sess)
 
-        link_preview = LinkPreviewOptions(
-            url=f"https://osu.ppy.sh/b/{sess['beatmap']}",
-            is_disabled=False,
-            prefer_small_media=True,
-            prefer_large_media=False,
-            show_above_text=True
-        )
+def apply_attrs(sess):
+    
+    speed_multiplier, hr_active, ez_active = get_mods_info(sess["params"]["Моды"])
 
+    if sess['params']['Скорость'] != 1.0:
+        speed_multiplier = sess['params']['Скорость']
 
-        await context.bot.edit_message_text(            
-            text=format_text(user_id, pp, max_pp, stars, sess["map_combo"], expected_bpm, n300, n100, n50, expected_miss),
-            chat_id=sess["chat_id"],
-            message_id=sess["message_id"],
-            reply_markup=get_simulate_keyboard(user_id),
-            parse_mode="Markdown",
-            link_preview_options=link_preview,
-        )
-    except Exception as e:
-        print(e)
+    sess["expected_bpm"], sess['params']['ar'], sess['params']['od'], sess['params']['cs'], sess['params']['hp'] = apply_mods_to_stats(
+        sess["expected_bpm"], 
+        sess['schema']['ar']['default'], 
+        sess['schema']['od']['default'], 
+        sess['schema']['cs']['default'], 
+        sess['schema']['hp']['default'], 
+        speed_multiplier=speed_multiplier, 
+        hr=hr_active, 
+        ez=ez_active
+    )
+    
+    sess['hit_length_updated'] = int(round(float(sess['hit_length'])) / speed_multiplier)
+    
+
+async def render_simulation(update: Update, context, sess):
+    data = sess
+    
+    await edit_rich_message(
+        update,
+        message_id=data["message_id"],
+        markdown=format_text(
+            update.effective_user.id,
+            data["pp"],
+            data["perfect_pp"],
+            data["star_rating"],
+            data["map_combo"],
+            data["expected_bpm"],
+            data["params"]["300"],
+            data["params"]["100"],
+            data["params"]["50"],
+            data["params"]["мисс"],
+        ),      
+        reply_markup=get_simulate_keyboard(update.effective_user.id)        
+    )
+
+VALIDATORS = {
+    "mods": validate_mods,
+    "accuracy": validate_accuracy,
+    "rate": validate_rate,
+    "combo": validate_int,
+    "300k": validate_int,
+    "100k": validate_int,
+    "50k": validate_int,
+    "miss": validate_int,
+    "lazer": validate_bool,
+    "cs": validate_float,
+    "ar": validate_float,
+    "od": validate_float,
+    "hp": validate_float,
+}

@@ -1,6 +1,8 @@
 
 
 
+from .....utils.text_format import seconds_to_hhmmss
+
 from config import sessions_simulate
 
 
@@ -60,7 +62,8 @@ def update_hits(sess, param_name, new_value):
             break
 
     for k in priority:
-        sess["params"][k] = str(values[k])
+        sess["params"][k] = values[k]
+
 def calculate_rank(n300: int, n100: int, n50: int, miss: int, lazer: bool = True) -> str:
     n300 = int(n300 or 0)
     n100 = int(n100 or 0)
@@ -77,7 +80,7 @@ def calculate_rank(n300: int, n100: int, n50: int, miss: int, lazer: bool = True
 
     if miss == 0 and n300 == total_hits:
         rank = "SS"
-    elif accuracy > 95:
+    elif miss == 0 and accuracy > 95:
         rank = "S"
     elif accuracy > 90:
         rank = "A"
@@ -94,39 +97,107 @@ def format_text(user_id, pp, max_pp, stars, max_combo, expected_bpm, n300, n100,
     sess = sessions_simulate[user_id]
     schema = sess["schema"]
 
-    text = "```\n"
-
-    text += f"{'Ранк':<18}{'Точность':<12}\n"
-
     grade = sess["grade"]
     grade_text = grade + f' +{sess["params"].get("Моды")}'
-    acc = sess["params"].get("Точность", "?")
-    acc_text = f'{float(acc):.2f}% (CL)'
+    acc = sess["params"].get("Точность", 100.0)
+    acc_text = f'{float(acc):.2f}%'
     combo = sess["params"].get("Комбо", max_combo)
     combo_text = f'{combo}x/{max_combo}x'
+  
 
-    text += f"{grade_text:<18}{acc_text:<12}\n\n"
+    if int(pp) == int(max_pp):
+        choke_title = choke_value = "<code>-</code>"
+        
+        pp_text_alt = f'<b>{pp:.2f}</b>'
 
-    text += f"{'PP':<18}{'Hits':<12}\n"
+    else:
+        choke_title = 'Чоук'
+        choke_value = pp - max_pp
+        choke_value = f'{choke_value:.2f}'
 
-    pp =  f"{pp:.1f}" if pp is not None else '?'
-    pp_text = f"{pp}/{max_pp:.1f}PP"
-    hits_text = "{"
-    hits_text += f"{n300}/{n100}/{n50}/{expected_miss}"
-    hits_text += "}"
-    
-    text += f"{pp_text:<18}{hits_text:<12}\n\n"
+        pp =  f"{pp:.1f}" if pp is not None else '?'
+        pp_text_alt = f"{pp}/{max_pp:.1f}PP"
+ 
+   
+    aim_f = format_stat_2("aim", sess["aim"], sess["aim_u"])
+    acc_f = format_stat_2("acc.", sess["acc"], sess["acc_u"])
+    spd_f = format_stat_2("speed", sess["speed"], sess["speed_u"])
 
-    aim, acc, speed = sess["aim"], sess["acc"], sess["speed"]
-    skills_text = f"Aim:Acc:Speed"
-    rate = f'{sess["params"].get("Скорость")}x'
+    rate = sess["params"].get("Скорость")
 
-    text += f"{skills_text:<22}{'Скорость':<8}\n"
+    if rate == 1.0:
+        rate_text = ''
+    else:
+        rate_text = f' ({rate}x) '
 
-    skills_text = f"{aim:.0f} : {acc:.0f} : {speed:.0f}"    
-    text += f"{skills_text:<22}{rate:<8}\n"
+    map_cs = schema['cs']['default']
+    map_ar = schema['ar']['default']
+    map_od = schema['od']['default']
+    map_hp = schema['hp']['default']
 
-    text += f""
-    text += "```\n"
+    cs = format_stat("CS", map_cs, sess['params']['cs'])
+    ar = format_stat("AR", map_ar, sess['params']['ar'])
+    od = format_stat("OD", map_od, sess['params']['od'])
+    hp = format_stat("HP", map_hp, sess['params']['hp'])
 
-    return text
+    map_url = sess['map_url']
+    map_full = sess['beatmap_escaped']
+    map_text = f'<a href="{map_url}">{map_full} [{stars:.2f}★]</a>'
+
+    if sess['params']['Лазер']: 
+        is_stable_client = ""
+    else:
+        is_stable_client = "(Stable)"
+
+    caption = f"""   
+##### {sess['username']}
+{sess['cover_rich_block']}
+
+<details><summary>{map_text}</summary>
+
+| <code>Автор (сет)</code> | <a href="{map_url}">{sess['creator']}</a> 🔗 | <code>ID карты</code> | <code>{sess['beatmap']}</code> |
+|:--:|:------------:|:--:|:------------:|
+|{map_cs:g}<sub>CS</sub>|{map_ar:g}<sub>AR</sub>|{map_od:g}<sub>OD</sub>|{map_hp:g}<sub>HP</sub>|
+| <code>Объекты</code> | {sess['max_hits']} | <code>Статус</code> | {sess['status']} |
+
+</details>
+
+<h3>{grade_text}{rate_text}{is_stable_client} 〰️ <code>Симуляция</code></h3>
+
+|Точность*</code></sup>|{choke_title}|PP| 
+|:-:|:-:|:-:|
+|{acc_text}|{choke_value}|{pp_text_alt}|
+|<code>{acc_f}</code>|<code>{aim_f}</code>|<code>{spd_f}</code>|
+
+|{n300}<sub>300</sub>|{n100}<sub>100</sub>|{n50}<sub>50</sub>|{expected_miss}<sub>x</sub>|
+|:-:|:-:|:-:|:-:|
+|<code>{cs}</code>|<code>{ar}</code>|<code>{od}</code>|<code>{hp}</code>|
+| <code>Длина</code> | {seconds_to_hhmmss(sess['hit_length_updated'])} | <code>BPM</code> | {expected_bpm:g} |
+"""
+
+    return caption
+
+def format_stat(name, base, modified):
+    if modified > base:
+        icon = "🔺"
+    elif modified < base:
+        icon = "🔻"
+    else:
+        icon = ""
+
+    return f"{icon}{modified:g}<sub>{name}</sub>"
+
+def format_stat_2(name, base, modified):
+    if modified > base:
+        icon = "⭡"
+    elif modified < base:
+        icon = "⭣"
+    else:
+        icon = ""
+
+    return f"{icon}{modified:.0f}<sub>{name}</sub>"
+
+def truncate(text: str, length: int = 6):
+    if len(text) <= length:
+        return text
+    return text[:length] + ".."
