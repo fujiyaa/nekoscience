@@ -44,9 +44,10 @@ def get_profile_text(user_data):
     return f"""
 {get_rich_userlink(user_data)}
 
-<tg-collage>
-  <img src="{user_data['cover_url']}"/>
-</tg-collage>
+<tg-slideshow>
+<img src="{user_data['cover_url']}"/>
+<img src="{user_data['avatar_url']}"/>
+</tg-slideshow>
 
 - ### Макс. рейтинг: <code> #{peak_rank:,}   {peak_date}</code>
 </hr>

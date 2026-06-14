@@ -206,14 +206,38 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
         hit_miss = f"{hit_miss}❌"
 
     # extra_caption = await get_score_caption(cached_entry)
-    lazer_total_score = lazer_data.get("total_score")
-    legacy_total_score = osu_score.get("score_legacy")
 
-    sep = "<code>..</code>"
+    sep = "<code>...</code>"
+
+    # preview_url = map.get("preview_url")
+
+    # if preview_url is None:
+    #     preview_url = ""
+    # else:
+    #     preview_url = f'<audio src="{preview_url}"></audio>\n'
+
+    osu_score['score_lazer'] = lazer_data.get("total_score")
+    scores = [
+        ("1", "score_lazer"),
+        ("2", "score_legacy_lazer"),
+        ("3", "score_legacy"),
+        ("4", "total_score_without_mods"),
+    ]
+
+    seen = set()
+    result = {}
+
+    for label, field in scores:
+        value = osu_score.get(field, 0)
+
+        if value in seen:
+            result[label] = "-"
+        else:
+            seen.add(value)
+            result[label] = f"{value:,}"
 
     caption = f"""   
 <h3><a href="https://osu.ppy.sh/users/{osu_score.get("user_id")}">{country_flag} <b>{username}: </b></a>{pp_profile_text_alt}pp <sup>{global_rank_text_alt}</sup><h2>
-
 
 <tg-collage>
 <img src="{map.get('card2x_url')}"/>
@@ -221,15 +245,12 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
 
 <details><summary>{map_text}</summary>
 
-| CS | AR | OD | HP |
-|:-:|:-:|:-:|:-:|
-|{map_cs:.1f}|{map_ar:.1f}|{map_od:.1f}|{map_hp:.1f}|
+| <code>Автор (сет)</code> | <a href="{map_url}">{truncate(mapper)}</a> 🔗 | <code>ID карты</code> | <code>{map_id}</code> |
+|:--:|:------------:|:--:|:------------:|
+| <code>CS</code> | <b>{map_cs:g}</b> | <code>OD</code> | <b>{map_od:g}</b> |
+| <code>AR</code> | <b>{map_ar:g}</b> | <code>HP</code> | <b>{map_hp:g}</b> |
+| <code>Объекты</code> | {max_hits} | <code>Статус</code> | {status.capitalize()} |
 
-| Длина | BPM | Объекты |
-|:-:|:-:|:-:|
-|{text_format.seconds_to_hhmmss(length)}|{bpm:g}|{max_hits}|
-
-<aside><a href="{map_url}">{status.capitalize()} сет от {mapper} 🔗</a> • <a href="https://myangelfujiya.ru/weakness/direct?id={map_id}">direct🔗</a></aside>
 </details>
 
 <h3> <a href="{score_url}">{rank}</a> {mods_text} 〰️ <tg-time unix="{unix_time}" format="r">{score_date}</tg-time></h3>
@@ -238,15 +259,17 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
 |:-:|:-:|:-:|
 |{accuracy_display}|{combo_text}|{pp_text_alt}|
 
-<details><summary>{sep} {hit300} {sep} {hit100} {sep} {hit50} {sep} {hit_miss} -  {status.capitalize()}</summary>
+<details><summary> {sep} {hit_miss} -  {status.capitalize()}</summary>
 
 |{hit300} 🔵|{hit100} 🟢|{hit50} 🟡|{hit_miss}|
 |:-:|:-:|:-:|:-:|
-|{cs:g}<sub>CS</sub>|{ar:g}<sub>AR</sub>|{od:g}<sub>OD</sub>|<sub><code>{bpm:g} BPM</code></sub>|
+|{cs:g}<sub>CS</sub>|{ar:g}<sub>AR</sub>|{od:g}<sub>OD</sub>|{hp:g}<sub>HP</sub>|
 
-| Score (стд) | Score (лазер) |
-|:------:|:-----:|
-| {legacy_total_score:,} | {lazer_total_score:,} |
+|<code>Длина</code> | {text_format.seconds_to_hhmmss(length)} | <code>Макс. PP</code> | {perfect_pp:.2f} | 
+|:--:|:------------:|:--:|:------------:|
+|<code>BPM</code> | {bpm:g} | <code>-</code> | <code>-</code> | 
+| <code>Лазер</code> | {result['1']} | <code>Лазер-CL</code> | {result['3']} |
+| <code>Стебйл</code> | <u>{result['2']}</u> | <code>Лазер-NM</code> | {result['4']} |
 
 <aside>{score_url}</aside>
 </details>"""
@@ -334,3 +357,8 @@ def iso_to_unix(iso_str: str) -> int:
 def pretty_time(iso_str: str) -> str:
     dt = datetime.fromisoformat(iso_str.replace("Z", "+00:00"))
     return dt.strftime("%d %b %Y %H:%M")
+
+def truncate(text: str, length: int = 6):
+    if len(text) <= length:
+        return text
+    return text[:length] + ".."

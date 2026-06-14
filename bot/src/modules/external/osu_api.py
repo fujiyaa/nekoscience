@@ -715,7 +715,9 @@ async def score_to_schema(score, user_info):
             "cover_url":    user_info.get('cover_url'),
         },
         "map": {
-            "card2x_url":   beatmapset.get('covers', {}).get('card@2x'),
+            "card2x_url":   beatmapset.get('covers', {}).get('card@2x'),            
+            "preview_url":  score.get('beatmapset', {}).get('preview_url'),  # new thing
+
             "beatmap_full": f"{beatmapset.get('artist', '')} - {beatmapset.get('title', '')} [{beatmap.get('version', '')}]",            
             "mapper":       beatmapset.get("creator"),
             "beatmap_id":   beatmap.get("id"),
@@ -733,11 +735,13 @@ async def score_to_schema(score, user_info):
             "rank_legacy":      score.get("rank"),            
             "date":             score.get("created_at") or score.get("ended_at"),  
             "id":               score.get("id"),
-            "best_id":          score.get("best_id")
+            "best_id":          score.get("best_id"),
         },
         "osu_score": {
             "user_id" :         score.get("user_id", score.get("user", {}).get("id")) or None,
-            "score_legacy":     score.get("classic_total_score") or score.get("legacy_total_score") or 0,
+            "score_legacy":     score.get("classic_total_score") or 0,
+            "score_legacy_lazer":score.get("legacy_total_score") or 0,
+            "total_score_without_mods": score.get("total_score_without_mods") or 0,
             "score_lazer":      score.get("score") or 0,
             "mods":             mods_text,
             "accuracy":         score.get("accuracy"),
