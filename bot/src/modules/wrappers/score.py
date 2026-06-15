@@ -147,6 +147,8 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
     mods_text = f'{mods_lazer}{is_stable_client}'
     combo_text = f'<b>{osu_score.get("max_combo")}x</b>/{perfect_combo}x'
 
+    choke_title = choke_value = "<code>-</code>"
+    
     if not rank == "F" and not failed:
         pp_text = f'<b>{pp:.1f}</b>/{perfect_pp:.1f} <s>({max_pp:.1f}pp)</s>'
         pp_text_alt = f'<b>{pp:.2f}</b> <s>({max_pp:.2f})</s>'
