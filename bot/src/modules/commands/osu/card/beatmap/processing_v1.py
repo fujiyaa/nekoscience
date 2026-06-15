@@ -99,10 +99,10 @@ async def create_beatmap_image(map_data, beatmap_id):
     payload = {
         "map_path": str(beatmap_id), 
         
-        "n300": 0,
-        "n100": 0,
-        "n50": 0,
-        "misses": 0,                   
+        "n300": None,
+        "n100": None,
+        "n50": None,
+        "misses": None,                  
         
         "mods": str(""), 
         "combo": int(0),      
