@@ -119,9 +119,9 @@ def format_text(user_id, pp, max_pp, stars, max_combo, expected_bpm, n300, n100,
         pp_text_alt = f"{pp}/{max_pp:.1f}PP"
  
    
-    aim_f = format_stat_2("aim", sess["aim"], sess["aim_u"])
-    acc_f = format_stat_2("acc.", sess["acc"], sess["acc_u"])
-    spd_f = format_stat_2("speed", sess["speed"], sess["speed_u"])
+    aim_f = format_stat_2("aim", sess["aim_u"], sess["aim"])
+    acc_f = format_stat_2("acc.", sess["acc_u"], sess["acc"])
+    spd_f = format_stat_2("speed", sess["speed_u"], sess["speed"])
 
     rate = sess["params"].get("Скорость")
 
