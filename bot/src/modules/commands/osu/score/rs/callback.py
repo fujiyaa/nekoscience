@@ -62,6 +62,10 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     session = user_sessions.get(message_id)
     if not session:
         return
+    
+    score_id = str(session["scores"][new_index]["osu_api_data"]["id"])
+    entry = load_score_file(score_id)
+    map_id=entry.get('map').get('beatmap_id')
 
     if action == "switchExt":     
         session["keyboardExt"] = not session["keyboardExt"]
@@ -70,17 +74,14 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             new_index,
             total,
             message_id,
-            extended=session["keyboardExt"]
+            extended=session["keyboardExt"],
+            beatmap_id=map_id
         )
 
         await try_send(
             update.effective_message.edit_reply_markup,
             reply_markup=reply_markup
-        )        
-
-        score_id = str(session["scores"][new_index]["osu_api_data"]["id"])
-        entry = load_score_file(score_id)
-        map_id=entry.get('map').get('beatmap_id')
+        )
 
         reset_remove_timer(
             context.bot,
@@ -102,7 +103,8 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             total,
             message_id,
             extended=session["keyboardExt"],
-            loading_image_flag=True 
+            loading_image_flag=True,
+            beatmap_id=map_id
         )
         await try_send(
             update.effective_message.edit_reply_markup,
@@ -166,7 +168,13 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if message_id in user_sessions:
         keyboardExt = user_sessions[message_id]["keyboardExt"]
 
-    reply_markup = await get_keyboard(new_index, len(session["scores"]), message_id, keyboardExt)
+    reply_markup = await get_keyboard(
+        new_index, 
+        len(session["scores"]), 
+        message_id, 
+        keyboardExt,
+        beatmap_id=map_id
+    )
 
     try:
         if img_path and os.path.isfile(img_path) and os.path.getsize(img_path) > 0:

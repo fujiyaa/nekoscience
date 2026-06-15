@@ -112,7 +112,12 @@ async def rs(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_sessions[message_id] = local_session        
         session = user_sessions[message_id]
 
-        reply_markup = await get_keyboard(session["index"], len(session["scores"]), message_id)
+        reply_markup = await get_keyboard(
+            session["index"], 
+            len(session["scores"]), 
+            message_id,
+            beatmap_id=map_id
+        )
         
         # msg = await try_send(
         #     msg.edit_reply_markup, 
