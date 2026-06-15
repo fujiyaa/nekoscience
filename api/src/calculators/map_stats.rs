@@ -191,13 +191,17 @@ pub async fn calculate_map_stats(
     
     // maybe overdoing here by amount of calcs (OsuPerformance, Performance...)
 
-    let attrs = OsuPerformance::try_new(&map)
+    let mut attrs_temp = OsuPerformance::try_new(&map)
         .unwrap()
         .mods(mods)
         .state(score_state)
-        .lazer(lazer)
-        .calculate()
-        .unwrap();
+        .lazer(lazer);
+
+    if clock_rate != 1.0 {
+        attrs_temp = attrs_temp.clock_rate(clock_rate);
+    }
+
+    let attrs = attrs_temp.calculate().unwrap();
       
     let acc = attrs.pp_acc;
     let aim = attrs.pp_aim;

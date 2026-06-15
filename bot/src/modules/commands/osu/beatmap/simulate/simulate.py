@@ -14,7 +14,7 @@ from .....external.osu_http import beatmap
 from .....external.localapi import get_map_stats_neko_api
 from .....actions.messages import delete_user_message, delete_message_after_delay, safe_send_message
 from .....actions.context import set_message_context, get_message_context
-from .....external.local_skills import get_skills_by_scores_v2
+from .....external.local_skills import get_skills_by_scores_v3
 from .....systems.auth import check_osu_verified, get_osu_id
 from .....external.osu_api import get_top_100_scores, get_beatmap
 from .....actions.rich import rich_reply
@@ -237,7 +237,7 @@ async def skills(user_id: str):
         osu_id = await get_osu_id(user_id)
         best_pp = await get_top_100_scores(saved_name, user_id=osu_id, limit=30, plain=True)
                     
-        return await get_skills_by_scores_v2(best_pp)
+        return await get_skills_by_scores_v3(best_pp)
     
     except:
         return 0, 0, 0
