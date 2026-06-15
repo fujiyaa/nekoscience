@@ -317,7 +317,7 @@ def apply_attrs(sess):
     if sess['params']['Скорость'] != 1.0:
         speed_multiplier = sess['params']['Скорость']
 
-    sess["expected_bpm"], sess['params']['ar'], sess['params']['od'], sess['params']['cs'], sess['params']['hp'] = apply_mods_to_stats(
+    sess["expected_bpm"], sess['ar_display'], sess['od_display'], sess['cs_display'], sess['hp_display'] = apply_mods_to_stats(
         sess["expected_bpm"], 
         sess['schema']['ar']['default'], 
         sess['schema']['od']['default'], 

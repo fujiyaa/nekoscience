@@ -135,10 +135,10 @@ def format_text(user_id, pp, max_pp, stars, max_combo, expected_bpm, n300, n100,
     map_od = schema['od']['default']
     map_hp = schema['hp']['default']
 
-    cs = format_stat("CS", map_cs, sess['params']['cs'])
-    ar = format_stat("AR", map_ar, sess['params']['ar'])
-    od = format_stat("OD", map_od, sess['params']['od'])
-    hp = format_stat("HP", map_hp, sess['params']['hp'])
+    cs = format_stat("CS", map_cs, sess['cs_display'])
+    ar = format_stat("AR", map_ar, sess['ar_display'])
+    od = format_stat("OD", map_od, sess['od_display'])
+    hp = format_stat("HP", map_hp, sess['hp_display'])
 
     map_url = sess['map_url']
     map_full = sess['beatmap_escaped']

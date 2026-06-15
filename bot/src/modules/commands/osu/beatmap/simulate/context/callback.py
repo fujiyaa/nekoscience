@@ -174,7 +174,11 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "speed":speed,
                 "acc_u": acc_u,
                 "aim_u": aim_u,
-                "speed_u": speed_u
+                "speed_u": speed_u,
+                "cs_display": values.get("cs", 0),
+                "ar_display": values.get("ar", 0),
+                "od_display": values.get("od", 0),
+                "hp_display": values.get("hp", 0),
             }
 
             bot_msg = await edit_rich_query(

@@ -456,7 +456,7 @@ PARAMS_TEMPLATE = {
         "type": "accuracy",
         "msg": "точность",
         "min": 0.0,
-        "max": 0.0,
+        "max": 100.0,
         "default": 100.0
     },
     "Скорость": {
