@@ -2,12 +2,13 @@
 
 
 import asyncio
-import traceback
+import traceback, html
 from telegram.ext import ContextTypes
 from telegram import Update, InputFile
 
 from ......actions.public_buttons import get_keyboard as get_pkb
 from ......actions.messages import safe_edit_query, safe_query_answer
+from ......actions.rich import edit_rich_query
 from ......actions.context import set_message_context
 from ......external.osu_http import fetch_txt_beatmaps
 from ......external.osu_api import get_osu_token, get_beatmap
@@ -64,7 +65,22 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             _new_card = user_settings.get("new_card", True)
             map_data["lang"] = user_settings.get("lang", "ru") 
 
-            img_path = await create_beatmap_image(map_data, map_id)             
+            img_path = await create_beatmap_image(map_data, map_id)        
+
+            mapset = map_data.get('beatmapset', {})
+
+            artist = mapset.get('artist', 'artist')
+            title = mapset.get('title', 'title')
+
+            full_title = f"{artist} - {title}"
+            beatmap_escaped = html.escape(full_title)            
+            preview_url = mapset.get("preview_url")
+
+            if preview_url is None:
+                preview_url = ""
+            else:
+                preview_url = f'<details><summary><code>Превью для: </code> {beatmap_escaped}</summary><audio src="{preview_url}"></audio>\n</details>'            
+     
 
             with open(img_path, "rb") as f:
                 try:
@@ -82,6 +98,15 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     )
                     
             if bot_msg:
+                try:                   
+                    await edit_rich_query(
+                        query,
+                        markdown=preview_url
+                    )
+                    audio_sent = True
+                except:
+                    await query.delete_message()  
+
                 set_message_context(
                     bot_msg, 
                     reply=False, 
@@ -89,9 +114,8 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     map_title=map_data['beatmapset']['title'], 
                     mapper_username=map_data['owners'][0]['username'],
                     origin_call_user_id=update.effective_user.id,
-                )
-            
-            await query.delete_message()              
+                )            
+                        
             asyncio.create_task(delayed_remove(img_path))
 
         except Exception:

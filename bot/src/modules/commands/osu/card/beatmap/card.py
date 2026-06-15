@@ -1,8 +1,7 @@
 
 
 
-import os
-import asyncio
+import asyncio, html
 
 from telegram import Update, InputFile
 from telegram.ext import ContextTypes
@@ -11,10 +10,11 @@ from .....systems.logging import log_all_update
 from .....systems.cooldowns import check_user_cooldown
 from .....actions.messages import delete_user_message, delete_message_after_delay, safe_send_message
 from .....external.osu_http import fetch_txt_beatmaps
-from .....external.osu_api import get_osu_token, get_beatmap
+from .....external.osu_api import get_beatmap
 from .....actions.context import set_message_context, get_message_context
 from .context.buttons import get_context_keyboard
 from .....actions.public_buttons import get_keyboard as get_pkb
+from .....actions.rich import send_rich_message
 from .processing_v1 import create_beatmap_image
 from .utils import delayed_remove
 import temp
@@ -108,8 +108,7 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
 
             results, failed = await fetch_txt_beatmaps(maps_ids)
 
-            token = await get_osu_token()
-            map_data = await get_beatmap(beatmap_id, token)
+            map_data = await get_beatmap(beatmap_id)
 
             user_id = str(update.effective_user.id)
 
@@ -118,9 +117,32 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
             _new_card = user_settings.get("new_card", True)
             map_data["lang"] = user_settings.get("lang", "ru")
 
-            img_path = await create_beatmap_image(map_data, beatmap_id)             
+            img_path = await create_beatmap_image(map_data, beatmap_id) 
+            
+            mapset = map_data.get('beatmapset', {})
+
+            artist = mapset.get('artist', 'artist')
+            title = mapset.get('title', 'title')
+
+            full_title = f"{artist} - {title}"
+            beatmap_escaped = html.escape(full_title)            
+            preview_url = mapset.get("preview_url")
+
+            if preview_url is None:
+                preview_url = ""
+            else:
+                preview_url = f'<details><summary><code>Превью для: </code> {beatmap_escaped}</summary><audio src="{preview_url}"></audio>\n</details>'            
 
             with open(img_path, "rb") as f:
+                try:                   
+                    await send_rich_message(
+                        chat_id=update.effective_chat.id,
+                        message_thread_id=update.effective_message.message_thread_id,
+                        markdown=preview_url
+                    )
+                except:
+                    pass
+                
                 try:
                     reply_markup = get_pkb(beatmap_id=str(beatmap_id))
                     bot_msg = await message.reply_photo(
@@ -129,16 +151,14 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
                 except:
                     bot_msg = await message.reply_photo(
                         InputFile(f),
-                    )
+                    )       
+
                 if user_request:
-                    try:                        
-                        await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=temp_message.message_id)
-                    except:
-                        await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=temp_message.message_id)
+                    await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=temp_message.message_id)
             
             asyncio.create_task(delayed_remove(img_path))
 
-            if bot_msg:
+            if bot_msg:                
                 set_message_context(
                     bot_msg, 
                     reply=False, 
