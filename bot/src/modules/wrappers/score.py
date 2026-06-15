@@ -261,7 +261,7 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
 
 <h3> <a href="{score_url}">{rank}</a> {mods_text} 〰️ <tg-time unix="{unix_time}" format="r">{score_date}</tg-time></h3>
 
-|Точность|Комбо|PP| 
+|<code>Точность</code>|<code>Комбо</code>|<code>PP</code>| 
 |:-:|:-:|:-:|
 |{accuracy_display}|{combo_text}|{pp_text_alt}|
 
