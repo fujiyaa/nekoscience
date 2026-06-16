@@ -183,6 +183,10 @@ DEFAULT_SCORES_PROP = {
     "Score": {
         "en": "Score",
         "ru": "Скор"
+    },
+    "map": {
+        "en": "map",
+        "ru": "карта"
     }
 }
 

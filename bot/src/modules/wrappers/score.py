@@ -37,7 +37,7 @@ async def process_score_and_image(
     lazer_data =        cached_entry['lazer_data']
     osu_statistics_max= cached_entry['osu_statistics_max']
     state =             cached_entry['state']
-    meta =              cached_entry['meta']    
+    # meta =              cached_entry['meta']    
 
     if not cached_entry['state']['calculated']:
         await caclulte_cached_entry(cached_entry)
@@ -83,12 +83,17 @@ async def process_score_and_image(
     #temp pp fix
     pp = pp if not isinstance(osu_score.get("pp"), (int, float)) or osu_score.get("pp") <= 0 else osu_score.get("pp")
     
+    score_value_text = ''
+    score_title = DEFAULT_SCORES_PROP.get("Score")[lang]
     try:
-        _ = osu_score.get("pp") + 1.0 
+        some_pp =  osu_score.get("pp")
+
+        if some_pp == 0: raise
         
         score_value = DEFAULT_SCORES_PROP.get("Ranked")[lang]
     except:
         score_value = DEFAULT_SCORES_PROP.get("Unranked")[lang]
+        score_value_text = gray(f" - {score_value} {score_title}")
 
     
     accuracy = osu_score.get('accuracy')
@@ -114,14 +119,13 @@ async def process_score_and_image(
         try_title = DEFAULT_SCORES_PROP.get("Try")[lang]
         try_text = f"<i><b>- {try_title} #{try_count}</b></i>"
 
-    if not image_todo_flag:
+    # if not image_todo_flag:
 
-        map_id = map.get('beatmap_id')
-        map_url = f"https://osu.ppy.sh/b/{map_id}"
-        map_text = f'<a href="{map_url}">{beatmap_escaped} <mark><b>{stars:.2f}</b>★</mark></a> {try_text}\n\n'
-       
-    else:        
-        map_text = f''
+    map_id = map.get('beatmap_id')
+    map_url = f"https://osu.ppy.sh/b/{map_id}"
+        
+    # else:        
+    #     map_text = f''
 
     bpm, ar, od, cs, hp = apply_mods_to_stats(
         expected_bpm, base_ar, base_od, base_cs, base_hp,
@@ -140,7 +144,7 @@ async def process_score_and_image(
     mods_text = f'{mods_lazer}{is_stable_client}'
     combo_text = f'<b>{osu_score.get("max_combo")}x</b>/{perfect_combo}x'
 
-    choke_title = choke_value = "<code>-</code>"
+    choke_title = choke_value = gray('-')
     
     if not rank == "F" and not failed:
         pp_text_alt = f'<b>{pp:.2f}</b> <s>({max_pp:.2f})</s>'
@@ -150,10 +154,11 @@ async def process_score_and_image(
         choke_value = f'{choke_value:.2f}'
 
         if int(pp) == int(max_pp):
-            choke_title = choke_value = "<code>-</code>"
+            choke_title = choke_value = gray('-')
             pp_text_alt = f'<b>{pp:.2f}</b>'
     else:
-        fail_title = DEFAULT_SCORES_PROP.get("Fail")[lang]  
+        fail_title = DEFAULT_SCORES_PROP.get("Fail")[lang]
+        score_title = score_value = '-'
 
         if lazer:
             hit300 = osu_score.get("count_300") or 0
@@ -168,7 +173,7 @@ async def process_score_and_image(
             pp_text_alt = f'<code>{fail_title} ({progress:.0f}%) ~<b>{pp:.2f}</b></code>'
         else:
             rank = "F"
-            pp_text_alt = f'<code>{fail_title} ~{pp:.2f}'
+            pp_text_alt = f'<code>{fail_title} ~{pp:.2f}</code>'
 
     score_url = f"https://osu.ppy.sh/scores/{osu_api_data.get('id')}"
     score_date = text_format.format_osu_date(osu_api_data.get('date'), today=is_recent)
@@ -234,10 +239,13 @@ async def process_score_and_image(
     stable_title =      DEFAULT_SCORES_PROP.get("Stable")[lang]
     lazer_title =       DEFAULT_SCORES_PROP.get("Lazer")[lang]
     lazer_cl_title =    DEFAULT_SCORES_PROP.get("Lazer-CL")[lang]
-    score_title =       DEFAULT_SCORES_PROP.get("Score")[lang]
 
     status_short =      CARD_BEATMAP.get(f"{status}_short", status)[lang]
-    status =            CARD_BEATMAP.get(status, status)[lang]
+    status =            CARD_BEATMAP.get(status)[lang]
+    # map_title =         DEFAULT_SCORES_PROP.get("map")[lang]
+
+    map_text = f'<a href="{map_url}">{beatmap_escaped} <mark><b>{stars:.2f}</b>★</mark></a> {sup(status.capitalize())} {try_text}'
+       
 
     caption = f"""   
 <h3><a href="https://osu.ppy.sh/users/{osu_score.get("user_id")}">{country_flag} <b>{username}: </b></a>{pp_text}pp <sup>{global_rank_text_alt}</sup><h2>
@@ -261,7 +269,7 @@ async def process_score_and_image(
 |:-:|:-:|:-:|
 |{accuracy_display}|{combo_text}|{pp_text_alt}|
 
-<details><summary> {sep} {hit_miss} -  {status.capitalize()}</summary>
+<details><summary> {sep} {hit_miss}  {score_value_text}</summary>
 
 |{hit300}{sub(300)}|{hit100}{sub(100)}|{hit50}{sub(50)}|{hit_miss}|
 |:-:|:-:|:-:|:-:|
@@ -357,3 +365,6 @@ def gray(str):
 
 def sub(str):
     return f"<sub>{str}</sub>"
+
+def sup(str):
+    return f"<sup><i>{str}</i></sup>"
