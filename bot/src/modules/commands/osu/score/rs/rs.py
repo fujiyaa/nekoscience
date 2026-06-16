@@ -64,8 +64,11 @@ async def rs(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         scores = await get_user_scores(username, limit=100, fails=fails)
         if not scores:
-            await update.message.edit_text(
-                f"`{DT.get('No recent scores...')[l]}`", 
+            await context.bot.edit_message_text(
+                chat_id=loading_msg.chat_id,
+                message_id=loading_msg.id,
+                # message_thread_id=getattr(loading_msg, "message_thread_id", None),
+                text=f"`{DT.get('No recent scores...')[l]}`", 
                 parse_mode="Markdown"
             )
             return           
