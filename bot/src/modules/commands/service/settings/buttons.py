@@ -17,7 +17,7 @@ async def get_settings_kb(user_id, user_data):
         ("display_fails_average_recent", "settings_ar_fails"),
         ("display_more_scores", "settings_sc_more_scores"),
         ("settings_score_card", "settings_score_card"),
-        ("settings_allow_direct", "settings_allow_direct"),
+        # ("settings_allow_direct", "settings_allow_direct"),
     ]
 
     def mark(value: bool) -> str:

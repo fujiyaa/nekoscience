@@ -136,6 +136,10 @@ DEFAULT_SCORES_PROP = {
         "en": "Try",
         "ru": "Трай"
     },
+    "Fail": {
+        "en": "Fail",
+        "ru": "Фейл"
+    },
     "Stable": {
         "en": "Stable",
         "ru": "Стейбл"
@@ -167,6 +171,18 @@ DEFAULT_SCORES_PROP = {
     "Link": {
         "en": "Link",
         "ru": "Ссылка"
+    },
+    "Ranked": {
+        "en": "Ranked",
+        "ru": "Ранк"
+    },
+    "Unranked": {
+        "en": "Unranked",
+        "ru": "Анранкед"
+    },
+    "Score": {
+        "en": "Score",
+        "ru": "Скор"
     }
 }
 

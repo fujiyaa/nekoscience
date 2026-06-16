@@ -116,7 +116,7 @@ def format_text(user_id, pp, max_pp, stars, max_combo, expected_bpm, n300, n100,
         choke_value = f'{choke_value:.2f}'
 
         pp =  f"{pp:.1f}" if pp is not None else '?'
-        pp_text_alt = f"{pp}/{max_pp:.1f}PP"
+        pp_text_alt = f"{pp}/{max_pp:.1f}"
  
    
     aim_f = format_stat_2("aim", sess["aim_u"], sess["aim"])

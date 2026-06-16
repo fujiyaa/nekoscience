@@ -163,7 +163,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     await safe_query_answer(query)
     rs_bg_render = False # for now ...
-    img_path, caption = await process_score_and_image(entry, image_todo_flag=rs_bg_render)
+    img_path, caption = await process_score_and_image(entry, image_todo_flag=rs_bg_render, lang=l)
     
     if message_id in user_sessions:
         keyboardExt = user_sessions[message_id]["keyboardExt"]

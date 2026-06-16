@@ -83,6 +83,13 @@ async def process_score_and_image(
     #temp pp fix
     pp = pp if not isinstance(osu_score.get("pp"), (int, float)) or osu_score.get("pp") <= 0 else osu_score.get("pp")
     
+    try:
+        _ = osu_score.get("pp") + 1.0 
+        
+        score_value = DEFAULT_SCORES_PROP.get("Ranked")[lang]
+    except:
+        score_value = DEFAULT_SCORES_PROP.get("Unranked")[lang]
+
     
     accuracy = osu_score.get('accuracy')
 
@@ -111,7 +118,7 @@ async def process_score_and_image(
 
         map_id = map.get('beatmap_id')
         map_url = f"https://osu.ppy.sh/b/{map_id}"
-        map_text = f'<a href="{map_url}">{beatmap_escaped} [{stars:.2f}★]</a> {try_text}\n\n'
+        map_text = f'<a href="{map_url}">{beatmap_escaped} <mark><b>{stars:.2f}</b>★</mark></a> {try_text}\n\n'
        
     else:        
         map_text = f''
@@ -146,6 +153,8 @@ async def process_score_and_image(
             choke_title = choke_value = "<code>-</code>"
             pp_text_alt = f'<b>{pp:.2f}</b>'
     else:
+        fail_title = DEFAULT_SCORES_PROP.get("Fail")[lang]  
+
         if lazer:
             hit300 = osu_score.get("count_300") or 0
             hit100 = osu_score.get("count_100") or 0
@@ -156,10 +165,10 @@ async def process_score_and_image(
             hits = hit300 + hit100 + hit50 + hit_miss
 
             progress = (hits / max_hits) * 100 if max_hits else 0
-            pp_text_alt = f'<code>Фейл ({progress:.0f}%)</code>  ~<b>{pp:.2f}</b> '
+            pp_text_alt = f'<code>{fail_title} ({progress:.0f}%) ~<b>{pp:.2f}</b></code>'
         else:
             rank = "F"
-            pp_text_alt = f'<code>Фейл ~{pp:.2f)}'
+            pp_text_alt = f'<code>{fail_title} ~{pp:.2f}'
 
     score_url = f"https://osu.ppy.sh/scores/{osu_api_data.get('id')}"
     score_date = text_format.format_osu_date(osu_api_data.get('date'), today=is_recent)
@@ -204,7 +213,6 @@ async def process_score_and_image(
             seen.add(value)
             result[label] = f"{value:,}"
 
-
     owner =             DEFAULT_SCORES_PROP.get("owner")[lang]
     map_id_title =      DEFAULT_SCORES_PROP.get("map ID")[lang]
     status_title =      DEFAULT_SCORES_PROP.get("Status")[lang]
@@ -226,7 +234,7 @@ async def process_score_and_image(
     stable_title =      DEFAULT_SCORES_PROP.get("Stable")[lang]
     lazer_title =       DEFAULT_SCORES_PROP.get("Lazer")[lang]
     lazer_cl_title =    DEFAULT_SCORES_PROP.get("Lazer-CL")[lang]
-    score_link_title =  DEFAULT_SCORES_PROP.get("Link")[lang]
+    score_title =       DEFAULT_SCORES_PROP.get("Score")[lang]
 
     status_short =      CARD_BEATMAP.get(f"{status}_short", status)[lang]
     status =            CARD_BEATMAP.get(status, status)[lang]
@@ -247,7 +255,7 @@ async def process_score_and_image(
 
 </details>
 
-<h3> <a href="{score_url}">{rank}</a> {mods_text} 〰️ <tg-time unix="{unix_time}" format="r">{score_date}</tg-time></h3>
+<h3> <a href="{score_url}"><u><i>{rank}<i> {mods_text}</u></a> 〰️ <tg-time unix="{unix_time}" format="r">{score_date}</tg-time></h3>
 
 |{gray(accuracy_title)}|{gray(combo_title)}|{gray(pp_title)}| 
 |:-:|:-:|:-:|
@@ -263,7 +271,7 @@ async def process_score_and_image(
 
 | {gray(lazer_title)} | {result['1']} | {gray(stable_title)} | <u>{result['2']}</u> |
 |:-:|:-:|:-:|:-:|
-| {gray(lazer_cl_title)} | {result['3']} | {gray(score_link_title)} | <a href="{score_url}">🔗</a> |
+| {gray(lazer_cl_title)} | {result['3']} | {gray(score_title)} | {gray(score_value)} |
 </details>"""
 
     img_path = None
