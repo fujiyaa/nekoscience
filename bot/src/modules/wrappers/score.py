@@ -133,8 +133,8 @@ async def process_score_and_image(
     if lazer: 
         is_stable_client = ""
     else:
-        is_stable_client = DEFAULT_SCORES_PROP.get("Stable")[lang]     
-
+        is_stable_client = f' ({DEFAULT_SCORES_PROP.get("Stable")[lang]})'
+    
     mods_lazer = text_format.normalize_plus(mods_str)
 
     mods_text = f'{mods_lazer}{is_stable_client}'
