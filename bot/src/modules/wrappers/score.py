@@ -17,11 +17,18 @@ from ..utils.calculate import caclulte_cached_entry
 from ..actions.rich import rich_reply, edit_rich_message
 
 from config import USER_SETTINGS_FILE
+from ..systems.translations import DEFAULT_SCORES_PROP, CARD_BEATMAP
 
 
 
 # универсальная для команд где нужен скор
-async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = False, is_recent: bool = True): 
+async def process_score_and_image(
+    cached_entry: dict, 
+    image_todo_flag: 
+    bool = False, 
+    is_recent: bool = True, 
+    lang: str = "ru"
+): 
     user =              cached_entry['user']
     map =               cached_entry['map']
     osu_api_data =      cached_entry['osu_api_data']
@@ -86,28 +93,10 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
 
     accuracy_display = round(accuracy * 100, 2)
     accuracy_display = (f"{accuracy_display}%")
-
-    # if lazer:   
-    #     if accuracy == 100:
-    #         rank = 'SS'
-    #     elif accuracy >= 90:
-    #         if (osu_score.get('count_miss') == 0) and (accuracy >= 95):
-    #             rank = 'S'
-    #         else:
-    #             rank = 'A'
-    #     elif accuracy >= 80:
-    #         rank = 'B'
-    #     elif accuracy >= 70:
-    #         rank = 'C'
-    #     else:
-    #         rank = 'D'
     
     username = user.get("username")
     pp_text = user.get('total_pp', '0')
-    pp_profile_text_alt = pp_text
-    # global_rank_text = f"(#{user.get('global_rank'):,}" if user.get("global_rank") else "(#????"
     global_rank_text_alt = f"#{user.get('global_rank'):,}" if user.get("global_rank") else "#????" 
-    # rank_text = f"{username}: {pp_text}pp {global_rank_text})"    
     country_flag = text_format.country_code_to_flag(country_code = user.get("country_code")) 
 
     beatmap_escaped = html.escape(map.get('beatmap_full'))
@@ -115,20 +104,17 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
     try_count, failed = osu_score.get('try_count'), osu_score.get('failed')
     try_text = ''
     if try_count > 1:
-        try_text = f"<i><b>- Try #{try_count}</b></i>"
+        try_title = DEFAULT_SCORES_PROP.get("Try")[lang]
+        try_text = f"<i><b>- {try_title} #{try_count}</b></i>"
 
-    if not image_todo_flag:         
-        # user_link = f'<a href="https://osu.ppy.sh/users/{osu_score.get("user_id")}">{country_flag} <b>{rank_text}</b></a>\n\n'  
+    if not image_todo_flag:
 
         map_id = map.get('beatmap_id')
         map_url = f"https://osu.ppy.sh/b/{map_id}"
         map_text = f'<a href="{map_url}">{beatmap_escaped} [{stars:.2f}★]</a> {try_text}\n\n'
-        # spacer = '\n'
+       
     else:        
-        # user_link = f''  
-
         map_text = f''
-        # spacer = '\n'
 
     bpm, ar, od, cs, hp = apply_mods_to_stats(
         expected_bpm, base_ar, base_od, base_cs, base_hp,
@@ -140,7 +126,7 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
     if lazer: 
         is_stable_client = ""
     else:
-        is_stable_client = "(Stable)"        
+        is_stable_client = DEFAULT_SCORES_PROP.get("Stable")[lang]     
 
     mods_lazer = text_format.normalize_plus(mods_str)
 
@@ -150,10 +136,9 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
     choke_title = choke_value = "<code>-</code>"
     
     if not rank == "F" and not failed:
-        pp_text = f'<b>{pp:.1f}</b>/{perfect_pp:.1f} <s>({max_pp:.1f}pp)</s>'
         pp_text_alt = f'<b>{pp:.2f}</b> <s>({max_pp:.2f})</s>'
 
-        choke_title = 'Чоук'
+        choke_title = DEFAULT_SCORES_PROP.get("Choke")[lang]
         choke_value = pp - max_pp
         choke_value = f'{choke_value:.2f}'
 
@@ -171,12 +156,10 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
             hits = hit300 + hit100 + hit50 + hit_miss
 
             progress = (hits / max_hits) * 100 if max_hits else 0
-            pp_text = f'<code>Fail ({progress:.0f}%)</code>  ~<b>{pp:.1f}pp</b> '
             pp_text_alt = f'<code>Фейл ({progress:.0f}%)</code>  ~<b>{pp:.2f}</b> '
         else:
             rank = "F"
-            pp_text = f'<code>Fail ~{pp:.1f}pp </code>'
-            pp_text_alt = f'<code>Фейл ~{pp:.2f}</code>'
+            pp_text_alt = f'<code>Фейл ~{pp:.2f)}'
 
     score_url = f"https://osu.ppy.sh/scores/{osu_api_data.get('id')}"
     score_date = text_format.format_osu_date(osu_api_data.get('date'), today=is_recent)
@@ -184,18 +167,6 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
     map_url = f"https://osu.ppy.sh/b/{map_id}"
     status = map.get('status')
     mapper = map.get("mapper")
-
-    # miss, miss_text = osu_score.get('count_miss'), '\n'
-    # if miss:
-    #     miss_text = f"<b> • {osu_score.get('count_miss')}</b>❌\n"
-
-    # caption = (
-    #     f'{user_link}{map_text}<b><i><a href="{score_url}">{rank}</a></i>  {mods_text}   {accuracy_display}</b>    <code>{score_date}</code>{spacer}'
-    #     f"{pp_text} • {combo_text}{miss_text}"
-    #     f"<code>{text_format.seconds_to_hhmmss(length)} • CS:{cs:g} AR:{ar:g} OD:{od:g} BPM:{bpm:g}</code>\n\n"
-    #     f'⦿ <a href="{map_url}">Mapset</a> by {mapper} • {status.capitalize()}  <a href="https://myangelfujiya.ru/weakness/direct?id={map_id}">🔗</a>\n'
-    #     )      
- 
 
     iso_time = osu_api_data.get('date')
     unix_time = iso_to_unix(iso_time)
@@ -205,23 +176,13 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
     hit50 = osu_score.get("count_50") or "<code>0</code>"
     hit_miss = osu_score.get('count_miss') or 0
     max_hits = osu_statistics_max['great']
-    # length_text = text_format.seconds_to_hhmmss(length)
 
     if hit_miss == 0:
         hit_miss = "<code>0✖️</code>"
     else:
         hit_miss = f"{hit_miss}❌"
 
-    # extra_caption = await get_score_caption(cached_entry)
-
     sep = "<code>...</code>"
-
-    # preview_url = map.get("preview_url")
-
-    # if preview_url is None:
-    #     preview_url = ""
-    # else:
-    #     preview_url = f'<audio src="{preview_url}"></audio>\n'
 
     osu_score['score_lazer'] = lazer_data.get("total_score")
     scores = [
@@ -243,8 +204,35 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
             seen.add(value)
             result[label] = f"{value:,}"
 
+
+    owner =             DEFAULT_SCORES_PROP.get("owner")[lang]
+    map_id_title =      DEFAULT_SCORES_PROP.get("map ID")[lang]
+    status_title =      DEFAULT_SCORES_PROP.get("Status")[lang]
+    objects_title =     DEFAULT_SCORES_PROP.get("Objects")[lang]
+
+    AR_title =          CARD_BEATMAP.get("AR")[lang]
+    CS_title =          CARD_BEATMAP.get("CS")[lang]
+    HP_title =          CARD_BEATMAP.get("HP")[lang]
+    OD_title =          CARD_BEATMAP.get("OD")[lang]
+    
+    accuracy_title =    DEFAULT_SCORES_PROP.get("Accuracy")[lang]
+    combo_title =       DEFAULT_SCORES_PROP.get("Combo")[lang]
+    pp_title =          "PP"
+    max_pp_title =      DEFAULT_SCORES_PROP.get("Max PP")[lang]
+    # choke
+    len_title =         DEFAULT_SCORES_PROP.get("Length")[lang]
+    bpm_title =         DEFAULT_SCORES_PROP.get("BPM")[lang]
+
+    stable_title =      DEFAULT_SCORES_PROP.get("Stable")[lang]
+    lazer_title =       DEFAULT_SCORES_PROP.get("Lazer")[lang]
+    lazer_cl_title =    DEFAULT_SCORES_PROP.get("Lazer-CL")[lang]
+    score_link_title =  DEFAULT_SCORES_PROP.get("Link")[lang]
+
+    status_short =      CARD_BEATMAP.get(f"{status}_short", status)[lang]
+    status =            CARD_BEATMAP.get(status, status)[lang]
+
     caption = f"""   
-<h3><a href="https://osu.ppy.sh/users/{osu_score.get("user_id")}">{country_flag} <b>{username}: </b></a>{pp_profile_text_alt}pp <sup>{global_rank_text_alt}</sup><h2>
+<h3><a href="https://osu.ppy.sh/users/{osu_score.get("user_id")}">{country_flag} <b>{username}: </b></a>{pp_text}pp <sup>{global_rank_text_alt}</sup><h2>
 
 <tg-collage>
 <img src="{map.get('card2x_url')}"/>
@@ -252,30 +240,30 @@ async def process_score_and_image(cached_entry: dict, image_todo_flag: bool = Fa
 
 <details><summary>{map_text}</summary>
 
-| <code>Автор (сет)</code> | <a href="{map_url}">{truncate(mapper)}</a> 🔗 | <code>ID карты</code> | <code>{map_id}</code> |
-|:--:|:------------:|:--:|:------------:|
-|{map_cs:g}<sub>CS</sub>|{map_ar:g}<sub>AR</sub>|{map_od:g}<sub>OD</sub>|{map_hp:g}<sub>HP</sub>|
-| <code>Объекты</code> | {max_hits} | <code>Статус</code> | {status.capitalize()} |
+| {gray(owner)} | <a href="{map_url}">{truncate(mapper)}</a> 🔗 | {gray(map_id_title)} | {gray(map_id)} |
+|:--:|:-:|:-:|:-:|
+|{map_cs:g}{sub(CS_title)}|{map_ar:g}{sub(AR_title)}|{map_od:g}{sub(OD_title)}|{map_hp:g}{sub(HP_title)}|
+| {gray(objects_title)} | {max_hits} | {gray(status_title)} | {status_short} |
 
 </details>
 
 <h3> <a href="{score_url}">{rank}</a> {mods_text} 〰️ <tg-time unix="{unix_time}" format="r">{score_date}</tg-time></h3>
 
-|<code>Точность</code>|<code>Комбо</code>|<code>PP</code>| 
+|{gray(accuracy_title)}|{gray(combo_title)}|{gray(pp_title)}| 
 |:-:|:-:|:-:|
 |{accuracy_display}|{combo_text}|{pp_text_alt}|
 
 <details><summary> {sep} {hit_miss} -  {status.capitalize()}</summary>
 
-|{hit300}<sub>300</sub>|{hit100}<sub>100</sub>|{hit50}<sub>50</sub>|{hit_miss}|
+|{hit300}{sub(300)}|{hit100}{sub(100)}|{hit50}{sub(50)}|{hit_miss}|
 |:-:|:-:|:-:|:-:|
-|{format_stat("CS", map_cs, cs)}|{format_stat("AR", map_ar, ar)}|{format_stat("OD", map_od, od)}|{format_stat("HP", map_hp, hp)}|
-| <code>Макс. PP</code> | {perfect_pp:.2f} | <code>Длина</code> | {text_format.seconds_to_hhmmss(length)} |
-| <code>{choke_title}</code> | {choke_value} | <code>BPM</code> | {bpm:g} |
+|{format_stat(CS_title, map_cs, cs)}|{format_stat(AR_title, map_ar, ar)}|{format_stat(OD_title, map_od, od)}|{format_stat(HP_title, map_hp, hp)}|
+| {gray(max_pp_title)} | {perfect_pp:.2f} | {gray(len_title)} | {text_format.seconds_to_hhmmss(length)} |
+| {gray(choke_title)} | {choke_value} | {gray(bpm_title)} | {bpm:g} |
 
-| <code>Лазер</code> | {result['1']} | <code>Стебйл</code> | <u>{result['2']}</u> |
-|:--:|:------------:|:--:|:------------:|
-| <code>Лазер-CL</code> | {result['3']} | <code>Ссылка</code> | <a href="{score_url}">🔗</a> |
+| {gray(lazer_title)} | {result['1']} | {gray(stable_title)} | <u>{result['2']}</u> |
+|:-:|:-:|:-:|:-:|
+| {gray(lazer_cl_title)} | {result['3']} | {gray(score_link_title)} | <a href="{score_url}">🔗</a> |
 </details>"""
 
     img_path = None
@@ -297,15 +285,8 @@ async def send_score(
     user_settings = s.get(str(update.effective_user.id), {}) 
     rs_bg_render = user_settings.get("rs_bg_render", False)  
     rs_bg_render = False # for now ...
-    img_path, caption = await process_score_and_image(cached_entry, image_todo_flag=rs_bg_render, is_recent=is_recent)
-
-    # link_preview = LinkPreviewOptions(
-    #     url=cached_entry.get('map').get('card2x_url'),
-    #     is_disabled=False,
-    #     prefer_small_media=False,
-    #     prefer_large_media=True,
-    #     show_above_text=True
-    # )
+    lang = user_settings.get("lang", "ru")
+    img_path, caption = await process_score_and_image(cached_entry, image_todo_flag=rs_bg_render, is_recent=is_recent, lang=lang)
 
     try:
         if query:
@@ -316,13 +297,6 @@ async def send_score(
                 await query.edit_message_reply_markup(reply_markup=reply_markup)
                 return await query.edit_message_media(media=media)
             else:
-                # return await query.edit_message_text(
-                #     text=caption,
-                #     parse_mode="HTML",
-                #     link_preview_options=link_preview,
-                #     reply_markup=reply_markup
-                # )
-
                 return await edit_rich_message(
                     update.callback_query.message.id,
                     caption,
@@ -337,13 +311,6 @@ async def send_score(
                     reply_markup=reply_markup
                 )
             else:
-                # return await update.message.reply_text(
-                #     caption,
-                #     parse_mode="HTML",
-                #     link_preview_options=link_preview,
-                #     reply_markup=reply_markup
-                # )                
-            
                 return await rich_reply(
                     update,
                     caption,
@@ -376,3 +343,9 @@ def format_stat(name, base, modified):
         icon = ""
 
     return f"{icon}{modified:g}<sub>{name}</sub>"
+
+def gray(str):
+    return f"<code>{str}</code>"
+
+def sub(str):
+    return f"<sub>{str}</sub>"

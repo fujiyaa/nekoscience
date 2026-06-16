@@ -123,6 +123,50 @@ DEFAULT_SCORES_PROP = {
     "Length": {
         "en": "Length",
         "ru": "Длина"
+    },
+    "Max PP": {
+        "en": "Max PP",
+        "ru": "Макс. РР"
+    },
+    "Choke": {
+        "en": "Choke",
+        "ru": "Чоук"
+    },
+    "Try": {
+        "en": "Try",
+        "ru": "Трай"
+    },
+    "Stable": {
+        "en": "Stable",
+        "ru": "Стейбл"
+    },
+    "Lazer": {
+        "en": "Lazer",
+        "ru": "Лазер"
+    },
+    "Lazer-CL": {
+        "en": "Lazer-CL",
+        "ru": "Лазер-CL"
+    },
+    "owner": {
+        "en": "Owner (set)",
+        "ru": "Автор (сет)"
+    },
+    "map ID": {
+        "en": "map ID",
+        "ru": "ID карты"
+    },
+    "Status": {
+        "en": "Status",
+        "ru": "Статус"
+    },
+    "Objects": {
+        "en": "Objects",
+        "ru": "Объекты"
+    },
+    "Link": {
+        "en": "Link",
+        "ru": "Ссылка"
     }
 }
 
@@ -446,6 +490,41 @@ CARD_BEATMAP = {
         "en": "Unknown",
         "ru": "Неизвестно",
         "color": (26, 26, 26)
+    },
+    "wip_short": {
+        "en": "WIP",
+        "ru": "В разр.",
+        "color": (255, 255, 102)
+    },
+    "pending_short": {
+        "en": "Pending",
+        "ru": "Рассм.",
+        "color": (255, 255, 102)
+    },
+    "qualified_short": {
+        "en": "Qualified",
+        "ru": "Квал.",
+        "color": (51, 255, 255)
+    },
+    "ranked_short": {
+        "en": "Ranked",
+        "ru": "Рейт.",
+        "color": (102, 255, 102)
+    },
+    "loved_short": {
+        "en": "Loved",
+        "ru": "Любим.",
+        "color": (255, 102, 178)
+    },
+    "graveyard_short": {
+        "en": "Graveyard",
+        "ru": "Грейв",
+        "color": (26, 26, 26)
+    },
+    "approved_short": {
+        "en": "approved",
+        "ru": "Аппрув.",
+        "color": (102, 255, 102)
     }
 }
 
