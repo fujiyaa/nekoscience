@@ -64,8 +64,7 @@ async def rs(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         scores = await get_user_scores(username, limit=100, fails=fails)
         if not scores:
-            await safe_send_message(
-                update, 
+            await update.message.edit_text(
                 f"`{DT.get('No recent scores...')[l]}`", 
                 parse_mode="Markdown"
             )
