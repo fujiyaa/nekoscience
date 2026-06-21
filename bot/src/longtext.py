@@ -133,11 +133,188 @@ help_text = """Weakness
      │    майнкрафт сервера
      │
      └─  /ping | /uptime"""
-help_hint = """
 
-💾 - Работает только после авторизации
-🔧 - Есть настройки для этой команды
-📖 - Доп. помощь /help *команда*"""
+help_text_markdown = f"""
+### 📖 Weakness Хелп
+
+<details>
+<summary>⚙️ osu!-аккаунт и настройки Weakness</summary>
+#### /name
+Авторизация osu!
+
+#### /settings
+Личные астройки Weakness
+</details>
+
+<details>
+<summary>⭐️ osu! команды</summary>
+<details>
+<summary>🎮 Последние игры</summary>
+
+### /recent или /rs 📖
+Последние игры игрока
+
+### /fix
+Фикс последней игры
+
+</details>
+
+<details>
+<summary>📑 Старые игры</summary>
+
+### /score или /s 📖
+Игры на карте из чата
+
+### Ссылка на скор
+Можно просто отправить ссылку на score.osu и бот обработает её без команды.
+
+</details>
+
+<details>
+<summary>👤 Профиль</summary>
+
+### @WeakoBot user ...
+Инлайн поиск игроков
+
+### /profile или /p
+Профиль игрока
+
+### /pc
+Сравнение профилей
+
+</details>
+
+<details>
+<summary>📊 Статистика из топ-100</summary>
+
+### /beatmaps или /b 💾
+Теги, юзертеги и прочая статистика
+
+### /nochoke или /n 🔧📖
+Топ без миссов
+
+### /ppfire или /fire 📖
+Костёр PP
+
+### /mods
+Статистика модов
+
+### /mappers
+Топ мапперов
+
+### /anime
+Процент аниме-фонов
+
+### /aim
+Aim-слоп
+
+### /speed
+Speed-слоп
+
+### /nishometr
+Показатель нишевости
+
+</details>
+
+<details>
+<summary>📈 Средняя статистика</summary>
+
+### /average или /a
+Минимум, среднее и максимум скоров
+
+### /minmax или /mx
+Минимум и максимум со ссылками
+
+</details>
+
+<details>
+<summary>🗺 Карты</summary>
+
+### @WeakoBot map ...
+Инлайн поиск карт
+
+### /music
+MP3 из карты
+
+### /bg
+Фон карты
+
+### /simulate
+Расчёт PP
+
+### /maps_skill
+Подбор карт по скиллам
+
+</details>
+
+<details>
+<summary>🖼 Карточки</summary>
+
+### /card или /c
+Карточка профиля
+
+### /skills
+Карточка навыков
+
+### /cardtop
+Топ-5 PP
+
+### /map
+Карточка карты
+
+</details>
+</details>
+
+<details>
+<summary>🕹 Игры</summary>
+
+### /challenge 💾
+Меню дейли-челленджа
+
+### /higherlower или /hl 💾📖
+Угадай характеристику случайного скора
+
+### /economy или /e 💾
+Экономическая мини-игра
+
+</details>
+
+<details>
+<summary>👥 Чат</summary>
+
+### /topchat или /l
+Топ участников чата
+
+</details>
+
+<details>
+<summary>🔧 Другое</summary>
+
+### /roll
+Случайное число или текст
+
+### /reminders
+напоминалки в чате
+
+### /doubt или /blacks
+отправляет гифки
+
+### /gn
+гемблинг картинок
+
+### /mod 📖
+модерация чата (если доступно)
+
+### /minecraft
+проверить статус сервера
+
+### /ping и /uptime
+пинг бота относительно телеграма
+</details>
+"""
+help_hint = """
+- 💾 Работает только после авторизации
+- 📖 Есть доп. помощь (/help *команда*)"""
 
 
 HELP_TEXTS = {

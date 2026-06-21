@@ -1,77 +1,103 @@
-
-
-
-import temp
-
 from telegram import Update, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 
 from ....actions.messages import safe_query_answer
-from .buttons import get_settings_kb
+from ....actions.rich import edit_rich_query
 
-from config import USER_SETTINGS_FILE
-
-
+from .defaults import SETTINGS
+from .menu import main_menu, category_menu
+from .service import neko_settings
 
 async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    user_id = str(query.from_user.id)
-    name = str(query.from_user.name)
+    user_id = query.from_user.id
+    name = query.from_user.name
+
+    await safe_query_answer(query)
 
     parts = query.data.split(":")
-    if len(parts) < 2:
-        await query.answer("Неверная кнопка")
+    action = parts[0]
+
+    #
+    # settings
+    #
+
+    if action == "settings_main":
+
+        kb, text = main_menu(
+            neko_settings, 
+            user_id,
+            name
+        )
+
+    #
+    # settings_category:<category>
+    #
+
+    elif action == "settings_category":
+
+        category = parts[1]
+
+        kb, text = category_menu(
+            neko_settings,
+            user_id,
+            category,
+            name
+        )
+
+    #
+    # settings_toggle:<setting>
+    #
+
+    elif action == "settings_toggle":
+
+        key = parts[1]
+
+        neko_settings.toggle(user_id, key)
+
+        category = SETTINGS[key]["category"]
+
+        kb, text = category_menu(
+            neko_settings,
+            user_id,
+            category,
+            name
+        )
+
+    #
+    # settings_set:<setting>:<value>
+    #
+
+    elif action == "settings_set":
+
+        key = parts[1]
+        value = parts[2]
+
+        ui = SETTINGS[key].get("ui", "toggle")
+
+        if ui == "toggle":
+            neko_settings.toggle(user_id, key)
+
+        elif ui == "select":
+            neko_settings.set(user_id, key, value)
+
+        category = SETTINGS[key]["category"]
+
+        kb, text = category_menu(
+            neko_settings,
+            user_id,
+            category,
+            name
+        )
+
+    else:
         return
 
-    setting_key = parts[0]
-    user_id_in_data = parts[-1]
-
-    if user_id != user_id_in_data:
-        await query.answer("Чужая кнопка")
-        return
-
-    settings = temp.load_json(USER_SETTINGS_FILE, default={})
-    user_settings = settings.get(user_id, {
-        "lang": "ru", 
-        "notify": True, 
-        "rs_bg_render": False, 
-        "new_card": True,
-        "display_fails": True,
-        "display_fails_average_recent": True,
-        "display_more_scores": False,
-        "settings_score_card": False,
-        "settings_allow_direct": True
-    })
-
-    bool_settings_map = {
-        "settings_score_card": "settings_score_card",
-        "settings_sc_more_scores": "display_more_scores",
-        "settings_rs_fails": "display_fails",
-        "settings_ar_fails": "display_fails_average_recent",
-        "settings_allow_direct": "settings_allow_direct"
-    }
-
-    if setting_key in bool_settings_map:
-        field = bool_settings_map[setting_key]
-        user_settings[field] = not user_settings.get(field, False)
-        await safe_query_answer(query)
-
-    elif setting_key == "settings_english":
-        user_settings["lang"] = "en"
-        await safe_query_answer(query)
-
-    elif setting_key == "settings_russian":
-        user_settings["lang"] = "ru"
-        await safe_query_answer(query)
-
-    settings[user_id] = user_settings
-    temp.save_json(USER_SETTINGS_FILE, settings)
-
-    kb, text = await get_settings_kb(user_id, settings)
     try:
-        await query.edit_message_text(
-            f'{text} {name}',
+        await edit_rich_query(
+            query=query,
+            markdown=text,
             reply_markup=InlineKeyboardMarkup(kb)
         )
     except Exception:
-        await query.answer()
+        pass

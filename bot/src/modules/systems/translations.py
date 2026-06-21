@@ -198,18 +198,49 @@ DEFAULT_BUTTON_TYPES = {
 }
 
 TRANSLATIONS = {
+    "settings_category_general": {
+        "ru": "⭐️ Основное",
+        "en": "⭐️ General",
+    },
+    "settings_category_rs": {
+        "ru": "/rs ♨️",
+        "en": "/rs ♨️",
+    },
+    "settings_category_score": {
+        "ru": "/score ↩️",
+        "en": "/score ↩️",
+    },
+    "settings_category_average": {
+        "ru": "/average ⚖️",
+        "en": "/average ⚖️",
+    },   
+    "settings_back": {
+        "en": "⬅️ Back",
+        "ru": "⬅️ Назад",
+    },
+
     "lang": {
         "en": "Language",
         "ru": "Язык"
     },
-    "english": {
-        "en": "English",
-        "ru": "English"
+    "settings_rs_display_fails": {
+        "ru": "Фейлы",
+        "en": "Fails"
     },
-    "russian": {
-        "en": "Русский",
-        "ru": "Русский"
+    "settings_average_recent_display_fails": {
+        "ru": "Фейлы",
+        "en": "Fails"
     },
+    "settings_scores_display_more_scores": {
+        "ru": "Больше скоров",
+        "en": "More scores"
+    },
+    "settings_rs_score_to_card": {
+        "ru": "Ссылка >> Карточка",
+        "en": "Link >> Score render"  
+    },
+    
+
     "settings_title": {
         "en": "⚙️ User Settings for",
         "ru": "⚙️ Настройки для"
@@ -243,61 +274,11 @@ TRANSLATIONS = {
         "ru": "до "
     },
     "r_fix_top100": {
-        "en": " ",
+        "en": "Cool, but not in top100-pp",
         "ru": "Абмициозно, но не в топ100-pp"
     },
-    "settings_rs_title": {
-        "en": "/rs - Render background?",
-        "ru": "/rs - Рисовать картинку?"
-    },
-    "settings_yes": {
-        "en": "Sure (slow)",
-        "ru": "Да (долго)"
-    },
-    "settings_no": {
-        "en": "Hell no",
-        "ru": "Нет"
-    },
-    "settings_card_title": {
-        "en": "Type of /card",
-        "ru": "Тип карточки /card"
-    },
-    "settings_new": {
-        "en": "New",
-        "ru": "Новая"
-    },
-    "settings_old": {
-        "en": "Old",
-        "ru": "Старая"
-    },
-    "settings_n_a": {
-        "en": "Not available",
-        "ru": "Недоступно"
-    },
-    "settings_rs_fails": {
-        "en": "/rs   •   Fails",
-        "ru": "/rs   •   Фейлы"
-    },
-    "settings_ar_fails": {
-        "en": "/average  •  Fails",
-        "ru": "/average  •  Фейлы"
-    },
-    "fails_yes": {
-        "en": "Enabled",
-        "ru": "Вкл"
-    },
-    "fails_no": {
-        "en": "Disabled",
-        "ru": "Выкл"
-    },
-    "settings_sc_more_scores": {
-        "en": "/score  •  More scores",
-        "ru": "/score  •  Больше скоров"
-    },
-    "settings_score_card": {
-        "en": "Link >> Score card",
-        "ru": "Ссылка >> Карточка скора"
-    },
+        
+    
     "settings_score_card_y": {
         "en": "Enabled",
         "ru": "Вкл"

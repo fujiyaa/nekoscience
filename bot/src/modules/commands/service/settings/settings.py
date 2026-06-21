@@ -1,29 +1,24 @@
-
-
-
-import temp
-
 from telegram import Update, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 
 from ....systems.logging import log_all_update
-from .buttons import get_settings_kb
+from ....actions.rich import rich_reply
 
-from config import USER_SETTINGS_FILE
-
+from .menu import main_menu
+from .service import neko_settings
 
 
 async def settings_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await log_all_update(update)
 
-    user_id = str(update.effective_user.id)
-    name = str(update.effective_user.name)
+    user_id = update.effective_user.id
+    name = update.effective_user.name
 
-    settings = temp.load_json(USER_SETTINGS_FILE, default={})
-  
-    kb, text = await get_settings_kb(user_id, settings)
+    keyboard, text = main_menu(neko_settings, user_id, name)
 
-    await update.message.reply_text(
-        f'{text} {name}',
-        reply_markup=InlineKeyboardMarkup(kb)
+    await rich_reply(
+        update=update,
+        markdown=text,
+        message_thread_id=update.message.message_thread_id,
+        reply_markup=InlineKeyboardMarkup(keyboard),
     )

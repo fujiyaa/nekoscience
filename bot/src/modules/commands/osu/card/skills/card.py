@@ -22,9 +22,10 @@ from .....external.osu_api import get_osu_token, get_user_profile
 from .....external.osu_api import get_top_100_scores
 from .....external.osu_http import fetch_txt_beatmaps
 from .....external.local_skills import get_skills_by_scores
+from ....service.settings.service import neko_settings
 from .processing_v1 import make_card
 
-from config import COOLDOWN_CARD_COMMAND, USER_SETTINGS_FILE, CARDS_DIR
+from config import COOLDOWN_CARD_COMMAND, CARDS_DIR
 from config import AVATARS_DIR, message_authors
 
 
@@ -92,10 +93,8 @@ async def skills(update: Update, context: ContextTypes.DEFAULT_TYPE, user_reques
         try:
             token = await get_osu_token()
             user_data = await asyncio.wait_for(get_user_profile(username, token=token), timeout=10)
-            
-            s = temp.load_json(USER_SETTINGS_FILE, default={})
-            user_settings = s.get(str(user_id), {}) 
-            user_data["lang"] = user_settings.get("lang", "ru") 
+                        
+            user_data["lang"] = neko_settings.get(user_id, "lang") # зачем тут язык?
         
             try:
                 user_id = user_data["id"]  # изменить на percent("NM") < 10: другом количестве скоров!!!

@@ -16,9 +16,9 @@ from .....wrappers.minmax_table import get_minmax_table
 from .....wrappers.ppfire import get_fire_text
 from .....wrappers.userlink_rich import get_rich_userlink
 from .....utils.calculate import caclulte_cached_entry, calculate_beatmap_attr
+from ....service.settings.service import neko_settings
 import temp
 
-from config import USER_SETTINGS_FILE
 from .....systems.translations import (
     TRANSLATIONS as TRA,
     DEFAULT_COMMAND_TEMPLATE as T,
@@ -39,9 +39,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         scores_type =   str(parts[4])
         k_type =        str(parts[6])
 
-        s = temp.load_json(USER_SETTINGS_FILE, default={})
-        user_settings = s.get(str(update.effective_user.id), {})
-        lang = user_settings.get("lang", "ru")
+        lang = neko_settings.get(uid_click, "lang")
                 
         if uid_click != origin_uid:
             await safe_query_answer(
@@ -68,7 +66,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 parse_mode="Markdown"
             )                         
 
-            fails = user_settings.get("display_fails_average_recent", True)
+            fails = neko_settings.get(uid_click, "settings_average_recent_display_fails")
             if fails:
                 fails = 1
 

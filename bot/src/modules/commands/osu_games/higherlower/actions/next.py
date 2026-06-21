@@ -16,11 +16,11 @@ from .....image_processing.workflows.score_adaptive.processing_v1 import create_
 from ..buttons import get_keyboard
 from ..calculate_difficulty_level import calculate_max_diff
 from ..json_schema import construct_user, construct_active
-# from .filter import filter_other_topics
+from ....service.settings.service import neko_settings
 from .....systems import scores_state_db as db
 import temp
 
-from config import COOLDOWN_HLGAME_COMMANDS, USER_SETTINGS_FILE
+from config import COOLDOWN_HLGAME_COMMANDS
 from .....systems.translations import SCORE_CAPTION as T
 
 MAX_ATTEMPTS = 1
@@ -41,9 +41,7 @@ async def send_score_compare(
     best_score: int,
     user_id: str
 ):
-    s = temp.load_json(USER_SETTINGS_FILE, default={})
-    user_settings = s.get(str(user_id), {})
-    lang = user_settings.get("lang", "ru")
+    lang = neko_settings.get(user_id, "lang")
 
     img_path = await create_score_compare_image(
         cached_entries,

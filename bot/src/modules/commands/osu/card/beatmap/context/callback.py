@@ -13,11 +13,10 @@ from ......actions.context import set_message_context
 from ......external.osu_http import fetch_txt_beatmaps
 from ......external.osu_api import get_osu_token, get_beatmap
 from ......actions.context import set_message_context
+from .....service.settings.service import neko_settings
 from ..processing_v1 import create_beatmap_image
 from ..utils import delayed_remove
-import temp
 
-from config import USER_SETTINGS_FILE
 
 
 
@@ -60,10 +59,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             user_id = str(update.effective_user.id)
 
-            s = temp.load_json(USER_SETTINGS_FILE, default={})
-            user_settings = s.get(str(user_id), {}) 
-            _new_card = user_settings.get("new_card", True)
-            map_data["lang"] = user_settings.get("lang", "ru") 
+            map_data["lang"] = neko_settings.get(user_id, "lang")
 
             img_path = await create_beatmap_image(map_data, map_id)        
 

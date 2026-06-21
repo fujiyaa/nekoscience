@@ -3,7 +3,7 @@
 
 import asyncio
 import traceback
-from telegram import Update
+from telegram import Update, CallbackQuery
 from telegram.ext import ContextTypes
 
 from .....actions.context import set_message_context
@@ -17,19 +17,19 @@ from .....wrappers.anime import get_anime_text
 from .....wrappers.aimslop import get_aimslop_text
 from .....wrappers.speedslop import get_speedslop_text
 from .....wrappers.nish import get_nish_text
+from ....service.settings.service import neko_settings
 from ..average.average import average
 import temp
-
-from config import USER_SETTINGS_FILE
 
 
 
 async def get_text_by_action(
     update: Update, 
     action,
-    username    
+    username,
+    user_id
 ):  
-    language = await init_language(str(update.effective_user.id))    
+    language = neko_settings.get(user_id, "lang")
 
     if action == 'average':
         return await average(update, username, language), None
@@ -75,7 +75,7 @@ async def send_message(
     temp_id
 ):
     try:
-        text, parse_mode = await get_text_by_action(update, action, username)
+        text, parse_mode = await get_text_by_action(update, action, username, update.message.from_user.id)
 
         if parse_mode is None:
             return # bypass
@@ -119,11 +119,11 @@ async def send_message(
 
 async def send_query(
     update: Update, 
-    query,
+    query: CallbackQuery,
     action,
     username
 ):       
-    text, parse_mode = await get_text_by_action(update, action, username)
+    text, parse_mode = await get_text_by_action(update, action, username, query.from_user.id)
     
     if parse_mode is None:
         return # bypass
@@ -175,10 +175,3 @@ async def get_data(username: str):
         best_pp = None
 
     return user_data, best_pp
-
-async def init_language(telegram_username_str: str):
-    s = temp.load_json(USER_SETTINGS_FILE, default={})
-    user_settings = s.get(telegram_username_str, {})
-    lang = user_settings.get("lang", "ru")
-
-    return lang

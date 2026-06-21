@@ -15,8 +15,7 @@ from ..wrappers.beatmap import create_beatmap_image
 # from ..wrappers.score_image_v2 import get_score_caption
 from ..utils.calculate import caclulte_cached_entry
 from ..actions.rich import rich_reply, edit_rich_message
-
-from config import USER_SETTINGS_FILE
+from ..commands.service.settings.service import neko_settings
 from ..systems.translations import DEFAULT_SCORES_PROP, CARD_BEATMAP
 
 
@@ -291,17 +290,14 @@ async def process_score_and_image(
 
 async def send_score(
         update: Update, 
-        cached_entry: dict, 
+        cached_entry: dict,
+        lang: str,
         query=None, 
         img_path=None, 
         is_recent=True,
-        reply_markup=None
+        reply_markup=None        
     ):
-    s =  temp.load_json(USER_SETTINGS_FILE, default={})
-    user_settings = s.get(str(update.effective_user.id), {}) 
-    rs_bg_render = user_settings.get("rs_bg_render", False)  
     rs_bg_render = False # for now ...
-    lang = user_settings.get("lang", "ru")
     img_path, caption = await process_score_and_image(cached_entry, image_todo_flag=rs_bg_render, is_recent=is_recent, lang=lang)
 
     try:

@@ -15,13 +15,11 @@ from .....external.localapi import read_file_neko, insert_to_file_neko, remove_f
 from .....systems.json_files import load_score_file
 from .....systems.images import delayed_remove
 from .....image_processing.workflows.score_adaptive.processing_v1 import create_score_compare_image
+from ....service.settings.service import neko_settings
 from ..buttons import get_keyboard
 from ..json_schema import construct_user
-# from .filter import filter_other_topics
-from .....systems import scores_state_db as db
-import temp
 
-from config import COOLDOWN_HLGAME_COMMANDS, USER_SETTINGS_FILE
+from config import COOLDOWN_HLGAME_COMMANDS
 from .....systems.translations import SCORE_CAPTION as T
 
 MAX_ATTEMPTS = 1
@@ -97,10 +95,7 @@ async def finish_game(update: Update, context: ContextTypes.DEFAULT_TYPE, score_
                 
                 # 1. сначала отправить сообщение
 
-                s = temp.load_json(USER_SETTINGS_FILE, default={})
-                user_settings = s.get(str(user_id), {}) 
-                l = user_settings.get("lang", "ru")
-
+                l = neko_settings.get(user_id, "lang")
                 
                 img_path = await create_score_compare_image(
                     cached_entries, 

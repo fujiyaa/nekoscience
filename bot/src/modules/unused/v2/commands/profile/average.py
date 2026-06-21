@@ -25,7 +25,8 @@ async def start_average(update, context):
 
 async def average(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
-        telegram_username_str = str(update.effective_user.id)
+        telegram_username_str = str(update.effective_user.id)  # whyyyyy
+        user_id = str(update.effective_user.id)
 
         can_run = await check_user_cooldown(
             command_name =      "average_stats",
@@ -39,9 +40,7 @@ async def average(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return      
         
 
-        s = temp.load_json(USER_SETTINGS_FILE, default={})
-        user_settings = s.get(telegram_username_str, {})
-        lang = user_settings.get("lang", "ru")
+        lang = neko_settings.get(user_id, "lang")
                             
 
         saved_name = await check_osu_verified(telegram_username_str)

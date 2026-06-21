@@ -18,10 +18,11 @@ from .....external.osu_api import get_user_scores
 from .....wrappers.score import send_score
 from .....actions.context import set_message_context
 from .....commands.osu_games.unranked.sumbit import submit_all
+from ....service.settings.service import neko_settings
 from .buttons import get_keyboard
 import temp
 
-from config import COOLDOWN_RS_COMMAND, RS_BUTTONS_TIMEOUT, USER_SETTINGS_FILE, user_sessions
+from config import COOLDOWN_RS_COMMAND, RS_BUTTONS_TIMEOUT, user_sessions
 from .....systems.translations import DEFAULT_COMMAND_TEMPLATE as DT
 
 
@@ -43,10 +44,8 @@ async def rs(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not can_run:
             return
 
-        s = temp.load_json(USER_SETTINGS_FILE, default={})
-        user_settings = s.get(str(user_id), {}) 
-        fails = user_settings.get("display_fails", True)
-        l = user_settings.get("lang", "ru")
+        l = neko_settings.get(user_id, "lang")
+        fails = neko_settings.get(user_id, "settings_rs_display_fails")
 
         saved_name = await check_osu_verified(str(update.effective_user.id))
         username = context.args[0] if context.args else saved_name            
@@ -88,6 +87,7 @@ async def rs(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 send_score, 
                 update = update,
                 cached_entry = score,
+                lang = l,
                 query = None,
                 img_path = None,
                 is_recent = True,

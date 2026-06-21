@@ -19,7 +19,7 @@ from .processing_v1 import create_beatmap_image
 from .utils import delayed_remove
 import temp
 
-from config import USER_SETTINGS_FILE
+from ....service.settings.service import neko_settings
 from config import OSU_MAP_REGEX, OSU_MAP_REGEX_2, COOLDOWN_CARD_COMMAND
 
 
@@ -112,10 +112,7 @@ async def beatmap_card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
 
             user_id = str(update.effective_user.id)
 
-            s = temp.load_json(USER_SETTINGS_FILE, default={})
-            user_settings = s.get(str(user_id), {}) 
-            _new_card = user_settings.get("new_card", True)
-            map_data["lang"] = user_settings.get("lang", "ru")
+            map_data["lang"] = neko_settings.get(user_id, "lang")
 
             img_path = await create_beatmap_image(map_data, beatmap_id) 
             

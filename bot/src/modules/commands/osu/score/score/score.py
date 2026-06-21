@@ -16,10 +16,10 @@ from .....systems.images import delayed_remove
 from .....wrappers.score_image_v2 import get_score_caption
 from .....image_processing.workflows.score_adaptive.processing_v1 import create_score_compare_image
 from .....actions.public_buttons import get_keyboard as get_pkb
+from ....service.settings.service import neko_settings
 import temp
 
 from config import COOLDOWN_RS_COMMAND     # why
-from config import USER_SETTINGS_FILE
 from .....systems.translations import SCORE_CAPTION as T
 
 
@@ -53,10 +53,8 @@ async def score(update: Update, context: ContextTypes.DEFAULT_TYPE, requested_by
             await safe_send_message(update, "❌ Не удалось загрузить скор", parse_mode="Markdown")
             return
         
-        s = temp.load_json(USER_SETTINGS_FILE, default={})
-        user_settings = s.get(str(user_id), {}) 
-        render_card = user_settings.get("settings_score_card", False)
-        l = user_settings.get("lang", "ru")
+        l = neko_settings.get(user_id, "lang")
+        render_card = neko_settings.get(user_id, "settings_rs_score_to_card")
 
         try:
             map_id=cached_entry.get('map').get('beatmap_id')
@@ -69,6 +67,7 @@ async def score(update: Update, context: ContextTypes.DEFAULT_TYPE, requested_by
             bot_msg = await send_score( 
                 update = update,
                 cached_entry = cached_entry,
+                lang = l,
                 query = None,
                 img_path = None,
                 is_recent = False,

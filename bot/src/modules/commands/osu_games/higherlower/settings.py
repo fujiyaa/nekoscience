@@ -21,7 +21,7 @@
 # from ....systems import scores_state_db as db
 # import temp
 
-# from config import COOLDOWN_HLGAME_COMMANDS, USER_SETTINGS_FILE
+# from config import COOLDOWN_HLGAME_COMMANDS, ! тут когда был старый сеттингс файл
 # from ....systems.translations import SCORE_CAPTION as T
 
 # MAX_ATTEMPTS = 1
@@ -98,7 +98,7 @@
                 
 #                 # 1. сначала отправить сообщение
 
-#                 s = temp.load_json(USER_SETTINGS_FILE, default={})
+#                 s = temp.load_json(!!! тут когда то были старые настройки, default={})
 #                 user_settings = s.get(str(user_id), {}) 
 #                 l = user_settings.get("lang", "ru")
 

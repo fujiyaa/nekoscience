@@ -15,8 +15,7 @@ from modules.systems.json_files import save_score_file
 from .....utils import text_format
 from .....external.osu_http import beatmap
 from .....utils.osu_conversions import get_mods_info
-
-from config import USER_SETTINGS_FILE
+from ....service.settings.service import neko_settings
 from .....systems.translations import TRANSLATIONS as TR
 
 
@@ -26,10 +25,10 @@ async def send_score_fix(update, cached_entry, user_id, token:str = None):
     map =               cached_entry['map']
     osu_api_data =      cached_entry['osu_api_data']
     osu_score =         cached_entry['osu_score']
-    neko_api_calc =     cached_entry['neko_api_calc']
+    # neko_api_calc =     cached_entry['neko_api_calc']
     lazer_data =        cached_entry['lazer_data']
     state =             cached_entry['state']
-    meta =              cached_entry['meta']
+    # meta =              cached_entry['meta']
     
     lazer = state.get('lazer')
     
@@ -37,7 +36,7 @@ async def send_score_fix(update, cached_entry, user_id, token:str = None):
 
     mods_str = osu_score.get("mods", "")
     mods_text = text_format.normalize_no_plus(mods_str)
-    speed_multiplier, hr_active, ez_active = get_mods_info(mods_str)
+    # speed_multiplier, hr_active, ez_active = get_mods_info(mods_str)
 
     map_id = map.get('beatmap_id')
     _path, base_values = await beatmap(int(map_id))
@@ -141,10 +140,7 @@ async def send_score_fix(update, cached_entry, user_id, token:str = None):
     pp_int, pp_frac = str(f"{pp:.2f}").split(".")
     max_pp_int, max_pp_frac = str(f"{max_pp:.2f}").split(".")
     
-    s = temp.load_json(USER_SETTINGS_FILE, default={})
-    user_settings = s.get(str(user_id), {}) 
-    lang_code = user_settings.get("lang", "ru")   
-
+    lang_code = neko_settings.get(user_id, "lang")
     
     if pos is not None and pos<101:
         live_pp = total_pp

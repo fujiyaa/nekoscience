@@ -13,11 +13,12 @@ from .....systems.logging import log_all_update
 from .....systems.auth import check_osu_verified
 from .....external.osu_api import get_osu_token, get_user_profile 
 from .....external.osu_api import get_best_pp_by_username
+from ....service.settings.service import neko_settings
 from .processing_v1 import create_profile_image
 from .utils import delayed_remove
 import temp
 
-from config import COOLDOWN_CARD_COMMAND, USER_SETTINGS_FILE
+from config import COOLDOWN_CARD_COMMAND
 from config import message_authors
 
 
@@ -85,12 +86,8 @@ async def card(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request)
         try:
             token = await get_osu_token()
             user_data = await asyncio.wait_for(get_user_profile(username, token=token), timeout=10)
-            
-            s = temp.load_json(USER_SETTINGS_FILE, default={})
-            user_settings = s.get(str(user_id), {}) 
-            new_card = user_settings.get("new_card", True)
-            user_data["lang"] = user_settings.get("lang", "ru")    
-
+                        
+            user_data["lang"] =neko_settings.get(user_id, "lang")
             
             try:
                 best_pp = await asyncio.wait_for(get_best_pp_by_username(username, token=token), timeout=10)

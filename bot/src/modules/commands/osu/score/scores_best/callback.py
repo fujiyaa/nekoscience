@@ -11,9 +11,8 @@ from .....external.osu_http import get_beatmap_title_from_file, get_beatmap_crea
 from .....external.osu_api import get_user_scores_by_beatmap
 from .send_best_scores import send_best_scores
 from .....actions.context import set_message_context
+from ....service.settings.service import neko_settings
 import temp
-
-from config import USER_SETTINGS_FILE
 
 
 
@@ -61,9 +60,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 )
                 return
             
-            s = temp.load_json(USER_SETTINGS_FILE, default={})
-            user_settings = s.get(str(update.effective_user.id), {}) 
-            more = user_settings.get("display_more_scores", True) 
+            more = neko_settings.get(uid_click, "settings_scores_display_more_scores")
 
             limit = 1
             if more: limit = 10

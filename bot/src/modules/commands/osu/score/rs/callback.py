@@ -20,18 +20,16 @@ from .....wrappers.score_image_v2 import get_score_caption
 from .....actions.context import set_message_context
 from .....image_processing.workflows.score_adaptive.processing_v1 import create_score_compare_image
 from .....systems.images import delayed_remove
+from ....service.settings.service import neko_settings
 from .buttons import get_keyboard
 
-from config import RS_BUTTONS_TIMEOUT, USER_SETTINGS_FILE, user_sessions
+from config import RS_BUTTONS_TIMEOUT, user_sessions
 
 
 
 async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    s = temp.load_json(USER_SETTINGS_FILE, default={})
-    user_settings = s.get(str(update.effective_user.id), {}) 
-    rs_bg_render = user_settings.get("rs_bg_render", False)   
-    
+       
     print(query.data)
     data = query.data.split("_")  # rs_prev_msgid / rs_next_msgid / disabled
     if data[1] == "disabled":
@@ -52,9 +50,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await safe_query_answer(query, text="⛔ Не твои кнопки", show_alert=True)
         return
     
-    s = temp.load_json(USER_SETTINGS_FILE, default={})
-    user_settings = s.get(str(user_id), {})
-    l = user_settings.get("lang", "ru")
+    l = neko_settings.get(user_id, "lang")
 
     new_index = session["index"]
     total = len(session["scores"])
