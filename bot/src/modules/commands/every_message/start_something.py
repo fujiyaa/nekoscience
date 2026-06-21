@@ -7,8 +7,10 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from ...systems.cooldowns import is_on_cooldown, update_cooldown
+from ..service.settings.service import neko_settings
 from ..osu.score.score.score import score
 from ..osu.profile.complex.router import start_profile
+from ..osu.card.profile.card import start_card
 
 from config import COOLDOWN_LINKS_IN_CHAT, OSU_USER_REGEX, OSU_SCORE_REGEX
 
@@ -43,7 +45,12 @@ async def osu_link_profile_handler(update: Update, context: ContextTypes.DEFAULT
     
     user_id = match.group(1) 
     context.args = [user_id]
-    await start_profile(update, context)
+
+    if not neko_settings.get(update.message.from_user.id, "settings_link_profile_to_card"):
+        await start_profile(update, context)
+    else:
+        await start_card(update, context)
+
     return True
 
 async def osu_link_score_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):

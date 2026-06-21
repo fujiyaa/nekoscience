@@ -18,22 +18,29 @@ CATEGORIES = {
 }
 
 SETTINGS = {
+    "settings_link_profile_to_card": {
+        "default": True,
+        "category": "general",
+        "ui": "toggle",
+    },
+    "settings_rs_score_to_card": {
+        "default": True,
+        "category": "general",
+        "ui": "toggle",
+    },
     "lang": {
         "default": "ru",
         "category": "general",
         "ui": "select",
     },
+   
 
     "settings_rs_display_fails": {
         "default": True,
         "category": "/rs",
         "ui": "toggle",
     },
-    "settings_rs_score_to_card": {
-        "default": False,
-        "category": "/rs",
-        "ui": "toggle",
-    },
+    
 
     "settings_average_recent_display_fails": {
         "default": False,

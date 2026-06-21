@@ -236,10 +236,13 @@ TRANSLATIONS = {
         "en": "More scores"
     },
     "settings_rs_score_to_card": {
-        "ru": "Ссылка >> Карточка",
-        "en": "Link >> Score render"  
+        "ru": "Ссылка на скор >> Карточка",
+        "en": "Score link >> Image"  
     },
-    
+    "settings_link_profile_to_card": {
+        "ru": "Ссылка на профиль >> Карточка",
+        "en": "Profile link >> Image"  
+    },
 
     "settings_title": {
         "en": "⚙️ User Settings for",
