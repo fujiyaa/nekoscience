@@ -1,19 +1,14 @@
 
 
 
-import lxml.html 
-import json 
 import os
-import time
-import requests
 import zipfile
 import aiohttp
 import aiofiles
 import asyncio
 import traceback
 
-from config import CACHE_TTL
-from config import BEATMAPS_DIR, STATS_BEATMAPS, MAX_CONCURRENT_REQUESTS
+from config import MAX_CONCURRENT_REQUESTS
 from .osu_api import get_beatmap
 
 semaphore = asyncio.Semaphore(MAX_CONCURRENT_REQUESTS) 

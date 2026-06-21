@@ -12,13 +12,13 @@ def get_score_path(score_id: str) -> str:
 def load_score_file(score_id: str, ignore_empty: bool = False) -> dict | None:
     path = get_score_path(score_id)
     if not os.path.exists(path) and not ignore_empty:
-        raise ValueError(f'⚠ Скора нет в кеше {score_id}')
+        raise ValueError(f'⚠ Скора нет в кеше (это не нормально для команд кроме /rs) {score_id}')
     
     try:
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
     except Exception as e:
-        print(f"⚠ Ошибка при загрузке файла {score_id}: {e}")
+        print(f"⚠ Предупреждение (это нормально если скор новый) {score_id}: {e}")
 
     return None  
 
