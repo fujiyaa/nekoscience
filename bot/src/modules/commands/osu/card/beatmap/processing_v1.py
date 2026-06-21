@@ -20,16 +20,16 @@ async def create_beatmap_image(map_data, beatmap_id):
     img_w, img_h = 1500, 1040
     corner_radius = 40
 
-    bpm_map = map_data['bpm']
+    # bpm_map = map_data['bpm']
     mode = map_data['mode_int']
     if mode != 0: return
     length = format_length(map_data['total_length'])
     
     
-    circles, sliders = map_data['count_circles'], map_data['count_sliders']
+    # circles, sliders = map_data['count_circles'], map_data['count_sliders']
     
-    plays = f"{map_data['playcount']:,}"
-    psc = map_data['passcount']
+    # plays = f"{map_data['playcount']:,}"
+    # psc = map_data['passcount']
     max_combo_map = map_data['max_combo']
     version = trim_text(map_data['version'],                38  )
     guest = trim_text(map_data['owners'][0]['username'],    30  ) 
@@ -37,7 +37,7 @@ async def create_beatmap_image(map_data, beatmap_id):
     creator = trim_text(map_data['beatmapset']['creator'],  28  )
     title1 = trim_text(map_data['beatmapset']['title'],     32  ) 
     title2 = trim_text(map_data['beatmapset']['title'],     42  )            
-    favs =  f"{map_data['beatmapset']['favourite_count']:,}"
+    # favs =  f"{map_data['beatmapset']['favourite_count']:,}"
 
     submitted = map_data['beatmapset']['submitted_date']
     updated = map_data['last_updated']
@@ -120,18 +120,18 @@ async def create_beatmap_image(map_data, beatmap_id):
     try:
         pp_data = await get_map_stats_neko_api(payload)
 
-        _pp = pp_data.get("pp")
-        _choke = pp_data.get("no_choke_pp")
+        # _pp = pp_data.get("pp")
+        # _choke = pp_data.get("no_choke_pp")
         max_pp = pp_data.get("perfect_pp")
 
         stars = pp_data.get("star_rating")
-        max_combo = pp_data.get("perfect_combo")
+        # max_combo = pp_data.get("perfect_combo")
         expected_bpm = pp_data.get("expected_bpm")
 
-        _n300 = pp_data.get("n300")
-        _n100 = pp_data.get("n100") 
-        _n50 = pp_data.get("n50")
-        _expected_miss = pp_data.get("misses")
+        # _n300 = pp_data.get("n300")
+        # _n100 = pp_data.get("n100") 
+        # _n50 = pp_data.get("n50")
+        # _expected_miss = pp_data.get("misses")
 
         aim = pp_data.get("aim")
         acc = pp_data.get("acc")
@@ -151,18 +151,18 @@ async def create_beatmap_image(map_data, beatmap_id):
             'aim': 0.0, 'acc': 0.0, 'speed': 0.0
         }
 
-        _pp = pp_data.get("pp")
-        _choke = pp_data.get("no_choke_pp")
+        # _pp = pp_data.get("pp")
+        # _choke = pp_data.get("no_choke_pp")
         max_pp = pp_data.get("perfect_pp")
 
         stars = pp_data.get("star_rating")
-        max_combo = pp_data.get("perfect_combo")
+        # max_combo = pp_data.get("perfect_combo")
         expected_bpm = pp_data.get("expected_bpm")
 
-        _n300 = pp_data.get("n300")
-        _n100 = pp_data.get("n100") 
-        _n50 = pp_data.get("n50")
-        _expected_miss = pp_data.get("misses")
+        # _n300 = pp_data.get("n300")
+        # _n100 = pp_data.get("n100") 
+        # _n50 = pp_data.get("n50")
+        # _expected_miss = pp_data.get("misses")
 
         aim = pp_data.get("aim")
         acc = pp_data.get("acc")

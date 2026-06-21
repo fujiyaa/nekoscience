@@ -38,8 +38,8 @@ def make_card(scores, username, country_code, avatar_path, skills,
     asset = Image.open(f"{BOT_DIR}/cards/assets/gamemodes/{mode}.png").convert("RGBA")
     card.paste(asset, (808, 53), asset)
 
-    asset = Image.open(f"{BOT_DIR}/cards/assets/branding/icon.png").convert("RGBA")
-    card.paste(asset, (0, 1260-184), asset)
+    # asset = Image.open(f"{BOT_DIR}/cards/assets/branding/icon.png").convert("RGBA")
+    # card.paste(asset, (0, 1260-184), asset)
    
 
     # дем
@@ -312,12 +312,12 @@ def make_card(scores, username, country_code, avatar_path, skills,
             fill=progress_color
         )
 
-    bot_first, bot_second = "Fujiyaosu", "Bot"
+    bot_first, bot_second = "Weako", "Bot"
     today = date.today().isoformat()
-    draw.text((220, 1140), bot_first, font=font_black_small, fill="white")
+    draw.text((40, 1140), bot_first, font=font_black_small, fill="white")
     bbox = draw.textbbox((0, 0), bot_first, font=font_black_small)
     text_width = bbox[2] - bbox[0]
-    draw.text((222+text_width, 1140), bot_second, font=font_thin_small, fill="white")
+    draw.text((40+text_width, 1140), bot_second, font=font_thin_small, fill="white")
 
     draw.text((700, 1140), today, font=font_light_italic_big, fill="white")
 
