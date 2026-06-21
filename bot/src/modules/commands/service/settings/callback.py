@@ -13,10 +13,25 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = query.from_user.id
     name = query.from_user.name
 
-    await safe_query_answer(query)
 
     parts = query.data.split(":")
     action = parts[0]
+
+    if len(parts) < 2:
+        return
+
+    try:
+        owner_id = int(parts[-1])
+
+        if owner_id != user_id:
+            await query.answer("Чужие кнопки", show_alert=False)
+            return
+    except:
+        await query.answer("Ошибка кнопки...", show_alert=False)
+        return
+
+    
+    await safe_query_answer(query)
 
     #
     # settings

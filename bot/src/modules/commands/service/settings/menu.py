@@ -28,7 +28,7 @@ def main_menu(settings_service, user_id, user_name: str):
         keyboard.append([
             InlineKeyboardButton(
                 T[meta["title"]][lang],
-                callback_data=f"settings_category:{category}"
+                callback_data=f"settings_category:{category}:{user_id}"
             )
         ])
 
@@ -55,7 +55,7 @@ def category_menu(settings_service, user_id, category: str, user_name: str):
             keyboard.append([
                 InlineKeyboardButton(
                     f"{T[key][lang]}  {_mark(value)}",
-                    callback_data=f"settings_toggle:{key}"
+                    callback_data=f"settings_toggle:{key}:{user_id}"
                 )
             ])
 
@@ -63,18 +63,18 @@ def category_menu(settings_service, user_id, category: str, user_name: str):
             keyboard.append([
                 InlineKeyboardButton(
                     f"🇷🇺 Русский{'🔘' if value == 'ru' else ''}",
-                    callback_data="settings_set:lang:ru"
+                    callback_data=f"settings_set:lang:ru:{user_id}"
                 ),
                 InlineKeyboardButton(
                     f"🇬🇧 English{'🔘' if value == 'en' else ''}",
-                    callback_data="settings_set:lang:en"
+                    callback_data=f"settings_set:lang:en:{user_id}"
                 ),
             ])
 
     keyboard.append([
         InlineKeyboardButton(
             T["settings_back"][lang],
-            callback_data="settings_main"
+            callback_data=f"settings_main:{user_id}"
         )
     ])
 
