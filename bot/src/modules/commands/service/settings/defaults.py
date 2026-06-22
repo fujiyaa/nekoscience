@@ -14,7 +14,12 @@ CATEGORIES = {
     "/average": {
         "title": "settings_category_average",
         "order": 4,
+    },
+    "/music": {
+        "title": "settings_category_music",
+        "order": 5,
     }
+
 }
 
 SETTINGS = {
@@ -51,6 +56,17 @@ SETTINGS = {
     "settings_scores_display_more_scores": {
         "default": True,
         "category": "/score",
+        "ui": "toggle",
+    },
+
+    "settings_music_enable_speedup": {
+        "default": False,
+        "category": "/music",
+        "ui": "toggle",
+    },
+    "settings_music_enable_pitch": {
+        "default": False,
+        "category": "/music",
         "ui": "toggle",
     },
 }

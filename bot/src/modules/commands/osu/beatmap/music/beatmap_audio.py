@@ -20,6 +20,7 @@ from .context.buttons import get_context_keyboard
 from .....external.osu_http import get_beatmap_title_from_file, get_beatmap_creator_from_file
 from .....actions.messages import delete_user_message, delete_message_after_delay, safe_send_message
 from .....actions.context import set_message_context, get_message_context
+from ....service.settings.service import neko_settings
 
 from config import COOLDOWN_MP3_COMMAND, OSU_SESSION, OSZ_DIR
 from config import OSU_MAPSET_REGEX
@@ -42,7 +43,8 @@ async def beatmap_audio(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     
     try:
-    
+        
+        user_id = str(update.effective_user.id)
         message_text = update.message.text.strip()
         match = OSU_MAPSET_REGEX.search(message_text)
     
@@ -110,7 +112,17 @@ async def beatmap_audio(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         audio_file_path = os.path.join(base_path, audio_name)
 
-        bot_msg = await send_audio(update, context, audio_file_path, title, artist, bg_path, beatmap_id)
+        bot_msg = await send_audio(
+            update, 
+            context, 
+            audio_file_path, 
+            title, 
+            artist, 
+            bg_path, 
+            beatmap_id,
+            speed_1_5 = neko_settings.get(user_id, "settings_music_enable_speedup"),
+            change_pitch = neko_settings.get(user_id, "settings_music_enable_pitch")
+        )
 
         map_id=int(beatmap_id)
 

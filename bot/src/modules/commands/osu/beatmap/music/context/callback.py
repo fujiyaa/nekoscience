@@ -12,6 +12,7 @@ from ......external.osu_api import get_beatmap, get_beatmapset
 from ......actions.messages import safe_edit_query, safe_query_answer
 from ......actions.context import set_message_context
 from ......external.osu_and_meatconnect import download_osz_async
+from .....service.settings.service import neko_settings
 from ..send_audio import send_audio
 from ..utils import beatmap_artists_and_audio_path
 
@@ -142,7 +143,9 @@ async def handle_map_action(
             title,
             artist,
             bg_path,
-            beatmap_id
+            beatmap_id,
+            speed_1_5 = neko_settings.get(uid_click, "settings_music_enable_speedup"),
+            change_pitch = neko_settings.get(uid_click, "settings_music_enable_pitch")
         )
 
         if bot_msg:

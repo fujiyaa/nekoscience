@@ -6,6 +6,8 @@ import traceback
 from pathlib import Path
 
 from pydub import AudioSegment
+from pydub.effects import speedup
+import subprocess
 
 from telegram import InputFile, Update
 from telegram.ext import ContextTypes
@@ -77,7 +79,9 @@ async def send_audio(
     title=None,
     artist=None,
     bg=None,
-    beatmap_id=None
+    beatmap_id=None,
+    speed_1_5: bool = False,
+    change_pitch: bool = False,
 ):
     path = Path(audio_file_path)
 
@@ -90,36 +94,67 @@ async def send_audio(
     if os.path.getsize(audio_file_path) == 0:
         print(f"[ERROR] File is empty: {audio_file_path}")
         return
+    
 
     temp_file = None
 
     try:
         send_path = path
 
-        # convert ogg -> mp3
-        if path.suffix.lower() == ".ogg":
-            print("[CONVERT] ogg -> mp3")
-
+        if path.suffix.lower() == ".ogg" or speed_1_5:
             temp_file = tempfile.NamedTemporaryFile(
                 suffix=".mp3",
                 delete=False
             )
-
             temp_file.close()
 
-            audio = AudioSegment.from_file(
-                audio_file_path,
-                format="ogg"
+            command = [
+                "ffmpeg",
+                "-y",
+                "-loglevel", "error",
+                "-i", str(path),
+            ]
+
+            if speed_1_5: 
+                if change_pitch:
+                    command += [
+                        "-filter:a",
+                        "asetrate=44100*1.5,aresample=44100"
+                    ]
+                else:
+                    command += [
+                        "-filter:a",
+                        "rubberband=tempo=1.5"
+                    ]
+
+            command += [
+                "-vn",
+                "-c:a", "libmp3lame",
+                "-q:a", "0",
+                temp_file.name
+            ]
+
+            process = await asyncio.create_subprocess_exec(
+                *command,
+                stdout=asyncio.subprocess.DEVNULL,
+                stderr=asyncio.subprocess.PIPE,
             )
 
-            audio.export(
-                temp_file.name,
-                format="mp3"
-            )
+            try:
+                _, stderr = await asyncio.wait_for(
+                    process.communicate(),
+                    timeout=120,
+                )
+            except asyncio.TimeoutError:
+                process.kill()
+                await process.wait()
+                raise RuntimeError("FFmpeg timed out")
+            
+            if process.returncode != 0:
+                raise RuntimeError(stderr.decode())
 
             send_path = Path(temp_file.name)
 
-        # size info
         size_mb = os.path.getsize(send_path) / (1024 * 1024)
 
         print(
@@ -128,18 +163,13 @@ async def send_audio(
             f"size={size_mb:.2f}MB"
         )
 
-        # telegram username
-        username = (
-            update.effective_user.username
-            or "unknown"
-        )
-
-        username = escape_markdown(
-            username,
-            version=2
-        )
+        username = update.effective_user.username or "unknown"
+        username = escape_markdown(username, version=2)
 
         caption = f"@{username}"
+
+        if speed_1_5:
+           caption += (" \+NC" if change_pitch else " \+DT")
 
         with open(send_path, "rb") as f:
             kwargs = {

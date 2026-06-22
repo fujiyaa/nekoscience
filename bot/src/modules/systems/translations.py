@@ -213,7 +213,11 @@ TRANSLATIONS = {
     "settings_category_average": {
         "ru": "/average ⚖️",
         "en": "/average ⚖️",
-    },   
+    },  
+    "settings_category_music": {
+        "ru": "/music 🎶",
+        "en": "/music 🎶",
+    }, 
     "settings_back": {
         "en": "⬅️ Back",
         "ru": "⬅️ Назад",
@@ -242,6 +246,15 @@ TRANSLATIONS = {
     "settings_link_profile_to_card": {
         "ru": "Ссылка на профиль >> Карточка",
         "en": "Profile link >> Image"  
+    },
+
+    "settings_music_enable_speedup": {
+        "ru": "Ускорять до DT",
+        "en": "Speedup as DT"
+    },
+    "settings_music_enable_pitch": {
+        "ru": "Найткор (лучше качество)",
+        "en": "Nightcore (better quality)"
     },
 
     "settings_title": {
