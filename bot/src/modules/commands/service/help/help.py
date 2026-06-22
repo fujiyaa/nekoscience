@@ -52,7 +52,7 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE, user_request)
             #     await update.message.reply_text(full_text, entities=entities)
             #     return
 
-            markdown = help_text_markdown + help_hint
+            markdown = help_text_markdown #+ help_hint
 
             await send_rich_message(                 
                 chat_id=update.effective_chat.id,
