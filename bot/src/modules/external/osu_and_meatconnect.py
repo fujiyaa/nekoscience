@@ -13,6 +13,10 @@ from .osu_api import get_beatmap
 
 semaphore = asyncio.Semaphore(MAX_CONCURRENT_REQUESTS) 
 
+MAX_OSZ_SIZE = 50 * 1024 * 1024  # 25 MB
+
+
+
 async def _try_download(
     session: aiohttp.ClientSession,
     url: str,
@@ -25,25 +29,30 @@ async def _try_download(
         print(f"[HTTP] status={resp.status}")
 
         if resp.status != 200:
-            raise ValueError(
-                f"[HTTP ERROR] status={resp.status}"
-            )
+            raise ValueError(f"[HTTP ERROR] status={resp.status}")
 
         content_type = resp.headers.get("Content-Type", "")
-        print(f"[HTTP] content-type={content_type}")
-
         if "text/html" in content_type.lower():
-            raise ValueError(
-                "[ERROR] HTML received instead of OSZ"
-            )
+            raise ValueError("[ERROR] HTML received instead of OSZ")
+        
+        size_header = resp.headers.get("Content-Length")
+        if size_header and int(size_header) > MAX_OSZ_SIZE:
+            raise ValueError("File too large (pre-check)")
 
         total = 0
 
         async with aiofiles.open(osz_path, "wb") as f:
             async for chunk in resp.content.iter_chunked(chunk_size):
-                if chunk:
-                    await f.write(chunk)
-                    total += len(chunk)
+                if not chunk:
+                    continue
+
+                total += len(chunk)
+
+                if total > MAX_OSZ_SIZE:
+                    print(f"[ABORT] file too large: {total} bytes")
+                    raise ValueError("OSZ exceeds 25MB limit")
+
+                await f.write(chunk)
 
         print(f"[DOWNLOAD COMPLETE] bytes={total}")
 
@@ -73,7 +82,7 @@ async def download_osz_async(
     mapset_id: int,
     osu_session: str,
     save_dir: str,
-    override: bool = True,
+    override: bool = False,
     connect_timeout: int = 5,
     read_timeout: int = 60,
     chunk_size: int = 8192
@@ -87,15 +96,13 @@ async def download_osz_async(
         print(f"[PATH] extract_dir={extract_dir}")
 
         # cache
-        if os.path.exists(extract_dir):
-            print(f"[CACHE FOUND] {extract_dir}")
+        if is_valid_mapset_folder(extract_dir) and not override:
+            print(f"[CACHE HIT] using existing mapset: {extract_dir}")
 
-            if not override:
-                print("[SKIP DOWNLOAD - override=False]")
-                return {
-                    "mapset_id": final_mapset_id,
-                    "path": extract_dir
-                }
+            return {
+                "mapset_id": final_mapset_id,
+                "path": extract_dir
+            }
 
         os.makedirs(save_dir, exist_ok=True)
         print(f"[DIR OK] save_dir exists: {save_dir}")
@@ -228,3 +235,11 @@ async def download_osz_async(
         print(f"[FATAL ERROR] mapset_id={mapset_id}")
         traceback.print_exc()
         raise
+
+def is_valid_mapset_folder(path: str) -> bool:
+    if not os.path.exists(path):
+        return False
+
+    files = os.listdir(path)
+
+    return any(f.endswith(".osu") for f in files)

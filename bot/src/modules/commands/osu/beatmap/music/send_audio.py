@@ -1,13 +1,14 @@
+
+
+
 import os
 import asyncio
 import tempfile
 import traceback
+import json
+import subprocess
 
 from pathlib import Path
-
-from pydub import AudioSegment
-from pydub.effects import speedup
-import subprocess
 
 from telegram import InputFile, Update
 from telegram.ext import ContextTypes
@@ -101,6 +102,14 @@ async def send_audio(
     try:
         send_path = path
 
+        MAX_DURATION = 30 * 60
+
+        duration = get_audio_duration(str(path))
+
+        if duration > MAX_DURATION:
+            print(f"[REJECTED] Audio too long: {duration:.2f}s")
+            return
+
         if path.suffix.lower() == ".ogg" or speed_1_5:
             temp_file = tempfile.NamedTemporaryFile(
                 suffix=".mp3",
@@ -133,6 +142,8 @@ async def send_audio(
                 "-q:a", "0",
                 temp_file.name
             ]
+
+            command += ["-t", str(MAX_DURATION)]
 
             process = await asyncio.create_subprocess_exec(
                 *command,
@@ -220,3 +231,17 @@ async def send_audio(
 
             except OSError:
                 traceback.print_exc()
+
+def get_audio_duration(path: str) -> float:
+    cmd = [
+        "ffprobe",
+        "-v", "error",
+        "-show_entries", "format=duration",
+        "-of", "json",
+        path
+    ]
+
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    data = json.loads(result.stdout)
+
+    return float(data["format"]["duration"])
