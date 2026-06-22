@@ -17,6 +17,9 @@ MAX_OSZ_SIZE = 50 * 1024 * 1024  # 25 MB
 
 
 
+class OversizedFileError(Exception):
+    pass
+
 async def _try_download(
     session: aiohttp.ClientSession,
     url: str,
@@ -37,7 +40,7 @@ async def _try_download(
         
         size_header = resp.headers.get("Content-Length")
         if size_header and int(size_header) > MAX_OSZ_SIZE:
-            raise ValueError("File too large (pre-check)")
+           raise OversizedFileError(f"OSZ exceeds {MAX_OSZ_SIZE} bytes")
 
         total = 0
 
@@ -50,7 +53,7 @@ async def _try_download(
 
                 if total > MAX_OSZ_SIZE:
                     print(f"[ABORT] file too large: {total} bytes")
-                    raise ValueError("OSZ exceeds 25MB limit")
+                    raise OversizedFileError(f"OSZ exceeds {MAX_OSZ_SIZE} bytes")
 
                 await f.write(chunk)
 
@@ -151,6 +154,10 @@ async def download_osz_async(
                     download_success = True
                     break
 
+                except OversizedFileError as e:
+                    print("[HARD STOP] file too large, skipping fallback")
+                    raise e
+
                 except Exception as e:
                     last_error = e
 
@@ -165,7 +172,7 @@ async def download_osz_async(
                     except Exception:
                         traceback.print_exc()
 
-        if not download_success:
+        if not download_success and not isinstance(last_error, OversizedFileError):
 
             print("[FALLBACK] trying beatmap -> beatmapset conversion")
 

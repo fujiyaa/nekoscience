@@ -82,32 +82,29 @@ async def beatmap_audio(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             beatmap_id = match.group(1) if match.group(1) else match.group(2)
 
-        max_attempts = 1
-        for _ in range(max_attempts):
-            try:
-                status_msg = await update.message.reply_text("Загрузка...")
-                break
-            except Exception as e: print(e)
+        try:
+            status_msg = await update.message.reply_text("<code>Загрузка...</code>", parse_mode="HTML")
+        except Exception as e: 
+            print(e)
         
         result = None
-
-        for _ in range(max_attempts):
-            try:
-                result = await download_osz_async(
-                    beatmap_id,
-                    OSU_SESSION,
-                    OSZ_DIR
-                )
-                break
-            except Exception as e:
-                print(e)
+        
+        try:
+            result = await download_osz_async(
+                beatmap_id,
+                OSU_SESSION,
+                OSZ_DIR
+            )
+        except Exception as e:
+            print(e)
 
         if not result:
+            await status_msg.edit_text("<code>Ошибка или трек слишком длинный</code>", parse_mode="HTML")
             raise RuntimeError("Failed to download beatmap")
         
-        mapset_id = str(result["mapset_id"])
+        # mapset_id = str(result["mapset_id"])
         base_path = result["path"]
-
+        
         title, artist, audio_name, bg_path = await beatmap_artists_and_audio_path(base_path)
 
         audio_file_path = os.path.join(base_path, audio_name)
@@ -140,6 +137,6 @@ async def beatmap_audio(update: Update, context: ContextTypes.DEFAULT_TYPE):
         print(e)
 
     try:
-        asyncio.create_task(delete_message_after_delay(context, status_msg.chat_id, status_msg.message_id, 1)) 
+        asyncio.create_task(delete_message_after_delay(context, status_msg.chat_id, status_msg.message_id, 10)) 
     except:
         pass

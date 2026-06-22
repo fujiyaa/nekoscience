@@ -118,15 +118,22 @@ async def handle_map_action(
                     parse_mode="Markdown"
                 )
 
-            
+        result = None
 
-        result = await download_osz_async(
-            beatmap_id,
-            OSU_SESSION,
-            OSZ_DIR
-        )
+        try:
+            result = await download_osz_async(
+                beatmap_id,
+                OSU_SESSION,
+                OSZ_DIR
+            )
+        except:
+            result = None            
 
         if not result:
+            try:
+                await status_msg.edit_text("<code>Ошибка или трек слишком длинный</code>", parse_mode="HTML")
+            except:
+                await origin_message.edit_text("<code>Ошибка или трек слишком длинный</code>", parse_mode="HTML")
             raise RuntimeError("Download failed")
 
         mapset_id = str(result["mapset_id"])
