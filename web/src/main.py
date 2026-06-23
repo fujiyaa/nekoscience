@@ -34,6 +34,7 @@ from routers.weakness_direct import router as weakness_direct_router
 from routers.weakness_reminders import router as weakness_reminders_router
 from routers.vote_for_images import router as vote_for_images_router
 from routers.side_server import router as side_server_router
+from routers.game import router as game_router
 
 app.include_router(dash_router)
 app.include_router(chat_router)
@@ -43,6 +44,7 @@ app.include_router(weakness_direct_router)
 app.include_router(weakness_reminders_router)
 app.include_router(vote_for_images_router)
 app.include_router(side_server_router)
+app.include_router(game_router)
 
 @app.get("/")
 async def root():

@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Multi Contour System - Infinite Canvas</title>
+
+<style>
+body {
+    margin: 0;
+    background: #111;
+    overflow: hidden;
+    font-family: monospace;
+    user-select: none;
+}
+
+canvas {
+    background: #101010;
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+.ui-layer {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    pointer-events: none;
+}
+
+#leaderboard, #minimap-container {
+    pointer-events: auto;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(4px);
+    padding: 12px 20px;
+    border-radius: 6px;
+    color: #fff;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+#leaderboard {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    width: max-content;
+    min-width: min-content; 
+    max-width: 300px; 
+    max-height: 130px; 
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+#leaderboard::-webkit-scrollbar {
+    width: 4px;
+}
+#leaderboard::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+}
+#leaderboard::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.leader-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.player-color-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.debug-btn {
+    background: #333;
+    color: #fff;
+    border: 1px solid #555;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: monospace;
+    font-weight: bold;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.debug-btn:hover {
+    background: #444;
+}
+
+.btn-error-flash {
+    animation: flashRed 0.4s ease-out;
+}
+
+@keyframes flashRed {
+    0% { box-shadow: 0 0 15px rgba(255, 255, 255, 0.822); }
+    100% { box-shadow: none; }
+}
+
+.tools-bottom-panel {
+    position: absolute;
+    bottom: 25px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    pointer-events: auto;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.05);
+    display: flex;
+    gap: 10px;
+    width: 350px;
+    box-sizing: border-box;
+}
+
+.tools-bottom-panel .debug-btn {
+    flex: 1;
+    padding: 12px 0;
+    text-align: center;
+    margin: 0;
+    position: relative;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.8);
+    overflow: hidden;
+    transition: border-color 0.2s, color 0.2s, background-color 0.2s;
+}
+
+.tools-bottom-panel .debug-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to right, rgba(255, 255, 255, 0.15) var(--cooldown-progress, 0%), transparent var(--cooldown-progress, 0%));
+    pointer-events: none;
+    z-index: -1;
+}
+
+.tools-bottom-panel #tool-draw.active {
+    border-color: #2ecc71;
+    color: #2ecc71;
+    background: rgba(46, 204, 113, 0.1);
+}
+
+.tools-bottom-panel #tool-erase.active {
+    border-color: #e67e22;
+    color: #e67e22;
+    background: rgba(230, 126, 34, 0.1);
+}
+
+.tools-bottom-panel .debug-btn.on-cooldown {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+#minimap-container {
+    position: absolute; 
+    top: 15px; 
+    right: 15px; 
+    z-index: 10; 
+    padding: 6px; 
+    width: 140px; 
+    box-sizing: border-box;
+}
+
+.hotkey-hint {
+    font-size: 9px;
+    color: rgba(255, 255, 255, 0.4);
+    position: absolute;
+    bottom: -16px;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+}
+</style>
+</head>
+
+<body>
+
+<div class="ui-layer">
+    <div id="leaderboard"></div>
+</div>
+
+<div id="minimap-container">
+    <canvas id="minimap" style="background: transparent; position: relative; display: block; z-index: 2; width: 100%; height: auto; aspect-ratio: 1 / 1;"></canvas>
+    <div class="hotkey-hint">Навигация [Клик]</div>
+</div>
+
+<div class="tools-bottom-panel">
+    <button id="tool-draw" class="debug-btn active" onclick="setTool('draw')">Точка</button>
+    <button id="tool-erase" class="debug-btn" onclick="setTool('erase')">Ластик ✕</button>
+    <div class="hotkey-hint">Точка [Q] - Ластик [W]</div>
+</div>
+
+<canvas id="c"></canvas>
+
+<script>
+const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+const wsUrl = `${wsProtocol}${window.location.host}/ws/game`;
+const socket = new WebSocket(wsUrl);
+
+let currentPlayer = 1;
+let currentTool = "draw";
+
+let SIZE = 0;  
+let CELL = 0;  
+
+let grid = [];               
+let serverContours = []; 
+let serverLeaderboard = [];
+let players = {}; 
+
+let hoveredCellX = -1;
+let hoveredCellY = -1;
+
+let floatingTexts = [];
+let particles = []; 
+let gridAnimationTime = 0;
+
+let isDragging = false; 
+let hasMoved = false; 
+let startX = 0; let startY = 0; 
+let mouseStartX = 0; let mouseStartY = 0;
+let lastMouseX = 0; let lastMouseY = 0;
+
+socket.onmessage = function(event) {
+    const message = JSON.parse(event.data);
+    
+    if (message.type === "init" || message.type === "update") {
+        const isUpdate = message.type === "update";
+        const oldGrid = isUpdate ? JSON.parse(JSON.stringify(grid)) : null;
+        const serverData = message.data;
+        
+        if (serverData.config) {
+            SIZE = serverData.config.size;
+            CELL = serverData.config.cell;
+        }
+        
+        grid = serverData.grid;
+        serverContours = serverData.contours;
+        serverLeaderboard = serverData.leaderboard;
+        
+        for (let pId in serverData.players) {
+            if (!players[pId]) {
+                players[pId] = {
+                    cooldowns: {
+                        draw: { charges: 0, maxCharges: 5, current: 0, max: 10000 },
+                        erase: { current: 0, max: 2000 }
+                    }
+                };
+            }
+            players[pId].cooldowns.draw.charges = serverData.players[pId].cooldowns.draw.charges;
+            players[pId].cooldowns.draw.current = serverData.players[pId].cooldowns.draw.current;
+            players[pId].cooldowns.erase.current = serverData.players[pId].cooldowns.erase.current;
+        }
+        
+        if (message.type === "init") {
+            centerMap();
+        }
+
+        if (isUpdate && oldGrid && oldGrid.length === grid.length) {
+            for (let y = 0; y < SIZE; y++) {
+                for (let x = 0; x < SIZE; x++) {
+                    if (oldGrid[y][x] !== grid[y][x]) {
+                        const newId = grid[y][x];
+                        let targetPlayerId = currentPlayer; 
+
+                        if (newId !== 0) {
+                            targetPlayerId = getPlayerByContour(newId);
+                        } else {
+                            targetPlayerId = getPlayerByContour(oldGrid[y][x]);
+                        }
+                        
+                        createExplosion(x, y, targetPlayerId, 12);
+                    }
+                }
+            }
+        }
+    }
+};
+
+socket.onclose = function() {
+    console.warn("Соединение с сервером разорвано. Перезагрузите страницу.");
+};
+
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
+
+const minimapCanvas = document.getElementById("minimap");
+const mctx = minimapCanvas.getContext("2d");
+
+const GLOW_CONFIG = {
+    alpha: [0.04, 0.12, 0.35, 1.0],
+    contourWidths: [16, 12, 8, 4],
+    pointRadii: [1.8, 1.53, 1.27, 1.0]
+};
+
+let zoom = 1.0; let offsetX = 0; let offsetY = 0;
+let distortionTime = 0; let distortionIntensity = 0; const DISTORTION_SCALE = 0.030;  
+
+function getDistortedCoords(worldX, worldY) {
+    const screenX = worldX * zoom + offsetX;
+    const screenY = worldY * zoom + offsetY;
+    if (distortionIntensity <= 0.01) return { x: screenX, y: screenY };
+    const zoomFactor = 1.0 / Math.max(0.1, zoom);
+    const currentStrength = distortionIntensity * zoomFactor * zoom;
+    const dx = Math.sin(screenY * DISTORTION_SCALE + distortionTime) * currentStrength;
+    const dy = Math.cos(screenX * DISTORTION_SCALE + distortionTime) * currentStrength;
+    return { x: screenX + dx, y: screenY + dy };
+}
+
+function addDistortionImpulse(amount) { 
+    distortionIntensity = Math.min(distortionIntensity + amount, 35); 
+}
+function resizeCanvas() { 
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight; 
+}
+window.addEventListener('resize', resizeCanvas);
+
+function centerMap() {
+    offsetX = (window.innerWidth - SIZE * CELL * zoom) / 2;
+    offsetY = (window.innerHeight - SIZE * CELL * zoom) / 2;
+}
+
+function inBounds(x,y) { return x>=0 && y>=0 && x<SIZE && y<SIZE; }
+function getPlayerByContour(contourId) { return contourId === 0 ? null : Math.floor(contourId / 10000); }
+
+function colorFor(id, alpha = 1) {
+    const palette = {
+        1: `rgba(46, 204, 113, ${alpha})`,
+        2: `rgba(231, 76, 60, ${alpha})`,
+        3: `rgba(52, 152, 219, ${alpha})`,
+        4: `rgba(241, 196, 15, ${alpha})`
+    };
+    return palette[id] || `rgba(255,255,255,${alpha})`;
+}
+
+function getVisibleBounds() {
+    const padding = 3; 
+    return {
+        startX: Math.max(0, Math.floor((0 - offsetX) / zoom / CELL) - padding),
+        startY: Math.max(0, Math.floor((0 - offsetY) / zoom / CELL) - padding),
+        endX: Math.min(SIZE - 1, Math.ceil((canvas.width - offsetX) / zoom / CELL) + padding),
+        endY: Math.min(SIZE - 1, Math.ceil((canvas.height - offsetY) / zoom / CELL) + padding)
+    };
+}
+
+function getGridParams(x, y, time, zoom, min, max) {
+    
+    const wave1 = Math.sin(time + (x + y) * 0.2);
+    const wave2 = Math.sin(time * 0.5 + (x - y) * 0.5) * 0.7; //
+    
+    const pulse = (wave1 + wave2 + 1.5) / 3.0;
+    
+    return {
+        width: Math.max(0, (min + pulse * (max - min)) * zoom),
+        color: Math.floor(255 * (1 - pulse))
+    };
+}
+
+function drawGrid() {
+    if (!SIZE || SIZE === 0) return;
+
+    const MIN_WIDTH = 0.0; 
+    const MAX_WIDTH = 0.35; 
+    const bounds = getVisibleBounds();
+
+    ctx.save();
+    ctx.globalAlpha = 1.0;
+
+    for (let x = bounds.startX; x <= bounds.endX + 1; x++) {
+        for (let y = bounds.startY; y < bounds.endY + 1; y++) {
+            const params = getGridParams(x, y, gridAnimationTime, zoom, MIN_WIDTH, MAX_WIDTH);
+            
+            ctx.beginPath();
+            ctx.strokeStyle = `rgb(${params.color}, ${params.color}, ${params.color})`;
+            ctx.lineWidth = params.width;
+            
+            const p1 = getDistortedCoords(x * CELL, y * CELL);
+            const p2 = getDistortedCoords(x * CELL, (y + 1) * CELL);
+            
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke(); 
+        }
+    }
+
+    for (let y = bounds.startY; y <= bounds.endY + 1; y++) {
+        for (let x = bounds.startX; x < bounds.endX + 1; x++) {
+            const params = getGridParams(x, y, gridAnimationTime, zoom, MIN_WIDTH, MAX_WIDTH);
+            
+            ctx.beginPath();
+            ctx.strokeStyle = `rgb(${params.color}, ${params.color}, ${params.color})`;
+            ctx.lineWidth = params.width;
+            
+            const p1 = getDistortedCoords(x * CELL, y * CELL);
+            const p2 = getDistortedCoords((x + 1) * CELL, y * CELL);
+            
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke(); 
+        }
+    }
+    ctx.restore();
+}
+
+function drawServerContour(contourObj) {
+    const points = contourObj.path;
+    if (!points || !points.length) return;
+
+    const bounds = getVisibleBounds();
+    const isVisible = points.some(p => p.x >= bounds.startX && p.x <= bounds.endX && p.y >= bounds.startY && p.y <= bounds.endY);
+    if (!isVisible) return;
+
+    ctx.fillStyle = colorFor(contourObj.player_id, 0.12);
+    ctx.beginPath();
+    
+    const startScreen = getDistortedCoords(points[0].x * CELL + CELL / 2, points[0].y * CELL + CELL / 2);
+    ctx.moveTo(startScreen.x, startScreen.y);
+    
+    for (let i = 1; i < points.length; i++) {
+        const screen = getDistortedCoords(points[i].x * CELL + CELL / 2, points[i].y * CELL + CELL / 2);
+        ctx.lineTo(screen.x, screen.y);
+    }
+    
+    ctx.closePath();
+    ctx.fill();
+
+    for (let i = 0; i < 4; i++) {
+        ctx.lineWidth = GLOW_CONFIG.contourWidths[i] * zoom;
+        ctx.strokeStyle = colorFor(contourObj.player_id, GLOW_CONFIG.alpha[i]);
+        ctx.stroke();
+    }
+}
+
+function drawPoints() {
+    if (!grid || grid.length === 0) return; 
+    const bounds = getVisibleBounds();
+    for (let y = bounds.startY; y <= bounds.endY; y++) {
+        for (let x = bounds.startX; x <= bounds.endX; x++) {
+            const id = grid[y][x];
+            const screen = getDistortedCoords(x * CELL + CELL / 2, y * CELL + CELL / 2);
+            const baseRadius = CELL * 0.15 * zoom; 
+
+            if (id === 0) {
+                if (x === hoveredCellX && y === hoveredCellY) {
+                    ctx.save();
+                    ctx.translate(screen.x, screen.y);
+                    ctx.rotate(gridAnimationTime * 3.0); 
+                    
+                    ctx.beginPath();
+                    ctx.arc(0, 0, baseRadius * 1.2, 0, Math.PI * 2);
+                    ctx.strokeStyle = colorFor(currentPlayer, 0.5); 
+                    ctx.lineWidth = 2 * zoom;
+                    ctx.setLineDash([4 * zoom, 3 * zoom]); 
+                    ctx.stroke();
+                    ctx.restore();
+                } else {
+                    ctx.beginPath(); ctx.arc(screen.x, screen.y, baseRadius, 0, Math.PI * 2);
+                    ctx.strokeStyle = "rgba(255,255,255,0.05)"; ctx.lineWidth = 1.5 * zoom; ctx.stroke();
+                }
+                continue;
+            }
+
+            const ownerId = getPlayerByContour(id);
+            for (let i = 0; i < 4; i++) {
+                ctx.beginPath(); ctx.arc(screen.x, screen.y, baseRadius * GLOW_CONFIG.pointRadii[i], 0, Math.PI * 2);
+                ctx.fillStyle = colorFor(ownerId, GLOW_CONFIG.alpha[i]); ctx.fill();
+            }
+        }
+    }
+}
+
+function drawMinimap() {
+    if (!grid || grid.length === 0) return;
+
+    if (minimapCanvas.width !== SIZE) {
+        minimapCanvas.width = SIZE;
+        minimapCanvas.height = SIZE;
+        minimapCanvas.style.imageRendering = 'pixelated'; 
+        mctx.imageSmoothingEnabled = false;
+    }
+
+    mctx.clearRect(0, 0, minimapCanvas.width, minimapCanvas.height);
+
+    for (let y = 0; y < SIZE; y++) {
+        for (let x = 0; x < SIZE; x++) {
+            const id = grid[y][x];
+            if (id !== 0) {
+                const ownerId = getPlayerByContour(id);
+                mctx.fillStyle = colorFor(ownerId, 1.0);
+                mctx.fillRect(x, y, 1, 1);
+            }
+        }
+    }
+
+    const viewLeft = -offsetX / (zoom * CELL);
+    const viewTop = -offsetY / (zoom * CELL);
+    const viewWidth = canvas.width / (zoom * CELL);
+    const viewHeight = canvas.height / (zoom * CELL);
+
+    mctx.save();
+    mctx.strokeStyle = "rgba(255, 255, 255, 0.8)"; 
+    mctx.lineWidth = 1; 
+    mctx.strokeRect(viewLeft, viewTop, viewWidth, viewHeight);
+    mctx.restore();
+}
+
+function drawHoverTooltip() {
+    if (hoveredCellX === -1 || hoveredCellY === -1 || !grid || grid.length === 0) return;
+
+    const id = grid[hoveredCellY][hoveredCellX];
+    if (id === 0) return; 
+    
+    const ownerId = getPlayerByContour(id);
+    const text = `Игрок ${ownerId} ${ownerId === currentPlayer ? '(Вы)' : ''}`;
+    const screen = getDistortedCoords(hoveredCellX * CELL + CELL / 2, hoveredCellY * CELL + CELL / 2);
+
+    ctx.font = "bold 13px monospace";
+    const textWidth = ctx.measureText(text).width;
+    const paddingX = 10;
+    const paddingY = 6;
+    const rectWidth = textWidth + paddingX * 2;
+    const rectHeight = 20 + paddingY * 2;
+
+    const rectX = screen.x - rectWidth / 2;
+    const rectY = screen.y - rectHeight - (CELL * 0.2 * zoom); 
+
+    ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
+    ctx.strokeStyle = colorFor(ownerId, 0.5); 
+    ctx.lineWidth = 1;
+    
+    ctx.beginPath();
+    ctx.roundRect(rectX, rectY, rectWidth, rectHeight, 4); 
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#ffffff";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, screen.x, rectY + rectHeight / 2);
+}
+
+function showFloatingError(cellX, cellY, text) {
+    const screen = getDistortedCoords(cellX * CELL + CELL / 2, cellY * CELL + CELL / 2);
+    
+    floatingTexts.push({
+        x: screen.x,
+        y: screen.y - 15, 
+        text: text,
+        alpha: 1.0,       
+        life: 1.0         
+    });
+}
+
+function flashButtonError(toolName) {
+    const btnId = toolName === "draw" ? "tool-draw" : "tool-erase";
+    const btn = document.getElementById(btnId);
+    
+    if (btn) {
+        btn.classList.remove("btn-error-flash");
+        void btn.offsetWidth; 
+        btn.classList.add("btn-error-flash");
+    }
+}
+
+function createExplosion(cellX, cellY, playerId, count = 8) {
+    const worldX = cellX * CELL + CELL / 2;
+    const worldY = cellY * CELL + CELL / 2;
+
+    for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2; 
+        const speed = 1.2 + Math.random() * 2.5;   
+
+        particles.push({
+            worldX: worldX,
+            worldY: worldY,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            size: 2.5 + Math.random() * 3.5,       
+            colorId: playerId,
+            alpha: 1.0,
+            life: 1.0,                             
+            decay: 0.02 + Math.random() * 0.03     
+        });
+    }
+}
+
+function drawParticles() {
+    ctx.save();
+    for (const p of particles) {
+        const screen = getDistortedCoords(p.worldX, p.worldY);
+        ctx.fillStyle = colorFor(p.colorId, p.alpha);
+        ctx.fillRect(
+            screen.x - (p.size * zoom) / 2, 
+            screen.y - (p.size * zoom) / 2, 
+            p.size * zoom, 
+            p.size * zoom
+        );
+    }
+    ctx.restore();
+}
+
+function render() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    drawGrid();
+
+    for (const contourObj of serverContours) {
+        drawServerContour(contourObj);
+    }
+
+    drawPoints();
+    drawParticles();
+
+    const leaderboardEl = document.getElementById("leaderboard");
+    leaderboardEl.innerHTML = serverLeaderboard.map((player, index) => {
+        const playerColor = colorFor(player.player_id, 1);
+        return `
+            <div class="leader-item" style="display: flex; flex-direction: column; gap: 2px; white-space: nowrap; padding-right: 10px; ${player.player_id === currentPlayer ? 'text-decoration: underline;' : ''}">
+                <div class="leader-row" style="display: flex; justify-content: flex-start; align-items: center; gap: 8px;">
+                    <span style="font-size: 14px; font-weight: bold;">#${index + 1}</span>
+                    <span class="player-color-dot" style="background: ${playerColor}; width: 10px; height: 10px; flex-shrink: 0;"></span>
+                    <span style="font-size: 14px; font-weight: bold;">Игрок ${player.player_id} ${player.player_id === currentPlayer ? '(Вы)' : ''}</span>
+                </div>
+                <div style="font-size: 11px; color: rgba(255,255,255,0.6); padding-left: 5px;">
+                    --- площадь: ${player.totalArea.toFixed(1)}
+                </div>
+            </div>
+        `;
+    }).join("");
+
+    drawHoverTooltip();
+    drawMinimap();
+
+    ctx.save();
+    ctx.font = "bold 14px monospace";
+    ctx.textAlign = "center";
+    for (const ft of floatingTexts) {
+        ctx.fillStyle = `rgba(231, 76, 60, ${ft.alpha})`; 
+        ctx.shadowColor = 'black';
+        ctx.shadowBlur = 4;
+        ctx.fillText(ft.text, ft.x, ft.y);
+    }
+    ctx.restore();
+}
+
+let lastTime = performance.now();
+function updateAnimation() {
+    const now = performance.now(); const dt = now - lastTime; lastTime = now;
+
+    gridAnimationTime += dt * 0.0007;
+
+    if (distortionIntensity > 0.01) { 
+        distortionTime += 0.25; 
+        distortionIntensity *= 0.88; 
+    } else { 
+        distortionIntensity = 0; 
+    }
+
+    if (players[currentPlayer] && players[currentPlayer].cooldowns) {
+        for (const pId in players) {
+            const cooldowns = players[pId].cooldowns;
+            if (cooldowns.erase.current > 0) cooldowns.erase.current = Math.max(0, cooldowns.erase.current - dt);
+            if (cooldowns.draw.charges === 0 && cooldowns.draw.current > 0) {
+                cooldowns.draw.current -= dt;
+                if (cooldowns.draw.current <= 0) { cooldowns.draw.current = 0; cooldowns.draw.charges = cooldowns.draw.maxCharges; }
+            }
+        }
+
+        const activeCooldowns = players[currentPlayer].cooldowns;
+        const btnDraw = document.getElementById("tool-draw");
+        const btnErase = document.getElementById("tool-erase");
+
+        if (activeCooldowns.draw.charges === 0 && activeCooldowns.draw.current > 0) {
+            const progress = (activeCooldowns.draw.current / activeCooldowns.draw.max) * 100;
+            btnDraw.style.setProperty('--cooldown-progress', `${progress}%`);
+            btnDraw.classList.add('on-cooldown');
+            btnDraw.innerHTML = `Перезарядка... ${Math.ceil(activeCooldowns.draw.current / 1000)}с`;
+        } else {
+            btnDraw.style.setProperty('--cooldown-progress', '0%'); 
+            btnDraw.classList.remove('on-cooldown');
+            btnDraw.innerHTML = `Точка (${activeCooldowns.draw.charges}/${activeCooldowns.draw.maxCharges})`;
+        }
+
+        if (activeCooldowns.erase.current > 0) {
+            btnErase.style.setProperty('--cooldown-progress', `${(activeCooldowns.erase.current / activeCooldowns.erase.max) * 100}%`);
+            btnErase.classList.add('on-cooldown');
+        } else {
+            btnErase.style.setProperty('--cooldown-progress', '0%'); 
+            btnErase.classList.remove('on-cooldown');
+        }
+    }
+
+    for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.worldX += p.vx * (dt / 16); 
+        p.worldY += p.vy * (dt / 16);
+        p.vx *= Math.pow(0.92, dt / 16); 
+        p.vy *= Math.pow(0.92, dt / 16);
+        p.life -= p.decay * (dt / 16);
+        p.alpha = Math.max(0, p.life);
+
+        if (p.life <= 0) {
+            particles.splice(i, 1);
+        }
+    }
+
+    for (let i = floatingTexts.length - 1; i >= 0; i--) {
+        const ft = floatingTexts[i];
+        ft.life -= dt / 800; 
+        ft.y -= (dt * 0.04); 
+        ft.alpha = Math.max(0, ft.life); 
+
+        if (ft.life <= 0) {
+            floatingTexts.splice(i, 1); 
+        }
+    }
+    
+    render();
+    requestAnimationFrame(updateAnimation);
+}
+
+canvas.addEventListener("mousedown", (e) => {
+    isDragging = true;
+    hasMoved = false;
+    
+    mouseStartX = e.clientX;
+    mouseStartY = e.clientY;
+    
+    lastMouseX = e.clientX;
+    lastMouseY = e.clientY;
+    
+    startX = offsetX;
+    startY = offsetY;
+});
+
+canvas.addEventListener("mousemove", (e) => {
+    if (isDragging) {
+        const totalDx = e.clientX - mouseStartX;
+        const totalDy = e.clientY - mouseStartY;
+        if (Math.hypot(totalDx, totalDy) > 5) {
+            hasMoved = true;
+        }
+
+        const deltaX = e.clientX - lastMouseX;
+        const deltaY = e.clientY - lastMouseY;
+        const speed = Math.hypot(deltaX, deltaY);
+        
+        if (speed > 0.5) {
+            addDistortionImpulse(speed * 0.1);
+        }
+        
+        lastMouseX = e.clientX;
+        lastMouseY = e.clientY;
+        
+        offsetX = startX + totalDx;
+        offsetY = startY + totalDy;
+        
+        hoveredCellX = -1;
+        hoveredCellY = -1;
+    } else {
+        const x = Math.floor(((e.clientX - offsetX) / zoom) / CELL);
+        const y = Math.floor(((e.clientY - offsetY) / zoom) / CELL);
+        hoveredCellX = inBounds(x, y) ? x : -1;
+        hoveredCellY = inBounds(x, y) ? y : -1;
+    }
+});
+
+window.addEventListener("mouseup", (e) => {
+    if (isDragging) {
+        isDragging = false;
+        if (!hasMoved) {
+            processClick(e);
+        }
+    }
+});
+canvas.addEventListener("mouseleave", () => { hoveredCellX = -1; hoveredCellY = -1; });
+
+canvas.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    const mouseX = e.clientX; const mouseY = e.clientY;
+    const worldX = (mouseX - offsetX) / zoom; const worldY = (mouseY - offsetY) / zoom;
+    zoom = e.deltaY < 0 ? Math.min(zoom * 1.1, 2.5) : Math.max(zoom / 1.1, 0.3);
+    addDistortionImpulse(8); offsetX = mouseX - worldX * zoom; offsetY = mouseY - worldY * zoom;
+}, { passive: false });
+
+window.addEventListener("keydown", (e) => {
+    const key = e.key.toLowerCase();
+    if (key === "q" || key === "й") {
+        setTool("draw");
+    } else if (key === "w" || key === "ц") {
+        setTool("erase");
+    }
+});
+
+function processClick(e) {
+    if (!players[currentPlayer]) return;
+    const pData = players[currentPlayer];
+    
+    const x = Math.floor(((e.clientX - offsetX) / zoom) / CELL);
+    const y = Math.floor(((e.clientY - offsetY) / zoom) / CELL);
+    if (!inBounds(x, y)) return;
+
+    const cellId = grid[y][x];
+
+    if (currentTool === "draw" && pData.cooldowns.draw.charges === 0 && pData.cooldowns.draw.current > 0) {
+        showFloatingError(x, y, "Перезарядка точки!");
+        flashButtonError("draw"); 
+        return;
+    }
+    if (currentTool === "erase" && pData.cooldowns.erase.current > 0) {
+        showFloatingError(x, y, "Ластик на перезарядке!");
+        flashButtonError("erase"); 
+        return;
+    }
+
+    if (currentTool === "draw" && cellId !== 0) {
+        showFloatingError(x, y, "Ячейка уже занята!");
+        flashButtonError("draw"); 
+        return;
+    }
+    if (currentTool === "erase" && cellId === 0) {
+        showFloatingError(x, y, "Здесь пусто!");
+        flashButtonError("erase"); 
+        return;
+    }
+
+    createExplosion(x, y, currentPlayer, 6);
+
+    if (socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({
+            type: "action",
+            payload: { player_id: currentPlayer, tool: currentTool, x: x, y: y }
+        }));
+    }
+}
+
+function setTool(toolName) {
+    currentTool = toolName;
+    document.getElementById('tool-draw').classList.toggle('active', toolName === 'draw');
+    document.getElementById('tool-erase').classList.toggle('active', toolName === 'erase');
+}
+
+function handleMinimapClick(e) {
+    if (!SIZE) return;
+    const rect = minimapCanvas.getBoundingClientRect();
+    
+    const clickX = (e.clientX - rect.left) / rect.width;
+    const clickY = (e.clientY - rect.top) / rect.height;
+    
+    const targetWorldX = clickX * SIZE * CELL;
+    const targetWorldY = clickY * SIZE * CELL;
+    
+    offsetX = window.innerWidth / 2 - targetWorldX * zoom;
+    offsetY = window.innerHeight / 2 - targetWorldY * zoom;
+    
+    addDistortionImpulse(12); 
+}
+
+minimapCanvas.addEventListener("mousedown", (e) => {
+    handleMinimapClick(e);
+    
+    const onMouseMove = (moveEvent) => handleMinimapClick(moveEvent);
+    const onMouseUp = () => {
+        window.removeEventListener("mousemove", onMouseMove);
+        window.removeEventListener("mouseup", onMouseUp);
+    };
+    
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+});
+
+resizeCanvas();
+centerMap();
+updateAnimation();
+</script>
+
+</body>
+</html>
