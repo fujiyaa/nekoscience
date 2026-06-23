@@ -245,13 +245,22 @@ async def process_score_and_image(
 
     map_text = f'<a href="{map_url}">{beatmap_escaped} <mark><b>{stars:.2f}</b>★</mark></a> {sup(status.capitalize())} {try_text}'
        
+    
+    img_link: str = map.get('card2x_url')
+
+
+    if not img_link.endswith('card@2x.jpg?0'):
+        collage = f"""
+<tg-collage>
+<img src="{img_link}"/>
+</tg-collage>"""
+    else:
+        collage = ''
 
     caption = f"""   
 <h3><a href="https://osu.ppy.sh/users/{osu_score.get("user_id")}">{country_flag} <b>{username}: </b></a>{pp_text}pp <sup>{global_rank_text_alt}</sup><h2>
 
-<tg-collage>
-<img src="{map.get('card2x_url')}"/>
-</tg-collage>
+{collage}
 
 <details><summary>{map_text}</summary>
 
