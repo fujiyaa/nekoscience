@@ -409,6 +409,8 @@ function connect() {
             if (message.type === "init" || message.type === "update") {
 
                 const serverData = message.data;
+                console.log("Полный объект данных:", serverData);
+
                 const isUpdate = message.type === "update";
                 const oldGrid = isUpdate ? JSON.parse(JSON.stringify(grid)) : null;
 
@@ -810,6 +812,10 @@ function drawParticles() {
 }
 
 function render() {
+
+    console.log("Rendering - Leaderboard length:", serverLeaderboard ? serverLeaderboard.length : "NO DATA");
+    console.log("Rendering - Grid state:", grid ? "Exists" : "MISSING");
+
     if (!Array.isArray(grid)) {
         throw new Error("Критическая ошибка: grid не является массивом!");
     }
