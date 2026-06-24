@@ -66,6 +66,7 @@ def register_commands(app):
         ("blacks",):                        blacks,
         ("reminders",):                     reminders_command,
         ("economy", "eco", "gamble","e"):   ecos,
+        ("game",):                          get_game,
 
         # service
         ("start", "help"):                  start_help,

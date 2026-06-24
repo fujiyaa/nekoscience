@@ -9,3 +9,5 @@ from .roll.roll import start_roll as roll
 from .ecos.ecos import main_menu as ecos
 
 from .ecos.ecos import economy_callback as eco_callback
+
+from .miniapp.game import get_game
