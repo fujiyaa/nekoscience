@@ -832,16 +832,18 @@ function drawMinimap() {
         }
     }
 
-    const viewLeft = -offsetX / (zoom * CELL);
-    const viewTop = -offsetY / (zoom * CELL);
-    const viewWidth = canvas.width / (zoom * CELL);
-    const viewHeight = canvas.height / (zoom * CELL);
+    if (animationsEnabled) {
+        const viewLeft = -offsetX / (zoom * CELL);
+        const viewTop = -offsetY / (zoom * CELL);
+        const viewWidth = canvas.width / (zoom * CELL);
+        const viewHeight = canvas.height / (zoom * CELL);
 
-    mctx.save();
-    mctx.strokeStyle = "rgba(255, 255, 255, 0.8)"; 
-    mctx.lineWidth = 1; 
-    mctx.strokeRect(viewLeft, viewTop, viewWidth, viewHeight);
-    mctx.restore();
+        mctx.save();
+        mctx.strokeStyle = "rgba(255, 255, 255, 0.8)"; 
+        mctx.lineWidth = 1; 
+        mctx.strokeRect(viewLeft, viewTop, viewWidth, viewHeight);
+        mctx.restore();
+    }
 
     minimapDirty = false;
 }
