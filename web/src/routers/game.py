@@ -396,7 +396,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 last_action_times[player_id] = now
 
                 try:
-                    payload = ActionPayload(**data["payload"])
+                    payload = ActionPayload(**data["payload"]).model_dump()
                 except ValidationError as e:
                     logger.error(f"Ошибка валидации ActionPayload: {e}")
                     await websocket.send_json({"type": "error", "message": "Invalid data format"})
