@@ -366,28 +366,16 @@ async def websocket_endpoint(websocket: WebSocket):
 
                 init_data = data.get("initData")
 
-
-
                 if not init_data or not validate_telegram_data(init_data):
-
                     await websocket.send_json({"type": "error", "message": "Invalid Authorization"})
-
                     await websocket.close(code=1008)
-
                     return            
 
-               
-
                 user_info = json.loads(urllib.parse.parse_qs(init_data)['user'][0])
-
                 p_id = user_info['id']
-
                 name = user_info.get('first_name', 'Player')
 
-               
-
                 with sqlite3.connect(DB_NAME) as conn:
-
                     conn.execute("""
 
                         INSERT INTO players (player_id, username) VALUES (?, ?)
@@ -396,175 +384,100 @@ async def websocket_endpoint(websocket: WebSocket):
 
                     """, (p_id, name))
 
-               
-
                 await websocket.send_json({"type": "auth_success", "player_id": p_id})
-
                 websocket.player_id = p_id
 
                 await websocket.send_json({"type": "init", "data": get_current_state_dict()})
-
                 continue
 
-               
-
-
-
-            if data.get("type") == "action":
-
-               
+            if data.get("type") == "action":               
 
                 player_id = getattr(websocket, "player_id", None)
-
-                if not player_id: continue
-
-               
+                if not player_id: continue               
 
                 now = time.time()
 
                 if now - last_action_times.get(player_id, 0) < 0.2:
 
                     await websocket.send_json({"type": "error", "message": "Too fast!"})
-
                     continue
 
                 last_action_times[player_id] = now
 
-
-
                 try:
-
-                    payload = ActionPayload(**data["payload"])
-
+                    payload = ActionPayload(**data["payload"]).model_dump()
                 except ValidationError:
-
                     await websocket.send_json({"type": "error", "message": "Invalid data format"})
-
                     continue
-
-
 
                 tool = payload["tool"]
 
                 x, y = int(payload["x"]), int(payload["y"])
 
-               
-
                 if not in_bounds(x, y):
-
                     continue
-
-               
 
                 now = time.time()
 
-               
-
                 with sqlite3.connect(DB_NAME) as conn:
-
                     cursor = conn.cursor()
-
                     cursor.execute("SELECT draw_charges, draw_cooldown_start, erase_cooldown_start FROM players WHERE player_id = ?", (player_id,))
-
-                    player_row = cursor.fetchone()
-
-                   
+                    player_row = cursor.fetchone()                   
 
                     if player_row:
-
                         charges, d_start, e_start = player_row
-
                         grid = load_grid_from_db(cursor)
-
                         action_valid = False
-
-                       
-
-                       
 
                         if tool == "draw" and grid[y][x] == 0:
 
                             if charges > 0 or (d_start + 10) <= now:
 
                                 action_valid = True
-
                                 neighbours = get_neighbour_contours(x, y, player_id, grid)
 
-                               
-
                                 if len(neighbours) == 0:
-
                                     grid[y][x] = get_free_contour_id(grid, player_id)
 
                                 elif len(neighbours) == 1:
-
                                     grid[y][x] = neighbours[0]
 
                                 else:
-
-                                   
-
                                     main_id = neighbours[0]
 
                                     for yy in range(SIZE):
-
                                         for xx in range(SIZE):
-
                                             if grid[yy][xx] in neighbours:
-
                                                 grid[yy][xx] = main_id
 
                                     grid[y][x] = main_id
 
-                               
-
                                 new_charges = charges - 1 if charges > 0 else 4
-
                                 new_d_start = now if new_charges == 0 else 0
 
                                 cursor.execute("UPDATE players SET draw_charges = ?, draw_cooldown_start = ? WHERE player_id = ?", (new_charges, new_d_start, player_id))
-
                        
-
-                       
-
                         elif tool == "erase" and grid[y][x] != 0:
 
                             if (e_start + 2) <= now:
 
                                 action_valid = True
-
                                 target_contour_id = grid[y][x]
-
                                 target_player_id = get_player_by_contour(target_contour_id)
-
                                
-
-                                grid[y][x] = 0
-
-                               
-
-                               
+                                grid[y][x] = 0                               
 
                                 if target_player_id is not None:
-
                                     recalculate_player_contours(target_player_id, grid)
 
-                                   
-
                                 cursor.execute("UPDATE players SET erase_cooldown_start = ? WHERE player_id = ?", (now, player_id))
-
-                       
 
                         if action_valid:
 
                             sync_grid_to_db(cursor, grid)
-
                             conn.commit()
 
-
                 await manager.broadcast({"type": "update", "data": get_current_state_dict()})
-
 
     except WebSocketDisconnect:
         manager.disconnect(websocket)
