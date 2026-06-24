@@ -373,6 +373,8 @@ let mouseStartX = 0; let mouseStartY = 0;
 let lastMouseX = 0; let lastMouseY = 0;
 
 let animationsEnabled = true;
+let minimapDirty = true;
+let minimapFrameSkip = 0;
 
 window.Telegram.WebApp.ready();
 const initData = window.Telegram.WebApp.initData;
@@ -431,6 +433,7 @@ function connect() {
                 }
                 
                 grid = serverData.grid;
+                minimapDirty = true;
                 serverContours = serverData.contours;
                 serverLeaderboard = serverData.leaderboard;
                 
@@ -505,10 +508,17 @@ function toggleAnimations() {
 
 function getDistortedCoords(worldX, worldY) {
 
+    if (!animationsEnabled) {
+        return {
+            x: worldX * zoom + offsetX,
+            y: worldY * zoom + offsetY
+        };
+    }
+
     const screenX = worldX * zoom + offsetX;
     const screenY = worldY * zoom + offsetY;
 
-    if (!animationsEnabled || distortionIntensity <= 0.01) {
+    if (distortionIntensity <= 0.05) {
         return { x: screenX, y: screenY };
     }
 
@@ -792,6 +802,10 @@ function drawPoints() {
 function drawMinimap() {
     if (!grid || grid.length === 0) return;
 
+    if (!animationsEnabled) {
+        if (minimapSkip++ % 10 !== 0 && !minimapDirty) return;
+    }
+
     if (minimapCanvas.width !== SIZE) {
         minimapCanvas.width = SIZE;
         minimapCanvas.height = SIZE;
@@ -822,6 +836,8 @@ function drawMinimap() {
     mctx.lineWidth = 1; 
     mctx.strokeRect(viewLeft, viewTop, viewWidth, viewHeight);
     mctx.restore();
+
+    minimapDirty = false;
 }
 
 function drawHoverTooltip() {
@@ -974,7 +990,15 @@ function render() {
     }).join("");
 
     drawHoverTooltip();
-    drawMinimap();
+
+    if (animationsEnabled) {
+        drawMinimap();
+    } else {
+        if (minimapDirty) {
+            drawMinimap();
+            minimapDirty = false;
+        }
+    }
 
     ctx.save();
     ctx.font = "bold 14px monospace";
@@ -1012,7 +1036,9 @@ function updateAnimation() {
         if (activeCooldowns.erase.current < 0) activeCooldowns.erase.current = 0;
     }
 
-    gridAnimationTime += dt * 0.0007;
+    if (animationsEnabled) {
+        gridAnimationTime += dt * 0.0007;
+    }
     if (distortionIntensity > 0.01) {
         distortionTime += 0.25;
         distortionIntensity *= 0.88;
