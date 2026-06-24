@@ -330,6 +330,17 @@ canvas {
     </div>
 </div>
 
+<div id="error-overlay" style="
+    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.85); color: #ff5555; z-index: 9999;
+    padding: 20px; overflow-y: auto; font-family: monospace; white-space: pre-wrap;
+">
+    <button onclick="document.getElementById('error-overlay').style.display='none'" 
+            style="float: right; cursor: pointer;">Закрыть</button>
+    <h2>JavaScript Error Log</h2>
+    <div id="error-content"></div>
+</div>
+
 <canvas id="c"></canvas>
 
 <script>
@@ -1117,6 +1128,31 @@ minimapCanvas.addEventListener("mousedown", (e) => {
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", onMouseUp);
 });
+
+const overlay = document.getElementById("error-overlay");
+const content = document.getElementById("error-content");
+
+function logErrorToOverlay(message, source, lineno, colno, error) {
+    const errorText = `
+        Error: ${message}
+        Source: ${source} (${lineno}:${colno})
+        Stack: ${error ? error.stack : 'No stack trace'}
+        -----------------------------------
+    `;
+    
+    const div = document.createElement("div");
+    div.textContent = errorText;
+    content.appendChild(div);
+    
+    overlay.style.display = "block";
+    console.error("Caught error:", message);
+}
+
+window.onerror = logErrorToOverlay;
+
+window.onunhandledrejection = (event) => {
+    logErrorToOverlay(event.reason, "Promise", 0, 0, event.reason);
+};
 
 resizeCanvas();
 centerMap();
