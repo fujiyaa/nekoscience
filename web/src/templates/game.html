@@ -571,12 +571,19 @@ function getVisibleBounds() {
 }
 
 function getGridParams(x, y, time, zoom, min, max) {
-    
+
+    if (!animationsEnabled) {
+        return {
+            width: 0.2 * zoom,
+            color: 120
+        };
+    }
+
     const wave1 = Math.sin(time + (x + y) * 0.2);
     const wave2 = Math.sin(time * 0.5 + (x - y) * 0.5) * 0.7;
-    
+
     const pulse = (wave1 + wave2 + 1.5) / 3.0;
-    
+
     return {
         width: Math.max(0, (min + pulse * (max - min)) * zoom),
         color: Math.floor(255 * (1 - pulse))
@@ -706,9 +713,26 @@ function drawServerContour(contourObj) {
     ctx.closePath();
     ctx.fill();
 
+    if (!animationsEnabled) {
+
+        const i = 3;
+
+        ctx.lineWidth = GLOW_CONFIG.contourWidths[i] * zoom;
+        ctx.strokeStyle = colorFor(
+            contourObj.player_id,
+            GLOW_CONFIG.alpha[i]
+        );
+        ctx.stroke();
+
+        return;
+    }
+
     for (let i = 0; i < 4; i++) {
         ctx.lineWidth = GLOW_CONFIG.contourWidths[i] * zoom;
-        ctx.strokeStyle = colorFor(contourObj.player_id, GLOW_CONFIG.alpha[i]);
+        ctx.strokeStyle = colorFor(
+            contourObj.player_id,
+            GLOW_CONFIG.alpha[i]
+        );
         ctx.stroke();
     }
 }
@@ -743,9 +767,23 @@ function drawPoints() {
             }
 
             const ownerId = getPlayerByContour(id);
-            for (let i = 0; i < 4; i++) {
-                ctx.beginPath(); ctx.arc(screen.x, screen.y, baseRadius * GLOW_CONFIG.pointRadii[i], 0, Math.PI * 2);
-                ctx.fillStyle = colorFor(ownerId, GLOW_CONFIG.alpha[i]); ctx.fill();
+            
+            const layerCount = animationsEnabled ? 4 : 1;
+            const startLayer = animationsEnabled ? 0 : 3; 
+            const endLayer = animationsEnabled ? 4 : 4;
+
+            for (let i = startLayer; i < endLayer; i++) {
+                ctx.beginPath();
+                ctx.arc(
+                    screen.x,
+                    screen.y,
+                    baseRadius * GLOW_CONFIG.pointRadii[i],
+                    0,
+                    Math.PI * 2
+                );
+
+                ctx.fillStyle = colorFor(ownerId, GLOW_CONFIG.alpha[i]);
+                ctx.fill();
             }
         }
     }
