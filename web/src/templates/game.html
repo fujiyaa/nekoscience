@@ -714,8 +714,15 @@ function drawHoverTooltip() {
     const ownerId = getPlayerByContour(id);
     if (ownerId === window.currentPlayer) return;
 
-    const player = players[String(ownerId)];
-    const playerName = player ? player.name : `Игрок ${ownerId}`;
+    const pIdKey = String(ownerId);
+    const player = players[pIdKey];
+    
+    let playerName = player ? player.name : null;
+
+    if (!playerName) {
+        const leaderEntry = serverLeaderboard.find(p => String(p.player_id) === pIdKey);
+        playerName = leaderEntry ? leaderEntry.name : `Игрок ${ownerId}`;
+    }
     
     const text = `Точка ${playerName}`;
     const screen = getDistortedCoords(hoveredCellX * CELL + CELL / 2, hoveredCellY * CELL + CELL / 2);
