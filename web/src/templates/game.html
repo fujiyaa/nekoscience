@@ -1193,6 +1193,27 @@ window.onunhandledrejection = (event) => {
 resizeCanvas();
 centerMap();
 updateAnimation();
+
+
+function debugState() {
+    console.log("--- DEBUG START ---");
+    console.log("Current Player ID:", window.currentPlayer);
+    console.log("Players object:", players);
+    console.log("Players keys:", Object.keys(players));
+    
+    const pIdString = String(window.currentPlayer);
+    const active = players[pIdString];
+    
+    if (!active) {
+        console.error("Игрок не найден в объекте players!");
+    } else {
+        console.log("Игрок найден, его кулдауны:", active.cooldowns);
+    }
+    console.log("--- DEBUG END ---");
+}
+
+
+setTimeout(debugState, 3000);
 </script>
 
 </body>
