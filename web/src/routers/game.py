@@ -19,10 +19,18 @@ router = APIRouter()
 
 DB_NAME = "game.db"
 BOT_TOKEN = os.getenv("TOKEN")
+
 SIZE = 200
 CELL = 50
+DRAW_COOLDOWN_SEC = 15
+ERASE_COOLDOWN_SEC = 80
+DRAW_MAX_CHARGES = 5
+DRAW_COOLDOWN_MS = 15000
+ERASE_COOLDOWN_MS = 80000 
+
 GAME_GRID_CACHE = []
 last_action_times = {}
+
 DIRS = [(1,0), (1,1), (0,1), (-1,1), (-1,0), (-1,-1), (0,-1), (1,-1)]
 
 class ActionPayload(BaseModel):
@@ -266,16 +274,24 @@ def get_player_stats(cursor, now: float) -> Dict[int, dict]:
     stats = {}
     
     for p_id, charges, d_start, e_start in cursor.fetchall():
-        is_draw_ready = (d_start > 0 and (now - d_start) >= 10)
-        current_charges = 5 if is_draw_ready else charges
+        # Используем константы вместо магических чисел
+        is_draw_ready = (d_start > 0 and (now - d_start) >= DRAW_COOLDOWN_SEC)
         
-        d_rem = max(0, int((d_start + 10 - now) * 1000)) if (d_start > 0 and not is_draw_ready) else 0
-        e_rem = max(0, int((e_start + 2 - now) * 1000)) if e_start > 0 else 0
+        d_rem = max(0, int((d_start + DRAW_COOLDOWN_SEC - now) * 1000)) if (d_start > 0 and not is_draw_ready) else 0
+        e_rem = max(0, int((e_start + ERASE_COOLDOWN_SEC - now) * 1000)) if e_start > 0 else 0
         
         stats[p_id] = {
             "cooldowns": {
-                "draw": {"charges": current_charges, "maxCharges": 5, "current": d_rem, "max": 10000},
-                "erase": {"current": e_rem, "max": 2000}
+                "draw": {
+                    "charges": charges, 
+                    "maxCharges": DRAW_MAX_CHARGES, 
+                    "current": d_rem, 
+                    "max": DRAW_COOLDOWN_MS
+                },
+                "erase": {
+                    "current": e_rem, 
+                    "max": ERASE_COOLDOWN_MS
+                }
             }
         }
     return stats
