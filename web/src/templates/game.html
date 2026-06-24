@@ -348,7 +348,6 @@ let socket;
 const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
 const wsUrl = `${wsProtocol}${window.location.host}/ws/game`;
 
-let currentPlayer = 1;
 let currentTool = "draw";
 
 let SIZE = 0;  
@@ -657,7 +656,7 @@ function drawPoints() {
                     
                     ctx.beginPath();
                     ctx.arc(0, 0, baseRadius * 1.2, 0, Math.PI * 2);
-                    ctx.strokeStyle = colorFor(currentPlayer, 0.5); 
+                    ctx.strokeStyle = colorFor(window.currentPlayer, 0.5); 
                     ctx.lineWidth = 2 * zoom;
                     ctx.setLineDash([4 * zoom, 3 * zoom]); 
                     ctx.stroke();
@@ -721,7 +720,7 @@ function drawHoverTooltip() {
     if (id === 0) return;
     
     const ownerId = getPlayerByContour(id);
-    if (ownerId === currentPlayer) return;
+    if (ownerId === window.currentPlayer) return;
 
     const text = `Точка игрока ${ownerId}`;
     const screen = getDistortedCoords(hoveredCellX * CELL + CELL / 2, hoveredCellY * CELL + CELL / 2);
@@ -839,11 +838,11 @@ function render() {
     leaderboardEl.innerHTML = serverLeaderboard.map((player, index) => {
         const playerColor = colorFor(player.player_id, 1);
         return `
-            <div class="leader-item" style="display: flex; flex-direction: column; gap: 2px; white-space: nowrap; padding-right: 10px; ${player.player_id === currentPlayer ? 'text-decoration: underline;' : ''}">
+            <div class="leader-item" style="display: flex; flex-direction: column; gap: 2px; white-space: nowrap; padding-right: 10px; ${player.player_id === window.currentPlayer ? 'text-decoration: underline;' : ''}">
                 <div class="leader-row" style="display: flex; justify-content: flex-start; align-items: center; gap: 8px;">
                     <span style="font-size: 14px; font-weight: bold;">#${index + 1}</span>
                     <span class="player-color-dot" style="background: ${playerColor}; width: 10px; height: 10px; flex-shrink: 0;"></span>
-                    <span style="font-size: 14px; font-weight: bold;">Игрок ${player.player_id} ${player.player_id === currentPlayer ? '(Вы)' : ''}</span>
+                    <span style="font-size: 14px; font-weight: bold;">Игрок ${player.player_id} ${player.player_id === window.currentPlayer ? '(Вы)' : ''}</span>
                 </div>
                 <div style="font-size: 11px; color: rgba(255,255,255,0.6); padding-left: 5px;">
                     --- площадь: ${player.totalArea.toFixed(1)}
@@ -1088,7 +1087,7 @@ canvas.addEventListener("touchend", (e) => {
 });
 
 function processClick(e) {
-    const pIdString = String(currentPlayer); // Принудительно в строку
+    const pIdString = String(window.currentPlayer);
     const pData = players[pIdString];
     
     if (!pData) {
@@ -1136,7 +1135,7 @@ function processClick(e) {
     }
 
     console.log("SUCCESS: Отправка действия на сервер...");
-    createExplosion(x, y, currentPlayer, 6);
+    createExplosion(x, y, window.currentPlayer, 6);
 
     if (socket.readyState === WebSocket.OPEN) {
         socket.send(JSON.stringify({
