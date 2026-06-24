@@ -880,36 +880,30 @@ function updateAnimation() {
         distortionIntensity = 0; 
     }
 
-    if (players[currentPlayer] && players[currentPlayer].cooldowns) {
-        for (const pId in players) {
-            const cooldowns = players[pId].cooldowns;
-            if (cooldowns.erase.current > 0) cooldowns.erase.current = Math.max(0, cooldowns.erase.current - dt);
-            if (cooldowns.draw.charges === 0 && cooldowns.draw.current > 0) {
-                cooldowns.draw.current -= dt;
-                if (cooldowns.draw.current <= 0) { cooldowns.draw.current = 0; cooldowns.draw.charges = cooldowns.draw.maxCharges; }
-            }
-        }
+    const activeCooldowns = players[currentPlayer] ? players[currentPlayer].cooldowns : null;
+    const btnDraw = document.getElementById("tool-draw");
+    const btnErase = document.getElementById("tool-erase");
 
-        const activeCooldowns = players[currentPlayer].cooldowns;
-        const btnDraw = document.getElementById("tool-draw");
-        const btnErase = document.getElementById("tool-erase");
-
+    if (activeCooldowns && btnDraw && btnErase) {
+        // Визуализация DRAW
         if (activeCooldowns.draw.charges === 0 && activeCooldowns.draw.current > 0) {
             const progress = (activeCooldowns.draw.current / activeCooldowns.draw.max) * 100;
             btnDraw.style.setProperty('--cooldown-progress', `${progress}%`);
             btnDraw.classList.add('on-cooldown');
             btnDraw.innerHTML = `Перезарядка... ${Math.ceil(activeCooldowns.draw.current / 1000)}с`;
         } else {
-            btnDraw.style.setProperty('--cooldown-progress', '0%'); 
+            btnDraw.style.setProperty('--cooldown-progress', '0%');
             btnDraw.classList.remove('on-cooldown');
             btnDraw.innerHTML = `Точка (${activeCooldowns.draw.charges}/${activeCooldowns.draw.maxCharges})`;
         }
 
+        // Визуализация ERASE
         if (activeCooldowns.erase.current > 0) {
-            btnErase.style.setProperty('--cooldown-progress', `${(activeCooldowns.erase.current / activeCooldowns.erase.max) * 100}%`);
+            const progress = (activeCooldowns.erase.current / activeCooldowns.erase.max) * 100;
+            btnErase.style.setProperty('--cooldown-progress', `${progress}%`);
             btnErase.classList.add('on-cooldown');
         } else {
-            btnErase.style.setProperty('--cooldown-progress', '0%'); 
+            btnErase.style.setProperty('--cooldown-progress', '0%');
             btnErase.classList.remove('on-cooldown');
         }
     }

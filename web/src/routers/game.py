@@ -6,6 +6,7 @@ import json
 import hmac
 import hashlib
 import urllib.parse
+import asyncio
 from typing import List, Set, Dict, Optional
 from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
@@ -80,6 +81,24 @@ def init_db():
 
         global GAME_GRID_CACHE
         GAME_GRID_CACHE = load_grid_from_db(cursor)
+
+async def background_cooldown_cleanup():
+    """Фоновая задача, которая проверяет кулдауны каждые 10 секунд."""
+    while True:
+        try:
+            now = time.time()
+            with sqlite3.connect(DB_NAME) as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    UPDATE players 
+                    SET draw_charges = 5, draw_cooldown_start = 0 
+                    WHERE draw_cooldown_start > 0 AND (draw_cooldown_start + 10) <= ?
+                """, (now,))
+                conn.commit()
+        except Exception as e:
+            logger.error(f"Ошибка в фоновой задаче очистки: {e}")
+        
+        await asyncio.sleep(10)
 
 init_db()
 
@@ -236,16 +255,38 @@ def calculate_contour_area(points: List[Dict[str, int]]) -> float:
     return abs(area / 2.0)
 
 
+# Логика расчета остатка времени на сервере
+def get_cooldown_progress(cooldown_start: float, duration: float, now: float) -> float:
+    if cooldown_start == 0: return 0
+    elapsed = now - cooldown_start
+    return max(0, duration - elapsed)
 
+def get_player_stats(cursor, now: float) -> Dict[int, dict]:
+    cursor.execute("SELECT player_id, draw_charges, draw_cooldown_start, erase_cooldown_start FROM players")
+    stats = {}
+    
+    for p_id, charges, d_start, e_start in cursor.fetchall():
+        is_draw_ready = (d_start > 0 and (now - d_start) >= 10)
+        current_charges = 5 if is_draw_ready else charges
+        
+        d_rem = max(0, int((d_start + 10 - now) * 1000)) if (d_start > 0 and not is_draw_ready) else 0
+        e_rem = max(0, int((e_start + 2 - now) * 1000)) if e_start > 0 else 0
+        
+        stats[p_id] = {
+            "cooldowns": {
+                "draw": {"charges": current_charges, "maxCharges": 5, "current": d_rem, "max": 10000},
+                "erase": {"current": e_rem, "max": 2000}
+            }
+        }
+    return stats
 
 def get_current_state_dict():
+    now = time.time()
     with sqlite3.connect(DB_NAME) as conn:
         cursor = conn.cursor()
+        
         grid = load_grid_from_db(cursor)
-        
-        
         unique_ids = {cell for row in grid for cell in row if cell != 0}
-        
         
         serialized_contours = []
         player_areas = defaultdict(float)
@@ -254,81 +295,27 @@ def get_current_state_dict():
             mask = build_mask(grid, c_id)
             path = trace_contour(mask)
             area = calculate_contour_area(path)
-            
             p_id = get_player_by_contour(c_id)
             
             if p_id is not None:
-                player_areas[p_id] += area 
+                player_areas[p_id] += area
                 
-                logger.debug(f"Контур ID {c_id} принадлежит игроку {p_id}, площадь: {area}. Итого у игрока: {player_areas[p_id]}")
-            else:
-                logger.debug(f"Контур ID {c_id} не привязан к игроку.")
-                
-            serialized_contours.append({
-                "id": c_id,
-                "player_id": p_id,
-                "path": path
+            serialized_contours.append({"id": c_id, "player_id": p_id, "path": path})
+        
+        players_data = get_player_stats(cursor, now)
+        
+        cursor.execute("SELECT player_id, username FROM players")
+        leaderboard = []
+        for p_id, name in cursor.fetchall():
+            leaderboard.append({
+                "player_id": p_id, 
+                "name": name, 
+                "totalArea": player_areas.get(p_id, 0.0)
             })
-        
-        
-        cursor.execute("SELECT player_id, draw_charges, draw_cooldown_start, erase_cooldown_start FROM players")
-        players_data = {}
-        now = time.time()
-        
-        for p_id, charges, d_start, e_start in cursor.fetchall():
-            d_current = max(0, int((d_start + 10 - now) * 1000)) if d_start > 0 else 0
-            if d_start > 0 and d_current == 0 and charges == 0:
-                charges = 5
-                cursor.execute("UPDATE players SET draw_charges = 5, draw_cooldown_start = 0 WHERE player_id = ?", (p_id,))
-            
-            e_current = max(0, int((e_start + 2 - now) * 1000)) if e_start > 0 else 0
-            
-            players_data[p_id] = {
-                "cooldowns": {
-                    "draw": {"charges": charges, "maxCharges": 5, "current": d_current, "max": 10000},
-                    "erase": {"current": e_current, "max": 2000}
-                }
-            }
-        conn.commit()
-        
-    
-    cursor.execute("SELECT player_id, username FROM players")
-    user_map = {row[0]: row[1] for row in cursor.fetchall()}
-
-
-    logger.debug(f"Игроки в БД (user_map): {user_map}")
-    logger.debug(f"Распределенные области (player_areas): {dict(player_areas)}")
-
-    
-    leaderboard = []
-    for p_id, name in user_map.items():
-        area = player_areas.get(p_id, 0.0)
-        leaderboard.append({
-            "player_id": p_id, 
-            "name": name, 
-            "totalArea": area
-        })
-        
-    leaderboard.sort(key=lambda x: x["totalArea"], reverse=True)
-
-
-    logger.debug(f"Финальный лидерборд: {leaderboard}")
-
-
-    log_data = {
-        "config": SIZE,
-        "contours_count": len(serialized_contours),
-        "leaderboard": leaderboard,
-        "players_keys": list(players_data.keys())
-    }
-
-    logger.debug(f"State broadcast: {json.dumps(log_data)}")
+        leaderboard.sort(key=lambda x: x["totalArea"], reverse=True)
 
     return {
-        "config": {
-            "size": SIZE,
-            "cell": CELL
-        },
+        "config": {"size": SIZE, "cell": CELL},
         "grid": grid, 
         "contours": serialized_contours, 
         "leaderboard": leaderboard,
@@ -503,3 +490,8 @@ async def websocket_endpoint(websocket: WebSocket):
         logger.info(f"WebSocket отключен (игрок {getattr(websocket, 'player_id', 'Unknown')})")
     except Exception as e:
         logger.exception(f"Критическая ошибка в WebSocket обработчике: {e}")
+
+
+@router.on_event("startup")
+async def startup_event():
+    asyncio.create_task(background_cooldown_cleanup())
