@@ -872,6 +872,16 @@ function updateAnimation() {
 
     const activeCooldowns = players[String(window.currentPlayer)].cooldowns;
 
+    if (activeCooldowns.draw.current > 0) {
+        activeCooldowns.draw.current -= dt;
+        if (activeCooldowns.draw.current < 0) activeCooldowns.draw.current = 0;
+    }
+    
+    if (activeCooldowns.erase.current > 0) {
+        activeCooldowns.erase.current -= dt;
+        if (activeCooldowns.erase.current < 0) activeCooldowns.erase.current = 0;
+    }
+
     gridAnimationTime += dt * 0.0007;
     if (distortionIntensity > 0.01) {
         distortionTime += 0.25;
@@ -884,6 +894,7 @@ function updateAnimation() {
     const btnErase = document.getElementById("tool-erase");
 
     if (btnDraw && btnErase) {
+        // Draw
         if (activeCooldowns.draw.current > 0) {
             const progress = (activeCooldowns.draw.current / activeCooldowns.draw.max) * 100;
             btnDraw.style.setProperty('--cooldown-progress', `${progress}%`);
@@ -898,6 +909,7 @@ function updateAnimation() {
             if (btnDraw.innerText !== text) btnDraw.innerText = text;
         }
 
+        // Erase
         if (activeCooldowns.erase.current > 0) {
             const progress = (activeCooldowns.erase.current / activeCooldowns.erase.max) * 100;
             btnErase.style.setProperty('--cooldown-progress', `${progress}%`);
