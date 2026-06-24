@@ -523,14 +523,30 @@ function centerMap() {
 function inBounds(x,y) { return x>=0 && y>=0 && x<SIZE && y<SIZE; }
 function getPlayerByContour(contourId) { return contourId === 0 ? null : Math.floor(contourId / 10000); }
 
+function getStableColor(id) {
+    let hash = id * 2654435761 % 4294967296;
+    
+    const r = (hash & 0xFF);
+    const g = ((hash >> 8) & 0xFF);
+    const b = ((hash >> 16) & 0xFF);
+    
+    return `rgb(${100 + r % 155}, ${100 + g % 155}, ${100 + b % 155})`;
+}
+
 function colorFor(id, alpha = 1) {
+    if (!id) return `rgba(255, 255, 255, ${alpha})`;
+
     const palette = {
         1: `rgba(46, 204, 113, ${alpha})`,
-        2: `rgba(231, 76, 60, ${alpha})`,
-        3: `rgba(52, 152, 219, ${alpha})`,
-        4: `rgba(241, 196, 15, ${alpha})`
+        2: `rgba(231, 76, 60, ${alpha})`
     };
-    return palette[id] || `rgba(255,255,255,${alpha})`;
+
+    if (palette[id]) {
+        return palette[id].replace('1)', `${alpha})`);
+    }
+
+    const rgb = getStableColor(id).replace('rgb', 'rgba').replace(')', `, ${alpha})`);
+    return rgb;
 }
 
 function getVisibleBounds() {
