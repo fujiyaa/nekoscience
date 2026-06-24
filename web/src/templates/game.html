@@ -431,17 +431,9 @@ function connect() {
                 serverContours = serverData.contours;
                 serverLeaderboard = serverData.leaderboard;
                 
-                for (let pId in serverData.players) {
-                    if (!players[pId]) {
-                        players[pId] = {
-                            cooldowns: {
-                                draw: { charges: 0, maxCharges: 5, current: 0, max: 10000 },
-                                erase: { current: 0, max: 2000 }
-                            }
-                        };
-                    }
+                if (serverData.players) {
                     for (let pId in serverData.players) {
-                        players[pId] = serverData.players[pId]; 
+                        players[pId] = serverData.players[pId];
                     }
                 }
                 
@@ -873,14 +865,12 @@ function updateAnimation() {
     const dt = now - lastTime;
     lastTime = now;
 
-    const keys = Object.keys(players);
-    const pIdString = keys[0]; 
-    const activeCooldowns = players[pIdString] ? players[pIdString].cooldowns : null;
-
-    if (!activeCooldowns) {
+    if (!window.currentPlayer || !players[String(window.currentPlayer)]) {
         requestAnimationFrame(updateAnimation);
         return;
     }
+
+    const activeCooldowns = players[String(window.currentPlayer)].cooldowns;
 
     gridAnimationTime += dt * 0.0007;
     if (distortionIntensity > 0.01) {
