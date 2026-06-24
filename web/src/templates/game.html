@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Multi Contour System - Infinite Canvas</title>
+<title>MiniApp</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <style>
 body {
@@ -253,6 +254,40 @@ canvas {
         height: 16px;
     }
 }
+
+.zoom-panel {
+    position: absolute;
+    right: 15px;
+    /* Устанавливаем положение по вертикали в 50% от высоты экрана */
+    top: 50%;
+    /* Сдвигаем панель вверх на 50% её собственной высоты для идеального центрирования */
+    transform: translateY(-50%); 
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.zoom-btn {
+    width: 45px;
+    height: 45px;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    border-radius: 8px;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background 0.2s;
+}
+
+.zoom-btn:active {
+    background: rgba(255, 255, 255, 0.2);
+}
 </style>
 </head>
 
@@ -280,6 +315,18 @@ canvas {
             <div class="hover-spinner"></div>
             <p style="margin: 0;">Переподключение...</p>
         </div>
+    </div>
+</div>
+
+<div class="zoom-panel">
+    <button class="zoom-btn" onclick="changeZoom(1.2)">+</button>
+    <button class="zoom-btn" onclick="changeZoom(0.8)">-</button>
+</div>
+
+<div id="access-denied-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 200; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px); justify-content: center; align-items: center; color: #fff; font-family: monospace;">
+    <div class="message-box">
+        <h3>Недоступно без телеграма</h3>
+        <p>Играть можно только через <br>MiniApp в @weakobot</p>
     </div>
 </div>
 
@@ -314,21 +361,35 @@ let startX = 0; let startY = 0;
 let mouseStartX = 0; let mouseStartY = 0;
 let lastMouseX = 0; let lastMouseY = 0;
 
-let isReconnecting = false;
+window.Telegram.WebApp.ready();
+const initData = window.Telegram.WebApp.initData;
+let isAuthorized = false;
 
 function connect() {
     socket = new WebSocket(wsUrl);
     const overlay = document.getElementById("reconnect-overlay");
 
     socket.onopen = () => {
-        console.log("Соединение установлено");
-        overlay.style.display = "none";
-        isReconnecting = false;
+        console.log("Соединение установлено, отправка авторизации...");
+        socket.send(JSON.stringify({
+            type: "auth", 
+            initData: initData
+        }));
     };
 
     socket.onmessage = (event) => {
         const message = JSON.parse(event.data);
-        
+
+        if (message.type === "auth_success") {
+            window.currentPlayer = message.player_id; 
+            isAuthorized = true;
+            overlay.style.display = "none";
+            console.log("Авторизован как:", window.currentPlayer);
+            return;
+        }
+
+        if (!isAuthorized) return;
+
         if (message.type === "init" || message.type === "update") {
             const isUpdate = message.type === "update";
             const oldGrid = isUpdate ? JSON.parse(JSON.stringify(grid)) : null;
@@ -366,13 +427,7 @@ function connect() {
                     for (let x = 0; x < SIZE; x++) {
                         if (oldGrid[y][x] !== grid[y][x]) {
                             const newId = grid[y][x];
-                            let targetPlayerId = currentPlayer; 
-
-                            if (newId !== 0) {
-                                targetPlayerId = getPlayerByContour(newId);
-                            } else {
-                                targetPlayerId = getPlayerByContour(oldGrid[y][x]);
-                            }
+                            const targetPlayerId = newId !== 0 ? getPlayerByContour(newId) : getPlayerByContour(oldGrid[y][x]);
                             
                             createExplosion(x, y, targetPlayerId, 12);
                         }
@@ -383,7 +438,8 @@ function connect() {
     };
 
     socket.onclose = (event) => {
-        console.warn("Соединение закрыто (код: " + event.code + "). Переподключение через 3 сек...");
+        isAuthorized = false; // Сбрасываем флаг при обрыве
+        console.warn("Соединение закрыто. Переподключение через 3 сек...");
         overlay.style.display = "flex";
         
         setTimeout(() => {
@@ -396,7 +452,11 @@ function connect() {
     };
 }
 
-connect();
+if (!initData) {
+    document.getElementById("access-denied-overlay").style.display = "flex";
+} else {
+    connect();
+}
 
 const canvas = document.getElementById("c");
 const ctx = canvas.getContext("2d");
@@ -410,6 +470,7 @@ const GLOW_CONFIG = {
     pointRadii: [1.8, 1.53, 1.27, 1.0]
 };
 
+const maxZoom = 0.2; const minZoom = 2.5;
 let zoom = 1.0; let offsetX = 0; let offsetY = 0;
 let distortionTime = 0; let distortionIntensity = 0; const DISTORTION_SCALE = 0.030;  
 
@@ -839,6 +900,21 @@ function updateAnimation() {
     requestAnimationFrame(updateAnimation);
 }
 
+function changeZoom(multiplier) {
+    const centerX = window.innerWidth / 2;
+    const centerY = window.innerHeight / 2;
+    
+    const worldX = (centerX - offsetX) / zoom;
+    const worldY = (centerY - offsetY) / zoom;
+    
+    zoom = Math.min(Math.max(zoom * multiplier, maxZoom), minZoom);
+    
+    offsetX = centerX - worldX * zoom;
+    offsetY = centerY - worldY * zoom;
+    
+    addDistortionImpulse(8);
+}
+
 canvas.addEventListener("mousedown", (e) => {
     isDragging = true;
     hasMoved = false;
@@ -899,7 +975,7 @@ canvas.addEventListener("wheel", (e) => {
     e.preventDefault();
     const mouseX = e.clientX; const mouseY = e.clientY;
     const worldX = (mouseX - offsetX) / zoom; const worldY = (mouseY - offsetY) / zoom;
-    zoom = e.deltaY < 0 ? Math.min(zoom * 1.1, 2.5) : Math.max(zoom / 1.1, 0.3);
+    zoom = e.deltaY < 0 ? Math.min(zoom * 1.1, minZoom) : Math.max(zoom / 1.1, maxZoom);
     addDistortionImpulse(8); offsetX = mouseX - worldX * zoom; offsetY = mouseY - worldY * zoom;
 }, { passive: false });
 
@@ -1002,7 +1078,7 @@ function processClick(e) {
     if (socket.readyState === WebSocket.OPEN) {
         socket.send(JSON.stringify({
             type: "action",
-            payload: { player_id: currentPlayer, tool: currentTool, x: x, y: y }
+            payload: { player_id: window.currentPlayer, tool: currentTool, x: x, y: y }
         }));
     }
 }

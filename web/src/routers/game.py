@@ -1,19 +1,56 @@
 import math
 import sqlite3
 import time
+import os
+import json
+import hmac
+import hashlib
+import urllib.parse
 from typing import List, Set, Dict, Optional
 from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from fastapi import BackgroundTasks
+from pydantic import BaseModel, Field, ValidationError
 
 templates = Jinja2Templates(directory="templates")
 router = APIRouter()
 
 DB_NAME = "game.db"
+BOT_TOKEN = os.getenv("TOKEN")
 SIZE = 200
 CELL = 50
-
+GAME_GRID_CACHE = []
+last_action_times = {}
 DIRS = [(1,0), (1,1), (0,1), (-1,1), (-1,0), (-1,-1), (0,-1), (1,-1)]
+
+class ActionPayload(BaseModel):
+    player_id: int
+    tool: str = Field(..., pattern="^(draw|erase)$") # draw erase
+    x: int = Field(..., ge=0, lt=SIZE) # от 0 до SIZE-1
+    y: int = Field(..., ge=0, lt=SIZE) # от 0 до SIZE-1
+
+def validate_telegram_data(init_data: str) -> bool:
+    parsed_data = urllib.parse.parse_qs(init_data)
+    if 'hash' not in parsed_data:
+        return False
+    
+    received_hash = parsed_data.pop('hash')[0]
+    
+    data_check_string = "\n".join([f"{k}={v[0]}" for k, v in sorted(parsed_data.items())])
+    
+    secret_key = hmac.new("WebAppData".encode(), BOT_TOKEN.encode(), hashlib.sha256).digest()
+    
+    calculated_hash = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
+    
+    return hmac.compare_digest(calculated_hash, received_hash)
+
+def load_grid_from_db(cursor) -> List[List[int]]:
+    cursor.execute("SELECT x, y, contour_id FROM game_grid")
+    grid = [[0 for _ in range(SIZE)] for _ in range(SIZE)]
+    for x, y, c_id in cursor.fetchall():
+        grid[y][x] = c_id
+    return grid
 
 def init_db():
     with sqlite3.connect(DB_NAME) as conn:
@@ -26,6 +63,7 @@ def init_db():
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS players (
                 player_id INTEGER PRIMARY KEY,
+                username TEXT, -- Сохраняем имя при первом входе
                 draw_charges INTEGER DEFAULT 5,
                 draw_cooldown_start REAL DEFAULT 0,
                 erase_cooldown_start REAL DEFAULT 0
@@ -40,7 +78,11 @@ def init_db():
                 cursor.execute("INSERT OR IGNORE INTO players (player_id) VALUES (?)", (p_id,))
             conn.commit()
 
+        global GAME_GRID_CACHE
+        GAME_GRID_CACHE = load_grid_from_db(cursor)
+
 init_db()
+
 
 
 def get_player_by_contour(contour_id: int) -> Optional[int]:
@@ -51,17 +93,27 @@ def get_player_by_contour(contour_id: int) -> Optional[int]:
 def in_bounds(x: int, y: int) -> bool:
     return 0 <= x < SIZE and 0 <= y < SIZE
 
-def load_grid_from_db(cursor) -> List[List[int]]:
-    cursor.execute("SELECT x, y, contour_id FROM game_grid")
-    grid = [[0 for _ in range(SIZE)] for _ in range(SIZE)]
-    for x, y, c_id in cursor.fetchall():
-        grid[y][x] = c_id
-    return grid
 
-def save_grid_to_db(cursor, grid: List[List[int]]):
+# def background_recalculate(player_id: int):
+#     with sqlite3.connect(DB_NAME) as conn:
+#         cursor = conn.cursor()
+#         grid = load_grid_from_db(cursor)
+#         recalculate_player_contours(player_id, grid)
+#         sync_grid_to_db(cursor, grid)
+#         conn.commit()
+
+def update_cell_in_db(cursor, x: int, y: int, contour_id: int):
+    cursor.execute("UPDATE game_grid SET contour_id = ? WHERE x = ? AND y = ?", (contour_id, x, y))
+
+def sync_grid_to_db(cursor, new_grid: List[List[int]]):
+    global GAME_GRID_CACHE
+    
     for y in range(SIZE):
         for x in range(SIZE):
-            cursor.execute("UPDATE game_grid SET contour_id = ? WHERE x = ? AND y = ?", (grid[y][x], x, y))
+            if new_grid[y][x] != GAME_GRID_CACHE[y][x]:
+                update_cell_in_db(cursor, x, y, new_grid[y][x])
+                GAME_GRID_CACHE[y][x] = new_grid[y][x]
+
 
 def get_free_contour_id(grid: List[List[int]], player_id: int) -> int:
     used = {cell for row in grid for cell in row if cell != 0}
@@ -81,7 +133,6 @@ def get_neighbour_contours(x: int, y: int, player_id: int, grid: List[List[int]]
     return list(neighbours)
 
 def recalculate_player_contours(player_id: int, grid: List[List[int]]):
-    """Поиск подграфов (связных областей) после удаления точки ластиком"""
     visited = [[False for _ in range(SIZE)] for _ in range(SIZE)]
     
     for y in range(SIZE):
@@ -245,11 +296,13 @@ def get_current_state_dict():
         conn.commit()
         
     
-    leaderboard = [
-        {"player_id": p_id, "totalArea": area} 
-        for p_id, area in player_areas.items()
-    ]
+    cursor.execute("SELECT player_id, username FROM players")
+    user_map = {row[0]: row[1] for row in cursor.fetchall()}
     
+    leaderboard = [
+        {"name": user_map.get(p_id, "Unknown"), "totalArea": area} 
+        for p_id, area in player_areas.items() if p_id in user_map
+    ]
     leaderboard.sort(key=lambda x: x["totalArea"], reverse=True)
 
     return {
@@ -292,9 +345,47 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         while True:
             data = await websocket.receive_json()
+
+            if data.get("type") == "auth":
+                init_data = data.get("initData")
+
+                if not init_data or not validate_telegram_data(init_data):
+                    await websocket.send_json({"type": "error", "message": "Invalid Authorization"})
+                    await websocket.close(code=1008)
+                    return            
+                
+                user_info = json.loads(urllib.parse.parse_qs(init_data)['user'][0])
+                p_id = user_info['id']
+                name = user_info.get('first_name', 'Player')
+                
+                with sqlite3.connect(DB_NAME) as conn:
+                    conn.execute("""
+                        INSERT INTO players (player_id, username) VALUES (?, ?) 
+                        ON CONFLICT(player_id) DO UPDATE SET username=excluded.username
+                    """, (p_id, name))
+                
+                await websocket.send_json({"type": "auth_success", "player_id": p_id})
+                websocket.player_id = p_id
+                continue
+                
+
             if data.get("type") == "action":
-                payload = data["payload"]
-                player_id = int(payload["player_id"])
+                
+                player_id = getattr(websocket, "player_id", None)
+                if not player_id: continue
+                
+                now = time.time()
+                if now - last_action_times.get(player_id, 0) < 0.2:
+                    await websocket.send_json({"type": "error", "message": "Too fast!"})
+                    continue
+                last_action_times[player_id] = now
+
+                try:
+                    payload = ActionPayload(**data["payload"])
+                except ValidationError:
+                    await websocket.send_json({"type": "error", "message": "Invalid data format"})
+                    continue
+
                 tool = payload["tool"]
                 x, y = int(payload["x"]), int(payload["y"])
                 
@@ -352,7 +443,7 @@ async def websocket_endpoint(websocket: WebSocket):
                                 cursor.execute("UPDATE players SET erase_cooldown_start = ? WHERE player_id = ?", (now, player_id))
                         
                         if action_valid:
-                            save_grid_to_db(cursor, grid)
+                            sync_grid_to_db(cursor, grid)
                             conn.commit()
                 
                 
