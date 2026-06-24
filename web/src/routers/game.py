@@ -10,8 +10,8 @@ from typing import List, Set, Dict, Optional
 from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-from fastapi import BackgroundTasks
 from pydantic import BaseModel, Field, ValidationError
+from collections import defaultdict
 
 templates = Jinja2Templates(directory="templates")
 router = APIRouter()
@@ -248,7 +248,7 @@ def get_current_state_dict():
         
         
         serialized_contours = []
-        player_areas = {1: 0.0, 2: 0.0, 3: 0.0, 4: 0.0}
+        player_areas = defaultdict(float)
         
         for c_id in unique_ids:
             mask = build_mask(grid, c_id)
@@ -291,8 +291,8 @@ def get_current_state_dict():
     user_map = {row[0]: row[1] for row in cursor.fetchall()}
     
     leaderboard = [
-        {"name": user_map.get(p_id, "Unknown"), "totalArea": area} 
-        for p_id, area in player_areas.items() if p_id in user_map
+        {"player_id": p_id, "name": user_map.get(p_id, "Unknown"), "totalArea": area} 
+        for p_id, area in player_areas.items() 
     ]
     leaderboard.sort(key=lambda x: x["totalArea"], reverse=True)
 
