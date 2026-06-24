@@ -74,9 +74,9 @@ def init_db():
         if cursor.fetchone()[0] == 0:
             grid_data = [(x, y, 0) for y in range(SIZE) for x in range(SIZE)]
             cursor.executemany("INSERT INTO game_grid (x, y, contour_id) VALUES (?, ?, ?)", grid_data)
-            for p_id in range(1, 5):
-                cursor.execute("INSERT OR IGNORE INTO players (player_id) VALUES (?)", (p_id,))
-            conn.commit()
+            # for p_id in range(1, 5):
+            #     cursor.execute("INSERT OR IGNORE INTO players (player_id) VALUES (?)", (p_id,))
+            # conn.commit()
 
         global GAME_GRID_CACHE
         GAME_GRID_CACHE = load_grid_from_db(cursor)
