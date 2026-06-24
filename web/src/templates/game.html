@@ -389,62 +389,80 @@ function connect() {
     };
 
     socket.onmessage = (event) => {
-        const message = JSON.parse(event.data);
+        try {
+            const message = JSON.parse(event.data);
 
-        if (message.type === "auth_success") {
-            window.currentPlayer = message.player_id; 
-            isAuthorized = true;
-            overlay.style.display = "none";
-            console.log("Авторизован как:", window.currentPlayer);
-            return;
-        }
+            if (message.type === "auth_success") {
+                window.currentPlayer = message.player_id; 
+                isAuthorized = true;
+                overlay.style.display = "none";
+                console.log("Авторизован как:", window.currentPlayer);
+                return;
+            }
 
-        if (!isAuthorized) return;
-
-        if (message.type === "init" || message.type === "update") {
-            const isUpdate = message.type === "update";
-            const oldGrid = isUpdate ? JSON.parse(JSON.stringify(grid)) : null;
-            const serverData = message.data;
-            
-            if (serverData.config) {
-                SIZE = serverData.config.size;
-                CELL = serverData.config.cell;
+            if (message.type === "update") {
+                console.log("Структура полученных игроков:", Object.keys(message.data.players || {}));
             }
             
-            grid = serverData.grid;
-            serverContours = serverData.contours;
-            serverLeaderboard = serverData.leaderboard;
-            
-            for (let pId in serverData.players) {
-                if (!players[pId]) {
-                    players[pId] = {
-                        cooldowns: {
-                            draw: { charges: 0, maxCharges: 5, current: 0, max: 10000 },
-                            erase: { current: 0, max: 2000 }
+            if (!isAuthorized) return;
+
+            if (message.type === "init" || message.type === "update") {
+
+                if (serverData.players && typeof serverData.players === 'object') {
+                    for (let pId in serverData.players) {
+                        const pData = serverData.players[pId];
+                        if (!pData.cooldowns || !pData.cooldowns.draw) {
+                            throw new Error(`Игрок ${pId} имеет некорректные данные: ${JSON.stringify(pData)}`);
                         }
-                    };
+                    }
                 }
-                players[pId].cooldowns.draw.charges = serverData.players[pId].cooldowns.draw.charges;
-                players[pId].cooldowns.draw.current = serverData.players[pId].cooldowns.draw.current;
-                players[pId].cooldowns.erase.current = serverData.players[pId].cooldowns.erase.current;
-            }
-            
-            if (message.type === "init") {
-                centerMap();
-            }
 
-            if (isUpdate && oldGrid && oldGrid.length === grid.length) {
-                for (let y = 0; y < SIZE; y++) {
-                    for (let x = 0; x < SIZE; x++) {
-                        if (oldGrid[y][x] !== grid[y][x]) {
-                            const newId = grid[y][x];
-                            const targetPlayerId = newId !== 0 ? getPlayerByContour(newId) : getPlayerByContour(oldGrid[y][x]);
-                            
-                            createExplosion(x, y, targetPlayerId, 12);
+                const isUpdate = message.type === "update";
+                const oldGrid = isUpdate ? JSON.parse(JSON.stringify(grid)) : null;
+                const serverData = message.data;
+                
+                if (serverData.config) {
+                    SIZE = serverData.config.size;
+                    CELL = serverData.config.cell;
+                }
+                
+                grid = serverData.grid;
+                serverContours = serverData.contours;
+                serverLeaderboard = serverData.leaderboard;
+                
+                for (let pId in serverData.players) {
+                    if (!players[pId]) {
+                        players[pId] = {
+                            cooldowns: {
+                                draw: { charges: 0, maxCharges: 5, current: 0, max: 10000 },
+                                erase: { current: 0, max: 2000 }
+                            }
+                        };
+                    }
+                    players[pId].cooldowns.draw.charges = serverData.players[pId].cooldowns.draw.charges;
+                    players[pId].cooldowns.draw.current = serverData.players[pId].cooldowns.draw.current;
+                    players[pId].cooldowns.erase.current = serverData.players[pId].cooldowns.erase.current;
+                }
+                
+                if (message.type === "init") {
+                    centerMap();
+                }
+
+                if (isUpdate && oldGrid && oldGrid.length === grid.length) {
+                    for (let y = 0; y < SIZE; y++) {
+                        for (let x = 0; x < SIZE; x++) {
+                            if (oldGrid[y][x] !== grid[y][x]) {
+                                const newId = grid[y][x];
+                                const targetPlayerId = newId !== 0 ? getPlayerByContour(newId) : getPlayerByContour(oldGrid[y][x]);
+                                
+                                createExplosion(x, y, targetPlayerId, 12);
+                            }
                         }
                     }
                 }
             }
+        } catch (e) {
+            throw new Error(`Ошибка разбора данных от сервера: ${e.message}`);
         }
     };
 
@@ -792,6 +810,14 @@ function drawParticles() {
 }
 
 function render() {
+    if (!Array.isArray(grid)) {
+        throw new Error("Критическая ошибка: grid не является массивом!");
+    }
+
+    if (!Array.isArray(serverLeaderboard)) {
+        throw new Error("Лидерборд пустой");
+    }
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     drawGrid();
