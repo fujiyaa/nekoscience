@@ -1088,7 +1088,10 @@ canvas.addEventListener("touchend", (e) => {
 });
 
 function processClick(e) {
-    if (!players[currentPlayer]) return;
+    if (!players[currentPlayer]) {
+        console.log("DEBUG: Игрок не найден в списке!");
+        return;
+    }
     const pData = players[currentPlayer];
     
     const x = Math.floor(((e.clientX - offsetX) / zoom) / CELL);
@@ -1097,28 +1100,40 @@ function processClick(e) {
 
     const cellId = grid[y][x];
 
-    if (currentTool === "draw" && pData.cooldowns.draw.charges === 0 && pData.cooldowns.draw.current > 0) {
-        showFloatingError(x, y, "Перезарядка точки!");
-        flashButtonError("draw"); 
-        return;
-    }
-    if (currentTool === "erase" && pData.cooldowns.erase.current > 0) {
-        showFloatingError(x, y, "Ластик на перезарядке!");
-        flashButtonError("erase"); 
-        return;
+    console.log("DEBUG: Клик по:", x, y, "| Инструмент:", currentTool);
+    console.log("DEBUG: Данные кулдауна:", pData.cooldowns);
+
+    if (currentTool === "draw") {
+        if (pData.cooldowns.draw.charges === 0 && pData.cooldowns.draw.current > 0) {
+            console.log("BLOCK: Ошибка Draw - кулдаун активен (charges=0, current>0)");
+            showFloatingError(x, y, "Перезарядка точки!");
+            flashButtonError("draw");
+            return;
+        }
+        if (cellId !== 0) {
+            console.log("BLOCK: Ошибка Draw - ячейка занята");
+            showFloatingError(x, y, "Ячейка уже занята!");
+            flashButtonError("draw");
+            return;
+        }
     }
 
-    if (currentTool === "draw" && cellId !== 0) {
-        showFloatingError(x, y, "Ячейка уже занята!");
-        flashButtonError("draw"); 
-        return;
-    }
-    if (currentTool === "erase" && cellId === 0) {
-        showFloatingError(x, y, "Здесь пусто!");
-        flashButtonError("erase"); 
-        return;
+    if (currentTool === "erase") {
+        if (pData.cooldowns.erase.current > 0) {
+            console.log("BLOCK: Ошибка Erase - кулдаун активен");
+            showFloatingError(x, y, "Ластик на перезарядке!");
+            flashButtonError("erase");
+            return;
+        }
+        if (cellId === 0) {
+            console.log("BLOCK: Ошибка Erase - ячейка пуста");
+            showFloatingError(x, y, "Здесь пусто!");
+            flashButtonError("erase");
+            return;
+        }
     }
 
+    console.log("SUCCESS: Отправка действия на сервер...");
     createExplosion(x, y, currentPlayer, 6);
 
     if (socket.readyState === WebSocket.OPEN) {
@@ -1126,6 +1141,8 @@ function processClick(e) {
             type: "action",
             payload: { player_id: window.currentPlayer, tool: currentTool, x: x, y: y }
         }));
+    } else {
+        console.log("ERROR: Сокет закрыт!");
     }
 }
 
