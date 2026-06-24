@@ -869,9 +869,18 @@ function render() {
 
 let lastTime = performance.now();
 function updateAnimation() {
-
-    const pIdString = String(window.currentPlayer);
+    const keys = Object.keys(players);
+    const pIdString = keys[0];
+    
     const activeCooldowns = players[pIdString] ? players[pIdString].cooldowns : null;
+
+    if (!activeCooldowns) {
+        console.warn("Колдуны не найдены для ключа:", pIdString);
+        requestAnimationFrame(updateAnimation);
+        return; 
+    }
+
+    console.log("Отрисовка для ID:", pIdString, activeCooldowns.draw);
 
     if (!activeCooldowns) {
         
