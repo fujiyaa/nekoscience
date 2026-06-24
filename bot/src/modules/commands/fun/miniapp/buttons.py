@@ -11,9 +11,7 @@ def get_keyboard():
         [
             InlineKeyboardButton(
                 text="⭐️ MiniApp",
-                web_app=WebAppInfo(
-                    url="https://myangelfujiya.ru/game"
-                )
+                url="https://t.me/Weakobot?startapp"
             )
         ]
     ]
