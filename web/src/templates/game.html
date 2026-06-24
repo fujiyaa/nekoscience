@@ -441,9 +441,9 @@ function connect() {
                             }
                         };
                     }
-                    players[pId].cooldowns.draw.charges = serverData.players[pId].cooldowns.draw.charges;
-                    players[pId].cooldowns.draw.current = serverData.players[pId].cooldowns.draw.current;
-                    players[pId].cooldowns.erase.current = serverData.players[pId].cooldowns.erase.current;
+                    for (let pId in serverData.players) {
+                        players[pId] = serverData.players[pId]; 
+                    }
                 }
                 
                 if (message.type === "init") {
@@ -883,6 +883,10 @@ function updateAnimation() {
     const activeCooldowns = players[currentPlayer] ? players[currentPlayer].cooldowns : null;
     const btnDraw = document.getElementById("tool-draw");
     const btnErase = document.getElementById("tool-erase");
+
+    if (activeCooldowns) {
+        console.log("Данные кулдауна:", activeCooldowns.draw); 
+    }
 
     if (activeCooldowns && btnDraw && btnErase) {
         // Визуализация DRAW
