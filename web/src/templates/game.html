@@ -408,6 +408,10 @@ function connect() {
 
             if (message.type === "init" || message.type === "update") {
 
+                const serverData = message.data;
+                const isUpdate = message.type === "update";
+                const oldGrid = isUpdate ? JSON.parse(JSON.stringify(grid)) : null;
+
                 if (serverData.players && typeof serverData.players === 'object') {
                     for (let pId in serverData.players) {
                         const pData = serverData.players[pId];
@@ -416,10 +420,6 @@ function connect() {
                         }
                     }
                 }
-
-                const isUpdate = message.type === "update";
-                const oldGrid = isUpdate ? JSON.parse(JSON.stringify(grid)) : null;
-                const serverData = message.data;
                 
                 if (serverData.config) {
                     SIZE = serverData.config.size;
