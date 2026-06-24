@@ -354,118 +354,217 @@ logger.addHandler(file_handler)
 @router.websocket("/ws/game")
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
-    logger.info("Новое WebSocket подключение установлено")
+    await websocket.send_json({"type": "init", "data": get_current_state_dict()})
     
-    # Отправка начального состояния
-    try:
-        initial_state = get_current_state_dict()
-        await websocket.send_json({"type": "init", "data": initial_state})
-        logger.debug("Начальное состояние отправлено клиенту")
-    except Exception as e:
-        logger.error(f"Ошибка при отправке начального состояния: {e}")
+    logger.info("Новое WebSocket подключение установлено")
 
     try:
         while True:
             data = await websocket.receive_json()
-            logger.debug(f"Получено сообщение типа: {data.get('type')}")
 
-            # --- АВТОРИЗАЦИЯ ---
             if data.get("type") == "auth":
+
                 init_data = data.get("initData")
-                logger.info("Попытка авторизации...")
+
+
 
                 if not init_data or not validate_telegram_data(init_data):
-                    logger.warning("Ошибка: Невалидные данные авторизации")
+
                     await websocket.send_json({"type": "error", "message": "Invalid Authorization"})
+
                     await websocket.close(code=1008)
-                    return
-                
+
+                    return            
+
+               
+
                 user_info = json.loads(urllib.parse.parse_qs(init_data)['user'][0])
+
                 p_id = user_info['id']
+
                 name = user_info.get('first_name', 'Player')
-                
-                logger.info(f"Пользователь {p_id} ({name}) успешно прошел валидацию")
+
+               
 
                 with sqlite3.connect(DB_NAME) as conn:
+
                     conn.execute("""
-                        INSERT INTO players (player_id, username) VALUES (?, ?) 
+
+                        INSERT INTO players (player_id, username) VALUES (?, ?)
+
                         ON CONFLICT(player_id) DO UPDATE SET username=excluded.username
+
                     """, (p_id, name))
-                
-                websocket.player_id = p_id
+
+               
+
                 await websocket.send_json({"type": "auth_success", "player_id": p_id})
+
+                websocket.player_id = p_id
+
                 await websocket.send_json({"type": "init", "data": get_current_state_dict()})
-                logger.info(f"Игрок {p_id} авторизован и получил состояние игры")
+
                 continue
 
-            # --- ИГРОВЫЕ ДЕЙСТВИЯ ---
+               
+
+
+
             if data.get("type") == "action":
+
+               
+
                 player_id = getattr(websocket, "player_id", None)
-                if not player_id:
-                    logger.warning("Попытка действия без авторизации!")
-                    continue
-                
-                # Анти-спам проверка
+
+                if not player_id: continue
+
+               
+
                 now = time.time()
+
                 if now - last_action_times.get(player_id, 0) < 0.2:
-                    logger.debug(f"Игрок {player_id} спамит действиями")
+
                     await websocket.send_json({"type": "error", "message": "Too fast!"})
+
                     continue
+
                 last_action_times[player_id] = now
 
+
+
                 try:
-                    payload = ActionPayload(**data["payload"]).model_dump()
-                except ValidationError as e:
-                    logger.error(f"Ошибка валидации ActionPayload: {e}")
+
+                    payload = ActionPayload(**data["payload"])
+
+                except ValidationError:
+
                     await websocket.send_json({"type": "error", "message": "Invalid data format"})
+
                     continue
 
-                tool, x, y = payload["tool"], int(payload["x"]), int(payload["y"])
-                logger.debug(f"Игрок {player_id} выбрал инструмент {tool} для клетки ({x}, {y})")
-                
+
+
+                tool = payload["tool"]
+
+                x, y = int(payload["x"]), int(payload["y"])
+
+               
+
                 if not in_bounds(x, y):
-                    logger.warning(f"Игрок {player_id} пытается воздействовать вне границ: {x}, {y}")
+
                     continue
-                
-                # Логика БД
+
+               
+
+                now = time.time()
+
+               
+
                 with sqlite3.connect(DB_NAME) as conn:
+
                     cursor = conn.cursor()
+
                     cursor.execute("SELECT draw_charges, draw_cooldown_start, erase_cooldown_start FROM players WHERE player_id = ?", (player_id,))
+
                     player_row = cursor.fetchone()
-                    
-                    if not player_row:
-                        logger.error(f"Игрок {player_id} не найден в БД!")
-                        continue
 
-                    charges, d_start, e_start = player_row
-                    grid = load_grid_from_db(cursor)
-                    action_valid = False
-                    
-                    # Tool: DRAW
-                    if tool == "draw" and grid[y][x] == 0:
-                        if charges > 0 or (d_start + 10) <= now:
-                            action_valid = True
-                            # ... (ваша логика объединения контуров)
-                            logger.info(f"Игрок {player_id} успешно нарисовал в {x}, {y}")
-                            # ... (апдейт БД)
-                        else:
-                            logger.debug(f"Игрок {player_id} на КД (Draw)")
+                   
 
-                    # Tool: ERASE
-                    elif tool == "erase" and grid[y][x] != 0:
-                        if (e_start + 2) <= now:
-                            action_valid = True
-                            logger.info(f"Игрок {player_id} успешно стер клетку {x}, {y}")
-                            # ... (апдейт БД)
-                        else:
-                            logger.debug(f"Игрок {player_id} на КД (Erase)")
+                    if player_row:
 
-                    if action_valid:
-                        sync_grid_to_db(cursor, grid)
-                        conn.commit()
-                        logger.debug("Изменения зафиксированы в БД")
-                        await manager.broadcast({"type": "update", "data": get_current_state_dict()})
-                        logger.debug("Обновление разослано всем игрокам")
+                        charges, d_start, e_start = player_row
+
+                        grid = load_grid_from_db(cursor)
+
+                        action_valid = False
+
+                       
+
+                       
+
+                        if tool == "draw" and grid[y][x] == 0:
+
+                            if charges > 0 or (d_start + 10) <= now:
+
+                                action_valid = True
+
+                                neighbours = get_neighbour_contours(x, y, player_id, grid)
+
+                               
+
+                                if len(neighbours) == 0:
+
+                                    grid[y][x] = get_free_contour_id(grid, player_id)
+
+                                elif len(neighbours) == 1:
+
+                                    grid[y][x] = neighbours[0]
+
+                                else:
+
+                                   
+
+                                    main_id = neighbours[0]
+
+                                    for yy in range(SIZE):
+
+                                        for xx in range(SIZE):
+
+                                            if grid[yy][xx] in neighbours:
+
+                                                grid[yy][xx] = main_id
+
+                                    grid[y][x] = main_id
+
+                               
+
+                                new_charges = charges - 1 if charges > 0 else 4
+
+                                new_d_start = now if new_charges == 0 else 0
+
+                                cursor.execute("UPDATE players SET draw_charges = ?, draw_cooldown_start = ? WHERE player_id = ?", (new_charges, new_d_start, player_id))
+
+                       
+
+                       
+
+                        elif tool == "erase" and grid[y][x] != 0:
+
+                            if (e_start + 2) <= now:
+
+                                action_valid = True
+
+                                target_contour_id = grid[y][x]
+
+                                target_player_id = get_player_by_contour(target_contour_id)
+
+                               
+
+                                grid[y][x] = 0
+
+                               
+
+                               
+
+                                if target_player_id is not None:
+
+                                    recalculate_player_contours(target_player_id, grid)
+
+                                   
+
+                                cursor.execute("UPDATE players SET erase_cooldown_start = ? WHERE player_id = ?", (now, player_id))
+
+                       
+
+                        if action_valid:
+
+                            sync_grid_to_db(cursor, grid)
+
+                            conn.commit()
+
+
+                await manager.broadcast({"type": "update", "data": get_current_state_dict()})
+
 
     except WebSocketDisconnect:
         manager.disconnect(websocket)
