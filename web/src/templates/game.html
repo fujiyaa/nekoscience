@@ -2,6 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Multi Contour System - Infinite Canvas</title>
 
 <style>
@@ -222,6 +223,35 @@ canvas {
     border: 2px dashed rgba(255, 255, 255, 0.8);
     animation: rotate-canvas 2s linear infinite;
     margin-right: 12px;
+}
+
+@media (max-width: 768px) {
+    .ui-layer {
+        top: 10px;
+        left: 10px;
+    }
+
+    #leaderboard {
+        font-size: 16px; /* Увеличиваем шрифт */
+        padding: 15px;
+    }
+
+    .tools-bottom-panel {
+        width: 90%; /* Панель растягивается по ширине */
+        bottom: 15px;
+        padding: 15px;
+        gap: 15px;
+    }
+
+    .tools-bottom-panel .debug-btn {
+        padding: 20px 0; /* Делаем кнопки выше, чтобы в них легче было попасть пальцем */
+        font-size: 16px;
+    }
+
+    .player-color-dot {
+        width: 16px; /* Увеличиваем индикаторы */
+        height: 16px;
+    }
 }
 </style>
 </head>
