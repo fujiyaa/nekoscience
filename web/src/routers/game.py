@@ -93,15 +93,6 @@ def get_player_by_contour(contour_id: int) -> Optional[int]:
 def in_bounds(x: int, y: int) -> bool:
     return 0 <= x < SIZE and 0 <= y < SIZE
 
-
-# def background_recalculate(player_id: int):
-#     with sqlite3.connect(DB_NAME) as conn:
-#         cursor = conn.cursor()
-#         grid = load_grid_from_db(cursor)
-#         recalculate_player_contours(player_id, grid)
-#         sync_grid_to_db(cursor, grid)
-#         conn.commit()
-
 def update_cell_in_db(cursor, x: int, y: int, contour_id: int):
     cursor.execute("UPDATE game_grid SET contour_id = ? WHERE x = ? AND y = ?", (contour_id, x, y))
 
@@ -366,6 +357,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 
                 await websocket.send_json({"type": "auth_success", "player_id": p_id})
                 websocket.player_id = p_id
+                await websocket.send_json({"type": "init", "data": get_current_state_dict()}) 
                 continue
                 
 
