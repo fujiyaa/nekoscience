@@ -258,6 +258,8 @@ def get_current_state_dict():
             p_id = get_player_by_contour(c_id)
             if p_id in player_areas:
                 player_areas[p_id] += area
+
+            logger.debug(f"Контур ID {c_id} принадлежит игроку {p_id}, площадь: {area}")
                 
             serialized_contours.append({
                 "id": c_id,
@@ -289,12 +291,21 @@ def get_current_state_dict():
     
     cursor.execute("SELECT player_id, username FROM players")
     user_map = {row[0]: row[1] for row in cursor.fetchall()}
+
+
+    logger.debug(f"Игроки в БД (user_map): {user_map}")
+    logger.debug(f"Распределенные области (player_areas): {dict(player_areas)}")
+
     
     leaderboard = [
         {"player_id": p_id, "name": user_map.get(p_id, "Unknown"), "totalArea": area} 
         for p_id, area in player_areas.items() 
     ]
     leaderboard.sort(key=lambda x: x["totalArea"], reverse=True)
+
+
+    logger.debug(f"Финальный лидерборд: {leaderboard}")
+    
 
     log_data = {
         "config": SIZE,
