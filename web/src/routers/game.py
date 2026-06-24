@@ -22,11 +22,14 @@ BOT_TOKEN = os.getenv("TOKEN")
 
 SIZE = 100
 CELL = 50
+BLAST_RADIUS = 7
 DRAW_COOLDOWN_SEC = 15
 ERASE_COOLDOWN_SEC = 80
+BLAST_COOLDOWN_SEC = 20000
 DRAW_MAX_CHARGES = 5
-DRAW_COOLDOWN_MS = 15000
-ERASE_COOLDOWN_MS = 80000 
+DRAW_COOLDOWN_MS = 15*1000
+ERASE_COOLDOWN_MS = 80*1000
+BLAST_COOLDOWN_MS = 20000*1000
 
 GAME_GRID_CACHE = []
 last_action_times = {}
@@ -35,7 +38,7 @@ DIRS = [(1,0), (1,1), (0,1), (-1,1), (-1,0), (-1,-1), (0,-1), (1,-1)]
 
 class ActionPayload(BaseModel):
     player_id: int
-    tool: str = Field(..., pattern="^(draw|erase)$") # draw erase
+    tool: str = Field(..., pattern="^(draw|erase|blast)$")
     x: int = Field(..., ge=0, lt=SIZE) # от 0 до SIZE-1
     y: int = Field(..., ge=0, lt=SIZE) # от 0 до SIZE-1
 
@@ -61,6 +64,16 @@ def load_grid_from_db(cursor) -> List[List[int]]:
         grid[y][x] = c_id
     return grid
 
+def migrate_db(cursor):
+    cursor.execute("PRAGMA table_info(players)")
+    columns = [row[1] for row in cursor.fetchall()]
+
+    if "blast_cooldown_start" not in columns:
+        cursor.execute("""
+            ALTER TABLE players
+            ADD COLUMN blast_cooldown_start REAL DEFAULT 0
+        """)
+
 def init_db():
     with sqlite3.connect(DB_NAME) as conn:
         cursor = conn.cursor()
@@ -75,7 +88,8 @@ def init_db():
                 username TEXT, -- Сохраняем имя при первом входе
                 draw_charges INTEGER DEFAULT 5,
                 draw_cooldown_start REAL DEFAULT 0,
-                erase_cooldown_start REAL DEFAULT 0
+                erase_cooldown_start REAL DEFAULT 0,
+                blast_cooldown_start REAL DEFAULT 0
             )
         """)
         conn.commit()
@@ -89,6 +103,9 @@ def init_db():
 
         global GAME_GRID_CACHE
         GAME_GRID_CACHE = load_grid_from_db(cursor)
+
+        migrate_db(cursor)
+        conn.commit()
 
 async def background_cooldown_cleanup():
     """Фоновая задача, которая проверяет кулдауны каждые 10 секунд."""
@@ -110,7 +127,15 @@ async def background_cooldown_cleanup():
 
 init_db()
 
-
+def get_cells_in_radius(x: int, y: int, r: int):
+    cells = []
+    r2 = r * r
+    for dy in range(-r, r + 1):
+        for dx in range(-r, r + 1):
+            nx, ny = x + dx, y + dy
+            if in_bounds(nx, ny) and dx*dx + dy*dy <= r2:
+                cells.append((nx, ny))
+    return cells
 
 def get_player_by_contour(contour_id: int) -> Optional[int]:
     if contour_id == 0:
@@ -270,15 +295,16 @@ def get_cooldown_progress(cooldown_start: float, duration: float, now: float) ->
     return max(0, duration - elapsed)
 
 def get_player_stats(cursor, now: float) -> Dict[int, dict]:
-    cursor.execute("SELECT player_id, draw_charges, draw_cooldown_start, erase_cooldown_start FROM players")
+    cursor.execute("SELECT player_id, draw_charges, draw_cooldown_start, erase_cooldown_start, blast_cooldown_start FROM players")
     stats = {}
     
-    for p_id, charges, d_start, e_start in cursor.fetchall():
+    for p_id, charges, d_start, e_start, b_start in cursor.fetchall():
         # Используем константы вместо магических чисел
         is_draw_ready = (d_start > 0 and (now - d_start) >= DRAW_COOLDOWN_SEC)
         
         d_rem = max(0, int((d_start + DRAW_COOLDOWN_SEC - now) * 1000)) if (d_start > 0 and not is_draw_ready) else 0
         e_rem = max(0, int((e_start + ERASE_COOLDOWN_SEC - now) * 1000)) if e_start > 0 else 0
+        b_rem = max(0, int((b_start + BLAST_COOLDOWN_SEC - now) * 1000)) if b_start > 0 else 0
         
         stats[p_id] = {
             "cooldowns": {
@@ -291,6 +317,10 @@ def get_player_stats(cursor, now: float) -> Dict[int, dict]:
                 "erase": {
                     "current": e_rem, 
                     "max": ERASE_COOLDOWN_MS
+                },
+                "blast": {
+                    "current": b_rem, 
+                    "max": BLAST_COOLDOWN_MS
                 }
             }
         }
@@ -443,17 +473,17 @@ async def websocket_endpoint(websocket: WebSocket):
 
                 with sqlite3.connect(DB_NAME) as conn:
                     cursor = conn.cursor()
-                    cursor.execute("SELECT draw_charges, draw_cooldown_start, erase_cooldown_start FROM players WHERE player_id = ?", (player_id,))
+                    cursor.execute("SELECT draw_charges, draw_cooldown_start, erase_cooldown_start, blast_cooldown_start FROM players WHERE player_id = ?", (player_id,))
                     player_row = cursor.fetchone()                   
 
                     if player_row:
-                        charges, d_start, e_start = player_row
+                        charges, d_start, e_start, b_start = player_row
                         grid = load_grid_from_db(cursor)
                         action_valid = False
 
                         if tool == "draw" and grid[y][x] == 0:
 
-                            if charges > 0 or (d_start + 10) <= now:
+                            if charges > 0 or (d_start + DRAW_COOLDOWN_SEC) <= now:
 
                                 action_valid = True
                                 neighbours = get_neighbour_contours(x, y, player_id, grid)
@@ -481,7 +511,7 @@ async def websocket_endpoint(websocket: WebSocket):
                        
                         elif tool == "erase" and grid[y][x] != 0:
 
-                            if (e_start + 2) <= now:
+                            if (e_start + ERASE_COOLDOWN_SEC) <= now:
 
                                 action_valid = True
                                 target_contour_id = grid[y][x]
@@ -493,6 +523,28 @@ async def websocket_endpoint(websocket: WebSocket):
                                     recalculate_player_contours(target_player_id, grid)
 
                                 cursor.execute("UPDATE players SET erase_cooldown_start = ? WHERE player_id = ?", (now, player_id))
+                        
+                        elif tool == "blast":
+                            affected_players = set()
+
+                            if (b_start + BLAST_COOLDOWN_SEC) <= now:
+                                action_valid = True
+
+                                cells = get_cells_in_radius(x, y, BLAST_RADIUS)
+
+                                for nx, ny in cells:
+                                    c_id = grid[ny][nx]
+                                    if c_id != 0:
+                                        pid = get_player_by_contour(c_id)
+                                        if pid is not None:
+                                            affected_players.add(pid)
+                                        grid[ny][nx] = 0
+
+                                for pid in affected_players:
+                                    recalculate_player_contours(pid, grid)
+
+                                cursor.execute("UPDATE players SET blast_cooldown_start = ? WHERE player_id = ?", (now, player_id))
+
 
                         if action_valid:
 

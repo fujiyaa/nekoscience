@@ -166,6 +166,12 @@ canvas {
     background: rgba(230, 126, 34, 0.1);
 }
 
+.tools-bottom-panel #tool-blast.active {
+    border-color: #e62c22;
+    color: #e62222;
+    background: rgba(230, 126, 34, 0.1);
+}
+
 .tools-bottom-panel .debug-btn.on-cooldown {
     cursor: not-allowed;
     opacity: 0.6;
@@ -304,8 +310,9 @@ canvas {
 
 <div class="tools-bottom-panel">
     <button id="tool-draw" class="debug-btn active" onclick="setTool('draw')">Точка</button>
-    <button id="tool-erase" class="debug-btn" onclick="setTool('erase')">Ластик ✕</button>
-    <div class="hotkey-hint">Точка [Q] - Ластик [W]</div>
+    <button id="tool-erase" class="debug-btn" onclick="setTool('erase')">Ластик</button>
+    <button id="tool-blast" class="debug-btn" onclick="setTool('blast')">Взрыв</button>
+    <div class="hotkey-hint">Точка [Q] - Ластик [W] - Взрыв [E]</div>
 </div>
 
 <div id="reconnect-overlay" style="display: none;">
@@ -908,8 +915,14 @@ function showFloatingError(cellX, cellY, text) {
     });
 }
 
+const TOOL_BUTTON_MAP = {
+    draw: "tool-draw",
+    erase: "tool-erase",
+    blast: "tool-blast"
+};
+
 function flashButtonError(toolName) {
-    const btnId = toolName === "draw" ? "tool-draw" : "tool-erase";
+    const btnId = TOOL_BUTTON_MAP[toolName];
     const btn = document.getElementById(btnId);
     
     if (btn) {
@@ -1046,6 +1059,12 @@ function updateAnimation() {
         if (activeCooldowns.erase.current < 0) activeCooldowns.erase.current = 0;
     }
 
+    if (activeCooldowns.blast.current > 0) {
+        activeCooldowns.blast.current -= dt;
+        if (activeCooldowns.blast.current < 0) activeCooldowns.blast.current = 0;
+    }
+
+
     if (animationsEnabled) {
         gridAnimationTime += dt * 0.0007;
     }
@@ -1058,6 +1077,7 @@ function updateAnimation() {
 
     const btnDraw = document.getElementById("tool-draw");
     const btnErase = document.getElementById("tool-erase");
+    const btnBlast = document.getElementById("tool-blast");
 
     if (btnDraw && btnErase) {
         // Draw
@@ -1066,7 +1086,7 @@ function updateAnimation() {
             btnDraw.style.setProperty('--cooldown-progress', `${progress}%`);
             btnDraw.classList.add('on-cooldown');
             
-            const text = `Перезарядка... ${Math.ceil(activeCooldowns.draw.current / 1000)}с`;
+            const text = `Зарядка.. ${Math.ceil(activeCooldowns.draw.current / 1000)}с`;
             if (btnDraw.innerText !== text) btnDraw.innerText = text;
         } else {
             btnDraw.style.setProperty('--cooldown-progress', '0%');
@@ -1081,12 +1101,26 @@ function updateAnimation() {
             btnErase.style.setProperty('--cooldown-progress', `${progress}%`);
             btnErase.classList.add('on-cooldown');
             
-            const text = `Ластик ✕ ${Math.ceil(activeCooldowns.erase.current / 1000)}с`;
+            const text = `Ластик ${Math.ceil(activeCooldowns.erase.current / 1000)}с`;
             if (btnErase.innerText !== text) btnErase.innerText = text;
         } else {
             btnErase.style.setProperty('--cooldown-progress', '0%');
             btnErase.classList.remove('on-cooldown');
-            if (btnErase.innerText !== "Ластик ✕") btnErase.innerText = "Ластик ✕";
+            if (btnErase.innerText !== "Ластик") btnErase.innerText = "Ластик";
+        }
+
+        // Blast
+        if (activeCooldowns.blast.current > 0) {
+            const progress = (activeCooldowns.blast.current / activeCooldowns.blast.max) * 100;
+            btnBlast.style.setProperty('--cooldown-progress', `${progress}%`);
+            btnBlast.classList.add('on-cooldown');
+            
+            const text = `Взрыв ${Math.ceil(activeCooldowns.blast.current / 1000)}с`;
+            if (btnBlast.innerText !== text) btnBlast.innerText = text;
+        } else {
+            btnBlast.style.setProperty('--cooldown-progress', '0%');
+            btnBlast.classList.remove('on-cooldown');
+            if (btnBlast.innerText !== "Взрыв") btnBlast.innerText = "Взрыв";
         }
     }
 
@@ -1198,6 +1232,8 @@ window.addEventListener("keydown", (e) => {
         setTool("draw");
     } else if (key === "w" || key === "ц") {
         setTool("erase");
+    } else if (key === "e" || key === "у") {
+        setTool("blast");
     }
 });
 
@@ -1302,6 +1338,21 @@ function processClick(e) {
         }
     }
 
+    if (currentTool === "blast") {
+        if (pData.cooldowns.blast.current > 0) {
+            console.log("BLOCK: Ошибка blast - кулдаун активен");
+            showFloatingError(x, y, "Взрыв на перезарядке!");
+            flashButtonError("blast");
+            return;
+        }
+        if (cellId === 0) {
+            console.log("BLOCK: Ошибка blast - ячейка пуста");
+            showFloatingError(x, y, "Здесь пусто!");
+            flashButtonError("blast");
+            return;
+        }
+    }
+
     console.log("SUCCESS: Отправка действия на сервер...");
     createExplosion(x, y, window.currentPlayer, 6);
 
@@ -1319,6 +1370,7 @@ function setTool(toolName) {
     currentTool = toolName;
     document.getElementById('tool-draw').classList.toggle('active', toolName === 'draw');
     document.getElementById('tool-erase').classList.toggle('active', toolName === 'erase');
+    document.getElementById('tool-blast').classList.toggle('active', toolName === 'blast');
 }
 
 function handleMinimapClick(e) {
