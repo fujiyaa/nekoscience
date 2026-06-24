@@ -256,10 +256,13 @@ def get_current_state_dict():
             area = calculate_contour_area(path)
             
             p_id = get_player_by_contour(c_id)
-            if p_id in player_areas:
-                player_areas[p_id] += area
-
-            logger.debug(f"Контур ID {c_id} принадлежит игроку {p_id}, площадь: {area}")
+            
+            if p_id is not None:
+                player_areas[p_id] += area 
+                
+                logger.debug(f"Контур ID {c_id} принадлежит игроку {p_id}, площадь: {area}. Итого у игрока: {player_areas[p_id]}")
+            else:
+                logger.debug(f"Контур ID {c_id} не привязан к игроку.")
                 
             serialized_contours.append({
                 "id": c_id,
