@@ -714,7 +714,10 @@ function drawHoverTooltip() {
     const ownerId = getPlayerByContour(id);
     if (ownerId === window.currentPlayer) return;
 
-    const text = `Точка игрока ${ownerId}`;
+    const player = players[String(ownerId)];
+    const playerName = player ? player.name : `Игрок ${ownerId}`;
+    
+    const text = `Точка ${playerName}`;
     const screen = getDistortedCoords(hoveredCellX * CELL + CELL / 2, hoveredCellY * CELL + CELL / 2);
 
     ctx.font = "bold 13px monospace";
@@ -834,7 +837,7 @@ function render() {
                 <div class="leader-row" style="display: flex; justify-content: flex-start; align-items: center; gap: 8px;">
                     <span style="font-size: 14px; font-weight: bold;">#${index + 1}</span>
                     <span class="player-color-dot" style="background: ${playerColor}; width: 10px; height: 10px; flex-shrink: 0;"></span>
-                    <span style="font-size: 14px; font-weight: bold;">Игрок ${player.name} ${player.player_id === window.currentPlayer ? '(Вы)' : ''}</span>
+                    <span style="font-size: 14px; font-weight: bold;">${player.name} ${player.player_id === window.currentPlayer ? '(Вы)' : ''}</span>
                 </div>
                 <div style="font-size: 11px; color: rgba(255,255,255,0.6); padding-left: 5px;">
                     --- площадь: ${player.totalArea.toFixed(1)}
