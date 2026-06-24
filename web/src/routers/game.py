@@ -17,10 +17,10 @@ from collections import defaultdict
 templates = Jinja2Templates(directory="templates")
 router = APIRouter()
 
-DB_NAME = "game.db"
+DB_NAME = "game_not_debug.db"
 BOT_TOKEN = os.getenv("TOKEN")
 
-SIZE = 200
+SIZE = 100
 CELL = 50
 DRAW_COOLDOWN_SEC = 15
 ERASE_COOLDOWN_SEC = 80
