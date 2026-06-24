@@ -808,7 +808,8 @@ function drawMinimap() {
     if (!grid || grid.length === 0) return;
 
     if (!animationsEnabled) {
-        if (minimapSkip++ % 10 !== 0 && !minimapDirty) return;
+        minimapFrameSkip = (minimapFrameSkip + 1) % 10;
+        if (minimapFrameSkip !== 0 && !minimapDirty) return;
     }
 
     if (minimapCanvas.width !== SIZE) {
