@@ -188,6 +188,41 @@ canvas {
     transform: translateX(-50%);
     white-space: nowrap;
 }
+
+#reconnect-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);    
+    z-index: 100;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #fff;
+    font-family: monospace;
+}
+.message-box {
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 8px;
+    text-align: center;
+}
+
+@keyframes rotate-canvas {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.hover-spinner {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px dashed rgba(255, 255, 255, 0.8);
+    animation: rotate-canvas 2s linear infinite;
+    margin-right: 12px;
+}
 </style>
 </head>
 
@@ -208,12 +243,22 @@ canvas {
     <div class="hotkey-hint">Точка [Q] - Ластик [W]</div>
 </div>
 
+<div id="reconnect-overlay" style="display: none;">
+    <div class="message-box">
+        <h3>Нет интернета</h3>
+        <div style="display: flex; align-items: center; justify-content: center; margin-top: 15px;">
+            <div class="hover-spinner"></div>
+            <p style="margin: 0;">Переподключение...</p>
+        </div>
+    </div>
+</div>
+
 <canvas id="c"></canvas>
 
 <script>
+let socket;
 const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
 const wsUrl = `${wsProtocol}${window.location.host}/ws/game`;
-const socket = new WebSocket(wsUrl);
 
 let currentPlayer = 1;
 let currentTool = "draw";
@@ -239,65 +284,89 @@ let startX = 0; let startY = 0;
 let mouseStartX = 0; let mouseStartY = 0;
 let lastMouseX = 0; let lastMouseY = 0;
 
-socket.onmessage = function(event) {
-    const message = JSON.parse(event.data);
-    
-    if (message.type === "init" || message.type === "update") {
-        const isUpdate = message.type === "update";
-        const oldGrid = isUpdate ? JSON.parse(JSON.stringify(grid)) : null;
-        const serverData = message.data;
+let isReconnecting = false;
+
+function connect() {
+    socket = new WebSocket(wsUrl);
+    const overlay = document.getElementById("reconnect-overlay");
+
+    socket.onopen = () => {
+        console.log("Соединение установлено");
+        overlay.style.display = "none";
+        isReconnecting = false;
+    };
+
+    socket.onmessage = (event) => {
+        const message = JSON.parse(event.data);
         
-        if (serverData.config) {
-            SIZE = serverData.config.size;
-            CELL = serverData.config.cell;
-        }
-        
-        grid = serverData.grid;
-        serverContours = serverData.contours;
-        serverLeaderboard = serverData.leaderboard;
-        
-        for (let pId in serverData.players) {
-            if (!players[pId]) {
-                players[pId] = {
-                    cooldowns: {
-                        draw: { charges: 0, maxCharges: 5, current: 0, max: 10000 },
-                        erase: { current: 0, max: 2000 }
-                    }
-                };
+        if (message.type === "init" || message.type === "update") {
+            const isUpdate = message.type === "update";
+            const oldGrid = isUpdate ? JSON.parse(JSON.stringify(grid)) : null;
+            const serverData = message.data;
+            
+            if (serverData.config) {
+                SIZE = serverData.config.size;
+                CELL = serverData.config.cell;
             }
-            players[pId].cooldowns.draw.charges = serverData.players[pId].cooldowns.draw.charges;
-            players[pId].cooldowns.draw.current = serverData.players[pId].cooldowns.draw.current;
-            players[pId].cooldowns.erase.current = serverData.players[pId].cooldowns.erase.current;
-        }
-        
-        if (message.type === "init") {
-            centerMap();
-        }
-
-        if (isUpdate && oldGrid && oldGrid.length === grid.length) {
-            for (let y = 0; y < SIZE; y++) {
-                for (let x = 0; x < SIZE; x++) {
-                    if (oldGrid[y][x] !== grid[y][x]) {
-                        const newId = grid[y][x];
-                        let targetPlayerId = currentPlayer; 
-
-                        if (newId !== 0) {
-                            targetPlayerId = getPlayerByContour(newId);
-                        } else {
-                            targetPlayerId = getPlayerByContour(oldGrid[y][x]);
+            
+            grid = serverData.grid;
+            serverContours = serverData.contours;
+            serverLeaderboard = serverData.leaderboard;
+            
+            for (let pId in serverData.players) {
+                if (!players[pId]) {
+                    players[pId] = {
+                        cooldowns: {
+                            draw: { charges: 0, maxCharges: 5, current: 0, max: 10000 },
+                            erase: { current: 0, max: 2000 }
                         }
-                        
-                        createExplosion(x, y, targetPlayerId, 12);
+                    };
+                }
+                players[pId].cooldowns.draw.charges = serverData.players[pId].cooldowns.draw.charges;
+                players[pId].cooldowns.draw.current = serverData.players[pId].cooldowns.draw.current;
+                players[pId].cooldowns.erase.current = serverData.players[pId].cooldowns.erase.current;
+            }
+            
+            if (message.type === "init") {
+                centerMap();
+            }
+
+            if (isUpdate && oldGrid && oldGrid.length === grid.length) {
+                for (let y = 0; y < SIZE; y++) {
+                    for (let x = 0; x < SIZE; x++) {
+                        if (oldGrid[y][x] !== grid[y][x]) {
+                            const newId = grid[y][x];
+                            let targetPlayerId = currentPlayer; 
+
+                            if (newId !== 0) {
+                                targetPlayerId = getPlayerByContour(newId);
+                            } else {
+                                targetPlayerId = getPlayerByContour(oldGrid[y][x]);
+                            }
+                            
+                            createExplosion(x, y, targetPlayerId, 12);
+                        }
                     }
                 }
             }
         }
-    }
-};
+    };
 
-socket.onclose = function() {
-    console.warn("Соединение с сервером разорвано. Перезагрузите страницу.");
-};
+    socket.onclose = (event) => {
+        console.warn("Соединение закрыто (код: " + event.code + "). Переподключение через 3 сек...");
+        overlay.style.display = "flex";
+        
+        setTimeout(() => {
+            connect(); 
+        }, 3000);
+    };
+    
+    socket.onerror = (err) => {
+        console.error("Ошибка сокета:", err);
+    };
+}
+
+connect();
 
 const canvas = document.getElementById("c");
 const ctx = canvas.getContext("2d");
@@ -364,7 +433,7 @@ function getVisibleBounds() {
 function getGridParams(x, y, time, zoom, min, max) {
     
     const wave1 = Math.sin(time + (x + y) * 0.2);
-    const wave2 = Math.sin(time * 0.5 + (x - y) * 0.5) * 0.7; //
+    const wave2 = Math.sin(time * 0.5 + (x - y) * 0.5) * 0.7;
     
     const pulse = (wave1 + wave2 + 1.5) / 3.0;
     
@@ -523,13 +592,16 @@ function drawMinimap() {
 }
 
 function drawHoverTooltip() {
-    if (hoveredCellX === -1 || hoveredCellY === -1 || !grid || grid.length === 0) return;
+    if (!grid || grid.length === 0) return;
+    if (hoveredCellX === -1 || hoveredCellY === -1) return;
 
     const id = grid[hoveredCellY][hoveredCellX];
-    if (id === 0) return; 
+    if (id === 0) return;
     
     const ownerId = getPlayerByContour(id);
-    const text = `Игрок ${ownerId} ${ownerId === currentPlayer ? '(Вы)' : ''}`;
+    if (ownerId === currentPlayer) return;
+
+    const text = `Точка игрока ${ownerId}`;
     const screen = getDistortedCoords(hoveredCellX * CELL + CELL / 2, hoveredCellY * CELL + CELL / 2);
 
     ctx.font = "bold 13px monospace";
@@ -807,6 +879,59 @@ window.addEventListener("keydown", (e) => {
         setTool("draw");
     } else if (key === "w" || key === "ц") {
         setTool("erase");
+    }
+});
+
+canvas.addEventListener("touchstart", (e) => {
+    if (e.touches.length > 0) {
+        const touch = e.touches[0];
+        
+        isDragging = true;
+        hasMoved = false;
+        mouseStartX = touch.clientX;
+        mouseStartY = touch.clientY;
+        lastMouseX = touch.clientX;
+        lastMouseY = touch.clientY;
+        startX = offsetX;
+        startY = offsetY;
+    }
+}, { passive: false });
+
+canvas.addEventListener("touchmove", (e) => {
+    if (isDragging && e.touches.length > 0) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        
+        const totalDx = touch.clientX - mouseStartX;
+        const totalDy = touch.clientY - mouseStartY;
+        
+        if (Math.hypot(totalDx, totalDy) > 5) {
+            hasMoved = true;
+        }
+
+        const deltaX = touch.clientX - lastMouseX;
+        const deltaY = touch.clientY - lastMouseY;
+        
+        offsetX = startX + totalDx;
+        offsetY = startY + totalDy;
+        
+        lastMouseX = touch.clientX;
+        lastMouseY = touch.clientY;
+        
+        hoveredCellX = -1;
+        hoveredCellY = -1;
+    }
+}, { passive: false });
+
+canvas.addEventListener("touchend", (e) => {
+    if (isDragging) {
+        isDragging = false;
+        
+        if (!hasMoved) {
+            
+            const touch = e.changedTouches[0];
+            processClick({ clientX: touch.clientX, clientY: touch.clientY });
+        }
     }
 });
 
