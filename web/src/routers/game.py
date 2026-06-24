@@ -297,15 +297,20 @@ def get_current_state_dict():
     logger.debug(f"Распределенные области (player_areas): {dict(player_areas)}")
 
     
-    leaderboard = [
-        {"player_id": p_id, "name": user_map.get(p_id, "Unknown"), "totalArea": area} 
-        for p_id, area in player_areas.items() 
-    ]
+    leaderboard = []
+    for p_id, name in user_map.items():
+        area = player_areas.get(p_id, 0.0)
+        leaderboard.append({
+            "player_id": p_id, 
+            "name": name, 
+            "totalArea": area
+        })
+        
     leaderboard.sort(key=lambda x: x["totalArea"], reverse=True)
 
 
     logger.debug(f"Финальный лидерборд: {leaderboard}")
-    
+
 
     log_data = {
         "config": SIZE,
