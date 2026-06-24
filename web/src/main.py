@@ -48,4 +48,4 @@ app.include_router(game_router)
 
 @app.get("/")
 async def root():
-    return {"ok": True, "msg": "Такой страницы еще нет"}
+    return {"ok": True, "msg": "Такой страницы еще нет и наврятли будет"}
