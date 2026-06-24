@@ -296,6 +296,15 @@ def get_current_state_dict():
     ]
     leaderboard.sort(key=lambda x: x["totalArea"], reverse=True)
 
+    log_data = {
+        "config": SIZE,
+        "contours_count": len(serialized_contours),
+        "leaderboard": leaderboard,
+        "players_keys": list(players_data.keys())
+    }
+
+    logger.debug(f"State broadcast: {json.dumps(log_data)}")
+
     return {
         "config": {
             "size": SIZE,
