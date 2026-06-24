@@ -319,6 +319,7 @@ canvas {
 </div>
 
 <div class="zoom-panel">
+    <button class="zoom-btn" onclick="toggleAnimations()">FX</button>
     <button class="zoom-btn" onclick="changeZoom(1.2)">+</button>
     <button class="zoom-btn" onclick="changeZoom(0.8)">-</button>
 </div>
@@ -370,6 +371,8 @@ let hasMoved = false;
 let startX = 0; let startY = 0; 
 let mouseStartX = 0; let mouseStartY = 0;
 let lastMouseX = 0; let lastMouseY = 0;
+
+let animationsEnabled = true;
 
 window.Telegram.WebApp.ready();
 const initData = window.Telegram.WebApp.initData;
@@ -496,15 +499,34 @@ const maxZoom = 0.2; const minZoom = 2.5;
 let zoom = 1.0; let offsetX = 0; let offsetY = 0;
 let distortionTime = 0; let distortionIntensity = 0; const DISTORTION_SCALE = 0.030;  
 
+function toggleAnimations() {
+    animationsEnabled = !animationsEnabled;
+}
+
 function getDistortedCoords(worldX, worldY) {
+
     const screenX = worldX * zoom + offsetX;
     const screenY = worldY * zoom + offsetY;
-    if (distortionIntensity <= 0.01) return { x: screenX, y: screenY };
+
+    if (!animationsEnabled || distortionIntensity <= 0.01) {
+        return { x: screenX, y: screenY };
+    }
+
     const zoomFactor = 1.0 / Math.max(0.1, zoom);
     const currentStrength = distortionIntensity * zoomFactor * zoom;
-    const dx = Math.sin(screenY * DISTORTION_SCALE + distortionTime) * currentStrength;
-    const dy = Math.cos(screenX * DISTORTION_SCALE + distortionTime) * currentStrength;
-    return { x: screenX + dx, y: screenY + dy };
+
+    const dx =
+        Math.sin(screenY * DISTORTION_SCALE + distortionTime)
+        * currentStrength;
+
+    const dy =
+        Math.cos(screenX * DISTORTION_SCALE + distortionTime)
+        * currentStrength;
+
+    return {
+        x: screenX + dx,
+        y: screenY + dy
+    };
 }
 
 function addDistortionImpulse(amount) { 
@@ -564,46 +586,101 @@ function getGridParams(x, y, time, zoom, min, max) {
 function drawGrid() {
     if (!SIZE || SIZE === 0) return;
 
-    const MIN_WIDTH = 0.0; 
-    const MAX_WIDTH = 0.35; 
+    const MIN_WIDTH = 0.0;
+    const MAX_WIDTH = 0.35;
     const bounds = getVisibleBounds();
 
     ctx.save();
     ctx.globalAlpha = 1.0;
 
+    // Вертикальные линии
     for (let x = bounds.startX; x <= bounds.endX + 1; x++) {
         for (let y = bounds.startY; y < bounds.endY + 1; y++) {
-            const params = getGridParams(x, y, gridAnimationTime, zoom, MIN_WIDTH, MAX_WIDTH);
-            
+
+            let width;
+            let color;
+
+            if (animationsEnabled) {
+                const params = getGridParams(
+                    x,
+                    y,
+                    gridAnimationTime,
+                    zoom,
+                    MIN_WIDTH,
+                    MAX_WIDTH
+                );
+
+                width = params.width;
+                color = params.color;
+            } else {
+                width = 0.2 * zoom;
+                color = 120;
+            }
+
             ctx.beginPath();
-            ctx.strokeStyle = `rgb(${params.color}, ${params.color}, ${params.color})`;
-            ctx.lineWidth = params.width;
-            
-            const p1 = getDistortedCoords(x * CELL, y * CELL);
-            const p2 = getDistortedCoords(x * CELL, (y + 1) * CELL);
-            
+            ctx.strokeStyle = `rgb(${color}, ${color}, ${color})`;
+            ctx.lineWidth = width;
+
+            const p1 = getDistortedCoords(
+                x * CELL,
+                y * CELL
+            );
+
+            const p2 = getDistortedCoords(
+                x * CELL,
+                (y + 1) * CELL
+            );
+
             ctx.moveTo(p1.x, p1.y);
             ctx.lineTo(p2.x, p2.y);
-            ctx.stroke(); 
+            ctx.stroke();
         }
     }
 
+    // Горизонтальные линии
     for (let y = bounds.startY; y <= bounds.endY + 1; y++) {
         for (let x = bounds.startX; x < bounds.endX + 1; x++) {
-            const params = getGridParams(x, y, gridAnimationTime, zoom, MIN_WIDTH, MAX_WIDTH);
-            
+
+            let width;
+            let color;
+
+            if (animationsEnabled) {
+                const params = getGridParams(
+                    x,
+                    y,
+                    gridAnimationTime,
+                    zoom,
+                    MIN_WIDTH,
+                    MAX_WIDTH
+                );
+
+                width = params.width;
+                color = params.color;
+            } else {
+                width = 0.2 * zoom;
+                color = 120;
+            }
+
             ctx.beginPath();
-            ctx.strokeStyle = `rgb(${params.color}, ${params.color}, ${params.color})`;
-            ctx.lineWidth = params.width;
-            
-            const p1 = getDistortedCoords(x * CELL, y * CELL);
-            const p2 = getDistortedCoords((x + 1) * CELL, y * CELL);
-            
+            ctx.strokeStyle = `rgb(${color}, ${color}, ${color})`;
+            ctx.lineWidth = width;
+
+            const p1 = getDistortedCoords(
+                x * CELL,
+                y * CELL
+            );
+
+            const p2 = getDistortedCoords(
+                (x + 1) * CELL,
+                y * CELL
+            );
+
             ctx.moveTo(p1.x, p1.y);
             ctx.lineTo(p2.x, p2.y);
-            ctx.stroke(); 
+            ctx.stroke();
         }
     }
+
     ctx.restore();
 }
 
