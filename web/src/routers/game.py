@@ -329,9 +329,18 @@ async def game(request: Request):
     return templates.TemplateResponse("game.html", {"request": request})
 
 import logging
+from logging.handlers import RotatingFileHandler
 
 logger = logging.getLogger("game_ws")
 logger.setLevel(logging.DEBUG)
+
+file_handler = RotatingFileHandler("game.log", maxBytes=5*1024*1024, backupCount=3, encoding='utf-8')
+file_handler.setLevel(logging.DEBUG)
+
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
+
+logger.addHandler(file_handler)
 
 @router.websocket("/ws/game")
 async def websocket_endpoint(websocket: WebSocket):
