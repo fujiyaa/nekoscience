@@ -869,6 +869,17 @@ function render() {
 
 let lastTime = performance.now();
 function updateAnimation() {
+
+    const pIdString = String(window.currentPlayer);
+    const activeCooldowns = players[pIdString] ? players[pIdString].cooldowns : null;
+
+    if (!activeCooldowns) {
+        
+        return; 
+    }
+
+    console.log("Данные кулдауна для отрисовки:", activeCooldowns.draw);
+
     const now = performance.now(); const dt = now - lastTime; lastTime = now;
 
     gridAnimationTime += dt * 0.0007;
@@ -880,14 +891,9 @@ function updateAnimation() {
         distortionIntensity = 0; 
     }
 
-    const activeCooldowns = players[currentPlayer] ? players[currentPlayer].cooldowns : null;
     const btnDraw = document.getElementById("tool-draw");
     const btnErase = document.getElementById("tool-erase");
-
-    if (activeCooldowns) {
-        console.log("Данные кулдауна:", activeCooldowns.draw); 
-    }
-
+   
     if (activeCooldowns && btnDraw && btnErase) {
         // Визуализация DRAW
         if (activeCooldowns.draw.charges === 0 && activeCooldowns.draw.current > 0) {
