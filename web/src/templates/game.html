@@ -375,6 +375,7 @@ let lastMouseX = 0; let lastMouseY = 0;
 let animationsEnabled = true;
 let minimapDirty = true;
 let minimapFrameSkip = 0;
+let leaderboardDirty = true;
 
 window.Telegram.WebApp.ready();
 const initData = window.Telegram.WebApp.initData;
@@ -436,6 +437,7 @@ function connect() {
                 minimapDirty = true;
                 serverContours = serverData.contours;
                 serverLeaderboard = serverData.leaderboard;
+                leaderboardDirty = true;
                 
                 if (serverData.players) {
                     for (let pId in serverData.players) {
@@ -601,97 +603,100 @@ function getGridParams(x, y, time, zoom, min, max) {
 }
 
 function drawGrid() {
-    if (!SIZE || SIZE === 0) return;
+    if (!SIZE) return;
 
-    const MIN_WIDTH = 0.0;
-    const MAX_WIDTH = 0.35;
     const bounds = getVisibleBounds();
 
     ctx.save();
-    ctx.globalAlpha = 1.0;
 
-    // Вертикальные линии
-    for (let x = bounds.startX; x <= bounds.endX + 1; x++) {
-        for (let y = bounds.startY; y < bounds.endY + 1; y++) {
+    // STATIC MODE — максимально дешёвый
+    if (!animationsEnabled) {
+        ctx.strokeStyle = "rgb(120,120,120)";
+        ctx.lineWidth = 0.2 * zoom;
 
-            let width;
-            let color;
+        for (let x = bounds.startX; x <= bounds.endX + 1; x++) {
+            const baseX = x * CELL;
 
-            if (animationsEnabled) {
-                const params = getGridParams(
-                    x,
-                    y,
-                    gridAnimationTime,
-                    zoom,
-                    MIN_WIDTH,
-                    MAX_WIDTH
-                );
+            for (let y = bounds.startY; y <= bounds.endY; y++) {
+                const p1 = getDistortedCoords(baseX, y * CELL);
+                const p2 = getDistortedCoords(baseX, (y + 1) * CELL);
 
-                width = params.width;
-                color = params.color;
-            } else {
-                width = 0.2 * zoom;
-                color = 120;
+                ctx.beginPath();
+                ctx.moveTo(p1.x, p1.y);
+                ctx.lineTo(p2.x, p2.y);
+                ctx.stroke();
             }
+        }
+
+        for (let y = bounds.startY; y <= bounds.endY + 1; y++) {
+            const baseY = y * CELL;
+
+            for (let x = bounds.startX; x <= bounds.endX; x++) {
+                const p1 = getDistortedCoords(x * CELL, baseY);
+                const p2 = getDistortedCoords((x + 1) * CELL, baseY);
+
+                ctx.beginPath();
+                ctx.moveTo(p1.x, p1.y);
+                ctx.lineTo(p2.x, p2.y);
+                ctx.stroke();
+            }
+        }
+
+        ctx.restore();
+        return;
+    }
+
+    // ANIMATED MODE — всё красивое, но дорогое
+    const MIN_WIDTH = 0.0;
+    const MAX_WIDTH = 0.35;
+    const time = gridAnimationTime;
+
+    for (let x = bounds.startX; x <= bounds.endX + 1; x++) {
+        const baseX = x * CELL;
+
+        for (let y = bounds.startY; y <= bounds.endY; y++) {
+
+            const wave =
+                Math.sin(time + (x + y) * 0.2) +
+                Math.sin(time * 0.5 + (x - y) * 0.5) * 0.7;
+
+            const pulse = (wave + 1.5) / 3.0;
+
+            const width = (MIN_WIDTH + pulse * (MAX_WIDTH - MIN_WIDTH)) * zoom;
+            const color = Math.floor(255 * (1 - pulse));
+
+            const p1 = getDistortedCoords(baseX, y * CELL);
+            const p2 = getDistortedCoords(baseX, (y + 1) * CELL);
 
             ctx.beginPath();
-            ctx.strokeStyle = `rgb(${color}, ${color}, ${color})`;
+            ctx.strokeStyle = `rgb(${color},${color},${color})`;
             ctx.lineWidth = width;
-
-            const p1 = getDistortedCoords(
-                x * CELL,
-                y * CELL
-            );
-
-            const p2 = getDistortedCoords(
-                x * CELL,
-                (y + 1) * CELL
-            );
-
             ctx.moveTo(p1.x, p1.y);
             ctx.lineTo(p2.x, p2.y);
             ctx.stroke();
         }
     }
 
-    // Горизонтальные линии
     for (let y = bounds.startY; y <= bounds.endY + 1; y++) {
-        for (let x = bounds.startX; x < bounds.endX + 1; x++) {
+        const baseY = y * CELL;
 
-            let width;
-            let color;
+        for (let x = bounds.startX; x <= bounds.endX; x++) {
 
-            if (animationsEnabled) {
-                const params = getGridParams(
-                    x,
-                    y,
-                    gridAnimationTime,
-                    zoom,
-                    MIN_WIDTH,
-                    MAX_WIDTH
-                );
+            const wave =
+                Math.sin(time + (x + y) * 0.2) +
+                Math.sin(time * 0.5 + (x - y) * 0.5) * 0.7;
 
-                width = params.width;
-                color = params.color;
-            } else {
-                width = 0.2 * zoom;
-                color = 120;
-            }
+            const pulse = (wave + 1.5) / 3.0;
+
+            const width = (MIN_WIDTH + pulse * (MAX_WIDTH - MIN_WIDTH)) * zoom;
+            const color = Math.floor(255 * (1 - pulse));
+
+            const p1 = getDistortedCoords(x * CELL, baseY);
+            const p2 = getDistortedCoords((x + 1) * CELL, baseY);
 
             ctx.beginPath();
-            ctx.strokeStyle = `rgb(${color}, ${color}, ${color})`;
+            ctx.strokeStyle = `rgb(${color},${color},${color})`;
             ctx.lineWidth = width;
-
-            const p1 = getDistortedCoords(
-                x * CELL,
-                y * CELL
-            );
-
-            const p2 = getDistortedCoords(
-                (x + 1) * CELL,
-                y * CELL
-            );
-
             ctx.moveTo(p1.x, p1.y);
             ctx.lineTo(p2.x, p2.y);
             ctx.stroke();
@@ -948,18 +953,32 @@ function drawParticles() {
     ctx.restore();
 }
 
+function renderLeaderboard() {
+    const leaderboardEl = document.getElementById("leaderboard");
+
+    leaderboardEl.innerHTML = serverLeaderboard.map((player, index) => {
+        const playerColor = colorFor(player.player_id, 1);
+
+        return `
+            <div class="leader-item" style="display: flex; flex-direction: column; gap: 2px; white-space: nowrap; padding-right: 10px; ${player.player_id === window.currentPlayer ? 'text-decoration: underline;' : ''}">
+                <div class="leader-row" style="display: flex; justify-content: flex-start; align-items: center; gap: 8px;">
+                    <span style="font-size: 14px; font-weight: bold;">#${index + 1}</span>
+                    <span class="player-color-dot" style="background: ${playerColor}; width: 10px; height: 10px; flex-shrink: 0;"></span>
+                    <span style="font-size: 14px; font-weight: bold;">
+                        ${player.name} ${player.player_id === window.currentPlayer ? '(Вы)' : ''}
+                    </span>
+                </div>
+                <div style="font-size: 11px; color: rgba(255,255,255,0.6); padding-left: 5px;">
+                    --- площадь: ${player.totalArea.toFixed(1)}
+                </div>
+            </div>
+        `;
+    }).join("");
+
+    leaderboardDirty = false;
+}
+
 function render() {
-
-    // console.log("Rendering - Leaderboard length:", serverLeaderboard ? serverLeaderboard.length : "NO DATA");
-    // console.log("Rendering - Grid state:", grid ? "Exists" : "MISSING");
-
-    if (!Array.isArray(grid)) {
-        throw new Error("Критическая ошибка: grid не является массивом!");
-    }
-
-    if (!Array.isArray(serverLeaderboard)) {
-        throw new Error("Лидерборд пустой");
-    }
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -972,43 +991,31 @@ function render() {
     drawPoints();
     drawParticles();
 
-    const leaderboardEl = document.getElementById("leaderboard");
-    leaderboardEl.innerHTML = serverLeaderboard.map((player, index) => {
-        const playerColor = colorFor(player.player_id, 1);
-        return `
-            <div class="leader-item" style="display: flex; flex-direction: column; gap: 2px; white-space: nowrap; padding-right: 10px; ${player.player_id === window.currentPlayer ? 'text-decoration: underline;' : ''}">
-                <div class="leader-row" style="display: flex; justify-content: flex-start; align-items: center; gap: 8px;">
-                    <span style="font-size: 14px; font-weight: bold;">#${index + 1}</span>
-                    <span class="player-color-dot" style="background: ${playerColor}; width: 10px; height: 10px; flex-shrink: 0;"></span>
-                    <span style="font-size: 14px; font-weight: bold;">${player.name} ${player.player_id === window.currentPlayer ? '(Вы)' : ''}</span>
-                </div>
-                <div style="font-size: 11px; color: rgba(255,255,255,0.6); padding-left: 5px;">
-                    --- площадь: ${player.totalArea.toFixed(1)}
-                </div>
-            </div>
-        `;
-    }).join("");
+    // лидерборд обновляем только когда нужно
+    if (leaderboardDirty) {
+        renderLeaderboard();
+    }
 
     drawHoverTooltip();
 
     if (animationsEnabled) {
         drawMinimap();
-    } else {
-        if (minimapDirty) {
-            drawMinimap();
-            minimapDirty = false;
-        }
+    } else if (minimapDirty) {
+        drawMinimap();
+        minimapDirty = false;
     }
 
     ctx.save();
     ctx.font = "bold 14px monospace";
     ctx.textAlign = "center";
+
     for (const ft of floatingTexts) {
-        ctx.fillStyle = `rgba(231, 76, 60, ${ft.alpha})`; 
+        ctx.fillStyle = `rgba(231, 76, 60, ${ft.alpha})`;
         ctx.shadowColor = 'black';
         ctx.shadowBlur = 4;
         ctx.fillText(ft.text, ft.x, ft.y);
     }
+
     ctx.restore();
 }
 
