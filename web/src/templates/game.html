@@ -1088,11 +1088,13 @@ canvas.addEventListener("touchend", (e) => {
 });
 
 function processClick(e) {
-    if (!players[currentPlayer]) {
-        console.log("DEBUG: Игрок не найден в списке!");
+    const pIdString = String(currentPlayer); // Принудительно в строку
+    const pData = players[pIdString];
+    
+    if (!pData) {
+        console.log("DEBUG: Игрок с ID", pIdString, "не найден в:", Object.keys(players));
         return;
     }
-    const pData = players[currentPlayer];
     
     const x = Math.floor(((e.clientX - offsetX) / zoom) / CELL);
     const y = Math.floor(((e.clientY - offsetY) / zoom) / CELL);
