@@ -868,80 +868,81 @@ function render() {
 }
 
 let lastTime = performance.now();
-
 function updateAnimation() {
-    const now = performance.now();
-    const dt = now - lastTime;
-    lastTime = now;
 
-    const keys = Object.keys(players);
-    const pIdString = keys[0]; 
+    const pIdString = String(window.currentPlayer);
     const activeCooldowns = players[pIdString] ? players[pIdString].cooldowns : null;
 
     if (!activeCooldowns) {
-        requestAnimationFrame(updateAnimation);
-        return;
+        
+        return; 
     }
 
+    console.log("Данные кулдауна для отрисовки:", activeCooldowns.draw);
+
+    const now = performance.now(); const dt = now - lastTime; lastTime = now;
+
     gridAnimationTime += dt * 0.0007;
-    if (distortionIntensity > 0.01) {
-        distortionTime += 0.25;
-        distortionIntensity *= 0.88;
-    } else {
-        distortionIntensity = 0;
+
+    if (distortionIntensity > 0.01) { 
+        distortionTime += 0.25; 
+        distortionIntensity *= 0.88; 
+    } else { 
+        distortionIntensity = 0; 
     }
 
     const btnDraw = document.getElementById("tool-draw");
     const btnErase = document.getElementById("tool-erase");
-
-    if (btnDraw && btnErase) {
-        if (activeCooldowns.draw.current > 0) {
+   
+    if (activeCooldowns && btnDraw && btnErase) {
+        // Визуализация DRAW
+        if (activeCooldowns.draw.charges === 0 && activeCooldowns.draw.current > 0) {
             const progress = (activeCooldowns.draw.current / activeCooldowns.draw.max) * 100;
             btnDraw.style.setProperty('--cooldown-progress', `${progress}%`);
             btnDraw.classList.add('on-cooldown');
-            
-            const text = `Перезарядка... ${Math.ceil(activeCooldowns.draw.current / 1000)}с`;
-            if (btnDraw.innerText !== text) btnDraw.innerText = text;
+            btnDraw.innerHTML = `Перезарядка... ${Math.ceil(activeCooldowns.draw.current / 1000)}с`;
         } else {
             btnDraw.style.setProperty('--cooldown-progress', '0%');
             btnDraw.classList.remove('on-cooldown');
-            const text = `Точка (${activeCooldowns.draw.charges}/${activeCooldowns.draw.maxCharges})`;
-            if (btnDraw.innerText !== text) btnDraw.innerText = text;
+            btnDraw.innerHTML = `Точка (${activeCooldowns.draw.charges}/${activeCooldowns.draw.maxCharges})`;
         }
 
+        // Визуализация ERASE
         if (activeCooldowns.erase.current > 0) {
             const progress = (activeCooldowns.erase.current / activeCooldowns.erase.max) * 100;
             btnErase.style.setProperty('--cooldown-progress', `${progress}%`);
             btnErase.classList.add('on-cooldown');
-            
-            const text = `Ластик ✕ ${Math.ceil(activeCooldowns.erase.current / 1000)}с`;
-            if (btnErase.innerText !== text) btnErase.innerText = text;
         } else {
             btnErase.style.setProperty('--cooldown-progress', '0%');
             btnErase.classList.remove('on-cooldown');
-            if (btnErase.innerText !== "Ластик ✕") btnErase.innerText = "Ластик ✕";
         }
     }
 
     for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
-        p.worldX += p.vx * (dt / 16);
+        p.worldX += p.vx * (dt / 16); 
         p.worldY += p.vy * (dt / 16);
-        p.vx *= Math.pow(0.92, dt / 16);
+        p.vx *= Math.pow(0.92, dt / 16); 
         p.vy *= Math.pow(0.92, dt / 16);
         p.life -= p.decay * (dt / 16);
         p.alpha = Math.max(0, p.life);
-        if (p.life <= 0) particles.splice(i, 1);
+
+        if (p.life <= 0) {
+            particles.splice(i, 1);
+        }
     }
 
     for (let i = floatingTexts.length - 1; i >= 0; i--) {
         const ft = floatingTexts[i];
-        ft.life -= dt / 800;
-        ft.y -= (dt * 0.04);
-        ft.alpha = Math.max(0, ft.life);
-        if (ft.life <= 0) floatingTexts.splice(i, 1);
-    }
+        ft.life -= dt / 800; 
+        ft.y -= (dt * 0.04); 
+        ft.alpha = Math.max(0, ft.life); 
 
+        if (ft.life <= 0) {
+            floatingTexts.splice(i, 1); 
+        }
+    }
+    
     render();
     requestAnimationFrame(updateAnimation);
 }
@@ -1192,27 +1193,6 @@ window.onunhandledrejection = (event) => {
 resizeCanvas();
 centerMap();
 updateAnimation();
-
-
-function debugState() {
-    console.log("--- DEBUG START ---");
-    console.log("Current Player ID:", window.currentPlayer);
-    console.log("Players object:", players);
-    console.log("Players keys:", Object.keys(players));
-    
-    const pIdString = String(window.currentPlayer);
-    const active = players[pIdString];
-    
-    if (!active) {
-        console.error("Игрок не найден в объекте players!");
-    } else {
-        console.log("Игрок найден, его кулдауны:", active.cooldowns);
-    }
-    console.log("--- DEBUG END ---");
-}
-
-
-setTimeout(debugState, 3000);
 </script>
 
 </body>
