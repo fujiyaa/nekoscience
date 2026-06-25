@@ -30,6 +30,7 @@ DRAW_MAX_CHARGES = 5
 
 GAME_GRID_CACHE = []
 last_action_times = {}
+GAME_STATE_CACHE = {}
 
 DIRS = [(1,0), (1,1), (0,1), (-1,1), (-1,0), (-1,-1), (0,-1), (1,-1)]
 
@@ -326,6 +327,15 @@ def get_player_stats(cursor, now: float, player_areas: Dict[int, float]) -> Dict
     return stats
 
 def get_current_state_dict():
+    global GAME_STATE_CACHE
+
+    if not GAME_STATE_CACHE:
+        refresh_game_state_cache()
+    return GAME_STATE_CACHE
+
+def refresh_game_state_cache():
+    global GAME_STATE_CACHE
+
     now = time.time()
     with sqlite3.connect(DB_NAME) as conn:
         cursor = conn.cursor()
@@ -357,7 +367,7 @@ def get_current_state_dict():
 
         players_data = get_player_stats(cursor, now, player_areas)
         
-    return {
+    GAME_STATE_CACHE = {
         "config": {"size": SIZE, "cell": CELL},
         "grid": grid, 
         "contours": serialized_contours, 
@@ -420,7 +430,7 @@ async def websocket_endpoint(websocket: WebSocket):
             if msg_type == "auth":
                 init_data = data.get("initData")
                 if not init_data or not validate_telegram_data(init_data):
-                    logger.warning("WS: Провал авторизации (неверный хеш)")
+                    logger.warning("WS: Провал авторизации")
                     await websocket.send_json({"type": "error", "message": "Invalid Authorization"})
                     await websocket.close(code=1008)
                     return
@@ -428,23 +438,30 @@ async def websocket_endpoint(websocket: WebSocket):
                 user_info = json.loads(urllib.parse.parse_qs(init_data)['user'][0])
                 p_id = user_info['id']
                 
-                # Закрываем старые сокеты этого игрока
                 for conn in manager.active_connections:
                     if getattr(conn, "player_id", None) == p_id and conn != websocket:
-                        logger.info(f"WS: Закрываем старую сессию игрока {p_id}")
-                        await conn.close()
+                        try:
+                            await conn.close()
+                        except:
+                            pass
                 
                 websocket.player_id = p_id
                 
-                with sqlite3.connect(DB_NAME) as conn:
+                with sqlite3.connect(DB_NAME, timeout=5) as conn:
+                    conn.execute("PRAGMA journal_mode=WAL;") # Убедитесь, что это есть
                     conn.execute("""
                         INSERT INTO players (player_id, username) VALUES (?, ?)
                         ON CONFLICT(player_id) DO UPDATE SET username=excluded.username
                     """, (p_id, user_info.get('first_name', 'Player')))
                 
                 await websocket.send_json({"type": "auth_success", "player_id": p_id})
-                await websocket.send_json({"type": "init", "data": get_current_state_dict()})
-                logger.info(f"WS: Игрок {p_id} успешно авторизован")
+                
+                await asyncio.sleep(0.2) 
+                
+                state = get_current_state_dict()
+                await websocket.send_json({"type": "init", "data": state})
+                
+                logger.info(f"WS: Игрок {p_id} успешно авторизован и получил стейт")
                 continue
 
             # 3. Game Actions
@@ -508,6 +525,8 @@ async def websocket_endpoint(websocket: WebSocket):
                         if action_valid:
                             sync_grid_to_db(cursor, grid)
                             conn.commit()
+
+                    refresh_game_state_cache()
 
                     await manager.broadcast({"type": "update", "data": get_current_state_dict()})
                 except Exception as e:

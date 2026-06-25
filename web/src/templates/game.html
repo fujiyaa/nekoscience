@@ -458,7 +458,8 @@ function connect() {
         overlay.style.display = "flex";
         if (pingInterval) clearInterval(pingInterval);
         
-        setTimeout(connect, 3000);
+        const retryTime = (event.code === 1006) ? 10000 : 5000;
+        setTimeout(connect, retryTime);
     };
     
     socket.onerror = (err) => console.error("WS: Ошибка сокета:", err);
