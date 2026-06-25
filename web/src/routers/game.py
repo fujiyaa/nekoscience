@@ -12,7 +12,7 @@ from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field, ValidationError
-from collections import defaultdict
+from collections import defaultdict, deque
 
 templates = Jinja2Templates(directory="templates")
 router = APIRouter()
@@ -32,6 +32,7 @@ DRAW_MAX_CHARGES = 5
 GAME_GRID_CACHE = []
 last_action_times = {}
 GAME_STATE_CACHE = {}
+CONTOUR_PATHS_CACHE = {}
 
 DIRS = [(1,0), (1,1), (0,1), (-1,1), (-1,0), (-1,-1), (0,-1), (1,-1)]
 
@@ -174,6 +175,40 @@ def get_neighbour_contours(x: int, y: int, player_id: int, grid: List[List[int]]
                 neighbours.add(c_id)
     return list(neighbours)
 
+def recalculate_player_contours_nearby(target_contour_id: int, player_id: int, grid: List[List[int]]) -> Set[int]:
+    cells_to_process = []
+    for y in range(SIZE):
+        for x in range(SIZE):
+            if grid[y][x] == target_contour_id:
+                cells_to_process.append((x, y))
+                grid[y][x] = 0 
+
+    if not cells_to_process:
+        return set()
+
+    new_ids = set()
+    cells_set = set(cells_to_process)
+    visited = set()
+    
+    for x, y in cells_to_process:
+        if (x, y) not in visited:
+            new_id = get_free_contour_id(grid, player_id)
+            new_ids.add(new_id)
+            
+            queue = deque([(x, y)])
+            visited.add((x, y))
+            grid[y][x] = new_id
+            
+            while queue:
+                cx, cy = queue.popleft()
+                for dx, dy in DIRS:
+                    nx, ny = cx + dx, cy + dy
+                    if (nx, ny) in cells_set and (nx, ny) not in visited:
+                        visited.add((nx, ny))
+                        grid[ny][nx] = new_id
+                        queue.append((nx, ny))
+    return new_ids
+
 def recalculate_player_contours(player_id: int, grid: List[List[int]]):
     visited = [[False for _ in range(SIZE)] for _ in range(SIZE)]
     
@@ -182,8 +217,7 @@ def recalculate_player_contours(player_id: int, grid: List[List[int]]):
             c_id = grid[y][x]
             if c_id != 0 and get_player_by_contour(c_id) == player_id and not visited[y][x]:
                 
-                new_contour_id = get_free_contour_id(grid, player_id)
-                
+                new_contour_id = get_free_contour_id(grid, player_id)                
                 
                 queue = [(x, y)]
                 visited[y][x] = True
@@ -330,6 +364,38 @@ def get_player_stats(cursor, now: float, player_areas: Dict[int, float]) -> Dict
         }
     return stats
 
+def refresh_contour_cache(grid: List[List[int]], ids_to_update: Optional[Set[int]] = None):
+    """
+    Если ids_to_update передан — обновляет только их.
+    Если не передан — полный пересчет (для инициализации/blast).
+    """
+    global CONTOUR_PATHS_CACHE
+    
+    # 1. Если передали конкретные ID — обновляем только их
+    if ids_to_update is not None:
+        for c_id in ids_to_update:
+            # Проверяем, существует ли он еще (не стерли ли его)
+            found = False
+            for y in range(SIZE):
+                for x in range(SIZE):
+                    if grid[y][x] == c_id:
+                        found = True
+                        break
+            
+            if found:
+                mask = build_mask(grid, c_id)
+                CONTOUR_PATHS_CACHE[c_id] = trace_contour(mask)
+            elif c_id in CONTOUR_PATHS_CACHE:
+                del CONTOUR_PATHS_CACHE[c_id]
+    
+    # 2. Полный пересчет (старая логика)
+    else:
+        CONTOUR_PATHS_CACHE.clear()
+        unique_ids = {cell for row in grid for cell in row if cell != 0}
+        for c_id in unique_ids:
+            mask = build_mask(grid, c_id)
+            CONTOUR_PATHS_CACHE[c_id] = trace_contour(mask)
+
 def get_current_state_dict():
     global GAME_STATE_CACHE
 
@@ -337,7 +403,7 @@ def get_current_state_dict():
         refresh_game_state_cache()
     return GAME_STATE_CACHE
 
-def refresh_game_state_cache():
+def refresh_game_state_cache(updated_contour_ids: Optional[Set[int]] = None):
     global GAME_STATE_CACHE
 
     now = time.time()
@@ -345,16 +411,15 @@ def refresh_game_state_cache():
         cursor = conn.cursor()
         
         grid = load_grid_from_db(cursor)
-        unique_ids = {cell for row in grid for cell in row if cell != 0}
+
+        refresh_contour_cache(grid, updated_contour_ids)
         
         serialized_contours = []
         player_areas = defaultdict(float)
         
-        for c_id in unique_ids:
-            mask = build_mask(grid, c_id)
-            path = trace_contour(mask)
-            area = calculate_contour_area(path)
+        for c_id, path in CONTOUR_PATHS_CACHE.items():
             p_id = get_player_by_contour(c_id)
+            area = calculate_contour_area(path)
             if p_id is not None:
                 player_areas[p_id] += area
             serialized_contours.append({"id": c_id, "player_id": p_id, "path": path})
@@ -484,6 +549,8 @@ async def websocket_endpoint(websocket: WebSocket):
                     
                     if not in_bounds(x, y): continue
 
+                    ids_to_refresh = set()
+
                     with sqlite3.connect(DB_NAME) as conn:
                         cursor = conn.cursor()
                         cursor.execute("SELECT draw_charges, draw_cooldown_start, erase_cooldown_start, blast_cooldown_start FROM players WHERE player_id = ?", (player_id,))
@@ -501,12 +568,17 @@ async def websocket_endpoint(websocket: WebSocket):
                                 action_valid = True
                                 neighbours = get_neighbour_contours(x, y, player_id, grid)
                                 grid[y][x] = neighbours[0] if len(neighbours) == 1 else (get_free_contour_id(grid, player_id) if not neighbours else None)
-                                if len(neighbours) > 1: # Объединение
+                                if len(neighbours) > 1:
                                     main_id = neighbours[0]
+                                    ids_to_refresh.update(neighbours) 
                                     for yy in range(SIZE):
                                         for xx in range(SIZE):
                                             if grid[yy][xx] in neighbours: grid[yy][xx] = main_id
                                     grid[y][x] = main_id
+                                else:
+                                    new_id = neighbours[0] if neighbours else get_free_contour_id(grid, player_id)
+                                    grid[y][x] = new_id
+                                    ids_to_refresh.add(new_id)
                                 new_charges = charges - 1 if charges > 0 else 4
                                 cursor.execute("UPDATE players SET draw_charges = ?, draw_cooldown_start = ? WHERE player_id = ?", (new_charges, now if new_charges == 0 else 0, player_id))
 
@@ -520,9 +592,13 @@ async def websocket_endpoint(websocket: WebSocket):
 
                             if (e_start + erase_duration) <= now:
                                 action_valid = True
-                                target_pid = get_player_by_contour(grid[y][x])
-                                grid[y][x] = 0
-                                if target_pid: recalculate_player_contours(target_pid, grid)
+                                target_contour_id = grid[y][x]                                                              
+                                target_pid = get_player_by_contour(target_contour_id)   
+                                grid[y][x] = 0                               
+                                if target_pid:
+                                    new_contour_ids = recalculate_player_contours_nearby(target_contour_id, target_pid, grid)                                    
+                                    ids_to_refresh.add(target_contour_id)
+                                    ids_to_refresh.update(new_contour_ids)
                                 cursor.execute("UPDATE players SET erase_cooldown_start = ? WHERE player_id = ?", (now, player_id))
 
                         elif tool == "blast" and (b_start + BLAST_COOLDOWN_SEC) <= now:
@@ -530,13 +606,14 @@ async def websocket_endpoint(websocket: WebSocket):
                             affected = {get_player_by_contour(grid[ny][nx]) for nx, ny in get_cells_in_radius(x, y, BLAST_RADIUS) if grid[ny][nx] != 0}
                             for nx, ny in get_cells_in_radius(x, y, BLAST_RADIUS): grid[ny][nx] = 0
                             for pid in [p for p in affected if p]: recalculate_player_contours(pid, grid)
+                            ids_to_refresh = None
                             cursor.execute("UPDATE players SET blast_cooldown_start = ? WHERE player_id = ?", (now, player_id))
 
                         if action_valid:
                             sync_grid_to_db(cursor, grid)
                             conn.commit()
 
-                    refresh_game_state_cache()
+                    refresh_game_state_cache(updated_contour_ids=ids_to_refresh)
 
                     updated_state = get_current_state_dict()
 
