@@ -18,7 +18,7 @@ async def get_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await log_all_update(update)
 
     text = (
-        f"<code>вот кнопка, такая же как в меню бота</code>\n\n"
+        f'<code>вот кнопка, такая же как в меню бота</code>\n\n<a href="https://myangelfujiya.ru/game">или можно открыть в браузере</a>'
     )
 
     reply_markup = get_keyboard()
