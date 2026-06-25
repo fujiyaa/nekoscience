@@ -362,24 +362,24 @@ def refresh_game_state_cache():
             cursor.execute("SELECT player_id, username FROM players")
             all_players = cursor.fetchall()
 
-            leaderboard = []
-            for p_id, name in all_players:
-                leaderboard.append({
+            leaderboard = [
+                {
                     "player_id": p_id,
                     "name": name,
                     "totalArea": PLAYER_AREA_CACHE.get(p_id, 0.0)
-                })
+                }
+                for p_id, name in all_players
+            ]
 
-            GAME_STATE_CACHE.update({
-                "leaderboard": leaderboard,
-                "players": get_player_stats(cursor, time.time(), PLAYER_AREA_CACHE)
-            })
+            GAME_STATE_CACHE["leaderboard"] = leaderboard
+            GAME_STATE_CACHE["players"] = get_player_stats(cursor, time.time(), PLAYER_AREA_CACHE)
+            GAME_STATE_CACHE["contours"] = GAME_STATE_CACHE.get("contours", [])
 
             DIRTY_CONTOURS.clear()
             return
 
         serialized_contours = []
-        player_areas = defaultdict(lambda: None)
+        player_areas = defaultdict(float)
 
         for c_id in list(DIRTY_CONTOURS):
             mask = build_mask(grid, c_id)
