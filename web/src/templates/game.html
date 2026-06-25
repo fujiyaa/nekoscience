@@ -392,8 +392,8 @@ let mouseStartX = 0; let mouseStartY = 0;
 let lastMouseX = 0; let lastMouseY = 0;
 
 let animationsEnabled = true;
+let lastGridHash = "";
 let minimapDirty = true;
-let minimapFrameSkip = 0;
 let leaderboardDirty = true;
 let lastLeaderboardHash = "";
 
@@ -473,40 +473,60 @@ function connect() {
     socket.onerror = (err) => console.error("WS: Ошибка сокета:", err);
 }
 
+let prevGrid = null;
+
 function processServerData(message) {
     const serverData = message.data;
     const isUpdate = message.type === "update";
-    const oldGrid = isUpdate ? JSON.parse(JSON.stringify(grid)) : null;
-    const newHash = hashLeaderboard(serverData.leaderboard);  
-    
-    if (newHash !== lastLeaderboardHash) {
+
+    const newLbHash = hashLeaderboard(serverData.leaderboard);
+    const newGridHash = hashGrid(serverData.grid);
+
+    if (newLbHash !== lastLeaderboardHash) {
         serverLeaderboard = serverData.leaderboard;
         leaderboardDirty = true;
-        lastLeaderboardHash = newHash;
+        lastLeaderboardHash = newLbHash;
+    }
+
+    if (isUpdate) {
+        prevGrid = grid;
+    }
+
+    if (newGridHash !== lastGridHash) {
+        grid = serverData.grid;
+        minimapDirty = true;
+        lastGridHash = newGridHash;
     }
 
     if (serverData.config) {
         SIZE = serverData.config.size;
         CELL = serverData.config.cell;
     }
-    
-    grid = serverData.grid;
+
     serverContours = serverData.contours;
-    serverLeaderboard = serverData.leaderboard;
-    
+
     if (serverData.players) {
         for (let pId in serverData.players) {
             players[pId] = serverData.players[pId];
         }
     }
-    
-    if (message.type === "init") centerMap();
 
-    if (isUpdate && oldGrid) {
+    if (message.type === "init") {
+        centerMap();
+    }
+
+    if (isUpdate && prevGrid) {
         for (let y = 0; y < SIZE; y++) {
             for (let x = 0; x < SIZE; x++) {
-                if (oldGrid[y][x] !== grid[y][x]) {
-                    createExplosion(x, y, grid[y][x] !== 0 ? getPlayerByContour(grid[y][x]) : null, 12);
+                if (prevGrid[y][x] !== grid[y][x]) {
+                    createExplosion(
+                        x,
+                        y,
+                        grid[y][x] !== 0
+                            ? getPlayerByContour(grid[y][x])
+                            : null,
+                        12
+                    );
                 }
             }
         }
@@ -838,10 +858,7 @@ function drawPoints() {
 function drawMinimap() {
     if (!grid || grid.length === 0) return;
 
-    if (!animationsEnabled) {
-        minimapFrameSkip = (minimapFrameSkip + 1) % 10;
-        if (minimapFrameSkip !== 0 && !minimapDirty) return;
-    }
+    if (!minimapDirty && !animationsEnabled) return;
 
     if (minimapCanvas.width !== SIZE) {
         minimapCanvas.width = SIZE;
@@ -993,6 +1010,19 @@ function drawParticles() {
     ctx.restore();
 }
 
+function hashGrid(grid) {
+    let hash = 0;
+
+    for (let y = 0; y < grid.length; y++) {
+        const row = grid[y];
+        for (let x = 0; x < row.length; x++) {
+            hash = (hash * 31 + row[x]) | 0;
+        }
+    }
+
+    return hash;
+}
+
 function hashLeaderboard(lb) {
     return lb.map(p => `${p.player_id}:${p.totalArea}`).join("|");
 }
@@ -1041,13 +1071,7 @@ function render() {
     }
 
     drawHoverTooltip();
-
-    if (animationsEnabled) {
-        drawMinimap();
-    } else if (minimapDirty) {
-        drawMinimap();
-        minimapDirty = false;
-    }
+    drawMinimap();    
 
     ctx.save();
     ctx.font = "bold 14px monospace";
