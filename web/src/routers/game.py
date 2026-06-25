@@ -528,7 +528,9 @@ async def websocket_endpoint(websocket: WebSocket):
 
                     refresh_game_state_cache()
 
-                    await manager.broadcast({"type": "update", "data": get_current_state_dict()})
+                    updated_state = get_current_state_dict()
+
+                    await manager.broadcast({"type": "update", "data": updated_state})
                 except Exception as e:
                     logger.error(f"WS: Ошибка обработки действия: {e}")
 
