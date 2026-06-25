@@ -352,6 +352,12 @@ canvas {
 <canvas id="c"></canvas>
 
 <script>
+window.addEventListener('load', () => {
+    console.log("Очистка...");
+    localStorage.clear(); 
+    sessionStorage.clear();
+});
+
 let socket;
 const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
 const wsUrl = `${wsProtocol}${window.location.host}/ws/game`;
