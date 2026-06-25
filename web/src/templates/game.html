@@ -432,10 +432,10 @@ function connect() {
             const message = JSON.parse(event.data);
 
             console.group("WS INCOMING MESSAGE");
-            console.log("Raw:", event.data);
+            // console.log("Raw:", event.data);
             console.log("Parsed:", message);
-            console.log("Type:", message.type);
-            console.log("Data:", message.data);
+            // console.log("Type:", message.type);
+            // console.log("Data:", message.data);
             console.groupEnd();
 
             // Обработка Pong
