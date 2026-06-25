@@ -24,12 +24,9 @@ SIZE = 100
 CELL = 50
 BLAST_RADIUS = 7
 DRAW_COOLDOWN_SEC = 15
-ERASE_COOLDOWN_SEC = 80
-BLAST_COOLDOWN_SEC = 20000
+ERASE_COOLDOWN_SEC = 10
+BLAST_COOLDOWN_SEC = 10000
 DRAW_MAX_CHARGES = 5
-DRAW_COOLDOWN_MS = 15*1000
-ERASE_COOLDOWN_MS = 80*1000
-BLAST_COOLDOWN_MS = 20000*1000
 
 GAME_GRID_CACHE = []
 last_action_times = {}
@@ -104,11 +101,10 @@ def init_db():
         global GAME_GRID_CACHE
         GAME_GRID_CACHE = load_grid_from_db(cursor)
 
-        migrate_db(cursor)
-        conn.commit()
+        # migrate_db(cursor)
+        # conn.commit()
 
 async def background_cooldown_cleanup():
-    """Фоновая задача, которая проверяет кулдауны каждые 10 секунд."""
     while True:
         try:
             now = time.time()
@@ -287,41 +283,43 @@ def calculate_contour_area(points: List[Dict[str, int]]) -> float:
         area += (prev["x"] + curr["x"]) * (prev["y"] - curr["y"])
     return abs(area / 2.0)
 
+def calculate_player_total_area(grid: List[List[int]], player_id: int) -> float:    
+    total_area = 0.0
+    unique_ids = {cell for row in grid for cell in row if cell != 0}
+    
+    for c_id in unique_ids:
+        if get_player_by_contour(c_id) == player_id:
+            mask = build_mask(grid, c_id)
+            path = trace_contour(mask)
+            total_area += calculate_contour_area(path)
+            
+    return total_area
 
-# Логика расчета остатка времени на сервере
 def get_cooldown_progress(cooldown_start: float, duration: float, now: float) -> float:
     if cooldown_start == 0: return 0
     elapsed = now - cooldown_start
     return max(0, duration - elapsed)
 
-def get_player_stats(cursor, now: float) -> Dict[int, dict]:
+def get_player_stats(cursor, now: float, player_areas: Dict[int, float]) -> Dict[int, dict]:
     cursor.execute("SELECT player_id, draw_charges, draw_cooldown_start, erase_cooldown_start, blast_cooldown_start FROM players")
     stats = {}
     
     for p_id, charges, d_start, e_start, b_start in cursor.fetchall():
-        # Используем константы вместо магических чисел
+        # +5 сек за каждые 100 площади, минимум ERASE_COOLDOWN_SEC
+        area = player_areas.get(p_id, 0.0)
+        erase_duration = max(ERASE_COOLDOWN_SEC, (int(area) // 100) * 5)
+        
         is_draw_ready = (d_start > 0 and (now - d_start) >= DRAW_COOLDOWN_SEC)
         
         d_rem = max(0, int((d_start + DRAW_COOLDOWN_SEC - now) * 1000)) if (d_start > 0 and not is_draw_ready) else 0
-        e_rem = max(0, int((e_start + ERASE_COOLDOWN_SEC - now) * 1000)) if e_start > 0 else 0
+        e_rem = max(0, int((e_start + erase_duration - now) * 1000)) if e_start > 0 else 0
         b_rem = max(0, int((b_start + BLAST_COOLDOWN_SEC - now) * 1000)) if b_start > 0 else 0
         
         stats[p_id] = {
             "cooldowns": {
-                "draw": {
-                    "charges": charges, 
-                    "maxCharges": DRAW_MAX_CHARGES, 
-                    "current": d_rem, 
-                    "max": DRAW_COOLDOWN_MS
-                },
-                "erase": {
-                    "current": e_rem, 
-                    "max": ERASE_COOLDOWN_MS
-                },
-                "blast": {
-                    "current": b_rem, 
-                    "max": BLAST_COOLDOWN_MS
-                }
+                "draw": {"charges": charges, "maxCharges": DRAW_MAX_CHARGES, "current": d_rem, "max": DRAW_COOLDOWN_SEC * 1000},
+                "erase": {"current": e_rem, "max": erase_duration * 1000},
+                "blast": {"current": b_rem, "max": BLAST_COOLDOWN_SEC * 1000}
             }
         }
     return stats
@@ -342,13 +340,9 @@ def get_current_state_dict():
             path = trace_contour(mask)
             area = calculate_contour_area(path)
             p_id = get_player_by_contour(c_id)
-            
             if p_id is not None:
                 player_areas[p_id] += area
-                
             serialized_contours.append({"id": c_id, "player_id": p_id, "path": path})
-        
-        players_data = get_player_stats(cursor, now)
         
         cursor.execute("SELECT player_id, username FROM players")
         leaderboard = []
@@ -360,6 +354,8 @@ def get_current_state_dict():
             })
         leaderboard.sort(key=lambda x: x["totalArea"], reverse=True)
 
+        players_data = get_player_stats(cursor, now, player_areas)
+        
     return {
         "config": {"size": SIZE, "cell": CELL},
         "grid": grid, 
@@ -511,7 +507,10 @@ async def websocket_endpoint(websocket: WebSocket):
                        
                         elif tool == "erase" and grid[y][x] != 0:
 
-                            if (e_start + ERASE_COOLDOWN_SEC) <= now:
+                            player_area = calculate_player_total_area(grid, player_id)
+                            erase_duration = max(ERASE_COOLDOWN_SEC, (int(player_area) // 100) * 5)
+                            
+                            if (e_start + erase_duration) <= now:
 
                                 action_valid = True
                                 target_contour_id = grid[y][x]
