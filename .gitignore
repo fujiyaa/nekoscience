@@ -85,3 +85,7 @@ osu_tokens.json
 
 !*.gitkeep
 !/storage/chat_data/chat_update.json
+
+*.db
+*.db-shm
+*.db-wal
