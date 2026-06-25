@@ -32,8 +32,6 @@ DRAW_MAX_CHARGES = 5
 GAME_GRID_CACHE = []
 last_action_times = {}
 GAME_STATE_CACHE = {}
-DIRTY_CONTOURS = set()
-PLAYER_AREA_CACHE = defaultdict(float)
 
 DIRS = [(1,0), (1,1), (0,1), (-1,1), (-1,0), (-1,-1), (0,-1), (1,-1)]
 
@@ -127,17 +125,6 @@ async def background_cooldown_cleanup():
         await asyncio.sleep(10)
 
 init_db()
-
-def mark_dirty(contour_ids):
-    global DIRTY_CONTOURS
-
-    if contour_ids is None:
-        return
-
-    if isinstance(contour_ids, int):
-        DIRTY_CONTOURS.add(contour_ids)
-    else:
-        DIRTY_CONTOURS.update(contour_ids)
 
 def get_cells_in_radius(x: int, y: int, r: int):
     cells = []
@@ -345,102 +332,53 @@ def get_player_stats(cursor, now: float, player_areas: Dict[int, float]) -> Dict
 
 def get_current_state_dict():
     global GAME_STATE_CACHE
+
     if not GAME_STATE_CACHE:
         refresh_game_state_cache()
     return GAME_STATE_CACHE
 
 def refresh_game_state_cache():
-    global GAME_STATE_CACHE, DIRTY_CONTOURS, PLAYER_AREA_CACHE
+    global GAME_STATE_CACHE
 
     now = time.time()
-
     with sqlite3.connect(DB_NAME) as conn:
         cursor = conn.cursor()
-        grid = GAME_GRID_CACHE
-
-        if not DIRTY_CONTOURS:
-            cursor.execute("SELECT player_id, username FROM players")
-            all_players = cursor.fetchall()
-
-            leaderboard = [
-                {
-                    "player_id": p_id,
-                    "name": name,
-                    "totalArea": PLAYER_AREA_CACHE.get(p_id, 0.0)
-                }
-                for p_id, name in all_players
-            ]
-
-            GAME_STATE_CACHE["leaderboard"] = leaderboard
-            GAME_STATE_CACHE["players"] = get_player_stats(cursor, time.time(), PLAYER_AREA_CACHE)
-            GAME_STATE_CACHE["contours"] = GAME_STATE_CACHE.get("contours", [])
-
-            DIRTY_CONTOURS.clear()
-            return
-
+        
+        grid = load_grid_from_db(cursor)
+        unique_ids = {cell for row in grid for cell in row if cell != 0}
+        
         serialized_contours = []
         player_areas = defaultdict(float)
-
-        for c_id in list(DIRTY_CONTOURS):
+        
+        for c_id in unique_ids:
             mask = build_mask(grid, c_id)
             path = trace_contour(mask)
-
-            if not path:
-                continue
-
             area = calculate_contour_area(path)
             p_id = get_player_by_contour(c_id)
-
-            serialized_contours.append({
-                "id": c_id,
-                "player_id": p_id,
-                "path": path
-            })
-
             if p_id is not None:
-                new_val = player_areas.get(p_id)
-                if new_val is None:
-                    new_val = 0.0
-
-                new_val += area
-                player_areas[p_id] = new_val
-
+                player_areas[p_id] += area
+            serialized_contours.append({"id": c_id, "player_id": p_id, "path": path})
+        
         cursor.execute("SELECT player_id, username FROM players")
-
-        all_players = cursor.fetchall()
-
-        for p_id, _ in all_players:
-            PLAYER_AREA_CACHE.setdefault(p_id, 0.0)
-
         leaderboard = []
-        for p_id, name in all_players:
-            total = player_areas.get(p_id, PLAYER_AREA_CACHE.get(p_id, 0.0))
-            PLAYER_AREA_CACHE[p_id] = total
-
+        for p_id, name in cursor.fetchall():
             leaderboard.append({
-                "player_id": p_id,
-                "name": name,
-                "totalArea": total
+                "player_id": p_id, 
+                "name": name, 
+                "totalArea": player_areas.get(p_id, 0.0)
             })
-
         leaderboard.sort(key=lambda x: x["totalArea"], reverse=True)
 
-        players_data = get_player_stats(cursor, now, PLAYER_AREA_CACHE)
+        players_data = get_player_stats(cursor, now, player_areas)
+        
+    GAME_STATE_CACHE = {
+        "config": {"size": SIZE, "cell": CELL},
+        "grid": grid, 
+        "contours": serialized_contours, 
+        "leaderboard": leaderboard,
+        "players": players_data
+    }
 
-    if GAME_STATE_CACHE:
-        GAME_STATE_CACHE["contours"] = serialized_contours
-        GAME_STATE_CACHE["leaderboard"] = leaderboard
-        GAME_STATE_CACHE["players"] = players_data
-    else:
-        GAME_STATE_CACHE = {
-            "config": {"size": SIZE, "cell": CELL},
-            "grid": GAME_GRID_CACHE,
-            "contours": serialized_contours,
-            "leaderboard": leaderboard,
-            "players": players_data
-        }
-
-    DIRTY_CONTOURS.clear()
 
 
 class ConnectionManager:
@@ -557,41 +495,23 @@ async def websocket_endpoint(websocket: WebSocket):
                         action_valid = False
                         now = time.time()
 
-                        # --- (Draw, Erase, Blast) ---                        
+                        # --- ЛОГИКА ДЕЙСТВИЙ (Draw, Erase, Blast) ---
                         if tool == "draw" and grid[y][x] == 0:
                             if charges > 0 or (d_start + DRAW_COOLDOWN_SEC) <= now:
                                 action_valid = True
-
                                 neighbours = get_neighbour_contours(x, y, player_id, grid)
-
-                                mark_dirty(neighbours)
-
-                                new_id = (
-                                    neighbours[0]
-                                    if len(neighbours) == 1
-                                    else (get_free_contour_id(grid, player_id) if not neighbours else None)
-                                )
-
-                                grid[y][x] = new_id
-
-                                if len(neighbours) > 1:
+                                grid[y][x] = neighbours[0] if len(neighbours) == 1 else (get_free_contour_id(grid, player_id) if not neighbours else None)
+                                if len(neighbours) > 1: # Объединение
                                     main_id = neighbours[0]
                                     for yy in range(SIZE):
                                         for xx in range(SIZE):
-                                            if grid[yy][xx] in neighbours:
-                                                grid[yy][xx] = main_id
-
+                                            if grid[yy][xx] in neighbours: grid[yy][xx] = main_id
                                     grid[y][x] = main_id
-                                    mark_dirty(main_id)
-
                                 new_charges = charges - 1 if charges > 0 else 4
-                                cursor.execute(
-                                    "UPDATE players SET draw_charges=?, draw_cooldown_start=? WHERE player_id=?",
-                                    (new_charges, now if new_charges == 0 else 0, player_id)
-                                )
+                                cursor.execute("UPDATE players SET draw_charges = ?, draw_cooldown_start = ? WHERE player_id = ?", (new_charges, now if new_charges == 0 else 0, player_id))
 
                         elif tool == "erase" and grid[y][x] != 0:
-                            player_area = PLAYER_AREA_CACHE.get(player_id, 0.0)
+                            player_area = calculate_player_total_area(grid, player_id)
 
                             erase_duration = (
                                 ERASE_COOLDOWN_SEC
@@ -600,63 +520,17 @@ async def websocket_endpoint(websocket: WebSocket):
 
                             if (e_start + erase_duration) <= now:
                                 action_valid = True
-
-                                target_contour = grid[y][x]
-                                target_pid = get_player_by_contour(target_contour)
-
-                                mark_dirty(target_contour)
-
+                                target_pid = get_player_by_contour(grid[y][x])
                                 grid[y][x] = 0
-
-                                if target_pid:
-                                    recalculate_player_contours(target_pid, grid)
-
-                                    new_ids = {
-                                        cell
-                                        for row in grid
-                                        for cell in row
-                                        if get_player_by_contour(cell) == target_pid
-                                    }
-
-                                    mark_dirty(new_ids)
-
-                                cursor.execute(
-                                    "UPDATE players SET erase_cooldown_start=? WHERE player_id=?",
-                                    (now, player_id)
-                                )
+                                if target_pid: recalculate_player_contours(target_pid, grid)
+                                cursor.execute("UPDATE players SET erase_cooldown_start = ? WHERE player_id = ?", (now, player_id))
 
                         elif tool == "blast" and (b_start + BLAST_COOLDOWN_SEC) <= now:
                             action_valid = True
-
-                            affected_cells = get_cells_in_radius(x, y, BLAST_RADIUS)
-
-                            affected_contours = {
-                                get_player_by_contour(grid[ny][nx])
-                                for nx, ny in affected_cells
-                                if grid[ny][nx] != 0
-                            }
-
-                            mark_dirty(affected_contours)
-
-                            for nx, ny in affected_cells:
-                                grid[ny][nx] = 0
-
-                            for pid in [p for p in affected_contours if p]:
-                                recalculate_player_contours(pid, grid)
-
-                                new_ids = {
-                                    cell
-                                    for row in grid
-                                    for cell in row
-                                    if get_player_by_contour(cell) == pid
-                                }
-
-                                mark_dirty(new_ids)
-
-                            cursor.execute(
-                                "UPDATE players SET blast_cooldown_start=? WHERE player_id=?",
-                                (now, player_id)
-                            )
+                            affected = {get_player_by_contour(grid[ny][nx]) for nx, ny in get_cells_in_radius(x, y, BLAST_RADIUS) if grid[ny][nx] != 0}
+                            for nx, ny in get_cells_in_radius(x, y, BLAST_RADIUS): grid[ny][nx] = 0
+                            for pid in [p for p in affected if p]: recalculate_player_contours(pid, grid)
+                            cursor.execute("UPDATE players SET blast_cooldown_start = ? WHERE player_id = ?", (now, player_id))
 
                         if action_valid:
                             sync_grid_to_db(cursor, grid)
