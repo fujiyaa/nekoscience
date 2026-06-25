@@ -395,6 +395,7 @@ let animationsEnabled = true;
 let minimapDirty = true;
 let minimapFrameSkip = 0;
 let leaderboardDirty = true;
+let lastLeaderboardHash = "";
 
 window.Telegram.WebApp.ready();
 const initData = window.Telegram.WebApp.initData;
@@ -476,6 +477,13 @@ function processServerData(message) {
     const serverData = message.data;
     const isUpdate = message.type === "update";
     const oldGrid = isUpdate ? JSON.parse(JSON.stringify(grid)) : null;
+    const newHash = hashLeaderboard(serverData.leaderboard);  
+    
+    if (newHash !== lastLeaderboardHash) {
+        serverLeaderboard = serverData.leaderboard;
+        leaderboardDirty = true;
+        lastLeaderboardHash = newHash;
+    }
 
     if (serverData.config) {
         SIZE = serverData.config.size;
@@ -983,6 +991,10 @@ function drawParticles() {
         );
     }
     ctx.restore();
+}
+
+function hashLeaderboard(lb) {
+    return lb.map(p => `${p.player_id}:${p.totalArea}`).join("|");
 }
 
 function renderLeaderboard() {
