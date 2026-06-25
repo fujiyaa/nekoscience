@@ -122,6 +122,7 @@ def register_callbacks(app):
 
         # fun 
         (eco_callback,      r"^eco_"),
+        (pw_callback,       r"^GET_GAME_CODE$"),
 
         # mod
         (callback_modv,     r"^modv:"),

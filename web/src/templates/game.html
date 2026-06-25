@@ -213,6 +213,19 @@ canvas {
     color: #fff;
     font-family: monospace;
 }
+
+.overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-family: monospace;
+}
+
 .message-box {
     padding: 10px;
     background: rgba(0, 0, 0, 0.8);
@@ -334,11 +347,9 @@ canvas {
     <button class="zoom-btn" onclick="changeZoom(0.8)">-</button>
 </div>
 
-<div id="access-denied-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 200; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px); justify-content: center; align-items: center; color: #fff; font-family: monospace;">
-    <div class="message-box">
-        <h3>Недоступно без телеграма</h3>
-        <p>Играть можно только через <br>MiniApp в @weakobot</p>
-    </div>
+<div id="status-overlay" class="overlay" style=" z-index: 200; display: flex; justify-content: center;align-items: center;color: #fff;font-family: monospace;">
+    <div id="overlay-content" class="message-box">
+        </div>
 </div>
 
 <div id="error-overlay" style="
@@ -357,13 +368,14 @@ canvas {
 <script>
 window.addEventListener('load', () => {
     console.log("Очистка...");
-    localStorage.clear(); 
+    // localStorage.clear(); 
     sessionStorage.clear();
 });
 window.onerror = function(message, source, lineno, colno, error) {
     alert("JS: " + message);
 };
 
+let kickedByNewSession = false;
 let socket;
 const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
 const wsUrl = `${wsProtocol}${window.location.host}/ws/game`;
@@ -402,6 +414,92 @@ const initData = window.Telegram.WebApp.initData;
 let isAuthorized = false;
 let pingInterval = null;
 
+let savedAuthToken = localStorage.getItem('auth_token') || "";
+
+function showOverlay(type) {
+    const overlay = document.getElementById("status-overlay");
+    const content = document.getElementById("overlay-content");
+
+    overlay.style.display = "flex";
+
+    if (type === 'auth_required') {
+        content.innerHTML = `
+            <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
+
+                <h3 style="margin:0;">Авторизация не из MiniApp</h3>
+
+                <div style="display:flex; align-items:center; justify-content:center; gap:10px; opacity:0.6;">
+                    <div class="hover-spinner"></div>
+                    <span style="font-size:12px;">
+                        Используй команду /game в личном чате с @weakobot и получи код:
+                    </span>
+                </div>
+
+                <div style="display:flex; gap:8px; align-items:stretch;">
+                    <input id="auth-code-input"
+                        type="text"
+                        maxlength="6"
+                        placeholder="......"
+                        style="
+                            background: rgba(255,255,255,0.05);
+                            border: 1px solid rgba(255,255,255,0.15);
+                            color: #fff;
+                            padding: 10px;
+                            width: 160px;
+                            text-align: center;
+                            font-size: 18px;
+                            border-radius: 6px;
+                            outline: none;
+                            font-family: monospace;
+                            box-sizing: border-box;
+                        "
+                    />
+
+                    <button onclick="submitAuth()"
+                        style="
+                            background: rgba(255,255,255,0.08);
+                            border: 1px solid rgba(255,255,255,0.15);
+                            color: #fff;
+                            padding: 0 20px;
+                            border-radius: 6px;
+                            cursor: pointer;
+                            font-family: monospace;
+                            box-sizing: border-box;
+                        "
+                    >
+                        Войти
+                    </button>
+                </div>
+
+            </div>
+        `;
+    }
+
+    if (type === 'hidden') {
+        overlay.style.display = "none";
+    }
+}
+
+function submitAuth() {
+    const code = document.getElementById("auth-code-input").value;
+    if (code.length < 6) {
+        alert("Введите код");
+        return;
+    }
+
+    savedAuthToken = code;
+    localStorage.setItem('auth_token', code); // Сохраняем, чтобы при реконнекте использовать снова
+
+    if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({
+            type: "external_auth",
+            token: code
+        }));
+    } else {
+        alert("Соединение с сервером не установлено, попробуйте позже");
+    }
+}
+
 function connect() {
     if (socket) {
         socket.onclose = null;
@@ -414,18 +512,30 @@ function connect() {
 
     socket.onopen = () => {
         console.log("WS: Соединение установлено");
-        // Запуск Heartbeat
+        
         pingInterval = setInterval(() => {
             if (socket.readyState === WebSocket.OPEN) {
                 socket.send(JSON.stringify({ type: "ping" }));
             }
         }, 10000);
 
-        // Авторизация
-        socket.send(JSON.stringify({
-            type: "auth", 
-            initData: initData
-        }));
+        if (initData && initData.length > 0) {
+            socket.send(JSON.stringify({
+                type: "auth", 
+                initData: initData
+            }));
+        } else {
+            if (savedAuthToken) {
+                console.log("WS: Авторизация сохраненным токеном...");
+                socket.send(JSON.stringify({
+                    type: "external_auth",
+                    token: savedAuthToken
+                }));
+            } else {
+                console.log("WS: Токен отсутствует, ждем ввода пользователя");
+                showOverlay('auth_required');
+            }
+        }
     };
 
     socket.onmessage = (event) => {
@@ -445,8 +555,18 @@ function connect() {
             if (message.type === "auth_success") {
                 window.currentPlayer = message.player_id; 
                 isAuthorized = true;
+                showOverlay('hidden');
                 overlay.style.display = "none";
                 console.log("WS: Авторизован успешно");
+                return;
+            }
+
+            if (message.type === "session_replaced") {
+                kickedByNewSession = true;
+
+                alert("Этот аккаунт используется где-то еще");
+
+                socket.close();
                 return;
             }
 
@@ -461,6 +581,12 @@ function connect() {
     };
 
     socket.onclose = (event) => {
+
+        if (kickedByNewSession) {
+            console.log("WS: Соединение закрыто (есть новая сессия)");
+            return;
+        }
+    
         console.warn("WS: Соединение закрыто. Переподключение...");
         isAuthorized = false;
         overlay.style.display = "flex";
@@ -534,7 +660,8 @@ function processServerData(message) {
 }
 
 if (!initData) {
-    document.getElementById("access-denied-overlay").style.display = "flex";
+    showOverlay('auth_required');
+    connect(); 
 } else {
     connect();
 }

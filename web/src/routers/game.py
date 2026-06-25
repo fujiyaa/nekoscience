@@ -2,7 +2,7 @@ import math
 import sqlite3
 import time
 import os
-import json
+import json, re
 import hmac
 import hashlib
 import urllib.parse
@@ -41,6 +41,16 @@ class ActionPayload(BaseModel):
     tool: str = Field(..., pattern="^(draw|erase|blast)$")
     x: int = Field(..., ge=0, lt=SIZE) # от 0 до SIZE-1
     y: int = Field(..., ge=0, lt=SIZE) # от 0 до SIZE-1
+
+
+def load_external_passwords():
+    path = os.path.join(os.path.dirname(DB_NAME), "miniapp_passwords.json")
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        logger.error(f"Не удалось прочитать external passwords: {e}")
+        return {}
 
 def validate_telegram_data(init_data: str) -> bool:
     parsed_data = urllib.parse.parse_qs(init_data)
@@ -117,8 +127,8 @@ async def background_cooldown_cleanup():
                 cursor.execute("""
                     UPDATE players 
                     SET draw_charges = 5, draw_cooldown_start = 0 
-                    WHERE draw_cooldown_start > 0 AND (draw_cooldown_start + 10) <= ?
-                """, (now,))
+                    WHERE draw_cooldown_start > 0 AND (draw_cooldown_start + ?) <= ?
+                """, (DRAW_COOLDOWN_SEC,now))
                 conn.commit()
         except Exception as e:
             logger.error(f"Ошибка в фоновой задаче очистки: {e}")
@@ -510,9 +520,15 @@ async def websocket_endpoint(websocket: WebSocket):
                 for conn in manager.active_connections:
                     if getattr(conn, "player_id", None) == p_id and conn != websocket:
                         try:
+                            await conn.send_json({
+                                "type": "session_replaced"
+                            })
+
+                            await asyncio.sleep(0.1)
+
                             await conn.close()
-                        except:
-                            pass
+                        except Exception as e:
+                            logger.error(f"Ошибка закрытия старой сессии: {e}")
                 
                 websocket.player_id = p_id
                 
@@ -531,6 +547,61 @@ async def websocket_endpoint(websocket: WebSocket):
                 await websocket.send_json({"type": "init", "data": state})
                 
                 logger.info(f"WS: Игрок {p_id} успешно авторизован и получил стейт")
+                continue
+
+            if msg_type == "external_auth":
+                password = data.get("token")
+
+                if not password:
+                    await websocket.send_json({"type": "error", "message": "Missing token"})
+                    continue
+
+                passwords = load_external_passwords()
+
+                matched_user = None
+                matched_id = None
+
+                for tg_id, info in passwords.items():
+                    if info.get("code") == password:
+                        matched_user = info
+                        matched_id = int(tg_id)
+                        break
+
+                if not matched_user:
+                    await websocket.send_json({"type": "error", "message": "Wrong password"})
+                    continue
+
+                p_id = matched_id
+                websocket.player_id = p_id
+
+                for conn in manager.active_connections:
+                    if getattr(conn, "player_id", None) == p_id and conn != websocket:
+                        try:
+                            await conn.send_json({
+                                "type": "session_replaced"
+                            })
+
+                            await asyncio.sleep(0.1)
+
+                            await conn.close()
+                        except Exception as e:
+                            logger.error(f"Ошибка закрытия старой сессии: {e}")
+
+                with sqlite3.connect(DB_NAME) as conn:
+                    conn.execute("""
+                        INSERT INTO players (player_id, username) 
+                        VALUES (?, ?)
+                        ON CONFLICT(player_id) DO UPDATE SET username=excluded.username
+                    """, (p_id, matched_user.get("name", "Player")))
+
+                await websocket.send_json({"type": "auth_success", "player_id": p_id})
+
+                await asyncio.sleep(0.2)
+
+                state = get_current_state_dict()
+                await websocket.send_json({"type": "init", "data": state})
+
+                logger.info(f"WS: External auth успешен {p_id}")
                 continue
 
             # 3. Game Actions

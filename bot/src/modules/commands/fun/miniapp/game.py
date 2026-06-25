@@ -1,12 +1,15 @@
 
 
-
+import json
+import random
 from telegram import Update
 from telegram.ext import ContextTypes
 
 from ....systems.logging import log_all_update
 from ....actions.messages import safe_send_message
 from .buttons import get_keyboard
+
+from config import MINIAPP_PW_FILE
 
 
 

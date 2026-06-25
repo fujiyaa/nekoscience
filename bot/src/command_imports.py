@@ -49,7 +49,7 @@ from modules.commands.fun import (
     doubt, blacks, 
     reminders_command, 
     random_image, roll,
-    ecos, get_game,
+    ecos, get_game, pw_callback,
 
     eco_callback
 )

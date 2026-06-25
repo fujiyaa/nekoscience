@@ -11,3 +11,4 @@ from .ecos.ecos import main_menu as ecos
 from .ecos.ecos import economy_callback as eco_callback
 
 from .miniapp.game import get_game
+from .miniapp.callback import callback as pw_callback

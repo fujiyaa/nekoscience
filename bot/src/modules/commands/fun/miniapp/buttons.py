@@ -13,6 +13,12 @@ def get_keyboard():
                 text="⭐️ MiniApp",
                 url="https://t.me/Weakobot?startapp"
             )
+        ],
+        [
+            InlineKeyboardButton(
+                text="🔑 Код",
+                callback_data="GET_GAME_CODE"
+            )
         ]
     ]
 
