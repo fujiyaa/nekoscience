@@ -24,7 +24,8 @@ SIZE = 100
 CELL = 50
 BLAST_RADIUS = 7
 DRAW_COOLDOWN_SEC = 15
-ERASE_COOLDOWN_SEC = 10
+ERASE_COOLDOWN_SEC = 20
+ERASE_COOLDOWN_PER_100_AREA = 5
 BLAST_COOLDOWN_SEC = 10000
 DRAW_MAX_CHARGES = 5
 
@@ -309,7 +310,10 @@ def get_player_stats(cursor, now: float, player_areas: Dict[int, float]) -> Dict
     for p_id, charges, d_start, e_start, b_start in cursor.fetchall():
         # +5 сек за каждые 100 площади, минимум ERASE_COOLDOWN_SEC
         area = player_areas.get(p_id, 0.0)
-        erase_duration = max(ERASE_COOLDOWN_SEC, (int(area) // 100) * 5)
+        erase_duration = (
+            ERASE_COOLDOWN_SEC
+            + (int(area) // 100) * ERASE_COOLDOWN_PER_100_AREA
+        )
         
         is_draw_ready = (d_start > 0 and (now - d_start) >= DRAW_COOLDOWN_SEC)
         
@@ -508,7 +512,13 @@ async def websocket_endpoint(websocket: WebSocket):
 
                         elif tool == "erase" and grid[y][x] != 0:
                             player_area = calculate_player_total_area(grid, player_id)
-                            if (e_start + max(ERASE_COOLDOWN_SEC, (int(player_area) // 100) * 5)) <= now:
+
+                            erase_duration = (
+                                ERASE_COOLDOWN_SEC
+                                + (int(player_area) // 100) * ERASE_COOLDOWN_PER_100_AREA
+                            )
+
+                            if (e_start + erase_duration) <= now:
                                 action_valid = True
                                 target_pid = get_player_by_contour(grid[y][x])
                                 grid[y][x] = 0
