@@ -73,8 +73,9 @@ def migrate_db(cursor):
 
 def init_db():
     with sqlite3.connect(DB_NAME) as conn:
+        conn.execute("PRAGMA journal_mode=WAL;")
         cursor = conn.cursor()
-        cursor.execute("""
+        cursor.execute(""" 
             CREATE TABLE IF NOT EXISTS game_grid (
                 x INTEGER, y INTEGER, contour_id INTEGER DEFAULT 0, PRIMARY KEY (x, y)
             )
