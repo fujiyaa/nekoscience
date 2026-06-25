@@ -344,6 +344,7 @@ def get_player_stats(cursor, now: float, player_areas: Dict[int, float]) -> Dict
     return stats
 
 def get_current_state_dict():
+    global GAME_STATE_CACHE
     if not GAME_STATE_CACHE:
         refresh_game_state_cache()
     return GAME_STATE_CACHE
@@ -358,10 +359,27 @@ def refresh_game_state_cache():
         grid = GAME_GRID_CACHE
 
         if not DIRTY_CONTOURS:
+            cursor.execute("SELECT player_id, username FROM players")
+            all_players = cursor.fetchall()
+
+            leaderboard = []
+            for p_id, name in all_players:
+                leaderboard.append({
+                    "player_id": p_id,
+                    "name": name,
+                    "totalArea": PLAYER_AREA_CACHE.get(p_id, 0.0)
+                })
+
+            GAME_STATE_CACHE.update({
+                "leaderboard": leaderboard,
+                "players": get_player_stats(cursor, time.time(), PLAYER_AREA_CACHE)
+            })
+
+            DIRTY_CONTOURS.clear()
             return
 
         serialized_contours = []
-        player_areas = defaultdict(float)
+        player_areas = defaultdict(lambda: None)
 
         for c_id in list(DIRTY_CONTOURS):
             mask = build_mask(grid, c_id)
@@ -380,13 +398,23 @@ def refresh_game_state_cache():
             })
 
             if p_id is not None:
-                player_areas[p_id] += area
+                new_val = player_areas.get(p_id)
+                if new_val is None:
+                    new_val = 0.0
+
+                new_val += area
+                player_areas[p_id] = new_val
 
         cursor.execute("SELECT player_id, username FROM players")
 
+        all_players = cursor.fetchall()
+
+        for p_id, _ in all_players:
+            PLAYER_AREA_CACHE.setdefault(p_id, 0.0)
+
         leaderboard = []
-        for p_id, name in cursor.fetchall():
-            total = player_areas.get(p_id, 0.0)
+        for p_id, name in all_players:
+            total = player_areas.get(p_id, PLAYER_AREA_CACHE.get(p_id, 0.0))
             PLAYER_AREA_CACHE[p_id] = total
 
             leaderboard.append({
