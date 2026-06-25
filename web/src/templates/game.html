@@ -387,13 +387,28 @@ let leaderboardDirty = true;
 window.Telegram.WebApp.ready();
 const initData = window.Telegram.WebApp.initData;
 let isAuthorized = false;
+let pingInterval = null;
 
 function connect() {
-    socket = new WebSocket(wsUrl);
+    if (socket) {
+        socket.onclose = null;
+        socket.close();
+    }
+    if (pingInterval) clearInterval(pingInterval);
+
     const overlay = document.getElementById("reconnect-overlay");
+    socket = new WebSocket(wsUrl);
 
     socket.onopen = () => {
-        console.log("Соединение установлено, отправка авторизации...");
+        console.log("WS: Соединение установлено");
+        // Запуск Heartbeat
+        pingInterval = setInterval(() => {
+            if (socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({ type: "ping" }));
+            }
+        }, 10000);
+
+        // Авторизация
         socket.send(JSON.stringify({
             type: "auth", 
             initData: initData
@@ -404,89 +419,70 @@ function connect() {
         try {
             const message = JSON.parse(event.data);
 
+            // Обработка Pong
+            if (message.type === "pong") return;
+
             if (message.type === "auth_success") {
                 window.currentPlayer = message.player_id; 
                 isAuthorized = true;
                 overlay.style.display = "none";
-                console.log("Авторизован как:", window.currentPlayer);
+                console.log("WS: Авторизован успешно");
                 return;
             }
 
-            if (message.type === "update") {
-                console.log("Структура полученных игроков:", Object.keys(message.data.players || {}));
-            }
-            
             if (!isAuthorized) return;
 
             if (message.type === "init" || message.type === "update") {
-
-                const serverData = message.data;
-                console.log("Полный объект данных:", serverData);
-
-                const isUpdate = message.type === "update";
-                const oldGrid = isUpdate ? JSON.parse(JSON.stringify(grid)) : null;
-
-                if (serverData.players && typeof serverData.players === 'object') {
-                    for (let pId in serverData.players) {
-                        const pData = serverData.players[pId];
-                        if (!pData.cooldowns || !pData.cooldowns.draw) {
-                            throw new Error(`Игрок ${pId} имеет некорректные данные: ${JSON.stringify(pData)}`);
-                        }
-                    }
-                }
-                
-                if (serverData.config) {
-                    SIZE = serverData.config.size;
-                    CELL = serverData.config.cell;
-                }
-                
-                grid = serverData.grid;
-                minimapDirty = true;
-                serverContours = serverData.contours;
-                serverLeaderboard = serverData.leaderboard;
-                leaderboardDirty = true;
-                
-                if (serverData.players) {
-                    for (let pId in serverData.players) {
-                        players[pId] = serverData.players[pId];
-                    }
-                }
-                
-                if (message.type === "init") {
-                    centerMap();
-                }
-
-                if (isUpdate && oldGrid && oldGrid.length === grid.length) {
-                    for (let y = 0; y < SIZE; y++) {
-                        for (let x = 0; x < SIZE; x++) {
-                            if (oldGrid[y][x] !== grid[y][x]) {
-                                const newId = grid[y][x];
-                                const targetPlayerId = newId !== 0 ? getPlayerByContour(newId) : getPlayerByContour(oldGrid[y][x]);
-                                
-                                createExplosion(x, y, targetPlayerId, 12);
-                            }
-                        }
-                    }
-                }
+                processServerData(message);
             }
         } catch (e) {
-            throw new Error(`Ошибка разбора данных от сервера: ${e.message}`);
+            console.error("WS: Ошибка обработки сообщения:", e);
         }
     };
 
     socket.onclose = (event) => {
-        isAuthorized = false; // Сбрасываем флаг при обрыве
-        console.warn("Соединение закрыто. Переподключение через 3 сек...");
+        console.warn("WS: Соединение закрыто. Переподключение...");
+        isAuthorized = false;
         overlay.style.display = "flex";
+        if (pingInterval) clearInterval(pingInterval);
         
-        setTimeout(() => {
-            connect(); 
-        }, 3000);
+        setTimeout(connect, 3000);
     };
     
-    socket.onerror = (err) => {
-        console.error("Ошибка сокета:", err);
-    };
+    socket.onerror = (err) => console.error("WS: Ошибка сокета:", err);
+}
+
+function processServerData(message) {
+    const serverData = message.data;
+    const isUpdate = message.type === "update";
+    const oldGrid = isUpdate ? JSON.parse(JSON.stringify(grid)) : null;
+
+    if (serverData.config) {
+        SIZE = serverData.config.size;
+        CELL = serverData.config.cell;
+    }
+    
+    grid = serverData.grid;
+    serverContours = serverData.contours;
+    serverLeaderboard = serverData.leaderboard;
+    
+    if (serverData.players) {
+        for (let pId in serverData.players) {
+            players[pId] = serverData.players[pId];
+        }
+    }
+    
+    if (message.type === "init") centerMap();
+
+    if (isUpdate && oldGrid) {
+        for (let y = 0; y < SIZE; y++) {
+            for (let x = 0; x < SIZE; x++) {
+                if (oldGrid[y][x] !== grid[y][x]) {
+                    createExplosion(x, y, grid[y][x] !== 0 ? getPlayerByContour(grid[y][x]) : null, 12);
+                }
+            }
+        }
+    }
 }
 
 if (!initData) {

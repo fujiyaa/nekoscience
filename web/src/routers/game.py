@@ -402,161 +402,121 @@ logger.addHandler(file_handler)
 @router.websocket("/ws/game")
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
-    await websocket.send_json({"type": "init", "data": get_current_state_dict()})
-    
-    logger.info("Новое WebSocket подключение установлено")
+    # Удалена отправка init здесь: теперь ждем auth
+    logger.info("WS: Установлено новое сырое соединение")
 
     try:
         while True:
             data = await websocket.receive_json()
+            msg_type = data.get("type")
 
-            if data.get("type") == "auth":
+            # 1. Heartbeat
+            if msg_type == "ping":
+                await websocket.send_json({"type": "pong"})
+                continue
 
+            # 2. Authorization
+            if msg_type == "auth":
                 init_data = data.get("initData")
-
                 if not init_data or not validate_telegram_data(init_data):
+                    logger.warning("WS: Провал авторизации (неверный хеш)")
                     await websocket.send_json({"type": "error", "message": "Invalid Authorization"})
                     await websocket.close(code=1008)
-                    return            
+                    return
 
                 user_info = json.loads(urllib.parse.parse_qs(init_data)['user'][0])
                 p_id = user_info['id']
-                name = user_info.get('first_name', 'Player')
-
+                
+                # Закрываем старые сокеты этого игрока
+                for conn in manager.active_connections:
+                    if getattr(conn, "player_id", None) == p_id and conn != websocket:
+                        logger.info(f"WS: Закрываем старую сессию игрока {p_id}")
+                        await conn.close()
+                
+                websocket.player_id = p_id
+                
                 with sqlite3.connect(DB_NAME) as conn:
                     conn.execute("""
-
                         INSERT INTO players (player_id, username) VALUES (?, ?)
-
                         ON CONFLICT(player_id) DO UPDATE SET username=excluded.username
-
-                    """, (p_id, name))
-
+                    """, (p_id, user_info.get('first_name', 'Player')))
+                
                 await websocket.send_json({"type": "auth_success", "player_id": p_id})
-                websocket.player_id = p_id
-
                 await websocket.send_json({"type": "init", "data": get_current_state_dict()})
+                logger.info(f"WS: Игрок {p_id} успешно авторизован")
                 continue
 
-            if data.get("type") == "action":               
-
+            # 3. Game Actions
+            if msg_type == "action":
                 player_id = getattr(websocket, "player_id", None)
-                if not player_id: continue               
-
-                now = time.time()
-
-                if now - last_action_times.get(player_id, 0) < 0.2:
-
-                    await websocket.send_json({"type": "error", "message": "Too fast!"})
+                if not player_id:
                     continue
 
-                last_action_times[player_id] = now
+                if time.time() - last_action_times.get(player_id, 0) < 0.2:
+                    continue
+                last_action_times[player_id] = time.time()
 
                 try:
                     payload = ActionPayload(**data["payload"]).model_dump()
-                except ValidationError:
-                    await websocket.send_json({"type": "error", "message": "Invalid data format"})
-                    continue
+                    tool, x, y = payload["tool"], int(payload["x"]), int(payload["y"])
+                    
+                    if not in_bounds(x, y): continue
 
-                tool = payload["tool"]
-
-                x, y = int(payload["x"]), int(payload["y"])
-
-                if not in_bounds(x, y):
-                    continue
-
-                now = time.time()
-
-                with sqlite3.connect(DB_NAME) as conn:
-                    cursor = conn.cursor()
-                    cursor.execute("SELECT draw_charges, draw_cooldown_start, erase_cooldown_start, blast_cooldown_start FROM players WHERE player_id = ?", (player_id,))
-                    player_row = cursor.fetchone()                   
-
-                    if player_row:
-                        charges, d_start, e_start, b_start = player_row
+                    with sqlite3.connect(DB_NAME) as conn:
+                        cursor = conn.cursor()
+                        cursor.execute("SELECT draw_charges, draw_cooldown_start, erase_cooldown_start, blast_cooldown_start FROM players WHERE player_id = ?", (player_id,))
+                        row = cursor.fetchone()
+                        if not row: continue
+                        
+                        charges, d_start, e_start, b_start = row
                         grid = load_grid_from_db(cursor)
                         action_valid = False
+                        now = time.time()
 
+                        # --- ЛОГИКА ДЕЙСТВИЙ (Draw, Erase, Blast) ---
                         if tool == "draw" and grid[y][x] == 0:
-
                             if charges > 0 or (d_start + DRAW_COOLDOWN_SEC) <= now:
-
                                 action_valid = True
                                 neighbours = get_neighbour_contours(x, y, player_id, grid)
-
-                                if len(neighbours) == 0:
-                                    grid[y][x] = get_free_contour_id(grid, player_id)
-
-                                elif len(neighbours) == 1:
-                                    grid[y][x] = neighbours[0]
-
-                                else:
+                                grid[y][x] = neighbours[0] if len(neighbours) == 1 else (get_free_contour_id(grid, player_id) if not neighbours else None)
+                                if len(neighbours) > 1: # Объединение
                                     main_id = neighbours[0]
-
                                     for yy in range(SIZE):
                                         for xx in range(SIZE):
-                                            if grid[yy][xx] in neighbours:
-                                                grid[yy][xx] = main_id
-
+                                            if grid[yy][xx] in neighbours: grid[yy][xx] = main_id
                                     grid[y][x] = main_id
-
                                 new_charges = charges - 1 if charges > 0 else 4
-                                new_d_start = now if new_charges == 0 else 0
+                                cursor.execute("UPDATE players SET draw_charges = ?, draw_cooldown_start = ? WHERE player_id = ?", (new_charges, now if new_charges == 0 else 0, player_id))
 
-                                cursor.execute("UPDATE players SET draw_charges = ?, draw_cooldown_start = ? WHERE player_id = ?", (new_charges, new_d_start, player_id))
-                       
                         elif tool == "erase" and grid[y][x] != 0:
-
                             player_area = calculate_player_total_area(grid, player_id)
-                            erase_duration = max(ERASE_COOLDOWN_SEC, (int(player_area) // 100) * 5)
-                            
-                            if (e_start + erase_duration) <= now:
-
+                            if (e_start + max(ERASE_COOLDOWN_SEC, (int(player_area) // 100) * 5)) <= now:
                                 action_valid = True
-                                target_contour_id = grid[y][x]
-                                target_player_id = get_player_by_contour(target_contour_id)
-                               
-                                grid[y][x] = 0                               
-
-                                if target_player_id is not None:
-                                    recalculate_player_contours(target_player_id, grid)
-
+                                target_pid = get_player_by_contour(grid[y][x])
+                                grid[y][x] = 0
+                                if target_pid: recalculate_player_contours(target_pid, grid)
                                 cursor.execute("UPDATE players SET erase_cooldown_start = ? WHERE player_id = ?", (now, player_id))
-                        
-                        elif tool == "blast":
-                            affected_players = set()
 
-                            if (b_start + BLAST_COOLDOWN_SEC) <= now:
-                                action_valid = True
-
-                                cells = get_cells_in_radius(x, y, BLAST_RADIUS)
-
-                                for nx, ny in cells:
-                                    c_id = grid[ny][nx]
-                                    if c_id != 0:
-                                        pid = get_player_by_contour(c_id)
-                                        if pid is not None:
-                                            affected_players.add(pid)
-                                        grid[ny][nx] = 0
-
-                                for pid in affected_players:
-                                    recalculate_player_contours(pid, grid)
-
-                                cursor.execute("UPDATE players SET blast_cooldown_start = ? WHERE player_id = ?", (now, player_id))
-
+                        elif tool == "blast" and (b_start + BLAST_COOLDOWN_SEC) <= now:
+                            action_valid = True
+                            affected = {get_player_by_contour(grid[ny][nx]) for nx, ny in get_cells_in_radius(x, y, BLAST_RADIUS) if grid[ny][nx] != 0}
+                            for nx, ny in get_cells_in_radius(x, y, BLAST_RADIUS): grid[ny][nx] = 0
+                            for pid in [p for p in affected if p]: recalculate_player_contours(pid, grid)
+                            cursor.execute("UPDATE players SET blast_cooldown_start = ? WHERE player_id = ?", (now, player_id))
 
                         if action_valid:
-
                             sync_grid_to_db(cursor, grid)
                             conn.commit()
 
-                await manager.broadcast({"type": "update", "data": get_current_state_dict()})
+                    await manager.broadcast({"type": "update", "data": get_current_state_dict()})
+                except Exception as e:
+                    logger.error(f"WS: Ошибка обработки действия: {e}")
 
     except WebSocketDisconnect:
         manager.disconnect(websocket)
-        logger.info(f"WebSocket отключен (игрок {getattr(websocket, 'player_id', 'Unknown')})")
+        logger.info(f"WS: Отключен (игрок {getattr(websocket, 'player_id', 'Unknown')})")
     except Exception as e:
-        logger.exception(f"Критическая ошибка в WebSocket обработчике: {e}")
+        logger.exception(f"WS: Критическая ошибка: {e}")
 
 
 @router.on_event("startup")
