@@ -255,24 +255,24 @@ canvas {
     }
 
     #leaderboard {
-        font-size: 16px; /* Увеличиваем шрифт */
+        font-size: 16px;
         padding: 15px;
     }
 
     .tools-bottom-panel {
-        width: 90%; /* Панель растягивается по ширине */
+        width: 90%;
         bottom: 15px;
         padding: 15px;
         gap: 15px;
     }
 
     .tools-bottom-panel .debug-btn {
-        padding: 20px 0; /* Делаем кнопки выше, чтобы в них легче было попасть пальцем */
+        padding: 20px 0;
         font-size: 16px;
     }
 
     .player-color-dot {
-        width: 16px; /* Увеличиваем индикаторы */
+        width: 16px;
         height: 16px;
     }
 }
@@ -280,9 +280,7 @@ canvas {
 .zoom-panel {
     position: absolute;
     right: 15px;
-    /* Устанавливаем положение по вертикали в 50% от высоты экрана */
     top: 50%;
-    /* Сдвигаем панель вверх на 50% её собственной высоты для идеального центрирования */
     transform: translateY(-50%); 
     z-index: 10;
     display: flex;
@@ -309,6 +307,72 @@ canvas {
 
 .zoom-btn:active {
     background: rgba(255, 255, 255, 0.2);
+}
+
+.settings-panel {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+input {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: white;
+    border-radius: 6px;
+}
+
+.sound-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.sound-play-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.05);
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.15s;
+}
+
+.sound-play-btn:hover {
+    background: rgba(255,255,255,0.15);
+}
+
+.volume-bar {
+    display: flex;
+    gap: 6px;
+    margin: 10px 0 15px 0;
+}
+
+.volume-bar button {
+    flex: 1;
+    padding: 6px 0;
+    font-size: 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.05);
+    color: white;
+    cursor: pointer;
+    transition: 0.15s;
+}
+
+.volume-bar button:hover {
+    background: rgba(255,255,255,0.15);
 }
 </style>
 </head>
@@ -349,7 +413,7 @@ canvas {
 
 <div id="status-overlay" class="overlay" style=" z-index: 200; display: flex; justify-content: center;align-items: center;color: #fff;font-family: monospace;">
     <div id="overlay-content" class="message-box">
-        </div>
+    </div>
 </div>
 
 <div id="error-overlay" style="
@@ -363,9 +427,180 @@ canvas {
     <div id="error-content"></div>
 </div>
 
+<div class="settings-panel">
+    <button class="zoom-btn" onclick="toggleSettings()">⚙</button>
+</div>
+
+<div id="settings-overlay" class="overlay" style="display:none; z-index: 300;">
+    <div class="message-box" style="min-width: 320px; text-align: left;">
+        <h3 style="margin-top:0;">Настройки звуков</h3>
+
+        <div class="volume-bar">
+            <button onclick="setVolume(0)">0%</button>
+            <button onclick="setVolume(0.25)">25%</button>
+            <button onclick="setVolume(0.5)">50%</button>
+            <button onclick="setVolume(0.75)">75%</button>
+            <button onclick="setVolume(1)">100%</button>
+        </div>
+
+        <div class="sound-row">
+            <button class="sound-play-btn" onclick="previewSound('sound-draw')">▶</button>
+            <div style="flex:1;">
+                <label>Точка</label>
+                <input id="sound-draw" placeholder="mp3 url">
+            </div>
+        </div>
+
+        <div class="sound-row">
+            <button class="sound-play-btn" onclick="previewSound('sound-blast')">▶</button>
+            <div style="flex:1;">
+                <label>Взрыв</label>
+                <input id="sound-blast" placeholder="mp3 url">
+            </div>
+        </div>
+
+        <div class="sound-row">
+            <button class="sound-play-btn" onclick="previewSound('sound-error')">▶</button>
+            <div style="flex:1;">
+                <label>Ошибка действия</label>
+                <input id="sound-error" placeholder="mp3 url">
+            </div>
+        </div>
+
+        <button onclick="saveSounds()" class="debug-btn" style="width:100%; margin-top:10px;" id="save-sounds-btn" >
+            Сохранить
+        </button>
+
+        <button onclick="resetSounds()" class="debug-btn" style="width:100%; margin-top:10px;">
+            Сбросить
+        </button>
+    </div>
+</div>
 <canvas id="c"></canvas>
 
 <script>
+const DEFAULT_SOUNDS = {
+    draw: "https://www.myinstants.com/media/sounds/mouse-click-by-ek6_VR0O6PL.mp3",
+    blast: "https://www.myinstants.com/media/sounds/impact_explosion_03.mp3",
+    error: "https://www.myinstants.com/media/sounds/typing-error.mp3"
+};
+if (localStorage.getItem("game_volume") === null) {
+    localStorage.setItem("game_volume", "0");
+}
+
+function toggleSettings() {
+    const el = document.getElementById("settings-overlay");
+    if (!el) return;
+
+    const isHidden = el.style.display === "none" || !el.style.display;
+    el.style.display = isHidden ? "flex" : "none";
+
+    const btn = document.getElementById("save-sounds-btn");
+    if (btn) btn.disabled = false;
+
+    if (isHidden) {
+        requestAnimationFrame(loadSoundsToInputs);
+        updateVolumeUI();
+    }
+}
+
+function saveSounds() {
+    const drawEl = document.getElementById("sound-draw");
+    const blastEl = document.getElementById("sound-blast");
+    const errorEl = document.getElementById("sound-error");
+
+    const sounds = {
+        draw: drawEl ? drawEl.value.trim() : "",
+        blast: blastEl ? blastEl.value.trim() : "",
+        error: errorEl ? errorEl.value.trim() : "",
+    };
+
+    localStorage.setItem("game_sounds", JSON.stringify(sounds));
+    toggleSettings();
+}
+
+
+
+function loadSounds() {
+    const saved = JSON.parse(localStorage.getItem("game_sounds") || "{}");
+
+    return {
+        draw: saved.draw || DEFAULT_SOUNDS.draw,
+        blast: saved.blast || DEFAULT_SOUNDS.blast,
+        error: saved.error || DEFAULT_SOUNDS.error,
+    };
+}
+
+function loadSoundsToInputs() {
+    const s = loadSounds();
+
+    const draw = document.getElementById("sound-draw");
+    const blast = document.getElementById("sound-blast");
+    const error = document.getElementById("sound-error");
+
+    if (draw) draw.value = s.draw;
+    if (blast) blast.value = s.blast;
+    if (error) error.value = s.error;
+}
+
+function resetSounds() {
+    localStorage.removeItem("game_sounds");
+    loadSoundsToInputs();
+    toggleSettings();
+}
+
+function getVolume() {
+    return parseFloat(localStorage.getItem("game_volume") || "0");
+}
+
+function setVolume(v) {
+    localStorage.setItem("game_volume", v.toString());
+    updateVolumeUI();
+}
+
+function previewSound(inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+
+    const url = input.value.trim();
+
+    if (!url.startsWith("http")) return;
+
+    const s = loadSounds();
+    const volume = getVolume();
+
+    if (volume <= 0) return;
+
+    const audio = new Audio(url);
+    audio.volume = volume;
+    audio.play().catch(() => {});
+}
+
+function playSound(key) {
+    const s = loadSounds();
+    const volume = getVolume();
+
+    if (!s[key]) return;
+    if (volume <= 0) return;
+
+    const audio = new Audio(s[key]);
+    audio.volume = volume;
+    audio.play().catch(() => {});
+}
+
+function updateVolumeUI() {
+    const v = getVolume();
+    const buttons = document.querySelectorAll(".volume-bar button");
+
+    const map = [0, 0.25, 0.5, 0.75, 1];
+
+    buttons.forEach((btn, i) => {
+        btn.style.borderColor =
+            map[i] === v ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.15)";
+    });
+}
+
+
 window.addEventListener('load', () => {
     console.log("Очистка...");
     // localStorage.clear(); 
@@ -542,12 +777,9 @@ function connect() {
         try {
             const message = JSON.parse(event.data);
 
-            console.group("WS INCOMING MESSAGE");
-            // console.log("Raw:", event.data);
-            console.log("Parsed:", message);
-            // console.log("Type:", message.type);
-            // console.log("Data:", message.data);
-            console.groupEnd();
+            // console.group("WS INCOMING MESSAGE");
+            // console.log("Parsed:", message);
+            // console.groupEnd();
 
             // Обработка Pong
             if (message.type === "pong") return;
@@ -600,6 +832,9 @@ function connect() {
 }
 
 let prevGrid = null;
+let gridEvents = [];
+let gridSweep = null;
+let explosions = [];
 
 function processServerData(message) {
     const serverData = message.data;
@@ -622,6 +857,7 @@ function processServerData(message) {
         grid = serverData.grid;
         minimapDirty = true;
         lastGridHash = newGridHash;
+        worldDirty = true;
     }
 
     if (serverData.config) {
@@ -639,23 +875,40 @@ function processServerData(message) {
 
     if (message.type === "init") {
         centerMap();
-    }
+    }   
 
     if (isUpdate && prevGrid) {
-        for (let y = 0; y < SIZE; y++) {
-            for (let x = 0; x < SIZE; x++) {
-                if (prevGrid[y][x] !== grid[y][x]) {
-                    createExplosion(
-                        x,
-                        y,
-                        grid[y][x] !== 0
-                            ? getPlayerByContour(grid[y][x])
-                            : null,
-                        12
-                    );
-                }
-            }
+
+        const result = createGridSweep(prevGrid, grid);
+
+        if (result.changedCount === 1) {
+
+            playSound("draw")
+            const p = result.points[0];
+
+            gridEvents.push({
+                x: p.x,
+                y: p.y,
+                type: p.to !== 0 ? "claim" : "clear",
+                playerId: p.to !== 0 ? p.toPlayer : null,
+                t: 0
+            });
         }
+    }
+
+    if (message.event?.type === "explosion") {
+        const e = message.event.data;
+
+        explosions.push({
+            x: e.x,
+            y: e.y,
+            radius: e.radius,
+            playerId: e.player_id,
+            t: 0
+        });
+
+        worldDirty = true;
+        playSound("blast");
     }
 }
 
@@ -666,11 +919,24 @@ if (!initData) {
     connect();
 }
 
+const btnDraw = document.getElementById("tool-draw");
+const btnErase = document.getElementById("tool-erase");
+const btnBlast = document.getElementById("tool-blast");
+
 const canvas = document.getElementById("c");
 const ctx = canvas.getContext("2d");
 
 const minimapCanvas = document.getElementById("minimap");
 const mctx = minimapCanvas.getContext("2d");
+
+const minimapCacheCanvas = document.createElement("canvas");
+const minimapCacheCtx = minimapCacheCanvas.getContext("2d");
+
+const worldCanvas = document.createElement("canvas");
+const worldCtx = worldCanvas.getContext("2d");
+
+let worldDirty = true;
+
 
 const GLOW_CONFIG = {
     alpha: [0.04, 0.12, 0.35, 1.0],
@@ -680,51 +946,29 @@ const GLOW_CONFIG = {
 
 const maxZoom = 0.2; const minZoom = 2.5;
 let zoom = 1.0; let offsetX = 0; let offsetY = 0;
-let distortionTime = 0; let distortionIntensity = 0; const DISTORTION_SCALE = 0.030;  
 
 function toggleAnimations() {
     animationsEnabled = !animationsEnabled;
+    worldDirty = true;
 }
 
-function getDistortedCoords(worldX, worldY) {
-
-    if (!animationsEnabled) {
-        return {
-            x: worldX * zoom + offsetX,
-            y: worldY * zoom + offsetY
-        };
-    }
-
-    const screenX = worldX * zoom + offsetX;
-    const screenY = worldY * zoom + offsetY;
-
-    if (distortionIntensity <= 0.05) {
-        return { x: screenX, y: screenY };
-    }
-
-    const zoomFactor = 1.0 / Math.max(0.1, zoom);
-    const currentStrength = distortionIntensity * zoomFactor * zoom;
-
-    const dx =
-        Math.sin(screenY * DISTORTION_SCALE + distortionTime)
-        * currentStrength;
-
-    const dy =
-        Math.cos(screenX * DISTORTION_SCALE + distortionTime)
-        * currentStrength;
-
+function worldToScreen(x, y) {
     return {
-        x: screenX + dx,
-        y: screenY + dy
+        x: x * zoom + offsetX,
+        y: y * zoom + offsetY
     };
 }
 
-function addDistortionImpulse(amount) { 
-    distortionIntensity = Math.min(distortionIntensity + amount, 35); 
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    worldCanvas.width = canvas.width;
+    worldCanvas.height = canvas.height;
+
+    worldDirty = true;
 }
-function resizeCanvas() { 
-    canvas.width = window.innerWidth; canvas.height = window.innerHeight; 
-}
+
 window.addEventListener('resize', resizeCanvas);
 
 function centerMap() {
@@ -736,10 +980,16 @@ function inBounds(x,y) { return x>=0 && y>=0 && x<SIZE && y<SIZE; }
 function getPlayerByContour(contourId) { return contourId === 0 ? null : Math.floor(contourId / 10000); }
 
 function getStableColor(id) {
-    const hue = (id * 137.5) % 360;
-    
-    // Saturation 70%, Lightness 60%
-    return `hsl(${hue}, 70%, 60%)`;
+    const base = (id * 137.5) % 360;
+
+    const seed = Math.sin(id * 999) * 1000;
+    const noise = seed - Math.floor(seed);
+
+    const hue = (base + (noise - 0.5) * 20 + 360) % 360;
+    const sat = 65 + noise * 15;  // 65–80%
+    const light = 45 + noise * 20; // 45–65%
+
+    return `hsl(${hue}, ${sat}%, ${light}%)`;
 }
 
 function colorFor(id, alpha = 1) {
@@ -751,12 +1001,22 @@ function colorFor(id, alpha = 1) {
 }
 
 function getVisibleBounds() {
-    const padding = 3; 
+    const pad = 3;
+
+    const invZoom = 1 / zoom;
+    const invCell = 1 / CELL;
+
+    const left = -offsetX * invZoom * invCell;
+    const top = -offsetY * invZoom * invCell;
+
+    const right = (canvas.width - offsetX) * invZoom * invCell;
+    const bottom = (canvas.height - offsetY) * invZoom * invCell;
+
     return {
-        startX: Math.max(0, Math.floor((0 - offsetX) / zoom / CELL) - padding),
-        startY: Math.max(0, Math.floor((0 - offsetY) / zoom / CELL) - padding),
-        endX: Math.min(SIZE - 1, Math.ceil((canvas.width - offsetX) / zoom / CELL) + padding),
-        endY: Math.min(SIZE - 1, Math.ceil((canvas.height - offsetY) / zoom / CELL) + padding)
+        startX: Math.max(0, Math.floor(left) - pad),
+        startY: Math.max(0, Math.floor(top) - pad),
+        endX: Math.min(SIZE - 1, Math.ceil(right) + pad),
+        endY: Math.min(SIZE - 1, Math.ceil(bottom) + pad)
     };
 }
 
@@ -780,203 +1040,148 @@ function getGridParams(x, y, time, zoom, min, max) {
     };
 }
 
-function drawGrid() {
+function drawGrid(target = ctx, bounds) {
     if (!SIZE) return;
 
-    const bounds = getVisibleBounds();
+    target.save();
 
-    ctx.save();
+    target.setTransform(
+        zoom, 0,
+        0, zoom,
+        offsetX, offsetY
+    );
 
-    // STATIC MODE — максимально дешёвый
-    if (!animationsEnabled) {
-        ctx.strokeStyle = "rgb(120,120,120)";
-        ctx.lineWidth = 0.2 * zoom;
+    target.strokeStyle = "rgb(30,30,30)";
+    const gridBase = 1;
+    const zoomFactor = Math.sqrt(zoom);
+    target.lineWidth = gridBase / zoomFactor;
 
-        for (let x = bounds.startX; x <= bounds.endX + 1; x++) {
-            const baseX = x * CELL;
-
-            for (let y = bounds.startY; y <= bounds.endY; y++) {
-                const p1 = getDistortedCoords(baseX, y * CELL);
-                const p2 = getDistortedCoords(baseX, (y + 1) * CELL);
-
-                ctx.beginPath();
-                ctx.moveTo(p1.x, p1.y);
-                ctx.lineTo(p2.x, p2.y);
-                ctx.stroke();
-            }
-        }
-
-        for (let y = bounds.startY; y <= bounds.endY + 1; y++) {
-            const baseY = y * CELL;
-
-            for (let x = bounds.startX; x <= bounds.endX; x++) {
-                const p1 = getDistortedCoords(x * CELL, baseY);
-                const p2 = getDistortedCoords((x + 1) * CELL, baseY);
-
-                ctx.beginPath();
-                ctx.moveTo(p1.x, p1.y);
-                ctx.lineTo(p2.x, p2.y);
-                ctx.stroke();
-            }
-        }
-
-        ctx.restore();
-        return;
-    }
-
-    // ANIMATED MODE — всё красивое, но дорогое
-    const MIN_WIDTH = 0.0;
-    const MAX_WIDTH = 0.35;
-    const time = gridAnimationTime;
-
+    target.beginPath();
     for (let x = bounds.startX; x <= bounds.endX + 1; x++) {
-        const baseX = x * CELL;
-
-        for (let y = bounds.startY; y <= bounds.endY; y++) {
-
-            const wave =
-                Math.sin(time + (x + y) * 0.2) +
-                Math.sin(time * 0.5 + (x - y) * 0.5) * 0.7;
-
-            const pulse = (wave + 1.5) / 3.0;
-
-            const width = (MIN_WIDTH + pulse * (MAX_WIDTH - MIN_WIDTH)) * zoom;
-            const color = Math.floor(255 * (1 - pulse));
-
-            const p1 = getDistortedCoords(baseX, y * CELL);
-            const p2 = getDistortedCoords(baseX, (y + 1) * CELL);
-
-            ctx.beginPath();
-            ctx.strokeStyle = `rgb(${color},${color},${color})`;
-            ctx.lineWidth = width;
-            ctx.moveTo(p1.x, p1.y);
-            ctx.lineTo(p2.x, p2.y);
-            ctx.stroke();
-        }
+        const wx = x * CELL;
+        target.moveTo(wx, bounds.startY * CELL);
+        target.lineTo(wx, (bounds.endY + 1) * CELL);
     }
+    target.stroke();
 
+    target.beginPath();
     for (let y = bounds.startY; y <= bounds.endY + 1; y++) {
-        const baseY = y * CELL;
-
-        for (let x = bounds.startX; x <= bounds.endX; x++) {
-
-            const wave =
-                Math.sin(time + (x + y) * 0.2) +
-                Math.sin(time * 0.5 + (x - y) * 0.5) * 0.7;
-
-            const pulse = (wave + 1.5) / 3.0;
-
-            const width = (MIN_WIDTH + pulse * (MAX_WIDTH - MIN_WIDTH)) * zoom;
-            const color = Math.floor(255 * (1 - pulse));
-
-            const p1 = getDistortedCoords(x * CELL, baseY);
-            const p2 = getDistortedCoords((x + 1) * CELL, baseY);
-
-            ctx.beginPath();
-            ctx.strokeStyle = `rgb(${color},${color},${color})`;
-            ctx.lineWidth = width;
-            ctx.moveTo(p1.x, p1.y);
-            ctx.lineTo(p2.x, p2.y);
-            ctx.stroke();
-        }
+        const wy = y * CELL;
+        target.moveTo(bounds.startX * CELL, wy);
+        target.lineTo((bounds.endX + 1) * CELL, wy);
     }
+    target.stroke();
 
-    ctx.restore();
+    target.restore();
 }
 
-function drawServerContour(contourObj) {
+function drawServerContour(target = ctx, bounds, contourObj) {
     const points = contourObj.path;
-    if (!points || !points.length) return;
+    if (!points || points.length === 0) return;
 
-    const bounds = getVisibleBounds();
-    const isVisible = points.some(p => p.x >= bounds.startX && p.x <= bounds.endX && p.y >= bounds.startY && p.y <= bounds.endY);
-    if (!isVisible) return;
+    const startX = bounds.startX;
+    const endX = bounds.endX;
+    const startY = bounds.startY;
+    const endY = bounds.endY;
 
-    ctx.fillStyle = colorFor(contourObj.player_id, 0.12);
-    ctx.beginPath();
-    
-    const startScreen = getDistortedCoords(points[0].x * CELL + CELL / 2, points[0].y * CELL + CELL / 2);
-    ctx.moveTo(startScreen.x, startScreen.y);
-    
-    for (let i = 1; i < points.length; i++) {
-        const screen = getDistortedCoords(points[i].x * CELL + CELL / 2, points[i].y * CELL + CELL / 2);
-        ctx.lineTo(screen.x, screen.y);
+    let visible = false;
+    for (let i = 0; i < points.length; i++) {
+        const p = points[i];
+        if (p.x >= startX && p.x <= endX && p.y >= startY && p.y <= endY) {
+            visible = true;
+            break;
+        }
     }
-    
-    ctx.closePath();
-    ctx.fill();
+    if (!visible) return;
+
+    const halfCell = CELL * 0.5;
+    const playerId = contourObj.player_id;
+
+    const fillColor = colorFor(playerId, 0.12);
+
+    target.beginPath();
+
+    let p0 = points[0];
+    let x0 = p0.x * CELL + halfCell;
+    let y0 = p0.y * CELL + halfCell;
+
+    let s0 = worldToScreen(x0, y0);
+    target.moveTo(s0.x, s0.y);
+
+    for (let i = 1; i < points.length; i++) {
+        const p = points[i];
+
+        const sx = p.x * CELL + halfCell;
+        const sy = p.y * CELL + halfCell;
+
+        const s = worldToScreen(sx, sy);
+        target.lineTo(s.x, s.y);
+    }
+
+    target.closePath();
+    target.fillStyle = fillColor;
+    target.fill();
 
     if (!animationsEnabled) {
-
         const i = 3;
-
-        ctx.lineWidth = GLOW_CONFIG.contourWidths[i] * zoom;
-        ctx.strokeStyle = colorFor(
-            contourObj.player_id,
-            GLOW_CONFIG.alpha[i]
-        );
-        ctx.stroke();
-
+        target.lineWidth = GLOW_CONFIG.contourWidths[i] * zoom;
+        target.strokeStyle = colorFor(playerId, GLOW_CONFIG.alpha[i]);
+        target.stroke();
         return;
     }
 
     for (let i = 0; i < 4; i++) {
-        ctx.lineWidth = GLOW_CONFIG.contourWidths[i] * zoom;
-        ctx.strokeStyle = colorFor(
-            contourObj.player_id,
-            GLOW_CONFIG.alpha[i]
-        );
-        ctx.stroke();
+        target.lineWidth = GLOW_CONFIG.contourWidths[i] * zoom;
+        target.strokeStyle = colorFor(playerId, GLOW_CONFIG.alpha[i]);
+        target.stroke();
     }
 }
 
-function drawPoints() {
-    if (!grid || grid.length === 0) return; 
-    const bounds = getVisibleBounds();
-    for (let y = bounds.startY; y <= bounds.endY; y++) {
-        for (let x = bounds.startX; x <= bounds.endX; x++) {
-            const id = grid[y][x];
-            const screen = getDistortedCoords(x * CELL + CELL / 2, y * CELL + CELL / 2);
-            const baseRadius = CELL * 0.15 * zoom; 
+function drawPoints(target = ctx, bounds) {
+    if (!grid || grid.length === 0) return;
 
-            if (id === 0) {
-                if (x === hoveredCellX && y === hoveredCellY) {
-                    ctx.save();
-                    ctx.translate(screen.x, screen.y);
-                    ctx.rotate(gridAnimationTime * 3.0); 
-                    
-                    ctx.beginPath();
-                    ctx.arc(0, 0, baseRadius * 1.2, 0, Math.PI * 2);
-                    ctx.strokeStyle = colorFor(window.currentPlayer, 0.5); 
-                    ctx.lineWidth = 2 * zoom;
-                    ctx.setLineDash([4 * zoom, 3 * zoom]); 
-                    ctx.stroke();
-                    ctx.restore();
-                } else {
-                    ctx.beginPath(); ctx.arc(screen.x, screen.y, baseRadius, 0, Math.PI * 2);
-                    ctx.strokeStyle = "rgba(255,255,255,0.05)"; ctx.lineWidth = 1.5 * zoom; ctx.stroke();
-                }
-                continue;
-            }
+    const halfCell = CELL * 0.5;
+    const baseRadius = CELL * 0.15 * zoom;
+
+    const anim = animationsEnabled;
+
+    const startX = bounds.startX;
+    const endX = bounds.endX;
+    const startY = bounds.startY;
+    const endY = bounds.endY;
+
+    const radii = GLOW_CONFIG.pointRadii;
+    const alphas = GLOW_CONFIG.alpha;
+
+    for (let y = startY; y <= endY; y++) {
+        const row = grid[y];
+
+        for (let x = startX; x <= endX; x++) {
+            const id = row[x];
+            if (id === 0) continue;
 
             const ownerId = getPlayerByContour(id);
-            
-            const layerCount = animationsEnabled ? 4 : 1;
-            const startLayer = animationsEnabled ? 0 : 3; 
-            const endLayer = animationsEnabled ? 4 : 4;
+
+            const worldX = x * CELL + halfCell;
+            const worldY = y * CELL + halfCell;
+
+            const screen = worldToScreen(worldX, worldY);
+
+            const startLayer = anim ? 0 : 3;
+            const endLayer = anim ? 4 : 4;
 
             for (let i = startLayer; i < endLayer; i++) {
-                ctx.beginPath();
-                ctx.arc(
+                target.beginPath();
+                target.arc(
                     screen.x,
                     screen.y,
-                    baseRadius * GLOW_CONFIG.pointRadii[i],
+                    baseRadius * radii[i],
                     0,
                     Math.PI * 2
                 );
 
-                ctx.fillStyle = colorFor(ownerId, GLOW_CONFIG.alpha[i]);
-                ctx.fill();
+                target.fillStyle = colorFor(ownerId, alphas[i]);
+                target.fill();
             }
         }
     }
@@ -985,45 +1190,58 @@ function drawPoints() {
 function drawMinimap() {
     if (!grid || grid.length === 0) return;
 
-    if (!minimapDirty && !animationsEnabled) return;
-
     if (minimapCanvas.width !== SIZE) {
         minimapCanvas.width = SIZE;
         minimapCanvas.height = SIZE;
-        minimapCanvas.style.imageRendering = 'pixelated'; 
+
+        minimapCacheCanvas.width = SIZE;
+        minimapCacheCanvas.height = SIZE;
+
+        minimapCanvas.style.imageRendering = "pixelated";
+        minimapCacheCtx.imageSmoothingEnabled = false;
         mctx.imageSmoothingEnabled = false;
+
+        minimapDirty = true;
     }
 
-    mctx.clearRect(0, 0, minimapCanvas.width, minimapCanvas.height);
+    if (minimapDirty) {
+        renderMinimapWorld();
+        minimapDirty = false;
+    }
+
+    renderMinimapViewport();
+}
+
+function renderMinimapWorld() {
+    minimapCacheCtx.clearRect(0, 0, SIZE, SIZE);
 
     for (let y = 0; y < SIZE; y++) {
         for (let x = 0; x < SIZE; x++) {
             const id = grid[y][x];
-            if (id !== 0) {
-                const ownerId = getPlayerByContour(id);
-                mctx.fillStyle = colorFor(ownerId, 1.0);
-                mctx.fillRect(x, y, 1, 1);
-            }
+            if (!id) continue;
+
+            minimapCacheCtx.fillStyle = colorFor(getPlayerByContour(id), 1);
+            minimapCacheCtx.fillRect(x, y, 1, 1);
         }
     }
-
-    if (animationsEnabled) {
-        const viewLeft = -offsetX / (zoom * CELL);
-        const viewTop = -offsetY / (zoom * CELL);
-        const viewWidth = canvas.width / (zoom * CELL);
-        const viewHeight = canvas.height / (zoom * CELL);
-
-        mctx.save();
-        mctx.strokeStyle = "rgba(255, 255, 255, 0.8)"; 
-        mctx.lineWidth = 1; 
-        mctx.strokeRect(viewLeft, viewTop, viewWidth, viewHeight);
-        mctx.restore();
-    }
-
-    minimapDirty = false;
 }
 
-function drawHoverTooltip() {
+function renderMinimapViewport() {
+    mctx.clearRect(0, 0, SIZE, SIZE);
+
+    mctx.drawImage(minimapCacheCanvas, 0, 0);
+
+    const viewLeft = -offsetX / (zoom * CELL);
+    const viewTop = -offsetY / (zoom * CELL);
+    const viewWidth = canvas.width / (zoom * CELL);
+    const viewHeight = canvas.height / (zoom * CELL);
+
+    mctx.strokeStyle = "white";
+    mctx.lineWidth = 1;
+    mctx.strokeRect(viewLeft, viewTop, viewWidth, viewHeight);
+}
+
+function drawHoverTooltip(target = ctx) {
     if (!grid || grid.length === 0) return;
     if (hoveredCellX === -1 || hoveredCellY === -1) return;
 
@@ -1044,10 +1262,10 @@ function drawHoverTooltip() {
     }
     
     const text = `Точка ${playerName}`;
-    const screen = getDistortedCoords(hoveredCellX * CELL + CELL / 2, hoveredCellY * CELL + CELL / 2);
+    const screen = worldToScreen(hoveredCellX * CELL + CELL / 2, hoveredCellY * CELL + CELL / 2);
 
-    ctx.font = "bold 13px monospace";
-    const textWidth = ctx.measureText(text).width;
+    target.font = "bold 13px monospace";
+    const textWidth = target.measureText(text).width;
     const paddingX = 10;
     const paddingY = 6;
     const rectWidth = textWidth + paddingX * 2;
@@ -1056,23 +1274,23 @@ function drawHoverTooltip() {
     const rectX = screen.x - rectWidth / 2;
     const rectY = screen.y - rectHeight - (CELL * 0.2 * zoom); 
 
-    ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
-    ctx.strokeStyle = colorFor(ownerId, 0.5); 
-    ctx.lineWidth = 1;
+    target.fillStyle = "rgba(0, 0, 0, 0.75)";
+    target.strokeStyle = colorFor(ownerId, 0.5); 
+    target.lineWidth = 1;
     
-    ctx.beginPath();
-    ctx.roundRect(rectX, rectY, rectWidth, rectHeight, 4); 
-    ctx.fill();
-    ctx.stroke();
+    target.beginPath();
+    target.roundRect(rectX, rectY, rectWidth, rectHeight, 4); 
+    target.fill();
+    target.stroke();
 
-    ctx.fillStyle = "#ffffff";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(text, screen.x, rectY + rectHeight / 2);
+    target.fillStyle = "#ffffff";
+    target.textAlign = "center";
+    target.textBaseline = "middle";
+    target.fillText(text, screen.x, rectY + rectHeight / 2);
 }
 
 function showFloatingError(cellX, cellY, text) {
-    const screen = getDistortedCoords(cellX * CELL + CELL / 2, cellY * CELL + CELL / 2);
+    const screen = worldToScreen(cellX * CELL + CELL / 2, cellY * CELL + CELL / 2);
     
     floatingTexts.push({
         x: screen.x,
@@ -1092,6 +1310,7 @@ const TOOL_BUTTON_MAP = {
 function flashButtonError(toolName) {
     const btnId = TOOL_BUTTON_MAP[toolName];
     const btn = document.getElementById(btnId);
+    playSound("error");
     
     if (btn) {
         btn.classList.remove("btn-error-flash");
@@ -1100,42 +1319,288 @@ function flashButtonError(toolName) {
     }
 }
 
-function createExplosion(cellX, cellY, playerId, count = 8) {
-    const worldX = cellX * CELL + CELL / 2;
-    const worldY = cellY * CELL + CELL / 2;
-
+function createExplosion(worldX, worldY, playerId, count = 8) {
     for (let i = 0; i < count; i++) {
-        const angle = Math.random() * Math.PI * 2; 
-        const speed = 1.2 + Math.random() * 2.5;   
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 1.2 + Math.random() * 2.5;
 
         particles.push({
-            worldX: worldX,
-            worldY: worldY,
+            worldX,
+            worldY,
             vx: Math.cos(angle) * speed,
             vy: Math.sin(angle) * speed,
-            size: 2.5 + Math.random() * 3.5,       
+            size: 2.5 + Math.random() * 3.5,
             colorId: playerId,
             alpha: 1.0,
-            life: 1.0,                             
-            decay: 0.02 + Math.random() * 0.03     
+            life: 1.0,
+            decay: 0.02 + Math.random() * 0.03
         });
     }
 }
 
-function drawParticles() {
-    ctx.save();
+function drawParticles(target = ctx) {
+    target.save();
     for (const p of particles) {
-        const screen = getDistortedCoords(p.worldX, p.worldY);
-        ctx.fillStyle = colorFor(p.colorId, p.alpha);
-        ctx.fillRect(
+        const screen = worldToScreen(p.worldX, p.worldY);
+        target.fillStyle = colorFor(p.colorId, p.alpha);
+        target.fillRect(
             screen.x - (p.size * zoom) / 2, 
             screen.y - (p.size * zoom) / 2, 
             p.size * zoom, 
             p.size * zoom
         );
     }
-    ctx.restore();
+    target.restore();
 }
+
+function updateGridEvents(dt) {
+    for (let i = gridEvents.length - 1; i >= 0; i--) {
+        const e = gridEvents[i];
+
+        e.t += dt * 0.003;
+
+        if (e.t > 1.5) {
+            gridEvents.splice(i, 1);
+        }
+    }
+}
+
+function drawGridEvents(target = ctx) {
+    const CELL_W = CELL * zoom;
+
+    for (const e of gridEvents) {
+        const cx = e.x * CELL + CELL / 2;
+        const cy = e.y * CELL + CELL / 2;
+
+        const center = worldToScreen(cx, cy);
+
+        const t = e.t;
+
+        const mainRadius = t * 90 * zoom;
+        const mainAlpha = (1.0 - t);
+
+        drawPulse(center, mainRadius, mainAlpha, e.playerId, 0);
+
+        const offsets = [
+            [1, 0], [-1, 0], [0, 1], [0, -1],
+            [1, 1], [-1, 1], [1, -1], [-1, -1]
+        ];
+
+        for (let i = 0; i < offsets.length; i++) {
+            const [dx, dy] = offsets[i];
+
+            const delay = 0.12 * (i + 1);
+            const pt = t - delay;
+
+            if (pt <= 0) continue;
+
+            const nx = e.x + dx;
+            const ny = e.y + dy;
+
+            if (nx < 0 || ny < 0 || nx >= SIZE || ny >= SIZE) continue;
+
+            const nxWorld = nx * CELL + CELL / 2;
+            const nyWorld = ny * CELL + CELL / 2;
+
+            const screen = worldToScreen(nxWorld, nyWorld);
+
+            const radius = pt * 70 * zoom;
+            const alpha = (1.0 - pt) * 0.6;
+
+            drawPulse(screen, radius, alpha, e.playerId, i);
+        }
+    }
+}
+
+function createGridSweep(prevGrid, nextGrid) {
+    const points = [];
+
+    for (let y = 0; y < SIZE; y++) {
+        for (let x = 0; x < SIZE; x++) {
+            const a = prevGrid[y][x];
+            const b = nextGrid[y][x];
+
+            if (a !== b) {
+                points.push({
+                    x,
+                    y,
+                    from: a,
+                    to: b,
+                    fromPlayer: getPlayerByContour(a),
+                    toPlayer: getPlayerByContour(b),
+                });
+            }
+        }
+    }
+
+    const changedCount = points.length;
+
+    if (changedCount === 0) {
+        return { changedCount: 0 };
+    }
+
+    points.sort((a, b) => (a.x + a.y * SIZE) - (b.x + b.y * SIZE));
+
+    gridSweep = {
+        points,
+        index: 0,
+        progress: 0,
+        speed: 0.08,
+        active: true
+    };
+
+    return { points, changedCount };
+}
+
+function updateGridSweep(dt) {
+    if (!gridSweep || !gridSweep.active) return;
+
+    const sweep = gridSweep;
+
+    sweep.progress += dt * sweep.speed;
+
+    while (sweep.progress >= 1 && sweep.index < sweep.points.length - 1) {
+        sweep.progress -= 1;
+        sweep.index++;
+    }
+
+    if (sweep.index >= sweep.points.length - 1) {
+        sweep.active = false;
+        worldDirty = true;
+    }
+}
+
+function drawGridSweep(target = ctx) {
+    if (!gridSweep || !gridSweep.active) return;
+
+    target.save();
+
+    const sweep = gridSweep;
+    const halfCell = CELL * 0.5;
+
+    for (let i = 0; i < sweep.index; i++) {
+        const p = sweep.points[i];
+
+        const wx = p.x * CELL + halfCell;
+        const wy = p.y * CELL + halfCell;
+
+        const s = worldToScreen(wx, wy);
+
+        target.beginPath();
+        target.arc(s.x, s.y, 6 * zoom, 0, Math.PI * 2);
+
+        const id = p.toPlayer ?? p.fromPlayer;
+
+        target.fillStyle = colorFor(id, 0.25);
+        target.fill();
+    }
+
+    const a = sweep.points[sweep.index];
+    const b = sweep.points[Math.min(sweep.index + 1, sweep.points.length - 1)];
+
+    const ax = a.x * CELL + halfCell;
+    const ay = a.y * CELL + halfCell;
+    const bx = b.x * CELL + halfCell;
+    const by = b.y * CELL + halfCell;
+
+    const sa = worldToScreen(ax, ay);
+    const sb = worldToScreen(bx, by);
+
+    const lx = sa.x + (sb.x - sa.x) * sweep.progress;
+    const ly = sa.y + (sb.y - sa.y) * sweep.progress;
+
+    target.beginPath();
+    target.moveTo(sa.x, sa.y);
+    target.lineTo(lx, ly);
+
+    target.strokeStyle = "rgba(255,255,255,0.9)";
+    target.lineWidth = 2 * zoom;
+    target.shadowColor = "white";
+    target.shadowBlur = 12;
+    target.stroke();
+
+    target.beginPath();
+    target.arc(lx, ly, 4 * zoom, 0, Math.PI * 2);
+    target.fillStyle = "white";
+    target.fill();
+
+    target.restore();
+}
+
+function drawPulse(screen, radius, alpha, playerId, i) {
+    if (alpha <= 0) return;
+
+    ctx.beginPath();
+    ctx.arc(screen.x, screen.y, radius, 0, Math.PI * 2);
+
+    const a = alpha * (1 - i * 0.08);
+
+    ctx.strokeStyle = colorFor(playerId, a);
+    ctx.lineWidth = (2 * zoom) * (1 - i * 0.1);
+
+    ctx.stroke();
+}
+
+function drawExplosions(target = ctx) {
+    for (const e of explosions) {
+
+        const screen = worldToScreen(
+            e.x * CELL + CELL / 2,
+            e.y * CELL + CELL / 2
+        );
+
+        const t = e.t;
+
+        const flash = Math.max(0, 1 - t / 0.2);
+
+        const waveT = Math.min(1, Math.max(0, (t - 0.1) / 0.7));
+
+        const decayT = Math.max(0, (t - 0.5) / 1.0);
+
+        const baseRadius = e.radius * CELL;
+
+        target.beginPath();
+        target.arc(screen.x, screen.y, baseRadius * 0.4 * flash, 0, Math.PI * 2);
+        target.fillStyle = colorFor(e.playerId, flash * 0.8);
+        target.fill();
+
+        const waveRadius = baseRadius * (0.3 + waveT * 2.2);
+
+        target.beginPath();
+        target.arc(screen.x, screen.y, waveRadius, 0, Math.PI * 2);
+        target.strokeStyle = colorFor(e.playerId, (1 - waveT) * 0.6);
+        target.lineWidth = (6 - waveT * 4) * zoom;
+        target.stroke();
+
+        for (let i = 0; i < 5; i++) {
+            const jitter = Math.sin(e.seed + i * 10 + t * 6) * 4;
+
+            target.beginPath();
+            target.arc(
+                screen.x + jitter,
+                screen.y - jitter,
+                waveRadius * (1 + i * 0.03),
+                0,
+                Math.PI * 2
+            );
+
+            target.strokeStyle = colorFor(
+                e.playerId,
+                (0.3 - i * 0.05) * (1 - decayT)
+            );
+
+            target.lineWidth = (3 - i * 0.5) * zoom;
+            target.stroke();
+        }
+
+        target.beginPath();
+        target.arc(screen.x, screen.y, waveRadius * 0.2, 0, Math.PI * 2);
+        target.fillStyle = colorFor(e.playerId, 0.25 * (1 - decayT));
+        target.fill();
+    }
+}
+
+
 
 function hashGrid(grid) {
     let hash = 0;
@@ -1179,20 +1644,41 @@ function renderLeaderboard() {
     leaderboardDirty = false;
 }
 
+function redrawWorld() {
+    worldCtx.setTransform(1,0,0,1,0,0);
+    worldCtx.clearRect(0,0,worldCanvas.width,worldCanvas.height);
+
+    const bounds = getVisibleBounds();
+
+    drawGrid(worldCtx, bounds);
+    for (const contour of serverContours)
+        drawServerContour(worldCtx, bounds, contour);
+
+    drawPoints(worldCtx, bounds);
+}
+
 function render() {
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0,0,canvas.width,canvas.height);
 
-    drawGrid();
-
-    for (const contourObj of serverContours) {
-        drawServerContour(contourObj);
+    if (worldDirty) {
+        redrawWorld();
+        worldDirty = false;
     }
 
-    drawPoints();
-    drawParticles();
+    ctx.save();
 
-    // лидерборд обновляем только когда нужно
+    ctx.drawImage(worldCanvas,0,0);
+
+    ctx.restore();
+
+    drawGridSweep(ctx);
+    drawParticles(ctx);
+    drawGridEvents(ctx);
+    drawExplosions(ctx);
+
+    drawHoverTooltip(ctx);
+
     if (leaderboardDirty) {
         renderLeaderboard();
     }
@@ -1247,16 +1733,6 @@ function updateAnimation() {
     if (animationsEnabled) {
         gridAnimationTime += dt * 0.0007;
     }
-    if (distortionIntensity > 0.01) {
-        distortionTime += 0.25;
-        distortionIntensity *= 0.88;
-    } else {
-        distortionIntensity = 0;
-    }
-
-    const btnDraw = document.getElementById("tool-draw");
-    const btnErase = document.getElementById("tool-erase");
-    const btnBlast = document.getElementById("tool-blast");
 
     if (btnDraw && btnErase) {
         // Draw
@@ -1301,17 +1777,36 @@ function updateAnimation() {
             btnBlast.classList.remove('on-cooldown');
             if (btnBlast.innerText !== "Взрыв") btnBlast.innerText = "Взрыв";
         }
-    }
+    }   
 
-    for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
-        p.worldX += p.vx * (dt / 16);
-        p.worldY += p.vy * (dt / 16);
-        p.vx *= Math.pow(0.92, dt / 16);
-        p.vy *= Math.pow(0.92, dt / 16);
-        p.life -= p.decay * (dt / 16);
-        p.alpha = Math.max(0, p.life);
-        if (p.life <= 0) particles.splice(i, 1);
+    if (animationsEnabled) {
+
+        const dt16 = dt / 16;
+        const pow92 = Math.pow(0.92, dt16);
+
+        for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
+            p.worldX += p.vx * dt16;
+            p.worldY += p.vy * dt16;
+            p.vx *= pow92;
+            p.vy *= pow92;
+            p.life -= p.decay * (dt16);
+            p.alpha = Math.max(0, p.life);
+            if (p.life <= 0) particles.splice(i, 1);
+        }
+
+        for (let i = explosions.length - 1; i >= 0; i--) {
+            const e = explosions[i];
+
+            e.t += dt / 600;
+
+            if (e.t >= 1.5) {
+                explosions.splice(i, 1);
+            }
+        }
+
+        updateGridEvents(dt);
+        updateGridSweep(dt);
     }
 
     for (let i = floatingTexts.length - 1; i >= 0; i--) {
@@ -1337,8 +1832,6 @@ function changeZoom(multiplier) {
     
     offsetX = centerX - worldX * zoom;
     offsetY = centerY - worldY * zoom;
-    
-    addDistortionImpulse(8);
 }
 
 canvas.addEventListener("mousedown", (e) => {
@@ -1366,11 +1859,7 @@ canvas.addEventListener("mousemove", (e) => {
         const deltaX = e.clientX - lastMouseX;
         const deltaY = e.clientY - lastMouseY;
         const speed = Math.hypot(deltaX, deltaY);
-        
-        if (speed > 0.5) {
-            addDistortionImpulse(speed * 0.1);
-        }
-        
+                
         lastMouseX = e.clientX;
         lastMouseY = e.clientY;
         
@@ -1379,6 +1868,8 @@ canvas.addEventListener("mousemove", (e) => {
         
         hoveredCellX = -1;
         hoveredCellY = -1;
+
+        worldDirty = true;
     } else {
         const x = Math.floor(((e.clientX - offsetX) / zoom) / CELL);
         const y = Math.floor(((e.clientY - offsetY) / zoom) / CELL);
@@ -1402,7 +1893,8 @@ canvas.addEventListener("wheel", (e) => {
     const mouseX = e.clientX; const mouseY = e.clientY;
     const worldX = (mouseX - offsetX) / zoom; const worldY = (mouseY - offsetY) / zoom;
     zoom = e.deltaY < 0 ? Math.min(zoom * 1.1, minZoom) : Math.max(zoom / 1.1, maxZoom);
-    addDistortionImpulse(8); offsetX = mouseX - worldX * zoom; offsetY = mouseY - worldY * zoom;
+    offsetX = mouseX - worldX * zoom; offsetY = mouseY - worldY * zoom;
+    worldDirty = true;
 }, { passive: false });
 
 window.addEventListener("keydown", (e) => {
@@ -1420,6 +1912,7 @@ canvas.addEventListener("touchstart", (e) => {
     if (e.touches.length > 0) {
         const touch = e.touches[0];
         
+        worldDirty = true;
         isDragging = true;
         hasMoved = false;
         mouseStartX = touch.clientX;
@@ -1454,11 +1947,14 @@ canvas.addEventListener("touchmove", (e) => {
         
         hoveredCellX = -1;
         hoveredCellY = -1;
+
+        worldDirty = true;
     }
 }, { passive: false });
 
 canvas.addEventListener("touchend", (e) => {
     if (isDragging) {
+        worldDirty = true;
         isDragging = false;
         
         if (!hasMoved) {
@@ -1474,7 +1970,7 @@ function processClick(e) {
     const pData = players[pIdString];
     
     if (!pData) {
-        console.log("DEBUG: Игрок с ID", pIdString, "не найден в:", Object.keys(players));
+        // console.log("DEBUG: Игрок с ID", pIdString, "не найден в:", Object.keys(players));
         return;
     }
     
@@ -1484,18 +1980,18 @@ function processClick(e) {
 
     const cellId = grid[y][x];
 
-    console.log("DEBUG: Клик по:", x, y, "| Инструмент:", currentTool);
-    console.log("DEBUG: Данные кулдауна:", pData.cooldowns);
+    // console.log("DEBUG: Клик по:", x, y, "| Инструмент:", currentTool);
+    // console.log("DEBUG: Данные кулдауна:", pData.cooldowns);
 
     if (currentTool === "draw") {
         if (pData.cooldowns.draw.charges === 0 && pData.cooldowns.draw.current > 0) {
-            console.log("BLOCK: Ошибка Draw - кулдаун активен (charges=0, current>0)");
+            // console.log("BLOCK: Ошибка Draw - кулдаун активен (charges=0, current>0)");
             showFloatingError(x, y, "Перезарядка точки!");
             flashButtonError("draw");
             return;
         }
         if (cellId !== 0) {
-            console.log("BLOCK: Ошибка Draw - ячейка занята");
+            // console.log("BLOCK: Ошибка Draw - ячейка занята");
             showFloatingError(x, y, "Ячейка уже занята!");
             flashButtonError("draw");
             return;
@@ -1504,13 +2000,13 @@ function processClick(e) {
 
     if (currentTool === "erase") {
         if (pData.cooldowns.erase.current > 0) {
-            console.log("BLOCK: Ошибка Erase - кулдаун активен");
+            // console.log("BLOCK: Ошибка Erase - кулдаун активен");
             showFloatingError(x, y, "Ластик на перезарядке!");
             flashButtonError("erase");
             return;
         }
         if (cellId === 0) {
-            console.log("BLOCK: Ошибка Erase - ячейка пуста");
+            // console.log("BLOCK: Ошибка Erase - ячейка пуста");
             showFloatingError(x, y, "Здесь пусто!");
             flashButtonError("erase");
             return;
@@ -1519,21 +2015,25 @@ function processClick(e) {
 
     if (currentTool === "blast") {
         if (pData.cooldowns.blast.current > 0) {
-            console.log("BLOCK: Ошибка blast - кулдаун активен");
+            // console.log("BLOCK: Ошибка blast - кулдаун активен");
             showFloatingError(x, y, "Взрыв на перезарядке!");
             flashButtonError("blast");
             return;
         }
         if (cellId === 0) {
-            console.log("BLOCK: Ошибка blast - ячейка пуста");
+            // console.log("BLOCK: Ошибка blast - ячейка пуста");
             showFloatingError(x, y, "Здесь пусто!");
             flashButtonError("blast");
             return;
         }
     }
 
-    console.log("SUCCESS: Отправка действия на сервер...");
-    createExplosion(x, y, window.currentPlayer, 6);
+    // console.log("SUCCESS: Отправка действия на сервер...");
+    
+    const worldX = x * CELL + CELL / 2;
+    const worldY = y * CELL + CELL / 2;
+
+    createExplosion(worldX, worldY, window.currentPlayer, 6);
 
     if (socket.readyState === WebSocket.OPEN) {
         socket.send(JSON.stringify({
@@ -1564,8 +2064,8 @@ function handleMinimapClick(e) {
     
     offsetX = window.innerWidth / 2 - targetWorldX * zoom;
     offsetY = window.innerHeight / 2 - targetWorldY * zoom;
-    
-    addDistortionImpulse(12); 
+
+    worldDirty = true;
 }
 
 minimapCanvas.addEventListener("mousedown", (e) => {
@@ -1612,10 +2112,10 @@ updateAnimation();
 
 
 function debugState() {
-    console.log("--- DEBUG START ---");
+    // console.log("--- DEBUG START ---");
     console.log("Current Player ID:", window.currentPlayer);
-    console.log("Players object:", players);
-    console.log("Players keys:", Object.keys(players));
+    // console.log("Players object:", players);
+    // console.log("Players keys:", Object.keys(players));
     
     const pIdString = String(window.currentPlayer);
     const active = players[pIdString];
@@ -1623,9 +2123,9 @@ function debugState() {
     if (!active) {
         console.error("Игрок не найден в объекте players!");
     } else {
-        console.log("Игрок найден, его кулдауны:", active.cooldowns);
+        // console.log("Игрок найден, его кулдауны:", active.cooldowns);
     }
-    console.log("--- DEBUG END ---");
+    // console.log("--- DEBUG END ---");
 }
 
 

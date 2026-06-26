@@ -455,7 +455,6 @@ def refresh_game_state_cache(updated_contour_ids: Optional[Set[int]] = None):
     }
 
 
-
 class ConnectionManager:
     def __init__(self):
         self.active_connections: List[WebSocket] = []
@@ -621,6 +620,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     if not in_bounds(x, y): continue
 
                     ids_to_refresh = set()
+                    explosion_event = None
 
                     with sqlite3.connect(DB_NAME) as conn:
                         cursor = conn.cursor()
@@ -633,7 +633,7 @@ async def websocket_endpoint(websocket: WebSocket):
                         action_valid = False
                         now = time.time()
 
-                        # --- ЛОГИКА ДЕЙСТВИЙ (Draw, Erase, Blast) ---
+                        # --- (Draw, Erase, Blast) ---
                         if tool == "draw" and grid[y][x] == 0:
                             if charges > 0 or (d_start + DRAW_COOLDOWN_SEC) <= now:
                                 action_valid = True
@@ -678,6 +678,13 @@ async def websocket_endpoint(websocket: WebSocket):
                             for nx, ny in get_cells_in_radius(x, y, BLAST_RADIUS): grid[ny][nx] = 0
                             for pid in [p for p in affected if p]: recalculate_player_contours(pid, grid)
                             ids_to_refresh = None
+                            explosion_event = {
+                                "x": x,
+                                "y": y,
+                                "radius": BLAST_RADIUS,
+                                "player_id": player_id,
+                                "t": now
+                            }
                             cursor.execute("UPDATE players SET blast_cooldown_start = ? WHERE player_id = ?", (now, player_id))
 
                         if action_valid:
@@ -688,7 +695,18 @@ async def websocket_endpoint(websocket: WebSocket):
 
                     updated_state = get_current_state_dict()
 
-                    await manager.broadcast({"type": "update", "data": updated_state})
+                    message = {
+                        "type": "update",
+                        "data": updated_state
+                    }
+
+                    if explosion_event:
+                        message["event"] = {
+                            "type": "explosion",
+                            "data": explosion_event
+                        }
+
+                    await manager.broadcast(message)
                 except Exception as e:
                     logger.error(f"WS: Ошибка обработки действия: {e}")
 
