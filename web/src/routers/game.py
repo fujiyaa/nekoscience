@@ -126,9 +126,9 @@ async def background_cooldown_cleanup():
                 cursor = conn.cursor()
                 cursor.execute("""
                     UPDATE players 
-                    SET draw_charges = 5, draw_cooldown_start = 0 
+                    SET draw_charges = ?, draw_cooldown_start = 0 
                     WHERE draw_cooldown_start > 0 AND (draw_cooldown_start + ?) <= ?
-                """, (DRAW_COOLDOWN_SEC,now))
+                """, (DRAW_MAX_CHARGES, DRAW_COOLDOWN_SEC, now))
                 conn.commit()
         except Exception as e:
             logger.error(f"Ошибка в фоновой задаче очистки: {e}")
