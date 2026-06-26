@@ -374,6 +374,12 @@ input {
 .volume-bar button:hover {
     background: rgba(255,255,255,0.15);
 }
+
+.fx-btn {
+    font-size: 13px;
+    letter-spacing: 1px;
+    opacity: 0.85;
+}
 </style>
 </head>
 
@@ -405,8 +411,7 @@ input {
     </div>
 </div>
 
-<div class="zoom-panel">
-    <button class="zoom-btn" onclick="toggleAnimations()">FX</button>
+<div class="zoom-panel">    
     <button class="zoom-btn" onclick="changeZoom(1.2)">+</button>
     <button class="zoom-btn" onclick="changeZoom(0.8)">-</button>
 </div>
@@ -427,8 +432,9 @@ input {
     <div id="error-content"></div>
 </div>
 
-<div class="settings-panel">
+<div class="settings-panel">    
     <button class="zoom-btn" onclick="toggleSettings()">⚙</button>
+    <button class="zoom-btn fx-btn" onclick="toggleAnimations()">FX</button>
 </div>
 
 <div id="settings-overlay" class="overlay" style="display:none; z-index: 300;">
@@ -1832,6 +1838,8 @@ function changeZoom(multiplier) {
     
     offsetX = centerX - worldX * zoom;
     offsetY = centerY - worldY * zoom;
+
+    worldDirty = true;
 }
 
 canvas.addEventListener("mousedown", (e) => {
