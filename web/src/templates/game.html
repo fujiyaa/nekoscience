@@ -88,7 +88,7 @@ canvas {
     display: inline-block;
 }
 
-.debug-btn {
+.action-button {
     background: #333;
     color: #fff;
     border: 1px solid #555;
@@ -100,7 +100,7 @@ canvas {
     transition: background 0.2s, border-color 0.2s;
 }
 
-.debug-btn:hover {
+.action-button:hover {
     background: #444;
 }
 
@@ -127,12 +127,40 @@ canvas {
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     border: 1px solid rgba(255,255,255,0.05);
     display: flex;
-    gap: 10px;
-    width: 350px;
+    flex-direction: column;
+    gap: 8px;
+    width: 360px;
     box-sizing: border-box;
 }
 
-.tools-bottom-panel .debug-btn {
+.core-tools .action-button {
+    flex: 1;
+    padding: 12px 0;
+}
+
+.core-tools {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+}
+
+.extra-tools {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+}
+
+.extra-tools .action-button.square {
+    flex: 1;
+    aspect-ratio: 1 / 1;
+    padding: 0;    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+}
+
+.tools-bottom-panel .action-button {
     flex: 1;
     padding: 12px 0;
     text-align: center;
@@ -142,43 +170,51 @@ canvas {
     border: 1px solid rgba(255, 255, 255, 0.15);
     color: rgba(255, 255, 255, 0.8);
     overflow: hidden;
-    transition: border-color 0.2s, color 0.2s, background-color 0.2s;
+    cursor: pointer;
+    font-family: monospace;
+    font-weight: bold;
 }
 
-.tools-bottom-panel .debug-btn::before {
+.tools-bottom-panel .action-button::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(to right, rgba(255, 255, 255, 0.15) var(--cooldown-progress, 0%), transparent var(--cooldown-progress, 0%));
-    pointer-events: none;
-    z-index: -1;
+    inset: 0;
+    z-index: 0;
+    background: rgba(255, 255, 255, 0.15);
+    transform-origin: left;
+    transform: scaleX(0);
 }
 
-.tools-bottom-panel #tool-draw.active {
-    border-color: #2ecc71;
-    color: #2ecc71;
-    background: rgba(46, 204, 113, 0.1);
+.tools-bottom-panel .action-button.on-cooldown::before {
+    animation: cooldown-anim var(--total-duration, 1s) linear forwards;
+    animation-delay: var(--start-delay, 0s);
 }
 
-.tools-bottom-panel #tool-erase.active {
-    border-color: #e67e22;
-    color: #e67e22;
-    background: rgba(230, 126, 34, 0.1);
+@keyframes cooldown-anim {
+    from { transform: scaleX(1); }
+    to   { transform: scaleX(0); }
 }
 
-.tools-bottom-panel #tool-blast.active {
-    border-color: #e62c22;
-    color: #e62222;
-    background: rgba(230, 126, 34, 0.1);
-}
-
-.tools-bottom-panel .debug-btn.on-cooldown {
+.tools-bottom-panel .action-button.on-cooldown {
     cursor: not-allowed;
     opacity: 0.6;
 }
+
+#tool-none {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.tools-bottom-panel #tool-structure.active { border-color: #2ecc71; color: #2ecc71; background: rgba(46, 204, 113, 0.1); }
+.tools-bottom-panel #tool-sign.active { border-color: #ffffff; color: #ffffff; background: rgba(46, 204, 113, 0.1); }
+
+.tools-bottom-panel #tool-draw.active { border-color: #2ecc71; color: #2ecc71; background: rgba(46, 204, 113, 0.1); }
+.tools-bottom-panel #tool-erase.active { border-color: #e67e22; color: #e67e22; background: rgba(230, 126, 34, 0.1); }
+.tools-bottom-panel #tool-blast.active { border-color: #e62c22; color: #e62222; background: rgba(230, 126, 34, 0.1); }
+
+.tools-bottom-panel #tool-tier2draw.active { border-color: #2ecc71; color: #2ecc71; background: rgba(46, 204, 113, 0.1); }
+.tools-bottom-panel #tool-tier2erase.active { border-color: #e67e22; color: #e67e22; background: rgba(230, 126, 34, 0.1); }
+.tools-bottom-panel #tool-tier2blast.active { border-color: #e62c22; color: #e62222; background: rgba(230, 126, 34, 0.1); }
 
 #minimap-container {
     position: absolute; 
@@ -195,6 +231,16 @@ canvas {
     color: rgba(255, 255, 255, 0.4);
     position: absolute;
     bottom: -16px;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+}
+
+.hotkey-hint-on-top {
+    font-size: 9px;
+    color: rgba(255, 255, 255, 0.4);
+    position: absolute;
+    top: -16px;
     left: 50%;
     transform: translateX(-50%);
     white-space: nowrap;
@@ -266,7 +312,7 @@ canvas {
         gap: 15px;
     }
 
-    .tools-bottom-panel .debug-btn {
+    .tools-bottom-panel .action-button {
         padding: 20px 0;
         font-size: 16px;
     }
@@ -380,6 +426,26 @@ input {
     letter-spacing: 1px;
     opacity: 0.85;
 }
+
+#game {
+    position: relative;
+}
+
+#c {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+#fx {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 2;
+    background: transparent;
+    pointer-events: none;
+}
 </style>
 </head>
 
@@ -395,10 +461,23 @@ input {
 </div>
 
 <div class="tools-bottom-panel">
-    <button id="tool-draw" class="debug-btn active" onclick="setTool('draw')">Точка</button>
-    <button id="tool-erase" class="debug-btn" onclick="setTool('erase')">Ластик</button>
-    <button id="tool-blast" class="debug-btn" onclick="setTool('blast')">Взрыв</button>
-    <div class="hotkey-hint">Точка [Q] - Ластик [W] - Взрыв [E]</div>
+    <div class="tool-row core-tools">
+        <button id="tool-draw" class="action-button active" onclick="setTool('draw')">Точка</button>
+        <button id="tool-erase" class="action-button" onclick="setTool('erase')">Ластик</button>
+    </div>
+
+    <div class="tool-row extra-tools">
+        <button title="Точка (Уровень 2)" id="tool-tier2draw" class="action-button square" onclick="setTool('tier2draw')">Точка Ур.2</button>
+        <button title="Ластик (Уровень 2)" id="tool-tier2erase" class="action-button square" onclick="setTool('tier2erase')">Ластик Ур.2</button>        
+        
+        <button title="Структура точек" id="tool-structure" class="action-button square" onclick="setTool('structure')">Замок 🏰</button>       
+                
+        <button title="Табличка с надписью" id="tool-sign" class="action-button square" onclick="setTool('sign')">Знак 🪧</button>
+
+        <button title="Взрыв" id="tool-blast" class="action-button square" onclick="setTool('blast')">Взрыв 💥</button>        
+        <button title="Взрыв (Уровень 2)" id="tool-tier2blast" class="action-button square" onclick="setTool('tier2blast')">Взрыв Ур.2</button>        
+    </div>
+    <div class="hotkey-hint">Хоткеи [W]..[E] и [A]..[H]</div>
 </div>
 
 <div id="reconnect-overlay" style="display: none;">
@@ -411,9 +490,11 @@ input {
     </div>
 </div>
 
-<div class="zoom-panel">    
+<div class="zoom-panel">     
+    <div class="hotkey-hint-on-top">[PgUp]</div>
     <button class="zoom-btn" onclick="changeZoom(1.2)">+</button>
-    <button class="zoom-btn" onclick="changeZoom(0.8)">-</button>
+    <button class="zoom-btn" onclick="changeZoom(0.8)">-</button>    
+    <div class="hotkey-hint">[PgDn]</div>
 </div>
 
 <div id="status-overlay" class="overlay" style=" z-index: 200; display: flex; justify-content: center;align-items: center;color: #fff;font-family: monospace;">
@@ -432,9 +513,11 @@ input {
     <div id="error-content"></div>
 </div>
 
-<div class="settings-panel">    
+<div class="settings-panel"> 
+    <div class="hotkey-hint-on-top">[O]</div>   
     <button class="zoom-btn" onclick="toggleSettings()">⚙</button>
     <button class="zoom-btn fx-btn" onclick="toggleAnimations()">FX</button>
+    <div class="hotkey-hint">[P]</div>   
 </div>
 
 <div id="settings-overlay" class="overlay" style="display:none; z-index: 300;">
@@ -473,18 +556,45 @@ input {
             </div>
         </div>
 
-        <button onclick="saveSounds()" class="debug-btn" style="width:100%; margin-top:10px;" id="save-sounds-btn" >
+        <button onclick="saveSounds()" class="action-button" style="width:100%; margin-top:10px;" id="save-sounds-btn" >
             Сохранить
         </button>
 
-        <button onclick="resetSounds()" class="debug-btn" style="width:100%; margin-top:10px;">
+        <button onclick="resetSounds()" class="action-button" style="width:100%; margin-top:10px;">
             Сбросить
         </button>
     </div>
 </div>
-<canvas id="c"></canvas>
+
+<div id="sign-modal" class="overlay" style="display:none; z-index: 500;">
+    <div class="message-box" style="min-width: 280px;">
+
+        <h3 style="margin-top:0;">Текст таблички</h3>
+
+        <input id="sign-input"
+               type="text"
+               maxlength="30"
+               placeholder="Введите текст"
+               style="width: 100%; padding: 8px; margin-top: 10px;">
+
+        <div style="display:flex; gap:10px; margin-top: 12px;">
+            <button class="action-button" onclick="submitSign()">OK</button>
+            <button class="action-button" onclick="closeSign()">Отмена</button>
+        </div>
+
+    </div>
+</div>
+
+<div id="game">
+    <canvas id="c"></canvas>
+    <canvas id="fx"></canvas>
+</div>
 
 <script>
+const DEBUG_PROFILER_RENDER = false;
+const DEBUG_PROFILER_FX = false;
+const DEBUG_CONSOLE_LOG = false; 
+
 const DEFAULT_SOUNDS = {
     draw: "https://www.myinstants.com/media/sounds/mouse-click-by-ek6_VR0O6PL.mp3",
     blast: "https://www.myinstants.com/media/sounds/impact_explosion_03.mp3",
@@ -608,7 +718,9 @@ function updateVolumeUI() {
 
 
 window.addEventListener('load', () => {
-    console.log("Очистка...");
+    if (DEBUG_CONSOLE_LOG) {
+        console.log("Очистка...");
+    }
     // localStorage.clear(); 
     sessionStorage.clear();
 });
@@ -729,7 +841,7 @@ function submitAuth() {
     }
 
     savedAuthToken = code;
-    localStorage.setItem('auth_token', code); // Сохраняем, чтобы при реконнекте использовать снова
+    localStorage.setItem('auth_token', code);
 
     if (socket && socket.readyState === WebSocket.OPEN) {
         socket.send(JSON.stringify({
@@ -752,7 +864,9 @@ function connect() {
     socket = new WebSocket(wsUrl);
 
     socket.onopen = () => {
-        console.log("WS: Соединение установлено");
+        if (DEBUG_CONSOLE_LOG) {                    
+            console.log("WS: Соединение установлено");
+        }
         
         pingInterval = setInterval(() => {
             if (socket.readyState === WebSocket.OPEN) {
@@ -767,13 +881,17 @@ function connect() {
             }));
         } else {
             if (savedAuthToken) {
-                console.log("WS: Авторизация сохраненным токеном...");
+                if (DEBUG_CONSOLE_LOG) {
+                    console.log("WS: Авторизация сохраненным токеном...");
+                }
                 socket.send(JSON.stringify({
                     type: "external_auth",
                     token: savedAuthToken
                 }));
             } else {
-                console.log("WS: Токен отсутствует, ждем ввода пользователя");
+                if (DEBUG_CONSOLE_LOG) {
+                    console.log("WS: Токен отсутствует, ждем ввода пользователя");
+                }
                 showOverlay('auth_required');
             }
         }
@@ -783,11 +901,12 @@ function connect() {
         try {
             const message = JSON.parse(event.data);
 
-            // console.group("WS INCOMING MESSAGE");
-            // console.log("Parsed:", message);
-            // console.groupEnd();
+            if (DEBUG_CONSOLE_LOG) {
+                console.group("WS MESSAGE");
+                console.log("Parsed:", message);
+                console.groupEnd();
+            }
 
-            // Обработка Pong
             if (message.type === "pong") return;
 
             if (message.type === "auth_success") {
@@ -795,7 +914,9 @@ function connect() {
                 isAuthorized = true;
                 showOverlay('hidden');
                 overlay.style.display = "none";
-                console.log("WS: Авторизован успешно");
+                if (DEBUG_CONSOLE_LOG) {                    
+                    console.log("WS: Авторизован успешно");
+                }
                 return;
             }
 
@@ -812,6 +933,7 @@ function connect() {
 
             if (message.type === "init" || message.type === "update") {
                 processServerData(message);
+                requestRender();
             }
         } catch (e) {
             console.error("WS: Ошибка обработки сообщения:", e);
@@ -821,11 +943,15 @@ function connect() {
     socket.onclose = (event) => {
 
         if (kickedByNewSession) {
-            console.log("WS: Соединение закрыто (есть новая сессия)");
+            if (DEBUG_CONSOLE_LOG) {
+                console.log("WS: Соединение закрыто (есть новая сессия)");
+            }
             return;
         }
     
-        console.warn("WS: Соединение закрыто. Переподключение...");
+        if (DEBUG_CONSOLE_LOG) {
+            console.warn("WS: Соединение закрыто. Переподключение...");
+        }
         isAuthorized = false;
         overlay.style.display = "flex";
         if (pingInterval) clearInterval(pingInterval);
@@ -873,10 +999,38 @@ function processServerData(message) {
 
     serverContours = serverData.contours;
 
-    if (serverData.players) {
+    if (serverData.players) {       
         for (let pId in serverData.players) {
-            players[pId] = serverData.players[pId];
+            players[pId] = serverData.players[pId];            
         }
+
+        const currentPId = String(window.currentPlayer);
+        const p = players[currentPId];
+
+        if (!p) return;
+
+        const c = p.cooldowns;
+        const now = Date.now();
+
+        function applyCooldown(btn, cd) {
+            const remainingMs = Math.max(0, cd.endsAt - now);
+            
+            if (remainingMs > 0 && cd.duration > 0) {
+                const totalSec = cd.duration / 1000;
+                const elapsedSec = (cd.duration - remainingMs) / 1000;
+                
+                startCooldown(btn, totalSec, elapsedSec);
+            }
+        }
+
+        applyCooldown(btnDraw, c.draw);
+        applyCooldown(btnErase, c.erase);
+        applyCooldown(btnBlast, c.blast);
+        applyCooldown(btnSign, c.sign);
+        applyCooldown(btnStructure, c.structure);
+        applyCooldown(btnTier2Draw, c.tier2draw);
+        applyCooldown(btnTier2Erase, c.tier2erase);
+        applyCooldown(btnTier2Blast, c.tier2blast);
     }
 
     if (message.type === "init") {
@@ -902,19 +1056,43 @@ function processServerData(message) {
         }
     }
 
-    if (message.event?.type === "explosion") {
-        const e = message.event.data;
+    if (message.events) {
+        message.events.forEach(event => {
+            switch(event.type) {
+                case 'explosion':
+                    explosions.push({
+                        x: event.data.x,
+                        y: event.data.y,
+                        radius: event.data.radius,
+                        playerId: event.data.player_id,
+                        t: 0
+                    });
+                    worldDirty = true;                    
+                    playSound("blast");
+                    break;                    
+                case 'sign_placed':
+                    const { x, y, data: signData } = event.data; // Предположим, структура данных такая
 
-        explosions.push({
-            x: e.x,
-            y: e.y,
-            radius: e.radius,
-            playerId: e.player_id,
-            t: 0
+                    // 1. Проверяем границы, чтобы избежать ошибок
+                    if (grid[y] && grid[y][x]) {
+                        // 2. Обновляем объект, сохраняя существующие данные (contour_id, player_id и т.д.)
+                        grid[y][x] = {
+                            ...grid[y][x],
+                            type: {
+                                id: "Sign",
+                                data: event.data // Здесь должен быть объект с текстом
+                            }
+                        };
+                        
+                        // 3. Уведомляем систему, что визуальное состояние устарело
+                        worldDirty = true;
+                        
+                        // 4. Запускаем рендер
+                        requestRender();
+                    }
+                    break;
+            }
         });
-
-        worldDirty = true;
-        playSound("blast");
     }
 }
 
@@ -928,9 +1106,17 @@ if (!initData) {
 const btnDraw = document.getElementById("tool-draw");
 const btnErase = document.getElementById("tool-erase");
 const btnBlast = document.getElementById("tool-blast");
+const btnStructure = document.getElementById("tool-structure");
+const btnSign = document.getElementById("tool-sign");
+const btnTier2Draw = document.getElementById("tool-tier2draw");
+const btnTier2Erase = document.getElementById("tool-tier2erase");
+const btnTier2Blast = document.getElementById("tool-tier2blast");
 
 const canvas = document.getElementById("c");
 const ctx = canvas.getContext("2d");
+
+const fxCanvas = document.getElementById("fx");
+const fxCtx = fxCanvas.getContext("2d");
 
 const minimapCanvas = document.getElementById("minimap");
 const mctx = minimapCanvas.getContext("2d");
@@ -950,12 +1136,14 @@ const GLOW_CONFIG = {
     pointRadii: [1.8, 1.53, 1.27, 1.0]
 };
 
-const maxZoom = 0.2; const minZoom = 2.5;
-let zoom = 1.0; let offsetX = 0; let offsetY = 0;
+const maxZoom = 0.05; const minZoom = 2.5;
+let zoom = 0.3; let offsetX = 0; let offsetY = 0;
 
 function toggleAnimations() {
     animationsEnabled = !animationsEnabled;
+    pointSpriteCache.clear();
     worldDirty = true;
+    requestRender();
 }
 
 function worldToScreen(x, y) {
@@ -966,13 +1154,20 @@ function worldToScreen(x, y) {
 }
 
 function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
 
-    worldCanvas.width = canvas.width;
-    worldCanvas.height = canvas.height;
+    canvas.width = w;
+    canvas.height = h;
+
+    worldCanvas.width = w;
+    worldCanvas.height = h;
+
+    fxCanvas.width = w;
+    fxCanvas.height = h;
 
     worldDirty = true;
+    requestRender()
 }
 
 window.addEventListener('resize', resizeCanvas);
@@ -983,27 +1178,61 @@ function centerMap() {
 }
 
 function inBounds(x,y) { return x>=0 && y>=0 && x<SIZE && y<SIZE; }
-function getPlayerByContour(contourId) { return contourId === 0 ? null : Math.floor(contourId / 10000); }
 
-function getStableColor(id) {
+const colorCache = {
+    rgb: {},
+    hsl: {}
+};
+
+function getBaseColorParams(id) {
     const base = (id * 137.5) % 360;
-
     const seed = Math.sin(id * 999) * 1000;
     const noise = seed - Math.floor(seed);
 
-    const hue = (base + (noise - 0.5) * 20 + 360) % 360;
-    const sat = 65 + noise * 15;  // 65–80%
-    const light = 45 + noise * 20; // 45–65%
+    return {
+        hue: (base + (noise - 0.5) * 20 + 360) % 360,
+        sat: 65 + noise * 15,
+        light: 45 + noise * 20
+    };
+}
 
-    return `hsl(${hue}, ${sat}%, ${light}%)`;
+function getStableRGB(id) {
+    if (!id || id === 0) return { r: 255, g: 255, b: 255 };
+    if (colorCache.rgb[id]) return colorCache.rgb[id];
+
+    const params = getBaseColorParams(id);
+    const rgb = hslToRgb(params.hue, params.sat, params.light);
+    
+    colorCache.rgb[id] = rgb;
+    return rgb;
+}
+
+function getStableColor(id) {
+    if (!id || id === 0) return "hsl(0, 0%, 100%)";
+    if (colorCache.hsl[id]) return colorCache.hsl[id];
+
+    const params = getBaseColorParams(id);
+    const hsl = `hsl(${params.hue.toFixed(1)}, ${params.sat.toFixed(1)}%, ${params.light.toFixed(1)}%)`;
+    
+    colorCache.hsl[id] = hsl;
+    return hsl;
 }
 
 function colorFor(id, alpha = 1) {
-    if (!id || id === 0) return `rgba(255, 255, 255, ${alpha})`;
+    const rgb = getStableRGB(id);
+    return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
+}
 
-    const color = getStableColor(id);
-    
-    return color.replace('hsl', 'hsla').replace(')', `, ${alpha})`);
+function hslToRgb(h, s, l) {
+    s /= 100; l /= 100;
+    const k = n => (n + h / 30) % 12;
+    const a = s * Math.min(l, 1 - l);
+    const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+    return {
+        r: Math.round(255 * f(0)),
+        g: Math.round(255 * f(8)),
+        b: Math.round(255 * f(4))
+    };
 }
 
 function getVisibleBounds() {
@@ -1103,6 +1332,8 @@ function drawServerContour(target = ctx, bounds, contourObj) {
     const halfCell = CELL * 0.5;
     const playerId = contourObj.player_id;
 
+    if (playerId == 0) return;
+
     const fillColor = colorFor(playerId, 0.12);
 
     target.beginPath();
@@ -1143,52 +1374,206 @@ function drawServerContour(target = ctx, bounds, contourObj) {
     }
 }
 
-function drawPoints(target = ctx, bounds) {
+function forEachVisiblePoint(bounds, callback) {
     if (!grid || grid.length === 0) return;
 
     const halfCell = CELL * 0.5;
-    const baseRadius = CELL * 0.15 * zoom;
-
-    const anim = animationsEnabled;
 
     const startX = bounds.startX;
     const endX = bounds.endX;
     const startY = bounds.startY;
     const endY = bounds.endY;
 
-    const radii = GLOW_CONFIG.pointRadii;
-    const alphas = GLOW_CONFIG.alpha;
-
     for (let y = startY; y <= endY; y++) {
         const row = grid[y];
+        if (!row) continue;
 
         for (let x = startX; x <= endX; x++) {
-            const id = row[x];
-            if (id === 0) continue;
+            const cell = row[x];
 
-            const ownerId = getPlayerByContour(id);
+            if (!cell || cell.contour_id === 0 || !cell.type)
+                continue;
+
+            callback(cell, x, y, x * CELL + halfCell, y * CELL + halfCell);
+        }
+    }
+}
+
+const stoneSpriteCache = new Map();
+
+function getStoneSprite(size) {
+    const key = `stone_${size}`;
+    if (stoneSpriteCache.has(key)) return stoneSpriteCache.get(key);
+
+    const canvas = typeof OffscreenCanvas !== "undefined"
+        ? new OffscreenCanvas(size, size)
+        : document.createElement("canvas");
+
+    canvas.width = size;
+    canvas.height = size;
+
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "rgb(29, 29, 29)";
+    ctx.fillRect(0, 0, size, size);
+
+    stoneSpriteCache.set(key, canvas);
+    return canvas;
+}
+
+function drawStones(target = ctx, bounds) {
+    const cellSize = Math.ceil(CELL * zoom);
+    const halfSize = cellSize / 2;
+
+    const sprite = getStoneSprite(cellSize);
+
+    forEachVisiblePoint(bounds, (cell, x, y, worldX, worldY) => {
+        if (cell.type?.id !== "Stone") return;
+
+        const screen = worldToScreen(worldX, worldY);
+
+        target.drawImage(
+            sprite,
+            screen.x - halfSize,
+            screen.y - halfSize
+        );
+    });
+}
+
+
+const pointSpriteCache = new Map();
+
+function getPointSprite(playerId, type = "Dot") {
+    const key = `${playerId}_${type}_${animationsEnabled}`;
+
+    let sprite = pointSpriteCache.get(key);
+    if (sprite) return sprite;
+
+    const size = CELL * 2;
+    const canvas = typeof OffscreenCanvas !== "undefined"
+        ? new OffscreenCanvas(size, size)
+        : document.createElement("canvas");
+
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext("2d");
+    const center = size / 2;
+
+    const baseRadius = CELL * 0.15;
+
+    // Вспомогательная функция для рисования
+    const drawCircle = (radius, fillStyle, strokeStyle = null, lineWidth = 0) => {
+        ctx.beginPath();
+        ctx.arc(center, center, radius, 0, Math.PI * 2);
+        if (fillStyle) {
+            ctx.fillStyle = fillStyle;
+            ctx.fill();
+        }
+        if (strokeStyle) {
+            ctx.strokeStyle = strokeStyle;
+            ctx.lineWidth = lineWidth;
+            ctx.stroke();
+        }
+    };
+
+    if (animationsEnabled) {
+        const radii = GLOW_CONFIG.pointRadii;
+        const alphas = GLOW_CONFIG.alpha;
+        for (let i = 0; i < 4; i++) {
+            // 1. Центральная база — всегда цвет игрока
+            drawCircle(baseRadius * radii[i], colorFor(playerId, alphas[i]));
+            
+            // 2. Внешнее кольцо для T2Dot — теперь БЕЛОЕ
+            if (type === "T2Dot") {
+                drawCircle(baseRadius * radii[i] * 2, null, `rgba(255, 255, 255, ${alphas[i] * 0.5})`, 1);
+            }
+        }
+    } else {
+        // 1. Центральная база — цвет игрока
+        drawCircle(baseRadius, colorFor(playerId, 1));
+        
+        // 2. Внешнее кольцо для T2Dot — белое
+        if (type === "T2Dot") {
+            drawCircle(baseRadius * 2, null, "white", 1.5);
+        }
+    }
+
+    pointSpriteCache.set(key, canvas);
+    return canvas;
+}
+
+function drawDots(target = ctx, bounds) {
+    const baseDrawSize = CELL * 2 * zoom;
+
+    forEachVisiblePoint(bounds, (cell, x, y, worldX, worldY) => {
+        if (cell.type.id !== "Dot" && cell.type.id !== "T2Dot") return;
+
+        const screen = worldToScreen(worldX, worldY);        
+        const sprite = getPointSprite(cell.player_id, cell.type.id);
+
+        target.drawImage(
+            sprite,
+            screen.x - baseDrawSize / 2,
+            screen.y - baseDrawSize / 2,
+            baseDrawSize,
+            baseDrawSize
+        );
+    });
+}
+
+const signSpriteCache = new Map();
+
+function getSignSprite(text, fontSize) {
+    const key = `${text}_${fontSize}`;
+
+    if (signSpriteCache.has(key)) return signSpriteCache.get(key);
+
+    const width = text.length * (fontSize * 0.6); 
+    const height = fontSize * 1.5;
+
+    const canvas = typeof OffscreenCanvas !== "undefined"
+        ? new OffscreenCanvas(width, height)
+        : document.createElement("canvas");
+
+    canvas.width = width;
+    canvas.height = height;
+
+    const ctx = canvas.getContext("2d");
+    ctx.font = `bold ${fontSize}px monospace`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "white";
+    ctx.fillText(text, width / 2, height / 2);
+
+    signSpriteCache.set(key, canvas);
+    return canvas;
+}
+
+function drawSigns(target = ctx, bounds) {
+    if (!grid || grid.length === 0) return;
+
+    const halfCell = CELL * 0.5;
+    const fontSize = Math.max(1, 24 * zoom);
+
+    for (let y = bounds.startY; y <= bounds.endY; y++) {
+        const row = grid[y];
+        if (!row) continue;
+
+        for (let x = bounds.startX; x <= bounds.endX; x++) {
+            const cell = row[x];
+            if (!cell || cell.type?.id !== "Sign") continue;
+
+            const text = cell.type.data.text;
+            const sprite = getSignSprite(text, fontSize);
 
             const worldX = x * CELL + halfCell;
             const worldY = y * CELL + halfCell;
-
             const screen = worldToScreen(worldX, worldY);
 
-            const startLayer = anim ? 0 : 3;
-            const endLayer = anim ? 4 : 4;
-
-            for (let i = startLayer; i < endLayer; i++) {
-                target.beginPath();
-                target.arc(
-                    screen.x,
-                    screen.y,
-                    baseRadius * radii[i],
-                    0,
-                    Math.PI * 2
-                );
-
-                target.fillStyle = colorFor(ownerId, alphas[i]);
-                target.fill();
-            }
+            target.drawImage(
+                sprite,
+                screen.x - sprite.width / 2,
+                screen.y - sprite.height / 2
+            );
         }
     }
 }
@@ -1220,21 +1605,33 @@ function drawMinimap() {
 
 function renderMinimapWorld() {
     minimapCacheCtx.clearRect(0, 0, SIZE, SIZE);
+    const imgData = minimapCacheCtx.createImageData(SIZE, SIZE);
+    const data = imgData.data;
 
     for (let y = 0; y < SIZE; y++) {
         for (let x = 0; x < SIZE; x++) {
-            const id = grid[y][x];
-            if (!id) continue;
+            const cell = grid[y][x];
+            if (!cell || cell.contour_id === 0) continue;
+            
+            let color;
+            if (cell.player_id === 0) {
+                color = { r: 29, g: 29, b: 29 };
+            } else {
+                color = getStableRGB(cell.player_id);
+            }           
 
-            minimapCacheCtx.fillStyle = colorFor(getPlayerByContour(id), 1);
-            minimapCacheCtx.fillRect(x, y, 1, 1);
+            const i = (y * SIZE + x) * 4;
+            
+            data[i]     = color.r;
+            data[i + 1] = color.g;
+            data[i + 2] = color.b;
+            data[i + 3] = 255;
         }
     }
+    minimapCacheCtx.putImageData(imgData, 0, 0);
 }
-
-function renderMinimapViewport() {
+function renderMinimapViewport() {    
     mctx.clearRect(0, 0, SIZE, SIZE);
-
     mctx.drawImage(minimapCacheCanvas, 0, 0);
 
     const viewLeft = -offsetX / (zoom * CELL);
@@ -1247,15 +1644,16 @@ function renderMinimapViewport() {
     mctx.strokeRect(viewLeft, viewTop, viewWidth, viewHeight);
 }
 
-function drawHoverTooltip(target = ctx) {
+function drawHoverTooltip(target = fxCtx) {
     if (!grid || grid.length === 0) return;
     if (hoveredCellX === -1 || hoveredCellY === -1) return;
 
-    const id = grid[hoveredCellY][hoveredCellX];
-    if (id === 0) return;
-    
-    const ownerId = getPlayerByContour(id);
-    if (ownerId === window.currentPlayer) return;
+    const cell = grid[hoveredCellY][hoveredCellX];
+    if (!cell || cell.contour_id === 0) return;
+
+    const ownerId = cell.player_id;
+    // if (ownerId === window.currentPlayer) return;
+    if (ownerId === 0) return;
 
     const pIdKey = String(ownerId);
     const player = players[pIdKey];
@@ -1295,6 +1693,18 @@ function drawHoverTooltip(target = ctx) {
     target.fillText(text, screen.x, rectY + rectHeight / 2);
 }
 
+function drawFloatingTexts(target = fxCtx) {
+    target.font = "bold 14px monospace";
+    target.textAlign = "center";
+
+    for (const ft of floatingTexts) {
+        target.fillStyle = `rgba(231, 76, 60, ${ft.alpha})`;
+        target.shadowColor = 'black';
+        target.shadowBlur = 4;
+        target.fillText(ft.text, ft.x, ft.y);
+    }
+}
+
 function showFloatingError(cellX, cellY, text) {
     const screen = worldToScreen(cellX * CELL + CELL / 2, cellY * CELL + CELL / 2);
     
@@ -1310,7 +1720,13 @@ function showFloatingError(cellX, cellY, text) {
 const TOOL_BUTTON_MAP = {
     draw: "tool-draw",
     erase: "tool-erase",
-    blast: "tool-blast"
+    blast: "tool-blast",
+    sign: "tool-sign",
+    structure: "tool-structure",
+    blast: "tool-blast",
+    tier2draw: "tool-tier2draw",
+    tier2erase: "tool-tier2erase",
+    tier2blast: "tool-tier2blast"
 };
 
 function flashButtonError(toolName) {
@@ -1344,7 +1760,7 @@ function createExplosion(worldX, worldY, playerId, count = 8) {
     }
 }
 
-function drawParticles(target = ctx) {
+function drawParticles(target = fxCtx) {
     target.save();
     for (const p of particles) {
         const screen = worldToScreen(p.worldX, p.worldY);
@@ -1371,7 +1787,7 @@ function updateGridEvents(dt) {
     }
 }
 
-function drawGridEvents(target = ctx) {
+function drawGridEvents(target = fxCtx) {
     const CELL_W = CELL * zoom;
 
     for (const e of gridEvents) {
@@ -1385,7 +1801,7 @@ function drawGridEvents(target = ctx) {
         const mainRadius = t * 90 * zoom;
         const mainAlpha = (1.0 - t);
 
-        drawPulse(center, mainRadius, mainAlpha, e.playerId, 0);
+        drawPulse(target, center, mainRadius, mainAlpha, e.playerId, 0);
 
         const offsets = [
             [1, 0], [-1, 0], [0, 1], [0, -1],
@@ -1413,7 +1829,7 @@ function drawGridEvents(target = ctx) {
             const radius = pt * 70 * zoom;
             const alpha = (1.0 - pt) * 0.6;
 
-            drawPulse(screen, radius, alpha, e.playerId, i);
+            drawPulse(target, screen, radius, alpha, e.playerId, i);
         }
     }
 }
@@ -1426,14 +1842,14 @@ function createGridSweep(prevGrid, nextGrid) {
             const a = prevGrid[y][x];
             const b = nextGrid[y][x];
 
-            if (a !== b) {
+            if (a.contour_id !== b.contour_id) {
                 points.push({
                     x,
                     y,
-                    from: a,
-                    to: b,
-                    fromPlayer: getPlayerByContour(a),
-                    toPlayer: getPlayerByContour(b),
+                    from: a.contour_id,
+                    to: b.contour_id,
+                    fromPlayer: a.player_id,
+                    toPlayer: b.player_id,
                 });
             }
         }
@@ -1476,7 +1892,7 @@ function updateGridSweep(dt) {
     }
 }
 
-function drawGridSweep(target = ctx) {
+function drawGridSweep(target = fxCtx) {
     if (!gridSweep || !gridSweep.active) return;
 
     target.save();
@@ -1533,21 +1949,21 @@ function drawGridSweep(target = ctx) {
     target.restore();
 }
 
-function drawPulse(screen, radius, alpha, playerId, i) {
+function drawPulse(target, screen, radius, alpha, playerId, i) {
     if (alpha <= 0) return;
 
-    ctx.beginPath();
-    ctx.arc(screen.x, screen.y, radius, 0, Math.PI * 2);
+    target.beginPath();
+    target.arc(screen.x, screen.y, radius, 0, Math.PI * 2);
 
     const a = alpha * (1 - i * 0.08);
 
-    ctx.strokeStyle = colorFor(playerId, a);
-    ctx.lineWidth = (2 * zoom) * (1 - i * 0.1);
+    target.strokeStyle = colorFor(playerId, a);
+    target.lineWidth = (2 * zoom) * (1 - i * 0.1);
 
-    ctx.stroke();
+    target.stroke();
 }
 
-function drawExplosions(target = ctx) {
+function drawExplosions(target = fxCtx) {
     for (const e of explosions) {
 
         const screen = worldToScreen(
@@ -1606,18 +2022,15 @@ function drawExplosions(target = ctx) {
     }
 }
 
-
-
 function hashGrid(grid) {
     let hash = 0;
-
     for (let y = 0; y < grid.length; y++) {
         const row = grid[y];
         for (let x = 0; x < row.length; x++) {
-            hash = (hash * 31 + row[x]) | 0;
+            const val = grid[y][x].contour_id; 
+            hash = (hash * 31 + val) | 0;
         }
     }
-
     return hash;
 }
 
@@ -1651,20 +2064,21 @@ function renderLeaderboard() {
 }
 
 function redrawWorld() {
-    worldCtx.setTransform(1,0,0,1,0,0);
-    worldCtx.clearRect(0,0,worldCanvas.width,worldCanvas.height);
+    worldCtx.setTransform(1, 0, 0, 1, 0, 0);
+    worldCtx.clearRect(0, 0, worldCanvas.width, worldCanvas.height);
 
     const bounds = getVisibleBounds();
 
-    drawGrid(worldCtx, bounds);
-    for (const contour of serverContours)
-        drawServerContour(worldCtx, bounds, contour);
-
-    drawPoints(worldCtx, bounds);
+    measure("Render | Grid", () => drawGrid(worldCtx, bounds), DEBUG_PROFILER_RENDER);
+    measure("Render | Stones", () => drawStones(worldCtx, bounds), DEBUG_PROFILER_RENDER);
+    measure("Render | Contours", () => {
+        for (const c of serverContours) drawServerContour(worldCtx, bounds, c);
+    }, DEBUG_PROFILER_RENDER);
+    measure("Render | Dots", () => drawDots(worldCtx, bounds), DEBUG_PROFILER_RENDER);
+    measure("Render | Signs", () => drawSigns(worldCtx, bounds), DEBUG_PROFILER_RENDER);
 }
 
 function render() {
-
     ctx.clearRect(0,0,canvas.width,canvas.height);
 
     if (worldDirty) {
@@ -1673,37 +2087,39 @@ function render() {
     }
 
     ctx.save();
-
     ctx.drawImage(worldCanvas,0,0);
-
     ctx.restore();
-
-    drawGridSweep(ctx);
-    drawParticles(ctx);
-    drawGridEvents(ctx);
-    drawExplosions(ctx);
-
-    drawHoverTooltip(ctx);
 
     if (leaderboardDirty) {
         renderLeaderboard();
     }
 
-    drawHoverTooltip();
-    drawMinimap();    
+    drawMinimap();
+}
 
-    ctx.save();
-    ctx.font = "bold 14px monospace";
-    ctx.textAlign = "center";
+function fxRender(target = fxCtx) {
+    target.setTransform(1,0,0,1,0,0);
+    target.globalAlpha = 1;
+    target.clearRect(0, 0, fxCanvas.width, fxCanvas.height);
+    
+    measure("FX | Grid Sweep", () => drawGridSweep(target), DEBUG_PROFILER_FX);
+    measure("FX | Particles", () => drawParticles(target), DEBUG_PROFILER_FX);
+    measure("FX | Grid Events", () => drawGridEvents(target), DEBUG_PROFILER_FX);
+    measure("FX | Explosions", () => drawExplosions(target), DEBUG_PROFILER_FX);
+    measure("FX | Hover Tooltip", () => drawHoverTooltip(target), DEBUG_PROFILER_FX);
+    measure("FX | Floating Texts", () => drawFloatingTexts(target), DEBUG_PROFILER_FX);
+}
 
-    for (const ft of floatingTexts) {
-        ctx.fillStyle = `rgba(231, 76, 60, ${ft.alpha})`;
-        ctx.shadowColor = 'black';
-        ctx.shadowBlur = 4;
-        ctx.fillText(ft.text, ft.x, ft.y);
+function measure(name, fn, profiler) {
+    if (profiler) {
+        const t = performance.now();
+        fn();
+        const dt = performance.now() - t;
+        console.log(name, dt.toFixed(2));
     }
-
-    ctx.restore();
+    else {
+        fn();
+    }    
 }
 
 let lastTime = performance.now();
@@ -1713,118 +2129,193 @@ function updateAnimation() {
     const dt = now - lastTime;
     lastTime = now;
 
-    if (!window.currentPlayer || !players[String(window.currentPlayer)]) {
-        requestAnimationFrame(updateAnimation);
-        return;
+    if (window.currentPlayer && players[String(window.currentPlayer)]) {
+        updateAnimations(dt);
+        updateParticles(dt);
+        updateExplosions(dt);
+        updateFloatingTexts(dt);
+        updateGridSystems(dt);
     }
 
-    const activeCooldowns = players[String(window.currentPlayer)].cooldowns;
+    requestAnimationFrame(updateAnimation);
+}
 
-    if (activeCooldowns.draw.current > 0) {
-        activeCooldowns.draw.current -= dt;
-        if (activeCooldowns.draw.current < 0) activeCooldowns.draw.current = 0;
+function updateCooldownUI() {
+    const p = players[String(window.currentPlayer)];
+    if (!p) return;
+
+    const c = p.cooldowns;
+    const now = Date.now();
+
+    function syncButton(btn, cd, label) {
+        const isCooldownActive = cd.endsAt > now;
+        
+        let text;
+        if (cd.charges === 0) {
+            text = label; 
+        } else if (cd.charges < cd.maxCharges) {
+            text = `${label} (${cd.charges}/${cd.maxCharges})`;
+        } else {
+            text = label;
+        }
+
+        setText(btn, text, isCooldownActive ? cd.endsAt : 0);
     }
+
+    syncButton(btnDraw, c.draw, "Точка");
+    syncButton(btnErase, c.erase, "Ластик");
+    syncButton(btnSign, c.sign, "Знак 🪧");
+    syncButton(btnStructure, c.structure, "Замок 🏰");
+    syncButton(btnBlast, c.blast, "Взрыв 💥");
+    syncButton(btnTier2Draw, c.tier2draw, "Точка Ур.2");
+    syncButton(btnTier2Erase, c.tier2erase, "Ластик Ур.2");
+    syncButton(btnTier2Blast, c.tier2blast, "Взрыв Ур.2");
+}
+
+function setText(btn, normalText, endsAt) {
+    const now = Date.now();
+
+    const remaining = endsAt - now;
+
+    if (remaining > 0) {
+        const seconds = Math.ceil(remaining / 1000);
+        const newText = `${normalText} (${seconds}s)`;
+
+        if (btn.innerText !== newText) {
+            btn.innerText = newText;
+        }
+    } else {
+        if (btn.innerText !== normalText) {
+            btn.innerText = normalText;
+        }
+    }
+}
+
+function updateButton(btn, cooldown, normalText, cooldownText) {
+    // const now = Date.now();
+    // const endsAt = cooldown.endsAt || 0;
+
+    // const remaining = Math.max(0, endsAt - now);
+    // const total = cooldown.duration || (endsAt - now + remaining);
+
+    // if (remaining > 0) {
+    //     const progress = 1 - (remaining / (total || remaining));
+
+    //     btn.classList.add('on-cooldown');
+
+    //     if (btn.innerText !== cooldownText) {
+    //         btn.innerText = cooldownText;
+    //     }
+    // } else {
+    //     btn.classList.remove('on-cooldown');
+
+    //     if (btn.innerText !== normalText) {
+    //         btn.innerText = normalText;
+    //     }
+    // }
+}
+
+/**
+ * @param {HTMLElement} btn - Элемент кнопки
+ * @param {number} totalSec - Полная длительность анимации (сек)
+ * @param {number} startSec - Прошедшее время (сек) для старта с прогрессом
+ */
+function startCooldown(btn, totalSec, startSec = 0) {
+    // Сброс состояния
+    btn.classList.remove('on-cooldown');
+    btn.style.animation = 'none';
+    void btn.offsetWidth; // Reflow
     
-    if (activeCooldowns.erase.current > 0) {
-        activeCooldowns.erase.current -= dt;
-        if (activeCooldowns.erase.current < 0) activeCooldowns.erase.current = 0;
+    // Применяем параметры через переменные
+    btn.style.setProperty('--total-duration', totalSec + 's');
+    btn.style.setProperty('--start-delay', '-' + startSec + 's');
+    
+    btn.classList.add('on-cooldown');
+
+    // Автоматическое снятие класса по окончании
+    setTimeout(() => {
+        btn.classList.remove('on-cooldown');
+    }, (totalSec - startSec) * 1000);
+}
+
+function updateAnimations(dt) {
+    if (!animationsEnabled) return;
+
+    gridAnimationTime += dt * 0.0007;
+}
+
+function updateParticles(dt) {
+    if (!animationsEnabled) return;
+
+    const dt16 = dt / 16;
+    const damping = Math.pow(0.92, dt16);
+
+    for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+
+        p.worldX += p.vx * dt16;
+        p.worldY += p.vy * dt16;
+
+        p.vx *= damping;
+        p.vy *= damping;
+
+        p.life -= p.decay * dt16;
+        p.alpha = Math.max(0, p.life);
+
+        if (p.life <= 0) particles.splice(i, 1);
     }
+}
 
-    if (activeCooldowns.blast.current > 0) {
-        activeCooldowns.blast.current -= dt;
-        if (activeCooldowns.blast.current < 0) activeCooldowns.blast.current = 0;
+function updateExplosions(dt) {
+    if (!animationsEnabled) return;
+
+    for (let i = explosions.length - 1; i >= 0; i--) {
+        const e = explosions[i];
+        e.t += dt / 600;
+
+        if (e.t >= 1.5) {
+            explosions.splice(i, 1);
+        }
     }
+}
 
-
-    if (animationsEnabled) {
-        gridAnimationTime += dt * 0.0007;
-    }
-
-    if (btnDraw && btnErase) {
-        // Draw
-        if (activeCooldowns.draw.current > 0) {
-            const progress = (activeCooldowns.draw.current / activeCooldowns.draw.max) * 100;
-            btnDraw.style.setProperty('--cooldown-progress', `${progress}%`);
-            btnDraw.classList.add('on-cooldown');
-            
-            const text = `Зарядка.. ${Math.ceil(activeCooldowns.draw.current / 1000)}с`;
-            if (btnDraw.innerText !== text) btnDraw.innerText = text;
-        } else {
-            btnDraw.style.setProperty('--cooldown-progress', '0%');
-            btnDraw.classList.remove('on-cooldown');
-            const text = `Точка (${activeCooldowns.draw.charges}/${activeCooldowns.draw.maxCharges})`;
-            if (btnDraw.innerText !== text) btnDraw.innerText = text;
-        }
-
-        // Erase
-        if (activeCooldowns.erase.current > 0) {
-            const progress = (activeCooldowns.erase.current / activeCooldowns.erase.max) * 100;
-            btnErase.style.setProperty('--cooldown-progress', `${progress}%`);
-            btnErase.classList.add('on-cooldown');
-            
-            const text = `Ластик ${Math.ceil(activeCooldowns.erase.current / 1000)}с`;
-            if (btnErase.innerText !== text) btnErase.innerText = text;
-        } else {
-            btnErase.style.setProperty('--cooldown-progress', '0%');
-            btnErase.classList.remove('on-cooldown');
-            if (btnErase.innerText !== "Ластик") btnErase.innerText = "Ластик";
-        }
-
-        // Blast
-        if (activeCooldowns.blast.current > 0) {
-            const progress = (activeCooldowns.blast.current / activeCooldowns.blast.max) * 100;
-            btnBlast.style.setProperty('--cooldown-progress', `${progress}%`);
-            btnBlast.classList.add('on-cooldown');
-            
-            const text = `Взрыв ${Math.ceil(activeCooldowns.blast.current / 1000)}с`;
-            if (btnBlast.innerText !== text) btnBlast.innerText = text;
-        } else {
-            btnBlast.style.setProperty('--cooldown-progress', '0%');
-            btnBlast.classList.remove('on-cooldown');
-            if (btnBlast.innerText !== "Взрыв") btnBlast.innerText = "Взрыв";
-        }
-    }   
-
-    if (animationsEnabled) {
-
-        const dt16 = dt / 16;
-        const pow92 = Math.pow(0.92, dt16);
-
-        for (let i = particles.length - 1; i >= 0; i--) {
-            const p = particles[i];
-            p.worldX += p.vx * dt16;
-            p.worldY += p.vy * dt16;
-            p.vx *= pow92;
-            p.vy *= pow92;
-            p.life -= p.decay * (dt16);
-            p.alpha = Math.max(0, p.life);
-            if (p.life <= 0) particles.splice(i, 1);
-        }
-
-        for (let i = explosions.length - 1; i >= 0; i--) {
-            const e = explosions[i];
-
-            e.t += dt / 600;
-
-            if (e.t >= 1.5) {
-                explosions.splice(i, 1);
-            }
-        }
-
-        updateGridEvents(dt);
-        updateGridSweep(dt);
-    }
-
+function updateFloatingTexts(dt) {
     for (let i = floatingTexts.length - 1; i >= 0; i--) {
         const ft = floatingTexts[i];
+
         ft.life -= dt / 800;
-        ft.y -= (dt * 0.04);
+        ft.y -= dt * 0.04;
         ft.alpha = Math.max(0, ft.life);
+
         if (ft.life <= 0) floatingTexts.splice(i, 1);
     }
+}
 
-    render();
-    requestAnimationFrame(updateAnimation);
+function updateGridSystems(dt) {
+    updateGridEvents(dt);
+    updateGridSweep(dt);
+}
+
+
+let renderScheduled = false;
+
+function requestRender() {
+    if (renderScheduled) return;
+
+    renderScheduled = true;
+
+    requestAnimationFrame(() => {
+        renderScheduled = false;
+        render();
+    });
+}
+
+function startFXLoop() {
+    function loop() {
+        fxRender(fxCtx);
+        requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
 }
 
 function changeZoom(multiplier) {
@@ -1840,6 +2331,7 @@ function changeZoom(multiplier) {
     offsetY = centerY - worldY * zoom;
 
     worldDirty = true;
+    requestRender();
 }
 
 canvas.addEventListener("mousedown", (e) => {
@@ -1878,6 +2370,7 @@ canvas.addEventListener("mousemove", (e) => {
         hoveredCellY = -1;
 
         worldDirty = true;
+        requestRender();
     } else {
         const x = Math.floor(((e.clientX - offsetX) / zoom) / CELL);
         const y = Math.floor(((e.clientY - offsetY) / zoom) / CELL);
@@ -1891,6 +2384,7 @@ window.addEventListener("mouseup", (e) => {
         isDragging = false;
         if (!hasMoved) {
             processClick(e);
+            requestRender();
         }
     }
 });
@@ -1903,17 +2397,39 @@ canvas.addEventListener("wheel", (e) => {
     zoom = e.deltaY < 0 ? Math.min(zoom * 1.1, minZoom) : Math.max(zoom / 1.1, maxZoom);
     offsetX = mouseX - worldX * zoom; offsetY = mouseY - worldY * zoom;
     worldDirty = true;
+    requestRender();
 }, { passive: false });
 
 window.addEventListener("keydown", (e) => {
     const key = e.key.toLowerCase();
-    if (key === "q" || key === "й") {
+    if        (key === "w" || key === "ц") {
         setTool("draw");
-    } else if (key === "w" || key === "ц") {
-        setTool("erase");
     } else if (key === "e" || key === "у") {
+        setTool("erase");
+    } else if (key === "a" || key === "ф") {
+        setTool("tier2draw");
+    } else if (key === "s" || key === "ы") {
+        setTool("tier2erase");
+    } else if (key === "d" || key === "в") {
+        setTool("structure");
+    } else if (key === "f" || key === "а") {
+        setTool("sign");
+    } else if (key === "g" || key === "п") {
         setTool("blast");
-    }
+    } else if (key === "h" || key === "р") {
+        setTool("tier2blast");
+    } else if (key === "pagedown" || key === "=") {
+        changeZoom(1.2);
+    } else if (key === "pageup" || key === "-" ){
+        changeZoom(0.8);    
+    } else if (key === "p" || key === "з") {        
+        toggleAnimations(); 
+    } else if (key === "o" || key === "щ") {
+        toggleSettings();
+    } 
+    // else  {
+    //    console.log(key)
+    // }
 });
 
 canvas.addEventListener("touchstart", (e) => {
@@ -1929,6 +2445,7 @@ canvas.addEventListener("touchstart", (e) => {
         lastMouseY = touch.clientY;
         startX = offsetX;
         startY = offsetY;
+        requestRender();
     }
 }, { passive: false });
 
@@ -1957,6 +2474,7 @@ canvas.addEventListener("touchmove", (e) => {
         hoveredCellY = -1;
 
         worldDirty = true;
+        requestRender();
     }
 }, { passive: false });
 
@@ -1965,79 +2483,37 @@ canvas.addEventListener("touchend", (e) => {
         worldDirty = true;
         isDragging = false;
         
-        if (!hasMoved) {
-            
+        if (!hasMoved) {            
             const touch = e.changedTouches[0];
             processClick({ clientX: touch.clientX, clientY: touch.clientY });
+            requestRender();
         }
     }
 });
 
+let pendingSignCoords = { x: null, y: null };
 function processClick(e) {
     const pIdString = String(window.currentPlayer);
     const pData = players[pIdString];
-    
-    if (!pData) {
-        // console.log("DEBUG: Игрок с ID", pIdString, "не найден в:", Object.keys(players));
-        return;
-    }
-    
+    if (!pData) return;
+
     const x = Math.floor(((e.clientX - offsetX) / zoom) / CELL);
     const y = Math.floor(((e.clientY - offsetY) / zoom) / CELL);
     if (!inBounds(x, y)) return;
 
-    const cellId = grid[y][x];
+    const cell = grid[y][x];
+    const now = Date.now();
 
-    // console.log("DEBUG: Клик по:", x, y, "| Инструмент:", currentTool);
-    // console.log("DEBUG: Данные кулдауна:", pData.cooldowns);
-
-    if (currentTool === "draw") {
-        if (pData.cooldowns.draw.charges === 0 && pData.cooldowns.draw.current > 0) {
-            // console.log("BLOCK: Ошибка Draw - кулдаун активен (charges=0, current>0)");
-            showFloatingError(x, y, "Перезарядка точки!");
-            flashButtonError("draw");
-            return;
-        }
-        if (cellId !== 0) {
-            // console.log("BLOCK: Ошибка Draw - ячейка занята");
-            showFloatingError(x, y, "Ячейка уже занята!");
-            flashButtonError("draw");
-            return;
-        }
+    if (!canUseTool(currentTool, pData, cell, now, x, y)) {
+        return;
     }
 
-    if (currentTool === "erase") {
-        if (pData.cooldowns.erase.current > 0) {
-            // console.log("BLOCK: Ошибка Erase - кулдаун активен");
-            showFloatingError(x, y, "Ластик на перезарядке!");
-            flashButtonError("erase");
-            return;
-        }
-        if (cellId === 0) {
-            // console.log("BLOCK: Ошибка Erase - ячейка пуста");
-            showFloatingError(x, y, "Здесь пусто!");
-            flashButtonError("erase");
-            return;
-        }
+    if (currentTool === 'sign') {
+        pendingSignCoords = { x, y };
+        document.getElementById('sign-modal').style.display = 'flex';
+        return;
     }
 
-    if (currentTool === "blast") {
-        if (pData.cooldowns.blast.current > 0) {
-            // console.log("BLOCK: Ошибка blast - кулдаун активен");
-            showFloatingError(x, y, "Взрыв на перезарядке!");
-            flashButtonError("blast");
-            return;
-        }
-        if (cellId === 0) {
-            // console.log("BLOCK: Ошибка blast - ячейка пуста");
-            showFloatingError(x, y, "Здесь пусто!");
-            flashButtonError("blast");
-            return;
-        }
-    }
-
-    // console.log("SUCCESS: Отправка действия на сервер...");
-    
     const worldX = x * CELL + CELL / 2;
     const worldY = y * CELL + CELL / 2;
 
@@ -2046,18 +2522,95 @@ function processClick(e) {
     if (socket.readyState === WebSocket.OPEN) {
         socket.send(JSON.stringify({
             type: "action",
-            payload: { player_id: window.currentPlayer, tool: currentTool, x: x, y: y }
+            payload: {
+                player_id: window.currentPlayer,
+                tool: currentTool,
+                x,
+                y
+            }
         }));
-    } else {
-        console.log("ERROR: Сокет закрыт!");
     }
 }
 
-function setTool(toolName) {
-    currentTool = toolName;
-    document.getElementById('tool-draw').classList.toggle('active', toolName === 'draw');
-    document.getElementById('tool-erase').classList.toggle('active', toolName === 'erase');
-    document.getElementById('tool-blast').classList.toggle('active', toolName === 'blast');
+function canUseTool(toolName, pData, cell, now, x, y) {
+    const cd = pData.cooldowns[toolName];
+
+    const isOnCooldown = cd.endsAt > now;
+    const hasCharges = cd.maxCharges == null || cd.charges > 0;
+
+    if (!hasCharges && isOnCooldown) {
+        showFloatingError(x, y, "На перезарядке!");
+        flashButtonError(toolName);
+        return false;
+    }
+
+    if (cell.type?.id === "Stone") {
+        showFloatingError(x, y, "Здесь нет ничего...");
+        return false;
+    }
+
+    if ((toolName === "draw" || toolName === "tier2draw") && cell.contour_id !== 0) {
+        showFloatingError(x, y, "Здесь занято!");
+        flashButtonError(toolName);
+        return false;
+    }
+
+    if (toolName === "structure" && cell.contour_id !== 0) {
+        showFloatingError(x, y, "Уже занято!");
+        flashButtonError(toolName);
+        return false;
+    }
+
+    if ((toolName === "erase" || toolName === "blast") && cell.contour_id === 0) {
+        showFloatingError(x, y, "Здесь пусто!");
+        flashButtonError(toolName);
+        return false;
+    }
+
+    if ((toolName === "tier2erase" || toolName === "tier2blast") && cell.contour_id === 0) {
+        showFloatingError(x, y, "Тут пусто!");
+        flashButtonError(toolName);
+        return false;
+    }    
+
+    return true;
+}
+
+function submitSign() {
+    const text = document.getElementById('sign-input').value;
+    const { x, y } = pendingSignCoords;
+
+    if (x !== null && y !== null && text.trim() !== "") {
+        if (socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({
+                type: "action",
+                payload: {
+                    player_id: window.currentPlayer,
+                    tool: "sign",
+                    x: x,
+                    y: y,
+                    text: text
+                }
+            }));
+        }
+        
+        createExplosion(x * CELL + CELL / 2, y * CELL + CELL / 2, window.currentPlayer, 6);
+    }
+
+    closeSign();
+}
+
+function closeSign() {
+    document.getElementById('sign-modal').style.display = 'none';
+    document.getElementById('sign-input').value = ""; // Очищаем поле
+    pendingSignCoords = { x: null, y: null };
+}
+
+function setTool(tool) {
+    document.querySelectorAll('.action-button').forEach(b => b.classList.remove('active'));
+    document.getElementById(`tool-${tool}`).classList.add('active');
+
+    currentTool = tool;
 }
 
 function handleMinimapClick(e) {
@@ -2074,6 +2627,7 @@ function handleMinimapClick(e) {
     offsetY = window.innerHeight / 2 - targetWorldY * zoom;
 
     worldDirty = true;
+    requestRender();
 }
 
 minimapCanvas.addEventListener("mousedown", (e) => {
@@ -2117,28 +2671,8 @@ window.onunhandledrejection = (event) => {
 resizeCanvas();
 centerMap();
 updateAnimation();
-
-
-function debugState() {
-    // console.log("--- DEBUG START ---");
-    console.log("Current Player ID:", window.currentPlayer);
-    // console.log("Players object:", players);
-    // console.log("Players keys:", Object.keys(players));
-    
-    const pIdString = String(window.currentPlayer);
-    const active = players[pIdString];
-    
-    if (!active) {
-        console.error("Игрок не найден в объекте players!");
-    } else {
-        // console.log("Игрок найден, его кулдауны:", active.cooldowns);
-    }
-    // console.log("--- DEBUG END ---");
-}
-
-
-setTimeout(debugState, 3000);
+startFXLoop();
+setInterval(updateCooldownUI, 300);
 </script>
-
 </body>
 </html>

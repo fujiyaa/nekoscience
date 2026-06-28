@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Cooldown Progress Bars</title>
+    <style>
+        body { background: #111; color: white; display: flex; gap: 20px; justify-content: center; padding-top: 100px; font-family: sans-serif; }
+
+        .btn {
+            position: relative;
+            padding: 20px 40px;
+            background: #333;
+            border: 1px solid #555;
+            border-radius: 8px;
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: rgba(255, 255, 255, 0.2);
+            transform-origin: left;
+            transform: scaleX(0);
+        }
+
+        .btn.active::before {
+            /* Задаем длительность и отрицательную задержку */
+            animation: cooldown var(--total-duration) linear forwards;
+            animation-delay: var(--start-delay);
+        }
+
+        @keyframes cooldown {
+            from { transform: scaleX(1); }
+            to   { transform: scaleX(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <button class="btn" onclick="start(this, 10, 0)">10с (с 0с)</button>
+    <button class="btn" onclick="start(this, 8, 4)">8с (с 4с)</button>
+    <button class="btn" onclick="start(this, 100, 20)">100с (с 20с)</button>
+
+    <script>
+        function start(btn, totalSec, startSec) {
+            btn.classList.remove('active');
+            void btn.offsetWidth; // Сброс
+
+            // total - общая длительность
+            // start - сколько секунд уже прошло (отрицательная задержка)
+            btn.style.setProperty('--total-duration', totalSec + 's');
+            btn.style.setProperty('--start-delay', '-' + startSec + 's');
+            
+            btn.classList.add('active');
+        }
+    </script>
+</body>
+</html>
