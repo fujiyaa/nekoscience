@@ -8,14 +8,17 @@ import hashlib
 import urllib.parse
 import asyncio
 import traceback
+import time
+import functools
+from contextlib import contextmanager
+from functools import lru_cache
 from typing import List, Set, Dict, Optional, Callable
 from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field
 from collections import defaultdict, deque
 import logging
-from logging.handlers import RotatingFileHandler
 from dataclasses import dataclass
 
 templates = Jinja2Templates(directory="templates")
@@ -24,7 +27,7 @@ router = APIRouter()
 DB_NAME = "game_v2.db"
 BOT_TOKEN = os.getenv("TOKEN")
 
-SIZE = 200
+SIZE = 50
 CELL = 50
 
 GAME_GRID_CACHE = []
@@ -34,7 +37,7 @@ CONTOUR_PATHS_CACHE = {}
 
 DIRS = [(1,0), (1,1), (0,1), (-1,1), (-1,0), (-1,-1), (0,-1), (1,-1)]
 
-
+stone_alert_text = 'Здесь ничего нет'
 
 @dataclass
 class ToolConfig:
@@ -50,6 +53,224 @@ class ToolConfig:
             base += int(self.area_scaling(area))
         return int(base)
     
+from abc import ABC, abstractmethod
+from typing import Tuple, List, Optional, Dict, Any
+
+class BaseToolHandler(ABC):
+    @abstractmethod
+    def validate(self, player_id: int, x: int, y: int, grid: list, 
+                 state: Dict, payload: Dict) -> Tuple[bool, Optional[str]]:
+        pass
+
+    @abstractmethod
+    def execute(self, player_id: int, x: int, y: int, grid: list, 
+                payload: Dict, now: int) -> Tuple[List[Dict], List[Any]]:
+        pass
+
+class SignHandler(BaseToolHandler):
+    def validate(self, player_id, x, y, grid, state, payload):
+        text = sanitize_sign_text(payload.get("text", ""))
+        if not text or len(text) > 30:
+            return False, 'Текст слишком длинный'
+        if not (0 <= y < len(grid) and 0 <= x < len(grid[0])):
+            return False, 'За пределами мира'
+        if grid[y][x].get("type") is not None:
+            return False, 'Здесь чем-то занято'
+        return True, None
+
+    def execute(self, player_id, x, y, grid, payload, now):
+        text = sanitize_sign_text(payload.get("text", ""))
+        grid[y][x].update({
+            "player_id": 0, "contour_id": -1,
+            "type": {"id": "Sign", "data": {"text": text}}
+        })
+        events = [
+            {"type": "sign_placed", "data": {"x": x, "y": y, "text": text}},
+            {"msg": f"Появилась новая табличка ({x}, {y})", "msg_to": "all"},
+            {"sfx": "draw"}
+        ]
+        return events, [(x, y)]
+    
+class DrawHandler(BaseToolHandler):
+    def __init__(self, size, get_neighbours_func, get_free_id_func):
+        self.size = size
+        self.get_neighbours = get_neighbours_func
+        self.get_free_id = get_free_id_func
+
+    def validate(self, player_id, x, y, grid, state, payload):
+        if grid[y][x]["contour_id"] != 0:
+            return False, 'Здесь уже занято'
+        return True, None
+
+    def execute(self, player_id, x, y, grid, payload, now):
+        tool_name = payload["tool"]
+        cell_type_id = "Dot" if tool_name == "draw" else "T2Dot"
+        
+        events = []
+        ids_to_refresh = set()
+        
+        neighbours = self.get_neighbours(x, y, player_id, grid)
+
+        if len(neighbours) > 1:
+            main_id = neighbours[0]
+            ids_to_refresh.update(neighbours)
+
+            for yy in range(self.size):
+                for xx in range(self.size):
+                    if grid[yy][xx]["contour_id"] in neighbours:
+                        grid[yy][xx]["contour_id"] = main_id
+            
+            grid[y][x]["contour_id"] = main_id
+        else:
+            new_id = neighbours[0] if neighbours else self.get_free_id(grid)
+            grid[y][x]["contour_id"] = new_id
+            ids_to_refresh.add(new_id)
+
+        grid[y][x]["player_id"] = player_id
+        grid[y][x]["type"] = {"id": cell_type_id, "data": None}
+
+        events = [
+            {"sfx": "draw"}
+        ]
+
+        return events, ids_to_refresh
+
+class StructureHandler(BaseToolHandler):
+    def __init__(self, size, tools_cfg, get_cells_func, get_free_id_func):
+        self.size = size
+        self.tools_cfg = tools_cfg
+        self.get_cells_in_radius = get_cells_func
+        self.get_free_id = get_free_id_func
+
+    def validate(self, player_id, x, y, grid, state, payload):
+        if grid[y][x]["contour_id"] != 0:
+            return False, 'Можно строить только на пустом'
+
+        cfg = self.tools_cfg["structure"]
+        check_radius = cfg.radius + cfg.radius
+        
+        for nx, ny in self.get_cells_in_radius(x, y, check_radius):
+            if 0 <= nx < self.size and 0 <= ny < self.size:
+                if grid[ny][nx]["contour_id"] != 0:
+                    return False, 'Структуре не хватает места'
+        
+        return True, None
+
+    def execute(self, player_id, x, y, grid, payload, now):
+        cfg = self.tools_cfg["structure"]
+        radius = cfg.radius
+        radius_expand = cfg.radius
+        
+        new_id = self.get_free_id(grid)
+        
+        for nx in range(x - radius, x + radius + radius_expand):
+            for ny in range(y - radius, y + radius + radius_expand):
+                if 0 <= nx < self.size and 0 <= ny < self.size:
+                    if abs(nx - x) + abs(ny - y) == radius:
+                        grid[ny][nx].update({
+                            "contour_id": new_id,
+                            "player_id": player_id,
+                            "type": {"id": "T2Dot", "data": None}
+                        })
+        
+        events = [{"sfx": "draw"}]
+        
+        return events, {new_id}
+
+class EraseHandler(BaseToolHandler):
+    def __init__(self, recalculate_func):
+        self.recalculate_func = recalculate_func
+
+    def validate(self, player_id, x, y, grid, state, payload):
+        tool = payload.get("tool")
+               
+        if grid[y][x]["contour_id"] == 0:
+            return False, 'Не может начинаться с пустого места'
+        
+        cell = grid[y][x]
+        cell_type = cell.get("type", {}).get("id")
+
+        if cell["contour_id"] == 0 or cell_type == "Stone":
+            return False, 'Здесь ничего нет'
+        
+        if tool == "erase" and cell_type in ["T2Dot", "Sign"]:
+            return False, 'Это может ластик 2-го уровня'
+            
+        return True, None
+
+    def execute(self, player_id, x, y, grid, payload, now):
+        target_contour_id = grid[y][x]["contour_id"]
+        target_pid = grid[y][x]["player_id"]
+        
+        grid[y][x].update({
+            "contour_id": 0,
+            "player_id": None,
+            "type": None
+        })
+        
+        ids_to_refresh = {target_contour_id}
+        
+        if target_pid:
+            new_ids = self.recalculate_func(target_contour_id, target_pid, grid)
+            ids_to_refresh.update(new_ids)
+            
+        events = [{"sfx": "draw"}]
+        
+        return events, ids_to_refresh
+
+class BlastHandler(BaseToolHandler):
+    def __init__(self, tools_cfg, get_cells_func, recalculate_func):
+        self.tools_cfg = tools_cfg
+        self.get_cells_in_radius = get_cells_func
+        self.recalculate_player_contours_nearby = recalculate_func
+
+    def validate(self, player_id, x, y, grid, state, payload):
+        if grid[y][x]["contour_id"] == 0:
+            return False, 'Не может начинаться с пустого места'
+        return True, None
+
+    def execute(self, player_id, x, y, grid, payload, now):
+        tool = payload.get("tool")
+        cfg = self.tools_cfg[tool]
+        radius = cfg.radius
+
+        immune_types = ["Stone"]
+        if tool == "blast":
+            immune_types.extend(["T2Dot", "Sign"])
+
+        affected_cells = list(self.get_cells_in_radius(x, y, radius))
+        
+        affected_contours = set()
+        initial_contour_ids = set() 
+        
+        for nx, ny in affected_cells:
+            cell = grid[ny][nx]
+            cell_type = (cell.get("type") or {}).get("id")
+            if cell["contour_id"] != 0 and cell_type not in immune_types:
+                affected_contours.add((cell["player_id"], cell["contour_id"]))
+                initial_contour_ids.add(cell["contour_id"])
+
+        for nx, ny in affected_cells:
+            cell = grid[ny][nx]
+            if (cell.get("type") or {}).get("id") in immune_types:
+                continue
+            cell.update({"contour_id": 0, "player_id": None, "type": None})
+
+        all_new_contour_ids = set()
+        for pid, cid in affected_contours:
+            new_ids = self.recalculate_player_contours_nearby(cid, pid, grid)
+            if new_ids:
+                all_new_contour_ids.update(new_ids)
+
+        return_ids = all_new_contour_ids.union(initial_contour_ids)
+
+        events = [
+            {"type": "explosion", "data": {"x": x, "y": y, "radius": radius, "player_id": player_id}},
+            {"sfx": "blast"}
+        ]
+        
+        return events, return_ids
+
 class ActionPayload(BaseModel):
     player_id: int
     tool: str = Field(..., pattern="^(draw|erase|blast|sign|structure|tier2draw|tier2erase|tier2blast)$")
@@ -78,6 +299,27 @@ class ConnectionManager:
         ]
         await asyncio.gather(*tasks, return_exceptions=True)
 
+    async def send_personal_event(self, player_id: int, msg_text: str, msg_level: str):
+        for connection in self.active_connections:
+            if getattr(connection, "player_id", None) == player_id:
+                try:
+                    message = {
+                        "type": "update",
+                        "data": None,
+                        "events": [
+                            {
+                                "msg": msg_text,
+                                "msg_to": player_id,
+                                "msg_level": msg_level
+                            }
+                        ]
+                    }
+                    logger.info(f"WS: {player_id}: early exit (personal event)")
+                    await connection.send_json(message)
+                except Exception as e:
+                    logger.error(f"ConnectonManager | {player_id}: {e}")
+                break
+
 TOOLS = {
     "sign": ToolConfig(
         name="sign",
@@ -93,36 +335,36 @@ TOOLS = {
     
     "draw": ToolConfig(
         name="draw",
-        base_cooldown_sec=1,
+        base_cooldown_sec=6,
         max_charges=5,
     ),
     "erase": ToolConfig(
         name="erase",
-        base_cooldown_sec=3,
-        max_charges=3,
+        base_cooldown_sec=2,
+        max_charges=1,
         area_scaling=lambda area: (area // 100) * 3000,
     ),
     "blast": ToolConfig(
         name="blast",
         base_cooldown_sec=1,
-        max_charges=1,
+        max_charges=5,
         radius=14,
     ),
 
     "tier2draw": ToolConfig(
         name="tier2draw",
-        base_cooldown_sec=1,
-        max_charges=5,
+        base_cooldown_sec=5,
+        max_charges=3,
     ),
     "tier2erase": ToolConfig(
         name="tier2erase",
-        base_cooldown_sec=3,
+        base_cooldown_sec=5,
         max_charges=3,
         area_scaling=lambda area: (area // 100) * 3000,
     ),
     "tier2blast": ToolConfig(
         name="tier2blast",
-        base_cooldown_sec=1,
+        base_cooldown_sec=5,
         max_charges=1,
         radius=6,
     ),
@@ -130,18 +372,47 @@ TOOLS = {
 
 manager = ConnectionManager()
 
+class MaxLinesFileHandler(logging.FileHandler):
+    def __init__(self, filename, max_lines=30, *args, **kwargs):
+        self.max_lines = max_lines
+        super().__init__(filename, *args, **kwargs)
+
+    def emit(self, record):
+        super().emit(record)
+        
+        with open(self.baseFilename, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+        
+        if len(lines) > self.max_lines:
+            with open(self.baseFilename, 'w', encoding='utf-8') as f:
+                f.writelines(lines[-self.max_lines:])
+
 logger = logging.getLogger("game_ws")
 logger.setLevel(logging.DEBUG)
 
-file_handler = RotatingFileHandler("game.log", maxBytes=5*1024*1024, backupCount=3, encoding='utf-8')
-file_handler.setLevel(logging.DEBUG)
-
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+file_handler = MaxLinesFileHandler("game.log", max_lines=30, encoding='utf-8')
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 file_handler.setFormatter(formatter)
-
 logger.addHandler(file_handler)
 
+def log_execution_time(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        start_time = time.perf_counter()
+        result = func(*args, **kwargs)
+        duration = time.perf_counter() - start_time
+        logger.info(f"{duration:.4f} | {func.__name__}")
+        return result
+    return wrapper
 
+@contextmanager
+def timer(name):
+    start = time.perf_counter()
+    yield
+    duration = time.perf_counter() - start
+    logger.info(f"{duration:.4f} | {name}")
+
+@log_execution_time
 def load_external_passwords():
     path = os.path.join(os.path.dirname(DB_NAME), "miniapp_passwords.json")
     try:
@@ -151,28 +422,18 @@ def load_external_passwords():
         logger.error(f"Не удалось прочитать external passwords: {e}")
         return {}
 
+@log_execution_time
 def validate_telegram_data(init_data: str) -> bool:
     parsed_data = urllib.parse.parse_qs(init_data)
     if 'hash' not in parsed_data:
-        return False
-    
-    received_hash = parsed_data.pop('hash')[0]
-    
-    data_check_string = "\n".join([f"{k}={v[0]}" for k, v in sorted(parsed_data.items())])
-    
-    secret_key = hmac.new("WebAppData".encode(), BOT_TOKEN.encode(), hashlib.sha256).digest()
-    
-    calculated_hash = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
-    
+        return False    
+    received_hash = parsed_data.pop('hash')[0]    
+    data_check_string = "\n".join([f"{k}={v[0]}" for k, v in sorted(parsed_data.items())])    
+    secret_key = hmac.new("WebAppData".encode(), BOT_TOKEN.encode(), hashlib.sha256).digest()    
+    calculated_hash = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()    
     return hmac.compare_digest(calculated_hash, received_hash)
 
-def load_grid_from_db(cursor) -> List[List[int]]:
-    cursor.execute("SELECT x, y, contour_id FROM game_grid")
-    grid = [[0 for _ in range(SIZE)] for _ in range(SIZE)]
-    for x, y, c_id in cursor.fetchall():
-        grid[y][x] = c_id
-    return grid
-
+@log_execution_time
 def init_db():
     with sqlite3.connect(DB_NAME) as conn:
         conn.execute("PRAGMA journal_mode=WAL;")
@@ -264,6 +525,7 @@ def set_cell_type(cursor, x: int, y: int, type_id: str, data: Optional[dict] = N
             ON CONFLICT(x, y) DO UPDATE SET type_id=excluded.type_id, type_data=excluded.type_data
         """, (x, y, type_id, json.dumps(data) if data else None))
 
+@log_execution_time
 def get_cell_info(cursor, x: int, y: int):
     cursor.execute("""
         SELECT c.player_id, c.contour_id, t.type_id, t.type_data 
@@ -279,7 +541,11 @@ def get_cell_info(cursor, x: int, y: int):
         "type": {"id": row[2], "data": json.loads(row[3]) if row[3] else None}
     }
 
+@log_execution_time
 def load_grid_from_db(cursor) -> List[List[dict]]:
+    cursor.execute("DELETE FROM cells WHERE x >= ? OR y >= ?", (SIZE, SIZE))
+    cursor.execute("DELETE FROM cell_types WHERE x >= ? OR y >= ?", (SIZE, SIZE))
+
     grid = [[{"player_id": None, "contour_id": 0, "type": None} for _ in range(SIZE)] for _ in range(SIZE)]
     
     cursor.execute("""
@@ -289,17 +555,21 @@ def load_grid_from_db(cursor) -> List[List[dict]]:
     """)
     
     for x, y, p_id, c_id, t_id, t_data in cursor.fetchall():
-        grid[y][x] = {
-            "player_id": p_id,
-            "contour_id": c_id,
-            "type": {"id": t_id, "data": json.loads(t_data) if t_data else None} if t_id else None
-        }
+        if 0 <= y < SIZE and 0 <= x < SIZE:
+            grid[y][x] = {
+                "player_id": p_id,
+                "contour_id": c_id,
+                "type": {"id": t_id, "data": json.loads(t_data) if t_data else None} if t_id else None
+            }
+            
     return grid
 
+@log_execution_time
 def update_cache_cell(x, y, new_data: dict):
     global GAME_GRID_CACHE
     GAME_GRID_CACHE[y][x].update(new_data)
 
+@log_execution_time
 def sync_grid_to_db(cursor, new_grid: List[List[dict]]):
     global GAME_GRID_CACHE
     
@@ -332,7 +602,7 @@ def sync_grid_to_db(cursor, new_grid: List[List[dict]]):
 
 init_db()
 
-
+@log_execution_time
 def get_cells_in_radius(x: int, y: int, r: int):
     cells = []
     r2 = r * r
@@ -346,12 +616,13 @@ def get_cells_in_radius(x: int, y: int, r: int):
 def in_bounds(x: int, y: int) -> bool:
     return 0 <= x < SIZE and 0 <= y < SIZE
 
-def get_free_contour_id(grid: List[List[dict]], player_id: int) -> int:
+@log_execution_time
+def get_free_contour_id(grid: List[List[dict]]) -> int:
     used_ids = {
         cell["contour_id"] 
         for row in grid 
         for cell in row 
-        if cell["player_id"] == player_id and cell["contour_id"] != 0
+        if cell["contour_id"] != 0
     }
     
     contour_id = 1
@@ -360,7 +631,9 @@ def get_free_contour_id(grid: List[List[dict]], player_id: int) -> int:
         
     return contour_id
 
+@log_execution_time
 def get_neighbour_contours(x: int, y: int, player_id: int, grid: List[List[dict]]) -> List[int]:
+
     neighbours = set()
     for dx, dy in DIRS:
         nx, ny = x + dx, y + dy
@@ -368,9 +641,12 @@ def get_neighbour_contours(x: int, y: int, player_id: int, grid: List[List[dict]
             cell = grid[ny][nx]
             if cell["player_id"] == player_id and cell["contour_id"] != 0:
                 neighbours.add(cell["contour_id"])
+
     return list(neighbours)
 
+@log_execution_time
 def recalculate_player_contours_nearby(target_contour_id: int, player_id: int, grid: List[List[dict]]) -> Set[int]:
+    
     cells_to_process = []
     
     for y in range(SIZE):
@@ -389,7 +665,7 @@ def recalculate_player_contours_nearby(target_contour_id: int, player_id: int, g
     
     for x, y in cells_to_process:
         if (x, y) not in visited:
-            new_id = get_free_contour_id(grid, player_id)
+            new_id = get_free_contour_id(grid)
             new_ids.add(new_id)            
             queue = deque([(x, y)])
             visited.add((x, y))
@@ -402,36 +678,23 @@ def recalculate_player_contours_nearby(target_contour_id: int, player_id: int, g
                         visited.add((nx, ny))
                         grid[ny][nx]["contour_id"] = new_id
                         queue.append((nx, ny))
-                        
-    return new_ids
 
-def recalculate_player_contours(player_id: int, grid: List[List[dict]]):
-    visited = [[False for _ in range(SIZE)] for _ in range(SIZE)]
-    
-    for y in range(SIZE):
-        for x in range(SIZE):
-            cell = grid[y][x]
-            if cell["player_id"] == player_id and cell["contour_id"] != 0 and not visited[y][x]:                
-                new_contour_id = get_free_contour_id(grid, player_id)                
-                queue = [(x, y)]
-                visited[y][x] = True
-                grid[y][x]["contour_id"] = new_contour_id                
-                while queue:
-                    cx, cy = queue.pop(0)
-                    for dx, dy in DIRS:
-                        nx, ny = cx + dx, cy + dy
-                        if in_bounds(nx, ny) and not visited[ny][nx]:
-                            neighbor_cell = grid[ny][nx]
-                            if neighbor_cell["player_id"] == player_id and neighbor_cell["contour_id"] != 0:
-                                visited[ny][nx] = True
-                                grid[ny][nx]["contour_id"] = new_contour_id
-                                queue.append((nx, ny))
+    return new_ids
 
 def build_mask(grid: List[List[dict]], contour_id: int) -> List[List[int]]:
     return [
-        [1 if grid[y][x]["contour_id"] == contour_id else 0 for x in range(SIZE)] 
-        for y in range(SIZE)
+        [1 if cell["contour_id"] == contour_id else 0 for cell in row]
+        for row in grid
     ]
+
+@lru_cache(maxsize=2000)
+def cached_trace(mask_tuple):
+    mask_list = [list(row) for row in mask_tuple]
+    return trace_contour(mask_list)
+
+def get_trace_from_cache(mask: List[List[int]]):
+    mask_key = tuple(tuple(row) for row in mask)
+    return cached_trace(mask_key)
 
 def trace_contour(mask: List[List[int]]) -> List[Dict[str, int]]:
     points = []
@@ -516,24 +779,9 @@ def calculate_contour_area(points: List[Dict[str, int]]) -> float:
         area += (prev["x"] + curr["x"]) * (prev["y"] - curr["y"])
     return abs(area / 2.0)
 
-def calculate_player_total_area(grid: List[List[dict]], player_id: int) -> float:    
-    total_area = 0.0
-    unique_ids = {
-        cell["contour_id"] 
-        for row in grid 
-        for cell in row 
-        if cell["player_id"] == player_id and cell["contour_id"] != 0
-    }
-    
-    for c_id in unique_ids:
-        # build_mask теперь принимает grid в новом формате
-        mask = build_mask(grid, c_id)
-        path = trace_contour(mask)
-        total_area += calculate_contour_area(path)
-            
-    return total_area
-
+@log_execution_time
 def get_player_stats(cursor, player_areas, player_id=None, tools=None):
+    
     query = build_query(player_id, tools)
 
     if player_id is not None:
@@ -584,10 +832,11 @@ def get_player_stats(cursor, player_areas, player_id=None, tools=None):
             cooldowns[key] = entry
 
         stats[p_id] = {"cooldowns": cooldowns}
-
+        
     return stats
 
 def build_query(player_id=None, tools=None):
+
     base_cols = ["player_id"]
 
     for key in TOOLS:
@@ -605,35 +854,38 @@ def build_query(player_id=None, tools=None):
 
     if player_id is not None:
         query += " WHERE player_id = ?"
-
+    
     return query
 
+@log_execution_time
 def refresh_contour_cache(grid: List[List[dict]], ids_to_update: Optional[Set[int]] = None):
-    global CONTOUR_PATHS_CACHE
-    
+    global CONTOUR_PATHS_CACHE  
+    updated_ids = set()  
+
     if ids_to_update is not None:
         for c_id in ids_to_update:
-            found = False
-            for y in range(SIZE):
-                for x in range(SIZE):
-                    if grid[y][x]["contour_id"] == c_id:
-                        found = True
-                        break
-                if found: break
+            found = any(grid[y][x]["contour_id"] == c_id for y in range(SIZE) for x in range(SIZE))
             
             if found:
                 mask = build_mask(grid, c_id)
                 CONTOUR_PATHS_CACHE[c_id] = trace_contour(mask)
+                updated_ids.add(c_id)
             elif c_id in CONTOUR_PATHS_CACHE:
                 del CONTOUR_PATHS_CACHE[c_id]
-    
+                
     else:
+        logger.warning(f'ids_to_update: {ids_to_update}')
+
         CONTOUR_PATHS_CACHE.clear()
         unique_ids = {cell["contour_id"] for row in grid for cell in row if cell["contour_id"] != 0}
+        
         for c_id in unique_ids:
             mask = build_mask(grid, c_id)
             CONTOUR_PATHS_CACHE[c_id] = trace_contour(mask)
+            updated_ids.add(c_id)
 
+    return updated_ids    
+            
 def get_current_state_dict():
     global GAME_STATE_CACHE
 
@@ -641,17 +893,15 @@ def get_current_state_dict():
         refresh_game_state_cache()
     return GAME_STATE_CACHE
 
-
-
+@log_execution_time
 def refresh_game_state_cache(updated_contour_ids: Optional[Set[int]] = None):
     global GAME_STATE_CACHE
 
-    now = time.time()
     with sqlite3.connect(DB_NAME) as conn:
         cursor = conn.cursor()
         grid = load_grid_from_db(cursor)
         
-        refresh_contour_cache(grid, updated_contour_ids)
+        updated_ids = refresh_contour_cache(grid, updated_contour_ids)
         
         contour_to_player = {}
         for row in grid:
@@ -697,6 +947,26 @@ def refresh_game_state_cache(updated_contour_ids: Optional[Set[int]] = None):
         "players": players_data
     }
 
+    return updated_ids
+
+def get_player_total_area_from_cache(player_id: int) -> float:
+    if GAME_STATE_CACHE:
+        for entry in GAME_STATE_CACHE.get("leaderboard", []):
+            if entry["player_id"] == player_id:
+                return entry["totalArea"]
+    return 0.0
+
+HANDLERS = {
+    "sign": SignHandler(),
+    "draw": DrawHandler(SIZE, get_neighbour_contours, get_free_contour_id),
+    "tier2draw": DrawHandler(SIZE, get_neighbour_contours, get_free_contour_id),
+    "structure": StructureHandler(SIZE, TOOLS, get_cells_in_radius, get_free_contour_id),
+    "erase": EraseHandler(recalculate_player_contours_nearby),
+    "tier2erase": EraseHandler(recalculate_player_contours_nearby),
+    "blast": BlastHandler(TOOLS, get_cells_in_radius, recalculate_player_contours_nearby),
+    "tier2blast": BlastHandler(TOOLS, get_cells_in_radius, recalculate_player_contours_nearby),
+}
+
 @router.get("/game", response_class=HTMLResponse)
 async def game(request: Request):
     return templates.TemplateResponse("game.html", {"request": request})
@@ -704,16 +974,19 @@ async def game(request: Request):
 @router.websocket("/ws/game")
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
-    logger.info("WS: Установлено новое сырое соединение")
+    logger.info("WS: Новый")
 
     try:
         while True:
             data = await websocket.receive_json()
             msg_type = data.get("type")
-
+            start_time = time.perf_counter()
+          
             if msg_type == "ping":
                 await websocket.send_json({"type": "pong"})
                 continue
+            else:
+                logger.info(f"WS: {msg_type} (start)")
 
             if msg_type == "auth":
                 init_data = data.get("initData")
@@ -739,9 +1012,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 await perform_player_auth(websocket, match[0], match[1].get("name", "Player"))
                 continue
 
-            # 3. Game Actions
             if msg_type == "action":
-                action_valid = False
                 player_id = getattr(websocket, "player_id", None)
                 if not player_id:
                     continue
@@ -755,17 +1026,19 @@ async def websocket_endpoint(websocket: WebSocket):
                     tool, x, y = payload["tool"], int(payload["x"]), int(payload["y"])
                     
                     if not in_bounds(x, y): continue
-
-                    logger.info(f"WS: Action {tool} от {player_id} в ({x}, {y})")
                     
                     ids_to_refresh = set()
                     events = []
+                    
+                    handler = HANDLERS.get(tool)
+                    if not handler:
+                        continue                    
 
                     with sqlite3.connect(DB_NAME) as conn:
                         cursor = conn.cursor()
                         
                         grid = load_grid_from_db(cursor)
-                        player_area = calculate_player_total_area(grid, player_id)
+                        player_area = get_player_total_area_from_cache(player_id)
 
                         stats = get_player_stats(
                             cursor,
@@ -786,230 +1059,48 @@ async def websocket_endpoint(websocket: WebSocket):
                         tool_state = stats[player_id]["cooldowns"]                        
                         now = int(time.time() * 1000)
 
-                        # --- SIGN ---
-                        if tool == "sign":
-                            raw_text = data["payload"].get("text", "")
-                            text = sanitize_sign_text(raw_text)
-                            
-                            if not text or len(text) > 30:
-                                continue
+                        if not can_use_tool(tool_state[tool], now):
+                            await manager.send_personal_event(player_id, 'На перезарядке', 'tip')
+                            continue
 
-                            if not (0 <= y < len(grid) and 0 <= x < len(grid[0])):
-                                continue
-                                
-                            if grid[y][x].get("type") is not None:
-                                continue
+                        is_valid, error = handler.validate(player_id, x, y, grid, tool_state[tool], data["payload"])
+                        if not is_valid:
+                            await manager.send_personal_event(player_id, error, 'warn')
+                            continue
 
-                            if use_tool(cursor, player_id, "sign", tool_state["sign"], 0, now):
-                                action_valid = True
-                                events.append({"type": "sign_placed", "data": {"x": x, "y": y, "text": text}})
+                        consume_tool_charge(cursor, player_id, tool, TOOLS[tool], tool_state[tool], now)
 
-                                grid[y][x]["player_id"] = 0
-                                grid[y][x]["contour_id"] = -1
-                                grid[y][x]["type"] = {
-                                    "id": "Sign",
-                                    "data": {"text": text}
-                                }
+                        events, ids_to_refresh = handler.execute(player_id, x, y, grid, data["payload"], now)                       
+                        
+                        # is_valid
+                        sync_grid_to_db(cursor, grid)
+                        conn.commit()
 
-                                ids_to_refresh = [(x, y)] 
-
-                                logger.info(f"WS: Sign placed by {player_id} at ({x},{y}) with text: {text}")
-                                                
-                        # --- DRAW ---
-                        elif tool in ["draw", "tier2draw"] and grid[y][x]["contour_id"] == 0:
-                            
-                            cell_type_id = "Dot" if tool == "draw" else "T2Dot"
-
-                            if use_tool(
-                                cursor,
-                                player_id,
-                                tool,
-                                tool_state[tool],
-                                0,
-                                now
-                            ):
-                                action_valid = True
-
-                                neighbours = get_neighbour_contours(x, y, player_id, grid)
-
-                                if len(neighbours) > 1:
-                                    main_id = neighbours[0]
-                                    ids_to_refresh.update(neighbours)
-
-                                    for yy in range(SIZE):
-                                        for xx in range(SIZE):
-                                            if grid[yy][xx]["contour_id"] in neighbours:
-                                                grid[yy][xx]["contour_id"] = main_id
-
-                                    grid[y][x]["contour_id"] = main_id
-
-                                else:
-                                    new_id = neighbours[0] if neighbours else get_free_contour_id(grid, player_id)
-                                    grid[y][x]["contour_id"] = new_id
-                                    ids_to_refresh.add(new_id)
-
-                                grid[y][x]["player_id"] = player_id
-                                grid[y][x]["type"] = {"id": cell_type_id, "data": None}
-
-                                events.append({
-                                    "type": "dot_placed", 
-                                    "data": {"x": x, "y": y, "type": cell_type_id}
-                                })
-
-                                logger.info(f"WS: Draw успешен, игрок {player_id}")
-                       
-                        # --- STRUCTURE ---
-                        elif tool == "structure" and grid[y][x]["contour_id"] == 0:                                
-                            cfg = TOOLS[tool]
-                            radius = cfg.radius
-                            radius_expand = cfg.radius
-                                                            
-                            check_radius = radius + radius_expand
-                            is_clear = True
-                            for nx, ny in get_cells_in_radius(x, y, check_radius):
-                                if 0 <= nx < SIZE and 0 <= ny < SIZE:
-                                    if grid[ny][nx]["contour_id"] != 0:
-                                        is_clear = False
-                                        break
-
-                            if is_clear:
-                                if use_tool(cursor, player_id, tool, tool_state[tool], 0, now): 
-                                    action_valid = True                               
-                                
-                                    new_id = get_free_contour_id(grid, player_id)
-                                                                       
-                                    for nx in range(x - radius, x + radius + radius_expand):
-                                        for ny in range(y - radius, y + radius + radius_expand):
-                                            if 0 <= nx < SIZE and 0 <= ny < SIZE:
-                                                if abs(nx - x) + abs(ny - y) == radius:
-                                                    grid[ny][nx]["contour_id"] = new_id
-                                                    grid[ny][nx]["player_id"] = player_id
-                                                    grid[ny][nx]["type"] = {"id": "T2Dot", "data": None}
-                                    
-                                    ids_to_refresh.add(new_id)
-                                    
-                                    events.append({
-                                        "type": "structure_placed",
-                                        "data": {"x": x, "y": y, "radius": radius, "contour_id": new_id}
-                                    })
-                                    
-                                    logger.info(f"WS: Structure успешно создан, игрок {player_id}")
-                                                          
-                            else:
-                                events.append({
-                                    "alert": "Структуре недостаточно места"
-                                })
-
-                        # --- ERASE / TIER2ERASE ---
-                        elif tool in ["erase", "tier2erase"] and grid[y][x]["contour_id"] != 0:
-
-                            cell = grid[y][x]
-                            cell_type = cell.get("type", {}).get("id")
-
-                            if cell_type == "Stone":
-                                continue
-
-                            if tool == "erase" and cell_type in ["T2Dot", "Sign"]:
-                                continue
-
-                            if use_tool(cursor, player_id, tool, tool_state[tool], player_area, now):
-                                action_valid = True
-                                
-                                target_contour_id = grid[y][x]["contour_id"]
-                                target_pid = grid[y][x]["player_id"]
-                                
-                                grid[y][x]["contour_id"] = 0
-                                grid[y][x]["player_id"] = None
-                                grid[y][x]["type"] = None
-
-                                if target_pid:
-                                    new_contour_ids = recalculate_player_contours_nearby(
-                                        target_contour_id, target_pid, grid
-                                    )
-                                    ids_to_refresh.add(target_contour_id)
-                                    ids_to_refresh.update(new_contour_ids)
-
-                                event_data = {"type": "dot_erased", "data": {"x": x, "y": y}}
-                                events.append(event_data)
-
-                                logger.info(f"WS: {tool} успешно завершен для {player_id}")                            
-                                
-                        # --- BLAST / TIER2BLAST---
-                        elif tool in ["blast", "tier2blast"] and grid[y][x]["contour_id"] != 0:
-
-                            if use_tool(
-                                cursor,
-                                player_id,
-                                tool,
-                                tool_state[tool],
-                                0,
-                                now
-                            ):
-                                action_valid = True
-
-                                cfg = TOOLS[tool]
-                                radius = cfg.radius
-
-                                immune_types = ["Stone"]
-                                if tool == "blast":
-                                    immune_types.extend(["T2Dot", "Sign"])
-
-                                affected_pids = {
-                                    grid[ny][nx]["player_id"]
-                                    for nx, ny in get_cells_in_radius(x, y, radius)
-                                    if (
-                                        grid[ny][nx]["contour_id"] != 0 
-                                        and (grid[ny][nx].get("type") or {}).get("id") not in immune_types
-                                    )
-                                }
-
-                                for nx, ny in get_cells_in_radius(x, y, radius):
-                                    cell = grid[ny][nx]
-                                    cell_type = (cell.get("type") or {}).get("id")
-
-                                    if cell_type in immune_types:
-                                        continue
-
-                                    cell["contour_id"] = 0
-                                    cell["player_id"] = None
-                                    cell["type"] = None
-
-                                for pid in [p for p in affected_pids if p]:
-                                    recalculate_player_contours(pid, grid)
-
-                                ids_to_refresh = None
-
-                                events.append({
-                                        "type": "explosion", 
-                                        "data": {"x": x, "y": y, "radius": radius, "player_id": player_id}
-                                    })
-
-                                logger.info(f"WS: Blast успешен, игрок {player_id}")
-
-                        if action_valid:
-                            sync_grid_to_db(cursor, grid)
-                            conn.commit()
-                            logger.debug("WS: Данные успешно записаны в БД")
-
-                    refresh_game_state_cache(updated_contour_ids=ids_to_refresh)
+                    updated_ids = refresh_game_state_cache(updated_contour_ids=ids_to_refresh)
+                    
                     message = {
                         "type": "update", 
                         "data": get_current_state_dict(),
-                        "events": events
+                        "events": events,
+                        "updated_contours": list(updated_ids)
                     }
                     
+                    duration = time.perf_counter() - start_time
+                    logger.info(f"{duration:.4f} | WS sending")
                     await manager.broadcast(message)
-                    logger.info("WS: Стейт обновлен и разослан клиентам")
                         
                 except Exception as e:
-                    logger.error(f"WS: Ошибка обработки действия: {e}\n{traceback.format_exc()}")
+                    logger.error(f"WS: {e}\n{traceback.format_exc()}")
+        
+            duration = time.perf_counter() - start_time
+            logger.info(f"{duration:.4f} | WS {msg_type}")
 
     except WebSocketDisconnect:
         manager.disconnect(websocket)
         logger.info(f"WS: Отключен (игрок {getattr(websocket, 'player_id', 'Unknown')})")
     except Exception as e:
         logger.error(f"WS: Ошибка: {e}\n{traceback.format_exc()}")
-
+               
 async def perform_player_auth(websocket, p_id: int, username: str):    
     for conn in manager.active_connections:
         if getattr(conn, "player_id", None) == p_id and conn != websocket:
@@ -1034,19 +1125,20 @@ async def perform_player_auth(websocket, p_id: int, username: str):
     
     state = get_current_state_dict()
     await websocket.send_json({"type": "init", "data": state})
-    logger.info(f"WS: Игрок {p_id} успешно авторизован.")
+    logger.info(f"WS: {p_id} авторизован")
 
-def use_tool(cursor, player_id, tool, state, area, now):
-    cfg = TOOLS[tool]
-
-    cooldown_end = state["endsAt"]
-
-    if state["charges"] == 0 and cooldown_end > now:
+def can_use_tool(tool_state, now) -> bool:
+    cooldown_end = tool_state["endsAt"]
+    
+    if tool_state["charges"] == 0 and cooldown_end > now:
         return False
+    return True
 
+def consume_tool_charge(cursor, player_id, tool, cfg, state, now):
     max_charges = cfg.max_charges or 0
+    current_charges = state["charges"]
 
-    new_charges = state["charges"] - 1 if state["charges"] > 0 else max_charges - 1
+    new_charges = current_charges - 1 if current_charges > 0 else max_charges - 1
     new_cooldown = now if new_charges == 0 else 0
 
     cursor.execute(
@@ -1059,17 +1151,12 @@ def use_tool(cursor, player_id, tool, state, area, now):
         (new_charges, new_cooldown, player_id)
     )
 
-    return True
-
 def sanitize_sign_text(text: str) -> str:
-
     if not text:
         return ""
 
-    text = re.sub(r"[^a-zA-Zа-яА-ЯёЁ ]+", "", text)
-
+    text = re.sub(r"[^a-zA-Zа-яА-ЯёЁ0-9 ]+", "", text)
     text = re.sub(r"\s+", " ", text)
-
     text = text.strip()
 
     return text[:30]

@@ -81,6 +81,16 @@ canvas {
     font-weight: bold;
 }
 
+@keyframes leaderboardFlash {
+    0% { border-color: rgba(255, 255, 255, 0.05); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    50% { border-color: rgba(255, 255, 255, 0.8); box-shadow: 0 0 20px rgba(255, 255, 255, 0.4); }
+    100% { border-color: rgba(255, 255, 255, 0.05); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+}
+
+.leaderboard-flash {
+    animation: leaderboardFlash 0.6s ease-out;
+}
+
 .player-color-dot {
     width: 12px;
     height: 12px;
@@ -186,11 +196,11 @@ canvas {
 }
 
 .tools-bottom-panel .action-button.on-cooldown::before {
-    animation: cooldown-anim var(--total-duration, 1s) linear forwards;
-    animation-delay: var(--start-delay, 0s);
+    animation: cooldown-animation var(--total-duration) linear forwards;
+    animation-delay: var(--start-delay);
 }
 
-@keyframes cooldown-anim {
+@keyframes cooldown-animation {
     from { transform: scaleX(1); }
     to   { transform: scaleX(0); }
 }
@@ -263,7 +273,7 @@ canvas {
 .overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.4);
+    background: rgba(0, 0, 0, 0.4);
     backdrop-filter: blur(4px);
     display: flex;
     justify-content: center;
@@ -274,7 +284,7 @@ canvas {
 
 .message-box {
     padding: 10px;
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.4);
     border: 1px solid rgba(255,255,255,0.05);
     border-radius: 8px;
     text-align: center;
@@ -292,35 +302,6 @@ canvas {
     border: 2px dashed rgba(255, 255, 255, 0.8);
     animation: rotate-canvas 2s linear infinite;
     margin-right: 12px;
-}
-
-@media (max-width: 768px) {
-    .ui-layer {
-        top: 10px;
-        left: 10px;
-    }
-
-    #leaderboard {
-        font-size: 16px;
-        padding: 15px;
-    }
-
-    .tools-bottom-panel {
-        width: 90%;
-        bottom: 15px;
-        padding: 15px;
-        gap: 15px;
-    }
-
-    .tools-bottom-panel .action-button {
-        padding: 20px 0;
-        font-size: 16px;
-    }
-
-    .player-color-dot {
-        width: 16px;
-        height: 16px;
-    }
 }
 
 .zoom-panel {
@@ -424,7 +405,6 @@ input {
 .fx-btn {
     font-size: 13px;
     letter-spacing: 1px;
-    opacity: 0.85;
 }
 
 #game {
@@ -446,6 +426,78 @@ input {
     background: transparent;
     pointer-events: none;
 }
+
+#chat-container {
+    position: absolute;
+    bottom: 170px;
+    left: 80px;
+    right: 80px;
+    margin: 0 auto;
+    width: fit-content;
+    max-width: 600px;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    pointer-events: none;
+    align-items: center; 
+}
+
+.chat-message {
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: monospace;
+    backdrop-filter: blur(2px);
+    animation: fadeOut 3s forwards;
+}
+
+.chat-message.info { background: rgba(0, 0, 0, 0.6); }
+.chat-message.warn { background: rgba(255, 53, 53, 0.502); }
+.chat-message.good { background: rgba(71, 255, 71, 0.524); }
+.chat-message.tip { background: rgba(255, 233, 30, 0.417); }
+
+@keyframes fadeOut {
+    0% { opacity: 0; transform: translateY(10px); }
+    10% { opacity: 1; transform: translateY(0); }
+    80% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+@media (max-width: 768px) {
+    .ui-layer {
+        top: 10px;
+        left: 10px;
+    }
+
+    #leaderboard {
+        font-size: 16px;
+        padding: 15px;
+    }
+
+    #chat-container {
+        bottom: 250px; 
+    }
+
+    .tools-bottom-panel {
+        width: 90%;
+        bottom: 15px;
+        padding: 15px;
+        gap: 15px;
+    }
+
+    .tools-bottom-panel .action-button {
+        padding: 20px 0;
+        font-size: 16px;
+    }
+
+    .player-color-dot {
+        width: 16px;
+        height: 16px;
+    }
+}
 </style>
 </head>
 
@@ -459,6 +511,8 @@ input {
     <canvas id="minimap" style="background: transparent; position: relative; display: block; z-index: 2; width: 100%; height: auto; aspect-ratio: 1 / 1;"></canvas>
     <div class="hotkey-hint">Навигация [Клик]</div>
 </div>
+
+<div id="chat-container"></div>
 
 <div class="tools-bottom-panel">
     <div class="tool-row core-tools">
@@ -515,7 +569,7 @@ input {
 
 <div class="settings-panel"> 
     <div class="hotkey-hint-on-top">[O]</div>   
-    <button class="zoom-btn" onclick="toggleSettings()">⚙</button>
+    <button class="zoom-btn" onclick="openSettings()">⚙</button>
     <button class="zoom-btn fx-btn" onclick="toggleAnimations()">FX</button>
     <div class="hotkey-hint">[P]</div>   
 </div>
@@ -567,21 +621,16 @@ input {
 </div>
 
 <div id="sign-modal" class="overlay" style="display:none; z-index: 500;">
-    <div class="message-box" style="min-width: 280px;">
-
-        <h3 style="margin-top:0;">Текст таблички</h3>
-
+    <div class="message-box" style="min-width: 280px; padding: 20px;"> <h3 style="margin-top:0;">Текст таблички</h3>
         <input id="sign-input"
-               type="text"
-               maxlength="30"
-               placeholder="Введите текст"
-               style="width: 100%; padding: 8px; margin-top: 10px;">
-
-        <div style="display:flex; gap:10px; margin-top: 12px;">
-            <button class="action-button" onclick="submitSign()">OK</button>
-            <button class="action-button" onclick="closeSign()">Отмена</button>
+            type="text"
+            maxlength="30"
+            placeholder="до 30 символов"
+            style="width: 100%; padding: 8px; margin-top: 10px; box-sizing: border-box; text-align: center;"> 
+            <div style="display:flex; flex-direction: column; gap:10px; margin-top: 15px;">
+            <button class="action-button" style="width: 100%;" onclick="submitSign()">OK</button>
+            <button class="action-button" style="width: 100%;" onclick="closeSign()">Отмена</button>
         </div>
-
     </div>
 </div>
 
@@ -593,7 +642,7 @@ input {
 <script>
 const DEBUG_PROFILER_RENDER = false;
 const DEBUG_PROFILER_FX = false;
-const DEBUG_CONSOLE_LOG = false; 
+const DEBUG_CONSOLE_LOG = true; 
 
 const DEFAULT_SOUNDS = {
     draw: "https://www.myinstants.com/media/sounds/mouse-click-by-ek6_VR0O6PL.mp3",
@@ -604,20 +653,24 @@ if (localStorage.getItem("game_volume") === null) {
     localStorage.setItem("game_volume", "0");
 }
 
-function toggleSettings() {
+function openSettings() {
     const el = document.getElementById("settings-overlay");
     if (!el) return;
 
-    const isHidden = el.style.display === "none" || !el.style.display;
-    el.style.display = isHidden ? "flex" : "none";
+    el.style.display = "flex";
 
     const btn = document.getElementById("save-sounds-btn");
     if (btn) btn.disabled = false;
 
-    if (isHidden) {
-        requestAnimationFrame(loadSoundsToInputs);
-        updateVolumeUI();
-    }
+    requestAnimationFrame(loadSoundsToInputs);
+    updateVolumeUI();
+}
+
+function closeSettings() {
+    const el = document.getElementById("settings-overlay");
+    if (!el) return;
+
+    el.style.display = "none";
 }
 
 function saveSounds() {
@@ -632,7 +685,7 @@ function saveSounds() {
     };
 
     localStorage.setItem("game_sounds", JSON.stringify(sounds));
-    toggleSettings();
+    closeSettings();
 }
 
 
@@ -662,7 +715,7 @@ function loadSoundsToInputs() {
 function resetSounds() {
     localStorage.removeItem("game_sounds");
     loadSoundsToInputs();
-    toggleSettings();
+    closeSettings();
 }
 
 function getVolume() {
@@ -901,13 +954,13 @@ function connect() {
         try {
             const message = JSON.parse(event.data);
 
+            if (message.type === "pong") return;
+
             if (DEBUG_CONSOLE_LOG) {
                 console.group("WS MESSAGE");
                 console.log("Parsed:", message);
                 console.groupEnd();
-            }
-
-            if (message.type === "pong") return;
+            }            
 
             if (message.type === "auth_success") {
                 window.currentPlayer = message.player_id; 
@@ -965,99 +1018,113 @@ function connect() {
 
 let prevGrid = null;
 let gridEvents = [];
-let gridSweep = null;
+let gridSweeps = [];
 let explosions = [];
 
 function processServerData(message) {
     const serverData = message.data;
     const isUpdate = message.type === "update";
 
-    const newLbHash = hashLeaderboard(serverData.leaderboard);
-    const newGridHash = hashGrid(serverData.grid);
+    if (serverData){
 
-    if (newLbHash !== lastLeaderboardHash) {
-        serverLeaderboard = serverData.leaderboard;
-        leaderboardDirty = true;
-        lastLeaderboardHash = newLbHash;
-    }
+        const newLbHash = hashLeaderboard(serverData.leaderboard);
+        const newGridHash = hashGrid(serverData.grid);
 
-    if (isUpdate) {
-        prevGrid = grid;
-    }
-
-    if (newGridHash !== lastGridHash) {
-        grid = serverData.grid;
-        minimapDirty = true;
-        lastGridHash = newGridHash;
-        worldDirty = true;
-    }
-
-    if (serverData.config) {
-        SIZE = serverData.config.size;
-        CELL = serverData.config.cell;
-    }
-
-    serverContours = serverData.contours;
-
-    if (serverData.players) {       
-        for (let pId in serverData.players) {
-            players[pId] = serverData.players[pId];            
+        if (newLbHash !== lastLeaderboardHash) {
+            serverLeaderboard = serverData.leaderboard;
+            leaderboardDirty = true;
+            lastLeaderboardHash = newLbHash;
         }
 
-        const currentPId = String(window.currentPlayer);
-        const p = players[currentPId];
+        if (isUpdate) {
+            prevGrid = grid;
+        }
 
-        if (!p) return;
+        if (newGridHash !== lastGridHash) {
+            grid = serverData.grid;
+            minimapDirty = true;
+            lastGridHash = newGridHash;
+            worldDirty = true;
+        }
 
-        const c = p.cooldowns;
-        const now = Date.now();
+        if (serverData.config) {
+            SIZE = serverData.config.size;
+            CELL = serverData.config.cell;
+        }
 
-        function applyCooldown(btn, cd) {
-            const remainingMs = Math.max(0, cd.endsAt - now);
-            
-            if (remainingMs > 0 && cd.duration > 0) {
-                const totalSec = cd.duration / 1000;
-                const elapsedSec = (cd.duration - remainingMs) / 1000;
-                
-                startCooldown(btn, totalSec, elapsedSec);
+        serverContours = serverData.contours;
+
+        if (serverData.players) {       
+            for (let pId in serverData.players) {
+                players[pId] = serverData.players[pId];            
             }
+
+            const currentPId = String(window.currentPlayer);
+            const p = players[currentPId];
+
+            if (!p) return;
+
+            const c = p.cooldowns;
+            const now = Date.now();
+
+            function applyCooldown(btn, cd) {
+                const remainingMs = Math.max(0, cd.endsAt - now);
+                
+                if (remainingMs > 0 && cd.duration > 0) {
+                    const totalSec = cd.duration / 1000;
+                    const elapsedSec = (cd.duration - remainingMs) / 1000;
+                    
+                    startCooldown(btn, totalSec, elapsedSec);
+                }
+            }
+
+            applyCooldown(btnDraw, c.draw);
+            applyCooldown(btnErase, c.erase);
+            applyCooldown(btnBlast, c.blast);
+            applyCooldown(btnSign, c.sign);
+            applyCooldown(btnStructure, c.structure);
+            applyCooldown(btnTier2Draw, c.tier2draw);
+            applyCooldown(btnTier2Erase, c.tier2erase);
+            applyCooldown(btnTier2Blast, c.tier2blast);
         }
 
-        applyCooldown(btnDraw, c.draw);
-        applyCooldown(btnErase, c.erase);
-        applyCooldown(btnBlast, c.blast);
-        applyCooldown(btnSign, c.sign);
-        applyCooldown(btnStructure, c.structure);
-        applyCooldown(btnTier2Draw, c.tier2draw);
-        applyCooldown(btnTier2Erase, c.tier2erase);
-        applyCooldown(btnTier2Blast, c.tier2blast);
+        if (message.type === "init") {
+            centerMap();
+        }   
+
+        // if (isUpdate && prevGrid) {
+
+            // const result = createGridSweep(prevGrid, grid);
+
+            // if (result.changedCount === 1) {
+                
+            //     const p = result.points[0];
+
+            //     gridEvents.push({
+            //         x: p.x,
+            //         y: p.y,
+            //         type: p.to !== 0 ? "claim" : "clear",
+            //         playerId: p.to !== 0 ? p.toPlayer : null,
+            //         t: 0
+            //     });
+            // }
+        // }
     }
 
-    if (message.type === "init") {
-        centerMap();
-    }   
-
-    if (isUpdate && prevGrid) {
-
-        const result = createGridSweep(prevGrid, grid);
-
-        if (result.changedCount === 1) {
-
-            playSound("draw")
-            const p = result.points[0];
-
-            gridEvents.push({
-                x: p.x,
-                y: p.y,
-                type: p.to !== 0 ? "claim" : "clear",
-                playerId: p.to !== 0 ? p.toPlayer : null,
-                t: 0
-            });
-        }
-    }
-
-    if (message.events) {
+    if (message.events) {        
         message.events.forEach(event => {
+            if (event.msg){                
+                switch(event.msg_to) {
+                    case window.currentPlayer:
+                    case 'all':
+                        addChatMessage(event.msg, event.msg_level);
+                        break;
+                }  
+            }
+            if (event.sfx){
+                playSound(event.sfx)
+            }
+
             switch(event.type) {
                 case 'explosion':
                     explosions.push({
@@ -1067,30 +1134,37 @@ function processServerData(message) {
                         playerId: event.data.player_id,
                         t: 0
                     });
-                    worldDirty = true;                    
-                    playSound("blast");
+                    worldDirty = true;
                     break;                    
                 case 'sign_placed':
-                    const { x, y, data: signData } = event.data; // Предположим, структура данных такая
+                    const { x, y, data: signData } = event.data;
 
-                    // 1. Проверяем границы, чтобы избежать ошибок
                     if (grid[y] && grid[y][x]) {
-                        // 2. Обновляем объект, сохраняя существующие данные (contour_id, player_id и т.д.)
                         grid[y][x] = {
                             ...grid[y][x],
                             type: {
                                 id: "Sign",
-                                data: event.data // Здесь должен быть объект с текстом
+                                data: event.data
                             }
-                        };
-                        
-                        // 3. Уведомляем систему, что визуальное состояние устарело
-                        worldDirty = true;
-                        
-                        // 4. Запускаем рендер
+                        };                        
+                        worldDirty = true;                        
                         requestRender();
                     }
                     break;
+            }
+        });
+    }
+
+    if (message.updated_contours && Array.isArray(message.updated_contours)) {
+        message.updated_contours.forEach(contourId => {
+            
+            const contourData = Object.values(serverContours).find(c => c.id === contourId);
+            
+            if (contourData) {
+                console.log(`[Sync] Нашел контур ${contourId}, запускаю анимацию.`);
+                createGridSweep(contourData);
+            } else {
+                console.warn(`[Sync] Контур с ID ${contourId} не найден в serverContours`);
             }
         });
     }
@@ -1460,7 +1534,6 @@ function getPointSprite(playerId, type = "Dot") {
 
     const baseRadius = CELL * 0.15;
 
-    // Вспомогательная функция для рисования
     const drawCircle = (radius, fillStyle, strokeStyle = null, lineWidth = 0) => {
         ctx.beginPath();
         ctx.arc(center, center, radius, 0, Math.PI * 2);
@@ -1479,21 +1552,17 @@ function getPointSprite(playerId, type = "Dot") {
         const radii = GLOW_CONFIG.pointRadii;
         const alphas = GLOW_CONFIG.alpha;
         for (let i = 0; i < 4; i++) {
-            // 1. Центральная база — всегда цвет игрока
             drawCircle(baseRadius * radii[i], colorFor(playerId, alphas[i]));
             
-            // 2. Внешнее кольцо для T2Dot — теперь БЕЛОЕ
             if (type === "T2Dot") {
                 drawCircle(baseRadius * radii[i] * 2, null, `rgba(255, 255, 255, ${alphas[i] * 0.5})`, 1);
             }
         }
     } else {
-        // 1. Центральная база — цвет игрока
         drawCircle(baseRadius, colorFor(playerId, 1));
         
-        // 2. Внешнее кольцо для T2Dot — белое
         if (type === "T2Dot") {
-            drawCircle(baseRadius * 2, null, "white", 1.5);
+            drawCircle(baseRadius * 2, null, "white", 3);
         }
     }
 
@@ -1705,6 +1774,7 @@ function drawFloatingTexts(target = fxCtx) {
     }
 }
 
+// unused
 function showFloatingError(cellX, cellY, text) {
     const screen = worldToScreen(cellX * CELL + CELL / 2, cellY * CELL + CELL / 2);
     
@@ -1738,6 +1808,16 @@ function flashButtonError(toolName) {
         btn.classList.remove("btn-error-flash");
         void btn.offsetWidth; 
         btn.classList.add("btn-error-flash");
+    }
+}
+
+function flashLeaderboard() {
+    const lb = document.getElementById("leaderboard");
+    
+    if (lb) {
+        lb.classList.remove("leaderboard-flash");
+        void lb.offsetWidth;
+        lb.classList.add("leaderboard-flash");
     }
 }
 
@@ -1834,119 +1914,74 @@ function drawGridEvents(target = fxCtx) {
     }
 }
 
-function createGridSweep(prevGrid, nextGrid) {
-    const points = [];
+function createGridSweep(contourData) {
+    if (!contourData?.path?.length) return;
+    const points = contourData.path;
 
-    for (let y = 0; y < SIZE; y++) {
-        for (let x = 0; x < SIZE; x++) {
-            const a = prevGrid[y][x];
-            const b = nextGrid[y][x];
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    points.forEach(p => {
+        minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
+        minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
+    });
 
-            if (a.contour_id !== b.contour_id) {
-                points.push({
-                    x,
-                    y,
-                    from: a.contour_id,
-                    to: b.contour_id,
-                    fromPlayer: a.player_id,
-                    toPlayer: b.player_id,
-                });
-            }
-        }
+    const padding = 10;
+    const w = (maxX - minX + 1) * CELL + padding * 2;
+    const h = (maxY - minY + 1) * CELL + padding * 2;
+
+    const offscreen = document.createElement('canvas');
+    offscreen.width = w;
+    offscreen.height = h;
+    const ctx = offscreen.getContext('2d');
+
+    ctx.beginPath();
+    for (let i = 0; i < points.length; i++) {
+        const p = points[i];
+        const sx = (p.x - minX) * CELL + (CELL * 0.5) + padding;
+        const sy = (p.y - minY) * CELL + (CELL * 0.5) + padding;
+        if (i === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
     }
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 10;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.stroke();
 
-    const changedCount = points.length;
-
-    if (changedCount === 0) {
-        return { changedCount: 0 };
-    }
-
-    points.sort((a, b) => (a.x + a.y * SIZE) - (b.x + b.y * SIZE));
-
-    gridSweep = {
-        points,
-        index: 0,
-        progress: 0,
-        speed: 0.08,
+    gridSweeps.push({
+        cache: offscreen,
+        x: minX * CELL - padding,
+        y: minY * CELL - padding,
+        w: w,
+        h: h,
+        life: Math.sqrt(0.4),
+        decaySpeed: 1.0 / 1000.0,
         active: true
-    };
-
-    return { points, changedCount };
+    });
 }
 
 function updateGridSweep(dt) {
-    if (!gridSweep || !gridSweep.active) return;
+    for (let i = gridSweeps.length - 1; i >= 0; i--) {
+        const sweep = gridSweeps[i];
+        
+        sweep.life -= dt * sweep.decaySpeed;
 
-    const sweep = gridSweep;
-
-    sweep.progress += dt * sweep.speed;
-
-    while (sweep.progress >= 1 && sweep.index < sweep.points.length - 1) {
-        sweep.progress -= 1;
-        sweep.index++;
-    }
-
-    if (sweep.index >= sweep.points.length - 1) {
-        sweep.active = false;
-        worldDirty = true;
+        if (sweep.life <= 0) {
+            gridSweeps.splice(i, 1);
+        }
     }
 }
 
 function drawGridSweep(target = fxCtx) {
-    if (!gridSweep || !gridSweep.active) return;
+    for (const sweep of gridSweeps) {
+        const screenPos = worldToScreen(sweep.x, sweep.y);
+        
+        const drawW = sweep.w * zoom;
+        const drawH = sweep.h * zoom;
 
-    target.save();
-
-    const sweep = gridSweep;
-    const halfCell = CELL * 0.5;
-
-    for (let i = 0; i < sweep.index; i++) {
-        const p = sweep.points[i];
-
-        const wx = p.x * CELL + halfCell;
-        const wy = p.y * CELL + halfCell;
-
-        const s = worldToScreen(wx, wy);
-
-        target.beginPath();
-        target.arc(s.x, s.y, 6 * zoom, 0, Math.PI * 2);
-
-        const id = p.toPlayer ?? p.fromPlayer;
-
-        target.fillStyle = colorFor(id, 0.25);
-        target.fill();
+        target.save();
+        target.globalAlpha = 0.9 * Math.pow(sweep.life, 2);        
+        target.drawImage(sweep.cache, screenPos.x, screenPos.y, drawW, drawH);        
+        target.restore();
     }
-
-    const a = sweep.points[sweep.index];
-    const b = sweep.points[Math.min(sweep.index + 1, sweep.points.length - 1)];
-
-    const ax = a.x * CELL + halfCell;
-    const ay = a.y * CELL + halfCell;
-    const bx = b.x * CELL + halfCell;
-    const by = b.y * CELL + halfCell;
-
-    const sa = worldToScreen(ax, ay);
-    const sb = worldToScreen(bx, by);
-
-    const lx = sa.x + (sb.x - sa.x) * sweep.progress;
-    const ly = sa.y + (sb.y - sa.y) * sweep.progress;
-
-    target.beginPath();
-    target.moveTo(sa.x, sa.y);
-    target.lineTo(lx, ly);
-
-    target.strokeStyle = "rgba(255,255,255,0.9)";
-    target.lineWidth = 2 * zoom;
-    target.shadowColor = "white";
-    target.shadowBlur = 12;
-    target.stroke();
-
-    target.beginPath();
-    target.arc(lx, ly, 4 * zoom, 0, Math.PI * 2);
-    target.fillStyle = "white";
-    target.fill();
-
-    target.restore();
 }
 
 function drawPulse(target, screen, radius, alpha, playerId, i) {
@@ -2038,8 +2073,19 @@ function hashLeaderboard(lb) {
     return lb.map(p => `${p.player_id}:${p.totalArea}`).join("|");
 }
 
+let lastLeaderboardOrder = [];
 function renderLeaderboard() {
     const leaderboardEl = document.getElementById("leaderboard");
+
+    const currentOrder = serverLeaderboard.map(p => p.player_id);
+    const hasOrderChanged = JSON.stringify(currentOrder) !== JSON.stringify(lastLeaderboardOrder);
+
+    if (hasOrderChanged && lastLeaderboardOrder.length > 0) {
+        addChatMessage('Топ игроков изменился', 'info');
+        flashLeaderboard();
+    }
+
+    lastLeaderboardOrder = currentOrder;
 
     leaderboardEl.innerHTML = serverLeaderboard.map((player, index) => {
         const playerColor = colorFor(player.player_id, 1);
@@ -2053,8 +2099,8 @@ function renderLeaderboard() {
                         ${player.name} ${player.player_id === window.currentPlayer ? '(Вы)' : ''}
                     </span>
                 </div>
-                <div style="font-size: 11px; color: rgba(255,255,255,0.6); padding-left: 5px;">
-                    --- площадь: ${player.totalArea.toFixed(1)}
+                <div style="font-size: 11px; color: rgba(255,255,255,0.6); padding-left: 44px;">
+                    площадь: ${player.totalArea.toFixed(1)}
                 </div>
             </div>
         `;
@@ -2101,13 +2147,17 @@ function fxRender(target = fxCtx) {
     target.setTransform(1,0,0,1,0,0);
     target.globalAlpha = 1;
     target.clearRect(0, 0, fxCanvas.width, fxCanvas.height);
-    
-    measure("FX | Grid Sweep", () => drawGridSweep(target), DEBUG_PROFILER_FX);
-    measure("FX | Particles", () => drawParticles(target), DEBUG_PROFILER_FX);
-    measure("FX | Grid Events", () => drawGridEvents(target), DEBUG_PROFILER_FX);
-    measure("FX | Explosions", () => drawExplosions(target), DEBUG_PROFILER_FX);
-    measure("FX | Hover Tooltip", () => drawHoverTooltip(target), DEBUG_PROFILER_FX);
-    measure("FX | Floating Texts", () => drawFloatingTexts(target), DEBUG_PROFILER_FX);
+
+    if (animationsEnabled) {
+        measure("FX | Grid Sweep", () => drawGridSweep(target), DEBUG_PROFILER_FX);
+        measure("FX | Particles", () => drawParticles(target), DEBUG_PROFILER_FX);
+        measure("FX | Grid Events", () => drawGridEvents(target), DEBUG_PROFILER_FX);
+        measure("FX | Explosions", () => drawExplosions(target), DEBUG_PROFILER_FX);    
+        measure("FX | Hover Tooltip", () => drawHoverTooltip(target), DEBUG_PROFILER_FX);
+
+        // unused
+        // measure("FX | Floating Texts", () => drawFloatingTexts(target), DEBUG_PROFILER_FX);
+    }    
 }
 
 function measure(name, fn, profiler) {
@@ -2191,48 +2241,16 @@ function setText(btn, normalText, endsAt) {
     }
 }
 
-function updateButton(btn, cooldown, normalText, cooldownText) {
-    // const now = Date.now();
-    // const endsAt = cooldown.endsAt || 0;
 
-    // const remaining = Math.max(0, endsAt - now);
-    // const total = cooldown.duration || (endsAt - now + remaining);
-
-    // if (remaining > 0) {
-    //     const progress = 1 - (remaining / (total || remaining));
-
-    //     btn.classList.add('on-cooldown');
-
-    //     if (btn.innerText !== cooldownText) {
-    //         btn.innerText = cooldownText;
-    //     }
-    // } else {
-    //     btn.classList.remove('on-cooldown');
-
-    //     if (btn.innerText !== normalText) {
-    //         btn.innerText = normalText;
-    //     }
-    // }
-}
-
-/**
- * @param {HTMLElement} btn - Элемент кнопки
- * @param {number} totalSec - Полная длительность анимации (сек)
- * @param {number} startSec - Прошедшее время (сек) для старта с прогрессом
- */
 function startCooldown(btn, totalSec, startSec = 0) {
-    // Сброс состояния
     btn.classList.remove('on-cooldown');
-    btn.style.animation = 'none';
-    void btn.offsetWidth; // Reflow
+    void btn.offsetWidth; 
     
-    // Применяем параметры через переменные
     btn.style.setProperty('--total-duration', totalSec + 's');
     btn.style.setProperty('--start-delay', '-' + startSec + 's');
     
     btn.classList.add('on-cooldown');
 
-    // Автоматическое снятие класса по окончании
     setTimeout(() => {
         btn.classList.remove('on-cooldown');
     }, (totalSec - startSec) * 1000);
@@ -2425,7 +2443,10 @@ window.addEventListener("keydown", (e) => {
     } else if (key === "p" || key === "з") {        
         toggleAnimations(); 
     } else if (key === "o" || key === "щ") {
-        toggleSettings();
+        openSettings();
+    } else if (key === "escape" || key === "esc") {
+        closeSign();
+        closeSettings();
     } 
     // else  {
     //    console.log(key)
@@ -2532,46 +2553,67 @@ function processClick(e) {
     }
 }
 
-function canUseTool(toolName, pData, cell, now, x, y) {
+function canUseTool(toolName, pData, cell, now, x, y, grid) {
     const cd = pData.cooldowns[toolName];
+    if (!cd) return true;
 
+    function messageWithFlash(text) {
+        addChatMessage(text, 'warn');
+        flashButtonError(toolName);
+    }
+    
     const isOnCooldown = cd.endsAt > now;
     const hasCharges = cd.maxCharges == null || cd.charges > 0;
+    
+    switch (toolName) {
+        case "sign":
+            if (cell.type != null) {
+                messageWithFlash('Здесь чем-то занято');
+                return false;
+            }
+            break;
+
+        case "draw":
+        case "tier2draw":
+            if (cell.contour_id !== 0) {
+                messageWithFlash('Здесь уже занято');
+                return false;
+            }
+            break;
+
+        case "structure":
+            if (cell.contour_id !== 0) {
+                messageWithFlash('Можно строить только на пустом');
+                return false;
+            }
+            break;
+
+        case "erase":
+        case "tier2erase":
+            if (cell.contour_id === 0 || (cell.type?.id === "Stone")) {
+                messageWithFlash('Здесь ничего нет');
+                return false;
+            }
+            if (toolName === "erase" && (cell.type?.id === "T2Dot" || cell.type?.id === "Sign")) {
+                messageWithFlash('Это может ластик 2-го уровня');
+                return false;
+            }
+            break;
+
+        case "blast":
+        case "tier2blast":
+            if (cell.contour_id === 0) {
+                messageWithFlash('Не может начинаться с пустого места');
+                return false;
+            }
+            break;
+    }
 
     if (!hasCharges && isOnCooldown) {
-        showFloatingError(x, y, "На перезарядке!");
+        addChatMessage('На перезарядке!', 'tip');
         flashButtonError(toolName);
         return false;
     }
-
-    if (cell.type?.id === "Stone") {
-        showFloatingError(x, y, "Здесь нет ничего...");
-        return false;
-    }
-
-    if ((toolName === "draw" || toolName === "tier2draw") && cell.contour_id !== 0) {
-        showFloatingError(x, y, "Здесь занято!");
-        flashButtonError(toolName);
-        return false;
-    }
-
-    if (toolName === "structure" && cell.contour_id !== 0) {
-        showFloatingError(x, y, "Уже занято!");
-        flashButtonError(toolName);
-        return false;
-    }
-
-    if ((toolName === "erase" || toolName === "blast") && cell.contour_id === 0) {
-        showFloatingError(x, y, "Здесь пусто!");
-        flashButtonError(toolName);
-        return false;
-    }
-
-    if ((toolName === "tier2erase" || toolName === "tier2blast") && cell.contour_id === 0) {
-        showFloatingError(x, y, "Тут пусто!");
-        flashButtonError(toolName);
-        return false;
-    }    
 
     return true;
 }
@@ -2595,6 +2637,8 @@ function submitSign() {
         }
         
         createExplosion(x * CELL + CELL / 2, y * CELL + CELL / 2, window.currentPlayer, 6);
+    } else {
+        addChatMessage('Что-то не так с текстом таблички')
     }
 
     closeSign();
@@ -2602,15 +2646,32 @@ function submitSign() {
 
 function closeSign() {
     document.getElementById('sign-modal').style.display = 'none';
-    document.getElementById('sign-input').value = ""; // Очищаем поле
+    document.getElementById('sign-input').value = "";
     pendingSignCoords = { x: null, y: null };
 }
+
+const shownTooltips = new Set();
+const TOOL_TIP_MAP = {
+    draw: "обычная точка",
+    erase: "ситарет одну обычную точку",
+    blast: "стирает обычные точки в радиусе взрыва",
+    sign: "табличка с текстом, удаляется только ластиком/взрывом 2-го уровня",
+    structure: "структура из точек 2-го уровня",
+    tier2draw: "точка 2-го уровня",
+    tier2erase: "ситарет одну точку 2-го уровня",
+    tier2blast: "стирает точки 2-го уровня в радиусе взрыва"
+};
 
 function setTool(tool) {
     document.querySelectorAll('.action-button').forEach(b => b.classList.remove('active'));
     document.getElementById(`tool-${tool}`).classList.add('active');
 
     currentTool = tool;
+    
+    // if (!shownTooltips.has(tool)) {
+    //     addChatMessage(TOOL_TIP_MAP[tool]);
+    //     shownTooltips.add(tool);
+    // }
 }
 
 function handleMinimapClick(e) {
@@ -2667,6 +2728,20 @@ window.onerror = logErrorToOverlay;
 window.onunhandledrejection = (event) => {
     logErrorToOverlay(event.reason, "Promise", 0, 0, event.reason);
 };
+
+function addChatMessage(text, type = 'info') {
+    const container = document.getElementById('chat-container');
+    
+    const msg = document.createElement('div');
+    msg.className = `chat-message ${type}`;
+    msg.innerText = text;
+    
+    container.appendChild(msg);
+    
+    setTimeout(() => {
+        msg.remove();
+    }, 3100);
+}
 
 resizeCanvas();
 centerMap();
