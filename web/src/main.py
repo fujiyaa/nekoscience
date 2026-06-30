@@ -11,7 +11,7 @@ BASE_DIR = Path(__file__).resolve().parent
 
 app = FastAPI()
 
-if not os.getenv("DEV_FLAG", "0"):
+if not os.getenv("DEV_FLAG", "1"):
     app.add_middleware(
     CORSMiddleware, allow_origins=["https://myangelfujiya.ru"],
     allow_credentials=True, allow_methods=["*"], allow_headers=["*"] 
