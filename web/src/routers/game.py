@@ -32,7 +32,7 @@ router = APIRouter()
 DB_NAME = "game_v2.db"
 BOT_TOKEN = os.getenv("TOKEN")
 
-SIZE = 500
+SIZE = 250
 CELL = 50
 
 GAME_GRID_CACHE = []
@@ -454,7 +454,7 @@ TOOLS = {
     
     "draw": ToolConfig(
         name="draw",
-        base_cooldown_sec=6,
+        base_cooldown_sec=1,
         max_charges=50,
     ),
     "erase": ToolConfig(
@@ -630,23 +630,55 @@ def init_db():
         global GAME_GRID_CACHE
         GAME_GRID_CACHE = load_grid_from_db(cursor)
 
-def update_cell_ownership(cursor, x: int, y: int, player_id: Optional[int], contour_id: int):
-    if player_id is None:
-        cursor.execute("DELETE FROM cells WHERE x = ? AND y = ?", (x, y))
-    else:
-        cursor.execute("""
-            INSERT INTO cells (x, y, player_id, contour_id) VALUES (?, ?, ?, ?)
-            ON CONFLICT(x, y) DO UPDATE SET player_id=excluded.player_id, contour_id=excluded.contour_id
-        """, (x, y, player_id, contour_id))
+def batch_update_cell_ownership(cursor, updates: List[dict]):
+    if not updates:
+        return
 
-def set_cell_type(cursor, x: int, y: int, type_id: str, data: Optional[dict] = None):
-    if type_id is None:
-        cursor.execute("DELETE FROM cell_types WHERE x = ? AND y = ?", (x, y))
-    else:
-        cursor.execute("""
-            INSERT INTO cell_types (x, y, type_id, type_data) VALUES (?, ?, ?, ?)
-            ON CONFLICT(x, y) DO UPDATE SET type_id=excluded.type_id, type_data=excluded.type_data
-        """, (x, y, type_id, data if data else None))
+    to_upsert = [
+        (u['x'], u['y'], u['player_id'], u['contour_id']) 
+        for u in updates if u['player_id'] is not None
+    ]
+    
+    to_delete = [(u['x'], u['y']) for u in updates if u['player_id'] is None]
+
+    if to_upsert:
+        cursor.executemany("""
+            INSERT INTO cells (x, y, player_id, contour_id) 
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(x, y) DO UPDATE SET 
+                player_id=excluded.player_id, 
+                contour_id=excluded.contour_id
+        """, to_upsert)
+
+    if to_delete:
+        cursor.executemany("""
+            DELETE FROM cells WHERE x = ? AND y = ?
+        """, to_delete)
+
+def batch_update_cell_types(cursor, updates: List[dict]):
+    if not updates:
+        return
+
+    data_to_upsert = [
+        (u['x'], u['y'], u['type_id'], str(u['data']) if u['data'] else None)
+        for u in updates if u['type_id'] is not None
+    ]
+    
+    to_delete = [(u['x'], u['y']) for u in updates if u['type_id'] is None]
+
+    if data_to_upsert:
+        cursor.executemany("""
+            INSERT INTO cell_types (x, y, type_id, type_data)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(x, y) DO UPDATE SET 
+                type_id=excluded.type_id, 
+                type_data=excluded.type_data
+        """, data_to_upsert)
+
+    if to_delete:
+        cursor.executemany("""
+            DELETE FROM cell_types WHERE x = ? AND y = ?
+        """, to_delete)
 
 @log_execution_time
 def get_cell_info(cursor, x: int, y: int):
@@ -707,6 +739,9 @@ def update_cache_cell(x, y, new_data: dict):
 @log_execution_time
 def sync_grid_to_db(cursor, new_grid: List[List[dict]]):
     global GAME_GRID_CACHE
+
+    updates_to_process = []
+    ownership_updates = []
     
     for y in range(SIZE):
         for x in range(SIZE):
@@ -714,26 +749,28 @@ def sync_grid_to_db(cursor, new_grid: List[List[dict]]):
             old_cell = GAME_GRID_CACHE[y][x]
             
             if (new_cell["player_id"] != old_cell["player_id"] or 
-                new_cell["contour_id"] != old_cell["contour_id"]):
-                
-                update_cell_ownership(
-                    cursor, x, y, 
-                    new_cell["player_id"], 
-                    new_cell["contour_id"]
+                new_cell["contour_id"] != old_cell["contour_id"]):                
+
+                ownership_updates.append({
+                    'x': x, 'y': y, 
+                    'player_id': new_cell["player_id"], 
+                    'contour_id': new_cell["contour_id"]
+                })
+                GAME_GRID_CACHE[y][x].update(
+                    {"player_id": new_cell["player_id"], "contour_id": new_cell["contour_id"]}
                 )
-                GAME_GRID_CACHE[y][x]["player_id"] = new_cell["player_id"]
-                GAME_GRID_CACHE[y][x]["contour_id"] = new_cell["contour_id"]
 
             if new_cell["type"] != old_cell["type"]:
-                set_cell_type(
-                    cursor,
-                    x,
-                    y,
-                    new_cell["type"]["id"] if new_cell["type"] else None,
-                    new_cell["type"]["data"] if new_cell["type"] else None,
-                )
+                updates_to_process.append({
+                    'x': x, 'y': y, 
+                    'type_id': new_cell["type"]["id"] if new_cell["type"] else None,
+                    'data': new_cell["type"]["data"] if new_cell["type"] else None
+                })
 
                 GAME_GRID_CACHE[y][x]["type"] = new_cell["type"]
+
+    batch_update_cell_ownership(cursor, ownership_updates)
+    batch_update_cell_types(cursor, updates_to_process)        
 
 init_db()
 
@@ -821,6 +858,20 @@ def build_mask(grid: List[List[dict]], contour_id: int) -> List[List[int]]:
         [1 if cell["contour_id"] == contour_id else 0 for cell in row]
         for row in grid
     ]
+
+def build_mask_and_count(grid: List[List[dict]], contour_id: int):
+    mask = []
+    count = 0
+    for row in grid:
+        mask_row = []
+        for cell in row:
+            if cell["contour_id"] == contour_id:
+                mask_row.append(1)
+                count += 1
+            else:
+                mask_row.append(0)
+        mask.append(mask_row)
+    return mask, count
 
 @lru_cache(maxsize=SIZE*SIZE)
 def cached_trace(mask_tuple):
@@ -1002,21 +1053,20 @@ def refresh_contour_cache(grid: List[List[dict]], ids_to_update: Optional[Set[in
     if ids_to_update is not None:
         for c_id in ids_to_update:
             if c_id in existing_ids:
-                mask = build_mask(grid, c_id)
+                mask, count = build_mask_and_count(grid, c_id)
+                logger.info(f'{c_id}, {count}')
                 updated_ids[c_id] = CONTOUR_PATHS_CACHE[c_id] = trace_contour(mask)
             elif c_id in CONTOUR_PATHS_CACHE:
                 del CONTOUR_PATHS_CACHE[c_id]
                 updated_ids[c_id] = None                
     else:
-        logger.warning(f'ids_to_update: {ids_to_update}')
-
         CONTOUR_PATHS_CACHE.clear()
         for c_id in existing_ids:
-            mask = build_mask(grid, c_id)
+            mask, count = build_mask_and_count(grid, c_id)
             updated_ids[c_id] = CONTOUR_PATHS_CACHE[c_id] = trace_contour(mask)
 
     return updated_ids    
-            
+    
 def get_current_state_dict():
     global GAME_STATE_CACHE
 
@@ -1063,7 +1113,11 @@ def refresh_game_state_cache(updated_contour_ids: Optional[Set[int]] = None):
                 player_areas[p_id] += area
             
         serialized_contours = [
-            [contour_to_player.get(c_id), path] 
+            {
+                "id": c_id,
+                "playerId": contour_to_player.get(c_id),
+                "path": path
+            } 
             for c_id, path in CONTOUR_PATHS_CACHE.items()
         ]
         
@@ -1172,6 +1226,11 @@ async def websocket_endpoint(websocket: WebSocket):
                 await perform_player_auth(websocket, match[0], match[1].get("name", "Player"))
                 continue
 
+            if msg_type == "get_init":
+                state = get_current_state_dict()
+                await websocket.send_bytes(msgpack.packb({"type": "init", "data": state}, use_bin_type=True))
+                continue
+
             if msg_type == "action":
                 player_id = getattr(websocket, "player_id", None)
                 if not player_id:
@@ -1245,7 +1304,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     }
                     
                     duration = time.perf_counter() - start_time
-                    logger.info(f"{duration:.4f} | WS sending")
+                    logger.info(f"{duration:.4f} - in total | WS sending")
                     await manager.broadcast(message)
                         
                 except Exception as e:
@@ -1270,7 +1329,6 @@ async def perform_player_auth(websocket, p_id: int, username: str):
     for conn in old_conns:
         try:
             await conn.send_bytes(msgpack.packb({"type": "session_replaced"}, use_bin_type=True))
-            # Даем крошечную паузу, чтобы клиент успел прочитать (опционально)
             await asyncio.sleep(0.1) 
             await conn.close()
         except Exception:
@@ -1284,10 +1342,7 @@ async def perform_player_auth(websocket, p_id: int, username: str):
     await loop.run_in_executor(None, _sync_db_auth, p_id, username)
     
     await websocket.send_bytes(msgpack.packb({"type": "auth_success", "player_id": p_id}, use_bin_type=True))
-    
-    state = get_current_state_dict()
-    await websocket.send_bytes(msgpack.packb({"type": "init", "data": state}, use_bin_type=True))
-    
+       
     logger.info(f"WS: {p_id} авторизован")
 
 def _sync_db_auth(p_id, username):
