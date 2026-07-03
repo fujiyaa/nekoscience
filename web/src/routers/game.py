@@ -1275,6 +1275,7 @@ async def websocket_endpoint(websocket: WebSocket):
             if msg_type == "init":
                 _state = get_current_state_dict()                
                 refresh_game_state_cache_only_leaderboard()
+                refresh_game_state_cache()
                 # full_structure = analyze_structure(state)                
                 # import pprint
                 # logger.info("DEBUG FULL STRUCTURE MAP:")
