@@ -2,8 +2,8 @@ const DEBUG_PROFILER_RENDER = false;
 const DEBUG_PROFILER_FX = false;
 const DEBUG_PROFILER_UPDATE = false;
 const DEBUG_PROFILER_MAP = false;
-const DEBUG_CONSOLE_LOG = true; 
-const DEBUG_SPRIE_CACHE_LOG = false; 
+const DEBUG_CONSOLE_LOG = false; 
+const DEBUG_SPRIE_CACHE_LOG = true; 
 const DEBUG_PACKET_SIZE_IN_CHAT = false; 
 
 const DEFAULT_SOUNDS = {
@@ -73,7 +73,6 @@ const colorPreview = document.getElementById('color-preview');
 
 hueSlider.addEventListener('input', (e) => {
     const hue = e.target.value;
-    console.log(hue);
     const color = `hsl(${hue}, 100%, 50%)`;
     colorPreview.style.backgroundColor = color;
     e.target.style.setProperty('--thumb-color', color);
@@ -1517,7 +1516,7 @@ function renderMinimapWorld() {
         for (let x = 0; x < SIZE; x++) {
             const cell = grid[index++];
 
-            if (!cell || cell.contourId === 0) continue;
+            if (!cell || cell.contourId === 0 || cell.contourId === -2 || cell.contourId === -1) continue;
             
             let color;
             if (cell.playerId === 0) {
@@ -1631,6 +1630,8 @@ function drawHoverTooltip(target = fxCtx) {
             
             text = `Текст: ${cell.type.data}`;
             target.strokeStyle = "#ffffff";
+        } else if (cell.contourId === -2){            
+            return;
         }
 
         target.font = "bold 13px monospace";
@@ -2064,16 +2065,16 @@ function redrawWorld() {
 
     const bounds = getVisibleBounds();
     if (DEBUG_PROFILER_RENDER) {
-        measure("Render | Grid", () => drawGrid(worldCtx, bounds));
+        measure("Render | Grid", () => drawGrid(worldCtx, bounds));        
+        measure("Render | Scene (cell)", () => drawScene(worldCtx, bounds));
         measure("Render | Contours", () => {
             Object.values(serverContours).forEach(c => drawServerContour(worldCtx, bounds, c));
         });
-        measure("Render | Scene (cell)", () => drawScene(worldCtx, bounds));
         measure("Render | Signs", () => drawSigns(worldCtx, bounds));
     } else {
-        drawGrid(worldCtx, bounds);    
-        Object.values(serverContours).forEach(c => drawServerContour(worldCtx, bounds, c));
+        drawGrid(worldCtx, bounds);
         drawScene(worldCtx, bounds);
+        Object.values(serverContours).forEach(c => drawServerContour(worldCtx, bounds, c));
         drawSigns(worldCtx, bounds);
     }
 }
@@ -2236,7 +2237,7 @@ function updateCooldownUI() {
     syncButton(btnBlast, c.blast, "Взрыв 💥");
     syncButton(btnTier2Draw, c.tier2draw, "Точка Ур.2");
     syncButton(btnTier2Erase, c.tier2erase, "Ластик Ур.2");
-    syncButton(btnTier2Blast, c.tier2blast, "Взрыв 💥 Ур.2");
+    syncButton(btnTier2Blast, c.tier2blast, "Взрыв Ур.2");
 }
 
 function setText(btn, normalText, endsAt) {
@@ -2810,5 +2811,5 @@ function addChatMessage(text, type = 'info', timeout = 2000, force = false) {
 resizeCanvas();
 updateAnimation();
 startFXLoop();
-setTimeout(updateCooldownUI(), 300)
+setInterval(updateCooldownUI, 300);
 connect();

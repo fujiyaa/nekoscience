@@ -34,7 +34,7 @@ BOT_TOKEN = os.getenv("TOKEN")
 
 SIZE = 250
 CELL = 50
-MAX_DOTS_PER_CONTOUR = 250
+MAX_DOTS_PER_CONTOUR = 300
 
 GAME_GRID_CACHE = []
 last_action_times = {}
@@ -106,7 +106,7 @@ class SignHandler(BaseToolHandler):
                 player_id=player_id
             )
         ] 
-        return events, [(x, y)]
+        return events, [grid[y][x]["contour_id"]]
     
 class DrawHandler(BaseToolHandler):
     def __init__(self, size, max_dots, get_neighbours_func, get_free_id_func):
@@ -447,49 +447,49 @@ class ConnectionManager:
 TOOLS = {
     "sign": ToolConfig(
         name="sign",
-        base_cooldown_sec=1,
-        max_charges=50,
+        base_cooldown_sec=900,
+        max_charges=3,
     ),
     "structure": ToolConfig(
         name="structure",
-        base_cooldown_sec=1,
-        max_charges=50,
+        base_cooldown_sec=8000,
+        max_charges=1,
         radius=5,
     ),
     
     "draw": ToolConfig(
         name="draw",
-        base_cooldown_sec=1,
-        max_charges=50,
+        base_cooldown_sec=15,
+        max_charges=5,
     ),
     "erase": ToolConfig(
         name="erase",
-        base_cooldown_sec=2,
-        max_charges=10,
+        base_cooldown_sec=10,
+        max_charges=1,
         area_scaling=lambda area: (area // 100) * 3000,
     ),
     "blast": ToolConfig(
         name="blast",
-        base_cooldown_sec=1,
-        max_charges=50,
-        radius=14,
+        base_cooldown_sec=6000,
+        max_charges=1,
+        radius=12,
     ),
 
     "tier2draw": ToolConfig(
         name="tier2draw",
-        base_cooldown_sec=1,
-        max_charges=2,
+        base_cooldown_sec=500,
+        max_charges=1,
     ),
     "tier2erase": ToolConfig(
         name="tier2erase",
-        base_cooldown_sec=5,
-        max_charges=30,
+        base_cooldown_sec=100,
+        max_charges=1,
         area_scaling=lambda area: (area // 100) * 3000,
     ),
     "tier2blast": ToolConfig(
         name="tier2blast",
-        base_cooldown_sec=5,
-        max_charges=10,
+        base_cooldown_sec=9000,
+        max_charges=1,
         radius=6,
     ),
 }
@@ -1061,22 +1061,25 @@ def refresh_contour_cache(grid: List[List[dict]], ids_to_update: Optional[Set[in
 
     if ids_to_update is not None:
         for c_id in ids_to_update:
-            if c_id in existing_ids:
-                mask, count = build_mask_and_count(grid, c_id)
-                CONTOUR_COUNT_CACHE[c_id] = count
-                updated_ids[c_id] = CONTOUR_PATHS_CACHE[c_id] = trace_contour(mask)
-            elif c_id in CONTOUR_PATHS_CACHE:
-                del CONTOUR_PATHS_CACHE[c_id]
-                if c_id in CONTOUR_COUNT_CACHE:
-                    del CONTOUR_COUNT_CACHE[c_id]
-                updated_ids[c_id] = None                
+            logger.debug(f"DEBUG: c_id={c_id}, type={type(c_id)}")
+            if c_id > 0:
+                if c_id in existing_ids:
+                    mask, count = build_mask_and_count(grid, c_id)
+                    CONTOUR_COUNT_CACHE[c_id] = count
+                    updated_ids[c_id] = CONTOUR_PATHS_CACHE[c_id] = trace_contour(mask)
+                elif c_id in CONTOUR_PATHS_CACHE:
+                    del CONTOUR_PATHS_CACHE[c_id]
+                    if c_id in CONTOUR_COUNT_CACHE:
+                        del CONTOUR_COUNT_CACHE[c_id]
+                    updated_ids[c_id] = None                
     else:
         CONTOUR_PATHS_CACHE.clear()
         CONTOUR_COUNT_CACHE.clear()
         for c_id in existing_ids:
-            mask, count = build_mask_and_count(grid, c_id)
-            CONTOUR_COUNT_CACHE[c_id] = count
-            updated_ids[c_id] = CONTOUR_PATHS_CACHE[c_id] = trace_contour(mask)
+            if c_id > 0:
+                mask, count = build_mask_and_count(grid, c_id)
+                CONTOUR_COUNT_CACHE[c_id] = count
+                updated_ids[c_id] = CONTOUR_PATHS_CACHE[c_id] = trace_contour(mask)
 
     return updated_ids    
     
