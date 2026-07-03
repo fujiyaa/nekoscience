@@ -1,11 +1,10 @@
-const { decode } = MessagePack;
-
-const DEBUG_PROFILER_RENDER = true;
-const DEBUG_PROFILER_FX = true;
-const DEBUG_PROFILER_UPDATE = true;
-const DEBUG_PROFILER_MAP = true;
+const DEBUG_PROFILER_RENDER = false;
+const DEBUG_PROFILER_FX = false;
+const DEBUG_PROFILER_UPDATE = false;
+const DEBUG_PROFILER_MAP = false;
 const DEBUG_CONSOLE_LOG = true; 
-const DEBUG_PACKET_SIZE_IN_CHAT = true; 
+const DEBUG_SPRIE_CACHE_LOG = false; 
+const DEBUG_PACKET_SIZE_IN_CHAT = false; 
 
 const DEFAULT_SOUNDS = {
     draw: "https://www.myinstants.com/media/sounds/snapchat-messages.mp3",
@@ -15,12 +14,123 @@ const DEFAULT_SOUNDS = {
     sign: "https://www.myinstants.com/media/sounds/pop-message.mp3",
     structure: "https://www.myinstants.com/media/sounds/mlbb-new-message-notification.mp3"
 };
+
+let kickedByNewSession = false;
+let socket;
+const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+const wsUrl = `${wsProtocol}${window.location.host}/ws/game`;
+
+let currentTool = "draw";
+
+let SIZE = 0;  
+let CELL = 0;  
+
+let grid = [];               
+let serverContours = {};
+let serverLeaderboard = [];
+let players = {}; 
+
+let hoveredCellX = -1;
+let hoveredCellY = -1;
+
+let floatingTexts = [];
+let particles = []; 
+let gridAnimationTime = 0;
+
+let isDragging = false; 
+let hasMoved = false; 
+let startX = 0; let startY = 0; 
+let mouseStartX = 0; let mouseStartY = 0;
+let lastMouseX = 0; let lastMouseY = 0;
+
+let animationsEnabled = true;
+let lastGridHash = "";
+let minimapDirty = true;
+let lastLeaderboardHash = "";
+let signActive = false;
+
+window.Telegram.WebApp.ready();
+const initData = window.Telegram.WebApp.initData;
+let isAuthorized = false;
+let pingInterval = null;
+
+let savedAuthToken = localStorage.getItem('auth_token') || "";
+
+let pingTimer = null;
+let pongTimeout = null;
+const PING_INTERVAL = 20000;
+const PONG_DEADLINE = 10000;
+
+let ClientMessage;
+let ServerMessage;
+
 if (localStorage.getItem("game_volume") === null) {
     localStorage.setItem("game_volume", "0");
 }
 
-function openSettings() {
-    const el = document.getElementById("settings-overlay");
+const hueSlider = document.getElementById('hue-slider');
+const colorPreview = document.getElementById('color-preview');
+
+hueSlider.addEventListener('input', (e) => {
+    const hue = e.target.value;
+    console.log(hue);
+    const color = `hsl(${hue}, 100%, 50%)`;
+    colorPreview.style.backgroundColor = color;
+    e.target.style.setProperty('--thumb-color', color);
+});
+
+function openPersonalSettings() {
+    const el = document.getElementById("settings-personal-overlay");
+    if (!el) return;
+    el.style.display = "flex";
+
+    const player_id = window.currentPlayer
+
+    hueSlider.value = getPlayerCustomHue(player_id);
+    colorPreview.style.backgroundColor = getPlayerCustomColor(player_id);
+
+    const nickname = document.getElementById("personal-nickname");
+    if (nickname) nickname.value = getPlayerCustomNickname(player_id);
+}
+function closePersonalSettings() {
+    const el = document.getElementById("settings-personal-overlay");
+    if (!el) return;    
+
+    el.style.display = "none";
+}
+
+function savePersonal() {
+    const newNickname = document.getElementById("personal-nickname").value;
+    const newHue = parseInt(document.getElementById("hue-slider").value, 10);
+
+    if (socket.readyState === WebSocket.OPEN) {
+        sendProto("personal", {
+            nickname: newNickname,
+            hue: newHue        
+        });
+    } else {
+        alert("Нет интернета или сервер оффлайн");
+    }
+    
+    closePersonalSettings();
+}
+function resetPersonal() {
+    const newNickname = getPlayerOldNickname(window.currentPlayer);
+
+    if (socket.readyState === WebSocket.OPEN) {
+        sendProto("personal", {
+            nickname: newNickname,
+            hue: -1       
+        });
+    } else {
+        alert("Нет интернета или сервер оффлайн");
+    }
+
+    closePersonalSettings();
+}
+
+function openAudioSettings() {
+    const el = document.getElementById("settings-audio-overlay");
     if (!el) return;
 
     el.style.display = "flex";
@@ -32,8 +142,8 @@ function openSettings() {
     updateVolumeUI();
 }
 
-function closeSettings() {
-    const el = document.getElementById("settings-overlay");
+function closeAudioSettings() {
+    const el = document.getElementById("settings-audio-overlay");
     if (!el) return;
 
     el.style.display = "none";
@@ -63,7 +173,7 @@ function saveSounds() {
     };
 
     localStorage.setItem("game_sounds", JSON.stringify(sounds));
-    closeSettings();
+    closeAudioSettings();
 }
 
 
@@ -103,7 +213,7 @@ function resetSounds() {
     localStorage.removeItem("game_sounds");
     loadSoundsToInputs();
     setVolume(0);
-    closeSettings();
+    closeAudioSettings();
 }
 
 function getVolume() {
@@ -126,12 +236,13 @@ function previewSound(inputId) {
     const s = loadSounds();
     const volume = getVolume();
 
+    updateVolumeUI();
+
     if (volume <= 0) return;
 
     const audio = new Audio(url);
     audio.volume = volume;
-    audio.play().catch(() => {});
-    updateVolumeUI();
+    audio.play().catch(() => {});    
 }
 
 function playSound(key) {
@@ -166,53 +277,11 @@ window.addEventListener('load', () => {
     if (DEBUG_CONSOLE_LOG) {
         console.log("Очистка...");
     }
-    // localStorage.clear(); 
     sessionStorage.clear();
 });
 window.onerror = function(message, source, lineno, colno, error) {
     alert("JS: " + message);
 };
-
-let kickedByNewSession = false;
-let socket;
-const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-const wsUrl = `${wsProtocol}${window.location.host}/ws/game`;
-
-let currentTool = "draw";
-
-let SIZE = 0;  
-let CELL = 0;  
-
-let grid = [];               
-let serverContours = {};
-let serverLeaderboard = [];
-let players = {}; 
-
-let hoveredCellX = -1;
-let hoveredCellY = -1;
-
-let floatingTexts = [];
-let particles = []; 
-let gridAnimationTime = 0;
-
-let isDragging = false; 
-let hasMoved = false; 
-let startX = 0; let startY = 0; 
-let mouseStartX = 0; let mouseStartY = 0;
-let lastMouseX = 0; let lastMouseY = 0;
-
-let animationsEnabled = true;
-let lastGridHash = "";
-let minimapDirty = true;
-let leaderboardDirty = true;
-let lastLeaderboardHash = "";
-
-window.Telegram.WebApp.ready();
-const initData = window.Telegram.WebApp.initData;
-let isAuthorized = false;
-let pingInterval = null;
-
-let savedAuthToken = localStorage.getItem('auth_token') || "";
 
 const UI = {
     overlays: {
@@ -232,22 +301,44 @@ const UI = {
     showKicked: (show = true) => UI.toggle(UI.overlays.kicked, show)
 };
 
-let pingTimer = null;
-let pongTimeout = null;
-const PING_INTERVAL = 20000;
-const PONG_DEADLINE = 10000;
+protobuf.load("static/game.proto", (err, root) => {
+    if (err) throw err;
+
+    ClientMessage = root.lookupType("ClientMessage");
+    ServerMessage = root.lookupType("ServerMessage");
+  });
+
+function sendProto(type, data, retryCount = 0) {
+    const MAX_RETRIES = 5;
+    const RETRY_DELAY = 500;
+
+    if (!ClientMessage) {
+        if (retryCount < MAX_RETRIES) {            
+            setTimeout(() => {
+                sendProto(type, data, retryCount + 1);
+            }, RETRY_DELAY);
+            
+            return;
+        }
+    }
+    const msg = ClientMessage.create({ [type]: data });
+    const buffer = ClientMessage.encode(msg).finish();
+    socket.send(buffer);
+}
 
 function schedulePing() {
     if (pingTimer) clearTimeout(pingTimer);
     
     pingTimer = setTimeout(() => {
-        if (socket && socket.readyState === WebSocket.OPEN) {
-            socket.send(MessagePack.encode({ type: "ping" }));
-            
+        if (socket && socket.readyState === WebSocket.OPEN) {            
+            sendProto("ping", {});
+                       
             pongTimeout = setTimeout(() => {
                 console.error("WS: no pong");
                 socket.close();
             }, PONG_DEADLINE);
+        } else {
+            alert("Нет интернета или сервер оффлайн");
         }
     }, PING_INTERVAL);
 }
@@ -263,12 +354,9 @@ function submitAuth() {
     localStorage.setItem('auth_token', code);
 
     if (socket && socket.readyState === WebSocket.OPEN) {
-        socket.send(MessagePack.encode({ 
-            type: "external_auth",
-            token: code
-        }));
+        sendProto("externalAuth", { token: code });
     } else {
-        alert("Нет интернета");
+        alert("Нет интернет или сервер оффлайн");
     }
 }
 
@@ -290,19 +378,13 @@ function connect() {
         schedulePing();
 
         if (initData && initData.length > 0) {
-            socket.send(MessagePack.encode({
-                type: "auth", 
-                initData: initData
-            }));
+            sendProto("auth", { initData: initData });
         } else {
             if (savedAuthToken) {
                 if (DEBUG_CONSOLE_LOG) {
                     console.log("WS: Авторизация сохраненным кодом");
                 }
-                socket.send(MessagePack.encode({
-                    type: "external_auth",
-                    token: savedAuthToken
-                }));
+                sendProto("externalAuth", { token: savedAuthToken });
             } else {
                 if (DEBUG_CONSOLE_LOG) {
                     console.log("WS: Нет кода авторизации");
@@ -312,82 +394,83 @@ function connect() {
         }
     };
 
-    socket.onmessage = (event) => {
+    socket.onmessage = (event) => {        
         try {
             clearTimeout(pongTimeout);
             schedulePing();
 
-            if (DEBUG_PACKET_SIZE_IN_CHAT) {
-                const buffer = new Uint8Array(event.data);
+            const buffer = new Uint8Array(event.data);
 
+            const serverMsg = ServerMessage.decode(buffer);
+
+            if (DEBUG_PACKET_SIZE_IN_CHAT) {
                 addChatMessage(
                     `inbound: ${(buffer.byteLength / 1024).toFixed(2)} KB`, 
                     'info',
-                    5000,
+                    3000,
                     true
-                )
+                );
             }
 
-            const messages = [...MessagePack.decodeMulti(event.data)];
+            if (serverMsg.pong) return;                
 
-            for (const message of messages) {
-                if (message.type === "pong") return;                
+            if (DEBUG_CONSOLE_LOG) {
+                console.group("WS MESSAGE");
+                console.log(`inbound: ${(buffer.byteLength / 1024).toFixed(2)} KB`);
+                console.log("Parsed:", serverMsg);
+                console.groupEnd();
+            }            
 
-                if (DEBUG_CONSOLE_LOG) {
-                    console.group("WS MESSAGE");
-                    console.log("Parsed:", message);
-                    console.groupEnd();
-                }            
-
-                if (isAuthorized) {
-                    if (message.type === "init" || message.type === "update") {
-
-                        UI.showLoading(false);
-                        UI.showReconnect(false);
-
-                        if (message.type === "init") {
-                            processInit(message);
-                        } else {
-                            processUpdate(message);
-                        }
-                        
-                        requestRender();
-                    }
-                }
-
-                if (message.type === "auth_success") {
-                    window.currentPlayer = message.player_id; 
-                    isAuthorized = true;
-                    UI.showAuth(false);
+            if (isAuthorized) {
+                 
+                if (serverMsg.initResponse || serverMsg.update ) {
+                    
+                    UI.showLoading(false);
                     UI.showReconnect(false);
-                    UI.showLoading(true);
-                    if (DEBUG_CONSOLE_LOG) {                    
-                        console.log("WS: Авторизован");
-                    }
-                    if (socket && socket.readyState === WebSocket.OPEN) {
-                        socket.send(MessagePack.encode({ 
-                            type: "get_init"
-                        }));
+
+                    if (serverMsg.initResponse) {
+                        processInit(serverMsg.initResponse);
                     } else {
-                        alert("Нет интернета");
+                        processUpdate(serverMsg.update);
                     }
-                    return;
-                } else if (message.type === "error") {
-                    isAuthorized = false;
+                    
+                    requestRender();
+                }
+            }            
 
-                    alert("Неправильный код авторизации");
-
-                    return;
-                } else if (message.type === "session_replaced") {
-                    isAuthorized = false;
-                    kickedByNewSession = true;
-
-                    UI.showKicked(true);
-
-                    socket.close();
-                    return;
-                }                
-            }
+            if (serverMsg.authSuccess) {
+                const data = serverMsg.authSuccess;
+                window.currentPlayer = data.playerId;
+                isAuthorized = true;
+                UI.showAuth(false);
+                UI.showReconnect(false);
+                UI.showLoading(true);
+                if (DEBUG_CONSOLE_LOG) {                    
+                    console.log("WS: Авторизован");
+                }
+                if (socket && socket.readyState === WebSocket.OPEN) {                    
+                    sendProto("init", {});
+                } else {
+                    alert("Нет интернета или сервер оффлайн");
+                }
+                return;
+            } else if (serverMsg.error) {
+                isAuthorized = false;
+                UI.showAuth(true);
+                UI.showReconnect(false);
+                UI.showLoading(false);
+                alert("Неправильный код авторизации");
+                return;
+            } else if (serverMsg.sessionReplaced) {
+                isAuthorized = false;
+                kickedByNewSession = true;
+                UI.showReconnect(false);
+                UI.showLoading(false);
+                UI.showKicked(true);
+                socket.close();
+                return;
+            }                
+            
         } catch (e) {
             console.error("WS: Ошибка обработки сообщения:", e);
         }
@@ -422,113 +505,146 @@ let gridEvents = [];
 let gridSweeps = [];
 let explosions = [];
 
-function processInit(message) {
-    const serverData = message.data;
-
-    if (serverData){
-
-        const newLbHash = hashLeaderboard(serverData.leaderboard);
-        const newGridHash = hashGrid(serverData.grid);
-
-        if (newLbHash !== lastLeaderboardHash) {
-            serverLeaderboard = serverData.leaderboard;
-            leaderboardDirty = true;
-            lastLeaderboardHash = newLbHash;
-        }
-
-        // if (isUpdate) {
-        //     prevGrid = grid;
-        // }
-
-        if (newGridHash !== lastGridHash) {
-            grid = serverData.grid;
-            minimapDirty = true;
-            lastGridHash = newGridHash;
-            worldDirty = true;
-        }
-
-        if (serverData.config) {
-            SIZE = serverData.config.size;
-            CELL = serverData.config.cell;
-        }
-
-        if (serverData.contours) {
-            serverData.contours.forEach((contourObj) => {                
-                serverContours[contourObj.id] = {
-                    id: contourObj.id,
-                    playerId: contourObj.playerId,
-                    path: contourObj.path
-                };
-            });
-        }  
-
-        if (serverData.players) {       
-            for (let pId in serverData.players) {
-                players[pId] = serverData.players[pId];            
-            }
-
-            const currentPId = String(window.currentPlayer);
-            const p = players[currentPId];
-
-            if (!p) return;
-
-            const c = p.cooldowns;
-            const now = Date.now();
-
-            function applyCooldown(btn, cd) {
-                const remainingMs = Math.max(0, cd.endsAt - now);
-                
-                if (remainingMs > 0 && cd.duration > 0) {
-                    const totalSec = cd.duration / 1000;
-                    const elapsedSec = (cd.duration - remainingMs) / 1000;
-                    
-                    startCooldown(btn, totalSec, elapsedSec);
-                }
-            }
-
-            applyCooldown(btnDraw, c.draw);
-            applyCooldown(btnErase, c.erase);
-            applyCooldown(btnBlast, c.blast);
-            applyCooldown(btnSign, c.sign);
-            applyCooldown(btnStructure, c.structure);
-            applyCooldown(btnTier2Draw, c.tier2draw);
-            applyCooldown(btnTier2Erase, c.tier2erase);
-            applyCooldown(btnTier2Blast, c.tier2blast);
-        }
-
-        if (message.type === "init") {
-            centerMap();
-        }
-    }   
+function processInit(initResponse) {
+    SIZE = initResponse.config.size;
+    CELL = initResponse.config.cell;
+    serverLeaderboard = initResponse.leaderboard;
+    grid = initResponse.grid;
     
-    if (message.events) { processEvents(message.events); }
+    minimapDirty = true;
+    worldDirty = true;  
+
+    if (initResponse.contours) {
+        initResponse.contours.forEach((contourObj) => {                
+            serverContours[contourObj.id] = {
+                id: contourObj.id,
+                playerId: contourObj.playerId,
+                path: contourObj.path
+            };
+        });
+    }  
+
+    if (initResponse.players) {
+        for (let pId in initResponse.players) {
+            players[pId] = initResponse.players[pId];            
+        }
+
+        const currentPId = String(window.currentPlayer);
+        const p = players[currentPId];
+
+        if (!p) return;
+
+        const c = p.cooldowns;
+        const now = Date.now();
+
+        function applyCooldown(btn, cd) {
+            const endsAt = cd.endsAt ? Number(cd.endsAt) : 0;            
+            if (endsAt === 0) return;
+            const now = Date.now();
+            const remainingMs = Math.max(0, endsAt - now);
+            
+            if (remainingMs > 0 && cd.duration > 0) {
+                const totalSec = cd.duration / 1000;
+                const startTime = endsAt - cd.duration;
+                const elapsedSec = (now - startTime) / 1000;                
+                startCooldown(btn, totalSec, elapsedSec);
+            }
+        }
+        applyCooldown(btnDraw, c.draw);
+        applyCooldown(btnErase, c.erase);
+        applyCooldown(btnBlast, c.blast);
+        applyCooldown(btnSign, c.sign);
+        applyCooldown(btnStructure, c.structure);
+        applyCooldown(btnTier2Draw, c.tier2draw);
+        applyCooldown(btnTier2Erase, c.tier2erase);
+        applyCooldown(btnTier2Blast, c.tier2blast);
+    }
+    updateCooldownUI();
+    updateLeaderboardCache();
+    renderLeaderboard();
+    loadMapState();
+    loadToolState();
+    if (initResponse.events) { processEvents(initResponse.events); }
 }
 
 function processUpdate(message) {
-    if (message.updated_contours) {
-        Object.entries(message.updated_contours).forEach(([idStr, contourData]) => {
+    if (message.updatedContours) {
+        Object.entries(message.updatedContours).forEach(([idStr, contourData]) => {
             const contourId = parseInt(idStr);
 
-            if (contourData === null) {
+            if (!contourData) {
+                console.error('!contourData')
+                return;
+            }
+
+            if (contourData.isDeleted) {
+                contourCache.delete(contourId);
                 delete serverContours[contourId];
                 return;
             }
 
             if (serverContours[contourId]) {
-                Object.assign(serverContours[contourId], contourData);
+                contourCache.delete(contourId);
+                serverContours[contourId].playerId = contourData.playerId;
+                serverContours[contourId].path = contourData.path;
             } else {
+                contourCache.delete(contourId);
                 serverContours[contourId] = {
                     id: contourId,
-                    ...contourData
+                    playerId: contourData.playerId,
+                    path: contourData.path
                 };
             }           
+    
 
             if (animationsEnabled) {
                 createGridSweep(serverContours[contourId]);
             }            
         });
         worldDirty = true;
-    }    
+    }
+    if (message.players) {
+        for (let pId in message.players) {
+            players[pId] = message.players[pId];            
+        }
+
+        const currentPId = String(window.currentPlayer);
+        const p = players[currentPId];
+
+        if (!p) return;
+
+        const c = p.cooldowns;
+        const now = Date.now();
+
+        function applyCooldown(btn, cd) {
+            const endsAt = cd.endsAt ? Number(cd.endsAt) : 0;            
+            if (endsAt === 0) return;
+            const now = Date.now();
+            const remainingMs = Math.max(0, endsAt - now);
+            
+            if (remainingMs > 0 && cd.duration > 0) {
+                const totalSec = cd.duration / 1000;
+                const startTime = endsAt - cd.duration;
+                const elapsedSec = (now - startTime) / 1000;                
+                startCooldown(btn, totalSec, elapsedSec);
+            }
+        }
+        applyCooldown(btnDraw, c.draw);
+        applyCooldown(btnErase, c.erase);
+        applyCooldown(btnBlast, c.blast);
+        applyCooldown(btnSign, c.sign);
+        applyCooldown(btnStructure, c.structure);
+        applyCooldown(btnTier2Draw, c.tier2draw);
+        applyCooldown(btnTier2Erase, c.tier2erase);
+        applyCooldown(btnTier2Blast, c.tier2blast);
+        
+        updateCooldownUI();
+    }
+    if (message.leaderboard && message.leaderboard.length > 0) {
+        serverLeaderboard = message.leaderboard
+        updateLeaderboardCache();
+        renderLeaderboard();
+    }
 
     if (message.events) { processEvents(message.events); }
 }
@@ -537,159 +653,169 @@ function processEvents(events) {
     events.forEach(event => {
         if (animationsEnabled) {
             if (event.cords) {
-                if (window.currentPlayer != event.cords.player_id) {
-                    const halfCell = CELL / 2
+                if (window.currentPlayer != event.cords.playerId) {
+                    const halfCell = CELL*0.5
                     createExplosion(
-                        event.cords.x  * CELL + halfCell, 
-                        event.cords.y  * CELL + halfCell, 
-                        event.cords.player_id
+                        event.cords.x*CELL+halfCell, 
+                        event.cords.y*CELL+halfCell, 
+                        event.cords.playerId
                     );
-                }
-                
+                }                
                 triggerHighlight(
                     event.cords.x, 
                     event.cords.y, 
                     event.cords.radius,
-                    event.cords.player_id
+                    event.cords.playerId
                 );
-
-                triggerAnimation("minimap-container", "basic-flash", event.cords.player_id);
+                triggerAnimation("minimap-container", "basic-flash", event.cords.playerId);
             }
             if (event.msg) {                
-                switch(event.msg_to) {
-                    case window.currentPlayer:
+                switch(event.msg.toId) {
+                    case String(window.currentPlayer):
                     case 'all':
-                        addChatMessage(event.msg, event.msg_level);
-                        if (event.msg_level == 'warn') {
-                            playSound('error')
-                        }
+                        addChatMessage(event.msg.text, event.msg.level, 6000, false);
                         break;
                 }  
             }
         }
-
+        if (event.updatedColors) {
+            contourCache.clear();
+            pointSpriteCache.clear();
+            coloredSpriteCache.clear();
+            minimapDirty = true;
+        }
         if (event.sfx) {
-            playSound(event.sfx)
+            playSound(event.sfx.sfx)
         }
     });
 
-    const toolEvent = events.find(e => e.tool);
-    const cordsEvent = events.find(e => e.cords);
+    const eventsArray = Object.values(events);
+    const toolEvent = eventsArray.find(e => e.tool);
+    const cordsEvent = eventsArray.find(e => e.cords);
 
     if (toolEvent && cordsEvent) {
-        const tool = toolEvent.tool;
-        const { x, y, player_id, contour_id, structure_radius, blast_radius, data, radius } = cordsEvent.cords;
-        
-        switch(tool) {
-            case "blast":
-            case "tier2blast": {
-                const r = blast_radius;
-                const r2 = r * r;
-                let immuneTypes = ["Stone"];
-                if (tool === "blast") {
-                    immuneTypes.push("T2Dot", "Sign");
-                }
-                for (let dy = -r; dy <= r; dy++) {
-                    for (let dx = -r; dx <= r; dx++) {
-                        const nx = x + dx;
-                        const ny = y + dy;
+        const tool = toolEvent.tool.tool;
+        const { 
+            x, 
+            y, 
+            contourId, 
+            playerId, 
+            radius,
+            structureRadius,
+            blastRadius,
+            data
+        } = cordsEvent.cords;
 
-                        if (ny >= 0 && ny < grid.length && nx >= 0 && nx < grid[0].length && 
-                            (dx * dx + dy * dy <= r2)) {
-                            
-                            const cell = grid[ny][nx];
-                            const typeId = cell.type?.id;
-
-                            if (!immuneTypes.includes(typeId)) {
-                                cell.contour_id = 0;
-                                cell.player_id = null;
-                                cell.type = null;
+        const index = y * SIZE + x;
+        if (grid[index]) {        
+            switch(tool) {
+                case "blast":
+                case "tier2blast": {
+                    const r = blastRadius;
+                    const r2 = r * r;
+                    let immuneTypes = ["Stone"];
+                    if (tool === "blast") {
+                        immuneTypes.push("T2Dot", "Sign");
+                    }
+                    for (let dy = -r; dy <= r; dy++) {
+                        for (let dx = -r; dx <= r; dx++) {
+                            const nx = x + dx;
+                            const ny = y + dy;
+                            if (ny >= 0 && ny < SIZE && nx >= 0 && nx < SIZE && (dx * dx + dy * dy <= r2)) {                                
+                                const targetIndex = ny * SIZE + nx;
+                                const cell = grid[targetIndex];                                 
+                                const typeId = cell.type?.id;
+                                if (cell && !immuneTypes.includes(typeId)) {
+                                    cell.contourId = 0;
+                                    cell.playerId = 0;                                    
+                                    if (cell.type) {
+                                        cell.type.id = "";
+                                        cell.type.data = "";
+                                    }
+                                }
                             }
                         }
                     }
+                    explosions.push({
+                        x: x,
+                        y: y,
+                        radius: blastRadius,
+                        playerId: playerId,
+                        t: 0
+                    });
+                    break;
                 }
-                explosions.push({
-                    x: x,
-                    y: y,
-                    radius: blast_radius,
-                    playerId: player_id,
-                    t: 0
-                });
-                break;
-            }
-            case "sign": {
-                if (grid[y] && grid[y][x]) {
-                    grid[y][x].player_id = player_id;
-                    grid[y][x].contour_id = contour_id;
-                    grid[y][x].type = {
+                case "sign": {
+                    grid[index].playerId = playerId;
+                    grid[index].contourId = contourId;
+                    grid[index].type = {
                         data: data,
                         id: 'Sign'
-                    };                    
-                }                    
-                break;
-            }                 
-            case "draw":
-            case "tier2draw": {
-                const cell_type_id = (tool === "draw") ? "Dot" : "T2Dot";
-
-                if (grid[y] && grid[y][x]) {
-                    grid[y][x].player_id = player_id;
-                    grid[y][x].contour_id = contour_id;
-                    grid[y][x].type = {
+                    };             
+                    break;
+                }
+                case "draw":
+                case "tier2draw": {
+                    const cellTypeId = (tool === "draw") ? "Dot" : "T2Dot";
+                    
+                    grid[index].playerId = playerId;
+                    grid[index].contourId = contourId;
+                    grid[index].type = {
                         data: null,
-                        id: cell_type_id
-                    };
+                        id: cellTypeId
+                    };                    
+                    if (tool === "tier2draw") {
+                        createGridEvents([{ x: x, y: y }], playerId);
+                    }                
+                    break;
                 }
+                case "erase":
+                case "tier2erase": {
+                    grid[index].playerId = null;
+                    grid[index].contourId = 0;
+                    grid[index].type = null;
 
-                if (tool == "tier2draw") {
-                    createGridEvents([{ x: x, y: y }], player_id);
-                }                    
-                break;
-            }
-            case "erase":
-            case "tier2erase": {
-                if (grid[y] && grid[y][x]) {
-                    grid[y][x].contour_id = 0;
-                    grid[y][x].player_id = null;
-                    grid[y][x].type = null;
-                }
+                    if (tool == "tier2erase") {
+                        createGridEvents([{ x: x, y: y }], playerId);
+                    }  
+                    break;
+                }          
+                case "structure": {
+                    const radius = structureRadius;
+                    const startX = Math.max(0, x - radius);
+                    const endX = Math.min(SIZE - 1, x + radius);
+                    const startY = Math.max(0, y - radius);
+                    const endY = Math.min(SIZE - 1, y + radius);
+                    const pointsToUpdate = [];
 
-                if (tool == "tier2erase") {
-                    createGridEvents([{ x: x, y: y }], player_id);
-                }  
-                break;
-            }          
-            case "structure": {
-                const radius = structure_radius;
-                const startX = Math.max(0, x - radius);
-                const endX = Math.min(grid[0].length - 1, x + radius);
-                const startY = Math.max(0, y - radius);
-                const endY = Math.min(grid.length - 1, y + radius);
-                const pointsToUpdate = [];
-
-                for (let nx = startX; nx <= endX; nx++) {
-                    for (let ny = startY; ny <= endY; ny++) {
-                        if (Math.abs(nx - x) + Math.abs(ny - y) === radius) {
-                            const cell = grid[ny][nx];
-                            
-                            cell.contour_id = contour_id;
-                            cell.player_id = player_id;
-                            cell.type = { id: "T2Dot", data: null };
-
-                            pointsToUpdate.push({ x: nx, y: ny });
+                    for (let nx = startX; nx <= endX; nx++) {
+                        for (let ny = startY; ny <= endY; ny++) {
+                            if (Math.abs(nx - x) + Math.abs(ny - y) === radius) {
+                                const index = ny * SIZE + nx;
+                                const cell = grid[index];                                
+                                cell.contourId = contourId;
+                                cell.playerId = playerId;                                
+                                if (cell.type) {
+                                    cell.type.id = "T2Dot";
+                                    cell.type.data = "";
+                                } else {
+                                    cell.type = { id: "T2Dot", data: "" };
+                                }
+                                pointsToUpdate.push({ x: nx, y: ny });
+                            }
                         }
                     }
+                    createGridEvents(pointsToUpdate, playerId);
+                    break;
                 }
-                createGridEvents(pointsToUpdate, player_id);
-                break;                
             }
+            worldDirty = true;
+            minimapDirty = true;
+        } else {
+            console.error('out of bounds (tool events)')
         }
-        worldDirty = true;
-        minimapDirty = true;
-    }
-    
+    }    
 }
-
 const btnDraw = document.getElementById("tool-draw");
 const btnErase = document.getElementById("tool-erase");
 const btnBlast = document.getElementById("tool-blast");
@@ -719,7 +845,6 @@ const worldCtx = worldCanvas.getContext("2d");
 
 let worldDirty = true;
 
-
 const GLOW_CONFIG = {
     alpha: [0.04, 0.12, 0.35, 1.0],
     contourWidths: [16, 12, 8, 4],
@@ -732,6 +857,8 @@ let zoom = 0.3; let offsetX = 0; let offsetY = 0;
 function toggleAnimations() {
     animationsEnabled = !animationsEnabled;
     pointSpriteCache.clear();
+    coloredSpriteCache.clear();
+    contourCache.clear();
     worldDirty = true;
     requestRender();
 
@@ -758,6 +885,7 @@ function worldToScreen(x, y) {
     };
 }
 
+window.addEventListener('resize', resizeCanvas);
 function resizeCanvas() {
     const w = window.innerWidth;
     const h = window.innerHeight;
@@ -775,11 +903,84 @@ function resizeCanvas() {
     requestRender()
 }
 
-window.addEventListener('resize', resizeCanvas);
+let saveTimeout;
+function debouncedSave() {
+    clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(saveMapState, 500);
+}
 
-function centerMap() {
-    offsetX = (window.innerWidth - SIZE * CELL * zoom) / 2;
-    offsetY = (window.innerHeight - SIZE * CELL * zoom) / 2;
+function saveMapState() {
+    applyBounds();
+    const state = {
+        zoom: zoom,
+        offsetX: offsetX,
+        offsetY: offsetY
+    };   
+    localStorage.setItem('mapState', JSON.stringify(state));
+}
+
+function loadMapState() {
+    const saved = localStorage.getItem('mapState');
+    if (saved) {
+        try {
+            const state = JSON.parse(saved);
+            zoom = state.zoom || 1;
+            offsetX = state.offsetX || 0;
+            offsetY = state.offsetY || 0;  
+            applyBounds();     
+            
+        } catch (e) {
+            console.warn(e);
+        }
+    }
+}
+
+function saveToolState() {
+    applyBounds();
+    const state = {
+        tool: currentTool
+    };   
+    localStorage.setItem('toolState', JSON.stringify(state));
+}
+
+function loadToolState() {
+    const saved = localStorage.getItem('toolState');
+    if (saved) {
+        try {
+            const state = JSON.parse(saved);
+            setTool(state.tool || 'draw');
+        } catch (e) {
+            console.warn(e);
+        }
+    }
+}
+
+function applyBounds() {
+    const bounds = getVisibleBounds();
+    
+    const isVisible = bounds.startX <= bounds.endX && bounds.startY <= bounds.endY;
+
+    if (!isVisible) {    
+        const mapSize = SIZE * CELL * zoom;
+        const viewWidth = canvas.width;
+        const viewHeight = canvas.height;
+
+        const oldOffsetX = offsetX;
+        const oldOffsetY = offsetY;
+
+        offsetX = mapSize < viewWidth 
+            ? (viewWidth - mapSize) / 2 
+            : Math.max(viewWidth - mapSize, Math.min(0, offsetX));
+
+        offsetY = mapSize < viewHeight 
+            ? (viewHeight - mapSize) / 2 
+            : Math.max(viewHeight - mapSize, Math.min(0, offsetY));
+
+        if (oldOffsetX !== offsetX || oldOffsetY !== offsetY) {
+            worldDirty = true;
+            requestRender();
+        }
+    }
 }
 
 function inBounds(x,y) { return x>=0 && y>=0 && x<SIZE && y<SIZE; }
@@ -849,6 +1050,16 @@ function getStableColor(id) {
     return hsl;
 }
 
+function getStableHue(id) {
+    if (!id || id === 0) return "hsl(0, 0%, 100%)";
+    if (colorCache.hsl[id]) return colorCache.hsl[id];
+
+    const params = getBaseColorParams(id);
+    const hue = params.hue.toFixed(1);
+    
+    return hue;
+}
+
 function colorFor(id, alpha = 1) {
     const rgb = getStableRGB(id);
     return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
@@ -868,16 +1079,12 @@ function hslToRgb(h, s, l) {
 
 function getVisibleBounds() {
     const pad = 3;
-
     const invZoom = 1 / zoom;
     const invCell = 1 / CELL;
-
     const left = -offsetX * invZoom * invCell;
     const top = -offsetY * invZoom * invCell;
-
     const right = (canvas.width - offsetX) * invZoom * invCell;
     const bottom = (canvas.height - offsetY) * invZoom * invCell;
-
     return {
         startX: Math.max(0, Math.floor(left) - pad),
         startY: Math.max(0, Math.floor(top) - pad),
@@ -886,64 +1093,89 @@ function getVisibleBounds() {
     };
 }
 
-function getGridParams(x, y, time, zoom, min, max) {
-
-    if (!animationsEnabled) {
-        return {
-            width: 0.2 * zoom,
-            color: 120
-        };
-    }
-
-    const wave1 = Math.sin(time + (x + y) * 0.2);
-    const wave2 = Math.sin(time * 0.5 + (x - y) * 0.5) * 0.7;
-
-    const pulse = (wave1 + wave2 + 1.5) / 3.0;
-
-    return {
-        width: Math.max(0, (min + pulse * (max - min)) * zoom),
-        color: Math.floor(255 * (1 - pulse))
-    };
-}
-
 function drawGrid(target = ctx, bounds) {
-    if (!SIZE) return;
+    const width = 1 / Math.sqrt(zoom);
 
     target.save();
+    target.setTransform(zoom, 0, 0, zoom, offsetX, offsetY);    
+    target.fillStyle = "#111111";
+    target.fillRect(0, 0, SIZE * CELL, SIZE * CELL);
 
-    target.setTransform(
-        zoom, 0,
-        0, zoom,
-        offsetX, offsetY
-    );
-
-    target.strokeStyle = "rgb(30,30,30)";
-    const gridBase = 1;
-    const zoomFactor = Math.sqrt(zoom);
-    target.lineWidth = gridBase / zoomFactor;
-
-    target.beginPath();
-    for (let x = bounds.startX; x <= bounds.endX + 1; x++) {
-        const wx = x * CELL;
-        target.moveTo(wx, bounds.startY * CELL);
-        target.lineTo(wx, (bounds.endY + 1) * CELL);
+    if (zoom > 0.15) {
+        target.strokeStyle = "rgb(30, 30, 30)";       
+        target.lineWidth = width;
+        target.beginPath();
+        for (let x = bounds.startX; x <= bounds.endX + 1; x++) {
+            const wx = x * CELL;
+            target.moveTo(wx, bounds.startY * CELL);
+            target.lineTo(wx, (bounds.endY + 1) * CELL);
+        }
+        for (let y = bounds.startY; y <= bounds.endY + 1; y++) {
+            const wy = y * CELL;
+            target.moveTo(bounds.startX * CELL, wy);
+            target.lineTo((bounds.endX + 1) * CELL, wy);
+        }
+        target.stroke();
     }
-    target.stroke();
-
-    target.beginPath();
-    for (let y = bounds.startY; y <= bounds.endY + 1; y++) {
-        const wy = y * CELL;
-        target.moveTo(bounds.startX * CELL, wy);
-        target.lineTo((bounds.endX + 1) * CELL, wy);
-    }
-    target.stroke();
+    
+    target.strokeStyle = "rgb(41, 41, 41)"; 
+    target.lineWidth = width * 4;
+    target.strokeRect(0, 0, SIZE * CELL, SIZE * CELL);
 
     target.restore();
 }
 
+const contourCache = new Map();
+function getCachedContour(contourId ,playerId, points, animationsEnabled) {
+    const key = contourId;
+    
+    if (contourCache.has(key)) {
+        return contourCache.get(key);
+    }
+
+    if (DEBUG_SPRIE_CACHE_LOG){
+        console.log(`new CONTOUR sprite | ${contourCache.size+1} total`)
+    }
+
+    let minX = points[0].x, maxX = points[0].x;
+    let minY = points[0].y, maxY = points[0].y;
+    for (const p of points) {
+        if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x;
+        if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y;
+    }
+
+    const offscreen = document.createElement('canvas');
+    offscreen.width = (maxX - minX + 1) * CELL + 10; 
+    offscreen.height = (maxY - minY + 1) * CELL + 10;
+    const ctx = offscreen.getContext('2d');
+
+    const halfCell = CELL * 0.5;
+    ctx.beginPath();
+    ctx.moveTo((points[0].x - minX) * CELL + halfCell, (points[0].y - minY) * CELL + halfCell);
+    for (let i = 1; i < points.length; i++) {
+        ctx.lineTo((points[i].x - minX) * CELL + halfCell, (points[i].y - minY) * CELL + halfCell);
+    }
+    ctx.closePath();
+    
+    ctx.fillStyle = getPlayerCustomColor(playerId, 0.2);
+    ctx.fill();
+
+    const iterations = animationsEnabled ? 4 : 1;
+    for (let i = 0; i < iterations; i++) {
+        const idx = animationsEnabled ? i : 3;
+        ctx.lineWidth = GLOW_CONFIG.contourWidths[idx];
+        ctx.strokeStyle = getPlayerCustomColor(playerId, GLOW_CONFIG.alpha[idx]);
+        ctx.stroke();
+    }
+
+    const data = { canvas: offscreen, minX, minY };
+    contourCache.set(key, data);
+    return data;
+}
+
 function drawServerContour(target = ctx, bounds, contourObj) {
     const points = contourObj.path;
-    if (!points || points.length === 0) return;
+    if (!points || points.length <= 1) return;
 
     const startX = bounds.startX;
     const endX = bounds.endX;
@@ -954,7 +1186,7 @@ function drawServerContour(target = ctx, bounds, contourObj) {
     for (let i = 0; i < points.length; i++) {
         const p = points[i];
         if (p.x >= startX && p.x <= endX && p.y >= startY && p.y <= endY) {
-            visible = true;
+            visible = true;            
             break;
         }
     }
@@ -962,200 +1194,215 @@ function drawServerContour(target = ctx, bounds, contourObj) {
 
     const halfCell = CELL * 0.5;
     const playerId = contourObj.playerId;
-
     if (playerId == 0) return;
 
-    const fillColor = colorFor(playerId, 0.12);
+    const { canvas, minX, minY } = getCachedContour(
+        contourObj.id, 
+        contourObj.playerId, 
+        contourObj.path,
+        animationsEnabled
+    );
 
-    target.beginPath();
-
-    let p0 = points[0];
-    let x0 = p0.x * CELL + halfCell;
-    let y0 = p0.y * CELL + halfCell;
-
-    let s0 = worldToScreen(x0, y0);
-    target.moveTo(s0.x, s0.y);
-
-    for (let i = 1; i < points.length; i++) {
-        const p = points[i];
-
-        const sx = p.x * CELL + halfCell;
-        const sy = p.y * CELL + halfCell;
-
-        const s = worldToScreen(sx, sy);
-        target.lineTo(s.x, s.y);
-    }
-
-    target.closePath();
-    target.fillStyle = fillColor;
-    target.fill();
-
-    if (!animationsEnabled) {
-        const i = 3;
-        target.lineWidth = GLOW_CONFIG.contourWidths[i] * zoom;
-        target.strokeStyle = colorFor(playerId, GLOW_CONFIG.alpha[i]);
-        target.stroke();
-        return;
-    }
-
-    for (let i = 0; i < 4; i++) {
-        target.lineWidth = GLOW_CONFIG.contourWidths[i] * zoom;
-        target.strokeStyle = colorFor(playerId, GLOW_CONFIG.alpha[i]);
-        target.stroke();
-    }
-
+    target.drawImage(
+        canvas,
+        (minX * CELL) * zoom + offsetX, 
+        (minY * CELL) * zoom + offsetY,
+        canvas.width * zoom,
+        canvas.height * zoom
+    );   
     // target.fillStyle = 'white';
     // target.font = `${12 * zoom}px Arial`;
     // target.textAlign = 'center';
-
     // for (let i = 0; i < points.length; i++) {
     //     const p = points[i];
     //     const sx = p.x * CELL + halfCell;
     //     const sy = p.y * CELL + halfCell;
-    //     const s = worldToScreen(sx, sy);
-        
+    //     const s = worldToScreen(sx, sy);        
     //     target.fillText(contourObj.id, s.x, s.y - 10 * zoom);
     // }
 }
 
 function forEachVisiblePoint(bounds, callback) {
-    if (!grid || grid.length === 0) return;
-
-    const halfCell = CELL * 0.5;
-
-    const startX = bounds.startX;
-    const endX = bounds.endX;
-    const startY = bounds.startY;
-    const endY = bounds.endY;
-
+    const startX = Math.max(0, bounds.startX);
+    const endX = Math.min(SIZE - 1, bounds.endX);
+    const startY = Math.max(0, bounds.startY);
+    const endY = Math.min(SIZE - 1, bounds.endY);
     for (let y = startY; y <= endY; y++) {
-        const row = grid[y];
-        if (!row) continue;
-
+        const rowOffset = y * SIZE;
+        const worldY = y * CELL + (CELL * 0.5);
         for (let x = startX; x <= endX; x++) {
-            const cell = row[x];
-
-            if (!cell || cell.contour_id === 0 || !cell.type)
-                continue;
-
-            callback(cell, x, y, x * CELL + halfCell, y * CELL + halfCell);
+            const cell = grid[rowOffset + x];
+            if (!cell || cell.contourId === 0 || !cell.type) continue;
+            callback(cell, x, y, x * CELL + (CELL * 0.5), worldY);
         }
     }
 }
 
 const stoneSpriteCache = new Map();
+function getStoneSprite(baseSize) {
+    let sprite = stoneSpriteCache.get(baseSize);
+    if (sprite) return sprite;
 
-function getStoneSprite(size) {
-    const key = `stone_${size}`;
-    if (stoneSpriteCache.has(key)) return stoneSpriteCache.get(key);
+    if (DEBUG_SPRIE_CACHE_LOG) {
+        console.log(`new STONE sprite | ${stoneSpriteCache.size+1} total`)
+    }
 
-    const canvas = typeof OffscreenCanvas !== "undefined"
-        ? new OffscreenCanvas(size, size)
+    const canvas = (typeof OffscreenCanvas !== "undefined")
+        ? new OffscreenCanvas(baseSize, baseSize)
+        : document.createElement("canvas");
+
+    canvas.width = baseSize;
+    canvas.height = baseSize;
+
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#1d1d1d";
+    ctx.fillRect(0, 0, baseSize, baseSize);
+
+    stoneSpriteCache.set(baseSize, canvas);
+    return canvas;
+}
+
+const coloredSpriteCache = new Map();
+function getMaxZoomPointSprite(playerId, typeId) {
+    let playerCache = coloredSpriteCache.get(playerId);
+    if (!playerCache) {
+        playerCache = new Map();
+        coloredSpriteCache.set(playerId, playerCache);
+    }
+    
+    if (playerCache.has(typeId)) return playerCache.get(typeId);
+
+    if (DEBUG_SPRIE_CACHE_LOG){
+        console.log(`new maxzoom-POINT sprite | ${coloredSpriteCache.size+1} total`)
+    }
+    
+
+    const size = CELL;
+    const canvas = (typeof OffscreenCanvas !== "undefined") 
+        ? new OffscreenCanvas(size, size) 
         : document.createElement("canvas");
 
     canvas.width = size;
     canvas.height = size;
-
     const ctx = canvas.getContext("2d");
-    ctx.fillStyle = "rgb(29, 29, 29)";
-    ctx.fillRect(0, 0, size, size);
 
-    stoneSpriteCache.set(key, canvas);
+    if (typeId === TYPE_T2DOT) {
+        
+        ctx.fillStyle = getPlayerCustomColor(playerId, 1);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(size, 0);
+        ctx.lineTo(size, size);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = "white";;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(0, size);
+        ctx.lineTo(size, size);
+        ctx.closePath();
+        ctx.fill();
+    } else {
+        ctx.fillStyle = getPlayerCustomColor(playerId, 1);
+        ctx.fillRect(0, 0, size, size);
+    }
+    
+    playerCache.set(typeId, canvas);
     return canvas;
 }
 
-function drawStones(target = ctx, bounds) {
-    const cellSize = Math.ceil(CELL * zoom);
-    const halfSize = cellSize / 2;
+const TYPE_STONE = "Stone";
+const TYPE_DOT = "Dot";
+const TYPE_T2DOT = "T2Dot";
+const PI2 = Math.PI * 2;
 
-    const sprite = getStoneSprite(cellSize);
-
-    forEachVisiblePoint(bounds, (cell, x, y, worldX, worldY) => {
-        if (cell.type?.id !== "Stone") return;
-
-        const screen = worldToScreen(worldX, worldY);
-
-        target.drawImage(
-            sprite,
-            screen.x - halfSize,
-            screen.y - halfSize
-        );
-    });
+function drawCircle(ctx, center, radius, fillStyle, strokeStyle, lineWidth) {
+    ctx.beginPath();
+    ctx.arc(center, center, radius, 0, PI2);
+    if (fillStyle) {
+        ctx.fillStyle = fillStyle;
+        ctx.fill();
+    }
+    if (strokeStyle) {
+        ctx.strokeStyle = strokeStyle;
+        ctx.lineWidth = lineWidth;
+        ctx.stroke();
+    }
 }
 
-
 const pointSpriteCache = new Map();
+function getPointSprite(playerId, typeId) {
+    let playerCache = pointSpriteCache.get(playerId);
+    if (!playerCache) {
+        playerCache = new Map();
+        pointSpriteCache.set(playerId, playerCache);
+    }
+    
+    if (playerCache.has(typeId)) return playerCache.get(typeId);
 
-function getPointSprite(playerId, type = "Dot") {
-    const key = `${playerId}_${type}_${animationsEnabled}`;
+    if (DEBUG_SPRIE_CACHE_LOG){
+        console.log(`new POINT sprite | ${pointSpriteCache.size+1} total`)
+    }
 
-    let sprite = pointSpriteCache.get(key);
-    if (sprite) return sprite;
-
-    const size = CELL * 2;
-    const canvas = typeof OffscreenCanvas !== "undefined"
-        ? new OffscreenCanvas(size, size)
+    const size = CELL;
+    const canvas = (typeof OffscreenCanvas !== "undefined") 
+        ? new OffscreenCanvas(size, size) 
         : document.createElement("canvas");
 
     canvas.width = size;
     canvas.height = size;
     const ctx = canvas.getContext("2d");
     const center = size / 2;
-
     const baseRadius = CELL * 0.15;
-
-    const drawCircle = (radius, fillStyle, strokeStyle = null, lineWidth = 0) => {
-        ctx.beginPath();
-        ctx.arc(center, center, radius, 0, Math.PI * 2);
-        if (fillStyle) {
-            ctx.fillStyle = fillStyle;
-            ctx.fill();
-        }
-        if (strokeStyle) {
-            ctx.strokeStyle = strokeStyle;
-            ctx.lineWidth = lineWidth;
-            ctx.stroke();
-        }
-    };
 
     if (animationsEnabled) {
         const radii = GLOW_CONFIG.pointRadii;
         const alphas = GLOW_CONFIG.alpha;
         for (let i = 0; i < 4; i++) {
-            drawCircle(baseRadius * radii[i], colorFor(playerId, alphas[i]));
-            
-            if (type === "T2Dot") {
-                drawCircle(baseRadius * radii[i] * 2, null, `rgba(255, 255, 255, ${alphas[i] * 0.5})`, 1);
+            drawCircle(ctx, center, baseRadius * radii[i], getPlayerCustomColor(playerId, alphas[i]));
+            if (typeId === TYPE_T2DOT) {
+                drawCircle(ctx, center, baseRadius * radii[i] * 2, null, `rgba(255, 255, 255, ${alphas[i] * 0.5})`, 1);
             }
         }
     } else {
-        drawCircle(baseRadius, colorFor(playerId, 1));
-        
-        if (type === "T2Dot") {
-            drawCircle(baseRadius * 2, null, "white", 3);
+        drawCircle(ctx, center, baseRadius, getPlayerCustomColor(playerId, 1));
+        if (typeId === TYPE_T2DOT) {
+            drawCircle(ctx, center, baseRadius * 2, null, "white", 3);
         }
     }
 
-    pointSpriteCache.set(key, canvas);
+    playerCache.set(typeId, canvas);
     return canvas;
 }
 
-function drawDots(target = ctx, bounds) {
-    const baseDrawSize = CELL * 2 * zoom;
+function drawScene(target = ctx, bounds) {
+    const cellSize = Math.ceil(CELL * zoom);
+    const halfSize = cellSize * 0.5;
+    
+    const stoneSprite = getStoneSprite(CELL);
+
+    const getPointSpriteStrategy = (zoom > 0.15) 
+        ? getPointSprite 
+        : getMaxZoomPointSprite;
 
     forEachVisiblePoint(bounds, (cell, x, y, worldX, worldY) => {
-        if (cell.type.id !== "Dot" && cell.type.id !== "T2Dot") return;
+        const screenX = (worldX * zoom + offsetX) - halfSize;
+        const screenY = (worldY * zoom + offsetY) - halfSize;
 
-        const screen = worldToScreen(worldX, worldY);        
-        const sprite = getPointSprite(cell.player_id, cell.type.id);
+        const typeId = cell.type?.id;
 
-        target.drawImage(
-            sprite,
-            screen.x - baseDrawSize / 2,
-            screen.y - baseDrawSize / 2,
-            baseDrawSize,
-            baseDrawSize
-        );
+        if (typeId === TYPE_STONE) {
+            target.drawImage(stoneSprite, screenX, screenY, cellSize, cellSize);
+        } 
+        else if (typeId === "Dot" || typeId === "T2Dot") {
+            
+            const sprite = getPointSpriteStrategy(
+                cell.playerId, 
+                (typeId === "T2Dot") ? TYPE_T2DOT : TYPE_DOT
+            );
+            target.drawImage(sprite, screenX, screenY, cellSize, cellSize);
+        }
     });
 }
 
@@ -1165,6 +1412,10 @@ function getSignSprite(text, fontSize) {
     const key = `${text}_${fontSize}`;
 
     if (signSpriteCache.has(key)) return signSpriteCache.get(key);
+
+    if (DEBUG_SPRIE_CACHE_LOG) {
+        console.log(`new SIGN sprite | ${signSpriteCache.size+1} total`)
+    }
 
     const width = text.length * (fontSize * 0.6); 
     const height = fontSize * 1.5;
@@ -1188,38 +1439,45 @@ function getSignSprite(text, fontSize) {
 }
 
 function drawSigns(target = ctx, bounds) {
-    if (!grid || grid.length === 0) return;
-
     const halfCell = CELL * 0.5;
-    const fontSize = Math.max(1, 24 * zoom);
+    const fontSize = 48;
+    const scale = zoom * 0.5;            
 
     for (let y = bounds.startY; y <= bounds.endY; y++) {
-        const row = grid[y];
-        if (!row) continue;
-
+        if (y < 0 || y >= SIZE) continue;
         for (let x = bounds.startX; x <= bounds.endX; x++) {
-            const cell = row[x];
+            if (x < 0 || x >= SIZE) continue;
+
+            const index = y * SIZE + x;
+            const cell = grid[index];
+
             if (!cell || cell.type?.id !== "Sign") continue;
 
-            const text = cell.type.data;
+            const isTooSmall = zoom < 0.15;
+            const text = isTooSmall ? "🪧" : cell.type.data;
+            const currentScale = isTooSmall ? (scale * 8) : scale;
+            
             const sprite = getSignSprite(text, fontSize);
 
             const worldX = x * CELL + halfCell;
             const worldY = y * CELL + halfCell;
-            const screen = worldToScreen(worldX, worldY);
+            const screen = worldToScreen(worldX, worldY);            
+
+            const scaledWidth = sprite.width * currentScale;
+            const scaledHeight = sprite.height * currentScale;
 
             target.drawImage(
                 sprite,
-                screen.x - sprite.width / 2,
-                screen.y - sprite.height / 2
+                screen.x - scaledWidth * 0.5,
+                screen.y - scaledHeight * 0.5,
+                scaledWidth,
+                scaledHeight
             );
         }
     }
 }
 
 function drawMinimap() {
-    if (!grid || grid.length === 0) return;
-
     if (minimapCanvas.width !== SIZE) {
         minimapCanvas.width = SIZE;
         minimapCanvas.height = SIZE;
@@ -1254,16 +1512,18 @@ function renderMinimapWorld() {
     const imgData = minimapCacheCtx.createImageData(SIZE, SIZE);
     const data = imgData.data;
 
+    let index = 0;
     for (let y = 0; y < SIZE; y++) {
         for (let x = 0; x < SIZE; x++) {
-            const cell = grid[y][x];
-            if (!cell || cell.contour_id === 0) continue;
+            const cell = grid[index++];
+
+            if (!cell || cell.contourId === 0) continue;
             
             let color;
-            if (cell.player_id === 0) {
+            if (cell.playerId === 0) {
                 color = { r: 29, g: 29, b: 29 };
             } else {
-                color = getStableRGB(cell.player_id);
+                color = getPlayerCustomRGB(cell.playerId);
             }           
 
             const i = (y * SIZE + x) * 4;
@@ -1286,7 +1546,7 @@ function renderMinimapViewport() {
     const viewHeight = canvas.height / (zoom * CELL);
 
     mctx.strokeStyle = "white";
-    mctx.lineWidth = 1;
+    mctx.lineWidth = 2;
     mctx.strokeRect(viewLeft, viewTop, viewWidth, viewHeight);
 }
 
@@ -1294,13 +1554,13 @@ function renderMinimapHighlights(ctx) {
     ctx.clearRect(0, 0, SIZE, SIZE);
 
     minimapHighlights.forEach(h => {
-        const pulse = 1 + Math.sin(h.life * 30) * 0.5;
+        const pulse = 1 + Math.sin(h.life * 50) * 0.5;
         const size = h.radius * pulse;
 
         ctx.save();
         ctx.globalAlpha = h.life;
         ctx.strokeStyle = h.color;
-        ctx.lineWidth = 1;
+        ctx.lineWidth = 5;
 
         ctx.strokeRect(
             h.x - size / 2,
@@ -1320,9 +1580,9 @@ function triggerHighlight(
     y, 
     radius = 1,
     player_id = 0,
-    decaySpeed = 0.00025 // дефолт
+    decaySpeed = 0.00015 // дефолт
 ) {
-    const color = getStableColor(player_id)
+    const color = getPlayerCustomColor(player_id)
 
     minimapHighlights.push({
         x,
@@ -1347,63 +1607,61 @@ function updateHighlights(dt) {
     }
 }
 
-
-
-
-
-function drawHoverTooltip(target = fxCtx) {
+function drawHoverTooltip(target = fxCtx) {    
     if (hoveredCellX === -1 || hoveredCellY === -1) return;
 
-    const row = grid?.[hoveredCellY];
-    const cell = row?.[hoveredCellX];
+    const cell = grid?.[hoveredCellY * SIZE + hoveredCellX];    
+    const contourId = Number(cell.contourId);
 
-    if (!cell || cell.contour_id === 0 || cell.player_id === 0) return;
+    if (contourId === 0) return;
 
-    const ownerId = cell.player_id;
-    // if (ownerId === window.currentPlayer) return;
-   
-    const pIdKey = String(ownerId);
-    const player = players[pIdKey];
-    
-    let playerName = player ? player.name : null;
+    if (cell?.playerId || cell.contourId === -1){
+        let text = ''
+        if (contourId > 0){
+            const ownerId = cell.playerId;
+            if (ownerId === window.currentPlayer) return;
+            
+            playerName = getPlayerCustomNickname(ownerId);
+            if (!playerName) { getPlayerName(ownerId); }
+            
+            text = `Точка ${playerName}`;
+            target.strokeStyle = getPlayerCustomColor(ownerId, 0.5);
 
-    if (!playerName) {
-        const leaderEntry = serverLeaderboard.find(p => String(p.player_id) === pIdKey);
-        playerName = leaderEntry ? leaderEntry.name : `Игрок ${ownerId}`;
+        } else if (cell.contourId === -1){
+            
+            text = `Текст: ${cell.type.data}`;
+            target.strokeStyle = "#ffffff";
+        }
+
+        target.font = "bold 13px monospace";
+        const textWidth = target.measureText(text).width;
+        const rectWidth = textWidth + 20;
+        const rectHeight = 32;
+
+        const screen = worldToScreen(hoveredCellX * CELL + CELL / 2, hoveredCellY * CELL + CELL / 2);
+        const rectX = screen.x - rectWidth / 2;
+        const rectY = screen.y - rectHeight - (CELL * 0.2 * zoom); 
+
+        target.fillStyle = "rgba(0, 0, 0, 0.75)";
+        
+        target.lineWidth = 1;
+        
+        target.beginPath();
+        target.roundRect(rectX, rectY, rectWidth, rectHeight, 4); 
+        target.fill();
+        target.stroke();
+
+        target.fillStyle = "#ffffff";
+        target.textAlign = "center";
+        target.textBaseline = "middle";
+        target.fillText(text, screen.x, rectY + rectHeight / 2);    
     }
-    
-    const text = `Точка ${playerName}`;
-    const screen = worldToScreen(hoveredCellX * CELL + CELL / 2, hoveredCellY * CELL + CELL / 2);
-
-    target.font = "bold 13px monospace";
-    const textWidth = target.measureText(text).width;
-    const paddingX = 10;
-    const paddingY = 6;
-    const rectWidth = textWidth + paddingX * 2;
-    const rectHeight = 20 + paddingY * 2;
-
-    const rectX = screen.x - rectWidth / 2;
-    const rectY = screen.y - rectHeight - (CELL * 0.2 * zoom); 
-
-    target.fillStyle = "rgba(0, 0, 0, 0.75)";
-    target.strokeStyle = colorFor(ownerId, 0.5); 
-    target.lineWidth = 1;
-    
-    target.beginPath();
-    target.roundRect(rectX, rectY, rectWidth, rectHeight, 4); 
-    target.fill();
-    target.stroke();
-
-    target.fillStyle = "#ffffff";
-    target.textAlign = "center";
-    target.textBaseline = "middle";
-    target.fillText(text, screen.x, rectY + rectHeight / 2);
 }
 
+// unused
 function drawFloatingTexts(target = fxCtx) {
     target.font = "bold 14px monospace";
     target.textAlign = "center";
-
     for (const ft of floatingTexts) {
         target.fillStyle = `rgba(231, 76, 60, ${ft.alpha})`;
         target.shadowColor = 'black';
@@ -1411,11 +1669,9 @@ function drawFloatingTexts(target = fxCtx) {
         target.fillText(ft.text, ft.x, ft.y);
     }
 }
-
 // unused
 function showFloatingError(cellX, cellY, text) {
-    const screen = worldToScreen(cellX * CELL + CELL / 2, cellY * CELL + CELL / 2);
-    
+    const screen = worldToScreen(cellX * CELL + CELL / 2, cellY * CELL + CELL / 2);    
     floatingTexts.push({
         x: screen.x,
         y: screen.y - 15, 
@@ -1458,7 +1714,7 @@ function triggerAnimation(elementOrId, className, player_id = 0) {
         ? document.getElementById(elementOrId) 
         : elementOrId;
     
-    const color = getStableColor(player_id);
+    const color = getPlayerCustomColor(player_id);
 
     if (el) {
         el.style.setProperty('--flash-color', color);
@@ -1488,7 +1744,7 @@ function createExplosion(worldX, worldY, playerId, options = {}) {
             vx: Math.cos(angle) * speed,
             vy: Math.sin(angle) * speed,
             size: 2.5 + Math.random() * 3.5,
-            color: getStableRGBA(playerId),
+            color: getPlayerCustomColor(playerId),
             alpha: 1.0,
             life: 1.0,
             decay: (0.02 + Math.random() * 0.03) / duration 
@@ -1643,7 +1899,7 @@ function drawPulse(target, screen, radius, alpha, playerId, i) {
 
     const a = alpha * (1 - i * 0.08);
 
-    target.strokeStyle = colorFor(playerId, a);
+    target.strokeStyle = getPlayerCustomColor(playerId, a);
     target.lineWidth = (2 * zoom) * (1 - i * 0.1);
 
     target.stroke();
@@ -1653,30 +1909,26 @@ function drawExplosions(target = fxCtx) {
     for (const e of explosions) {
 
         const screen = worldToScreen(
-            e.x * CELL + CELL / 2,
-            e.y * CELL + CELL / 2
+            e.x * CELL + CELL * 0.5,
+            e.y * CELL + CELL * 0.5
         );
 
         const t = e.t;
-
         const flash = Math.max(0, 1 - t / 0.2);
-
         const waveT = Math.min(1, Math.max(0, (t - 0.1) / 0.7));
-
         const decayT = Math.max(0, (t - 0.5) / 1.0);
-
         const baseRadius = e.radius * CELL;
 
         target.beginPath();
         target.arc(screen.x, screen.y, baseRadius * 0.4 * flash, 0, Math.PI * 2);
-        target.fillStyle = colorFor(e.playerId, flash * 0.8);
+        target.fillStyle = getPlayerCustomColor(e.playerId, flash * 0.8);
         target.fill();
 
         const waveRadius = baseRadius * (0.3 + waveT * 2.2);
 
         target.beginPath();
         target.arc(screen.x, screen.y, waveRadius, 0, Math.PI * 2);
-        target.strokeStyle = colorFor(e.playerId, (1 - waveT) * 0.6);
+        target.strokeStyle = getPlayerCustomColor(e.playerId, (1 - waveT) * 0.6);
         target.lineWidth = (6 - waveT * 4) * zoom;
         target.stroke();
 
@@ -1692,7 +1944,7 @@ function drawExplosions(target = fxCtx) {
                 Math.PI * 2
             );
 
-            target.strokeStyle = colorFor(
+            target.strokeStyle = getPlayerCustomColor(
                 e.playerId,
                 (0.3 - i * 0.05) * (1 - decayT)
             );
@@ -1703,51 +1955,40 @@ function drawExplosions(target = fxCtx) {
 
         target.beginPath();
         target.arc(screen.x, screen.y, waveRadius * 0.2, 0, Math.PI * 2);
-        target.fillStyle = colorFor(e.playerId, 0.25 * (1 - decayT));
+        target.fillStyle = getPlayerCustomColor(e.playerId, 0.25 * (1 - decayT));
         target.fill();
     }
 }
 
-function hashGrid(grid) {
-    let hash = 0;
-    for (let y = 0; y < grid.length; y++) {
-        const row = grid[y];
-        for (let x = 0; x < row.length; x++) {
-            const val = grid[y][x].contour_id; 
-            hash = (hash * 31 + val) | 0;
-        }
-    }
-    return hash;
-}
-
-function hashLeaderboard(lb) {
-    return lb.map(p => `${p.player_id}:${p.totalArea}`).join("|");
-}
-
+let leaderboardCache = new Map();
 let lastLeaderboardOrder = [];
 function renderLeaderboard() {
     const leaderboardEl = document.getElementById("leaderboard");
 
-    const currentOrder = serverLeaderboard.map(p => p.player_id);
+    const currentOrder = serverLeaderboard.map(p => p.playerId);
     const hasOrderChanged = JSON.stringify(currentOrder) !== JSON.stringify(lastLeaderboardOrder);
 
     if (hasOrderChanged && lastLeaderboardOrder.length > 0) {
-        addChatMessage('Топ игроков изменился', 'info');
-        triggerAnimation("leaderboard", "basic-flash");
+        addChatMessage('Топ игроков изменился', 'info', 7500);
+        triggerAnimation("leaderboard", "basic-flash");        
     }
 
     lastLeaderboardOrder = currentOrder;
 
+    const current_player_id = window.currentPlayer
+
     leaderboardEl.innerHTML = serverLeaderboard.map((player, index) => {
-        const playerColor = colorFor(player.player_id, 1);
+        const player_id = player.playerId
+        const player_color = getPlayerCustomColor(player_id)
+        const player_name = getPlayerCustomNickname(player_id)
 
         return `
-            <div class="leader-item" style="display: flex; flex-direction: column; gap: 2px; white-space: nowrap; padding-right: 10px; ${player.player_id === window.currentPlayer ? 'text-decoration: underline;' : ''}">
+            <div class="leader-item" style="display: flex; flex-direction: column; gap: 2px; white-space: nowrap; padding-right: 10px; ${player_id === current_player_id ? 'text-decoration: underline;' : ''}">
                 <div class="leader-row" style="display: flex; justify-content: flex-start; align-items: center; gap: 8px;">
                     <span style="font-size: 14px; font-weight: bold;">#${index + 1}</span>
-                    <span class="player-color-dot" style="background: ${playerColor}; width: 10px; height: 10px; flex-shrink: 0;"></span>
+                    <span class="player-color-dot" style="background: ${player_color}; width: 10px; height: 10px; flex-shrink: 0;"></span>
                     <span style="font-size: 14px; font-weight: bold;">
-                        ${player.name} ${player.player_id === window.currentPlayer ? '(Вы)' : ''}
+                        ${player_name} ${player_id === current_player_id ? '(Вы)' : ''}
                     </span>
                 </div>
                 <div style="font-size: 11px; color: rgba(255,255,255,0.6); padding-left: 44px;">
@@ -1756,42 +1997,102 @@ function renderLeaderboard() {
             </div>
         `;
     }).join("");
+}
+function updateLeaderboardCache() {
+    leaderboardCache.clear();
+    for (const player of serverLeaderboard) {
+        leaderboardCache.set(player.playerId, player);
+    }
+}
+function getPlayerName(id) {
+    return leaderboardCache.get(id)?.name ?? id;
+}
+function getPlayerCustomNickname(id) {
+    const player = leaderboardCache.get(id);
+    return player?.nickname || player?.name || id;
+}
+function getPlayerOldNickname(id) {
+    const player = leaderboardCache.get(id);
+    return player?.name || player?.nickname || id;
+}
+const customColorCache = new Map();
+function getPlayerCustomColor(id, alpha = 1.0) {
+    const hue = leaderboardCache.get(id)?.hue ?? id;
+    if (hue >= 0) {
+        const key = `${hue}:${alpha}`;
 
-    leaderboardDirty = false;
+        let color = customColorCache.get(key);
+        if (!color) {
+            color = `hsla(${hue}, 65%, 45%, ${alpha})`;
+            customColorCache.set(key, color);
+        }
+
+        return color;
+    } else {
+        return colorFor(id, alpha);
+    }
+}
+function getPlayerCustomRGB(id) {
+    const hue = leaderboardCache.get(id)?.hue ?? id;
+    if (hue >= 0) {
+        const key = `${id}:${hue}`;
+
+        let color = customColorCache.get(key);
+        if (!color) {
+            color = hslToRgb(hue, 65, 45);
+            customColorCache.set(key, color);
+        }
+
+        return color;        
+    } else {
+        return getStableRGB(id);
+    }
+}
+function getPlayerCustomHue(id, alpha = 1.0) {
+    const hue = leaderboardCache.get(id)?.hue ?? id;
+    if (hue >= 0) { 
+        return hue;
+    } else {        
+        return getStableHue(id);
+    }
 }
 
-function redrawWorld() {
+
+function redrawWorld() {    
     worldCtx.setTransform(1, 0, 0, 1, 0, 0);
     worldCtx.clearRect(0, 0, worldCanvas.width, worldCanvas.height);
 
     const bounds = getVisibleBounds();
-
-    measure("Render | Grid", () => drawGrid(worldCtx, bounds), DEBUG_PROFILER_RENDER);
-    measure("Render | Stones", () => drawStones(worldCtx, bounds), DEBUG_PROFILER_RENDER);
-    measure("Render | Contours", () => {
+    if (DEBUG_PROFILER_RENDER) {
+        measure("Render | Grid", () => drawGrid(worldCtx, bounds));
+        measure("Render | Contours", () => {
+            Object.values(serverContours).forEach(c => drawServerContour(worldCtx, bounds, c));
+        });
+        measure("Render | Scene (cell)", () => drawScene(worldCtx, bounds));
+        measure("Render | Signs", () => drawSigns(worldCtx, bounds));
+    } else {
+        drawGrid(worldCtx, bounds);    
         Object.values(serverContours).forEach(c => drawServerContour(worldCtx, bounds, c));
-    }, DEBUG_PROFILER_RENDER);
-    measure("Render | Dots", () => drawDots(worldCtx, bounds), DEBUG_PROFILER_RENDER);
-    measure("Render | Signs", () => drawSigns(worldCtx, bounds), DEBUG_PROFILER_RENDER);
+        drawScene(worldCtx, bounds);
+        drawSigns(worldCtx, bounds);
+    }
 }
 
 function render() {
-    ctx.clearRect(0,0,canvas.width,canvas.height);
+    if (grid.length > 0) {
+        ctx.clearRect(0,0,canvas.width,canvas.height);
 
-    if (worldDirty) {
-        redrawWorld();
-        worldDirty = false;
+        if (worldDirty) {  
+            redrawWorld();
+            worldDirty = false;   
+        }
+
+        ctx.save();
+        ctx.drawImage(worldCanvas,0,0);
+        ctx.restore();
+
+        drawMinimap();
     }
-
-    ctx.save();
-    ctx.drawImage(worldCanvas,0,0);
-    ctx.restore();
-
-    if (leaderboardDirty) {
-        renderLeaderboard();
-    }
-
-    drawMinimap();
 }
 
 function fxRender(target = fxCtx) {
@@ -1799,44 +2100,57 @@ function fxRender(target = fxCtx) {
     target.globalAlpha = 1;
     target.clearRect(0, 0, fxCanvas.width, fxCanvas.height);
 
-    if (gridSweeps.length > 0) {
-        measure("FX | Grid Sweep", () => drawGridSweep(target), DEBUG_PROFILER_FX);
-    }    
-    if (particles.length > 0) {
-        measure("FX | Particles", () => drawParticles(target), DEBUG_PROFILER_FX);
-    }
-    if (gridEvents.length > 0) {
-        measure("FX | Grid Events", () => drawGridEvents(target), DEBUG_PROFILER_FX);
-    }
-    if (explosions.length > 0) {
-        measure("FX | Explosions", () => drawExplosions(target), DEBUG_PROFILER_FX); 
-    }
-
-    measure("FX | Hover Tooltip", () => drawHoverTooltip(target), DEBUG_PROFILER_FX);
-
+    if (DEBUG_PROFILER_FX) {
+        if (gridSweeps.length > 0) {
+            measure("FX | Grid Sweep", () => drawGridSweep(target));
+        }    
+        if (particles.length > 0) {
+            measure("FX | Particles", () => drawParticles(target));
+        }
+        if (gridEvents.length > 0) {
+            measure("FX | Grid Events", () => drawGridEvents(target));
+        }
+        if (explosions.length > 0) {
+            measure("FX | Explosions", () => drawExplosions(target)); 
+        }
+        measure("FX | Hover Tooltip", () => drawHoverTooltip(target));
+    } else {
+         if (gridSweeps.length > 0) {
+            drawGridSweep(target);
+        }    
+        if (particles.length > 0) {
+            drawParticles(target);
+        }
+        if (gridEvents.length > 0) {
+            drawGridEvents(target);
+        }
+        if (explosions.length > 0) {
+            drawExplosions(target); 
+        }
+        drawHoverTooltip(target)
+    }  
     // unused
     // measure("FX | Floating Texts", () => drawFloatingTexts(target), DEBUG_PROFILER_FX);
 }
 
 function mapExtraRender(target = mFxCtx) {
-        
-    measure("Minimap | Highlights", () => renderMinimapHighlights(target), DEBUG_PROFILER_MAP);
+    if (DEBUG_PROFILER_MAP){
+        measure("Minimap | Highlights", () => renderMinimapHighlights(target), );
+    } else {
+        renderMinimapHighlights(target);
+    }    
 }
 
-function measure(name, fn, profiler) {
-    if (profiler) {
-        const t = performance.now();
-        fn();
-        const dt = performance.now() - t;
-        
-        if (dt > 0.50) {
-            console.log(name, dt.toFixed(2));
-        }
-        if (dt > 0.25) {
-            console.log(`${name}: ${dt.toFixed(2)} ms`);
-        }
-    } else {
-        fn();
+function measure(name, fn) {    
+    const t = performance.now();
+    fn();
+    const dt = performance.now() - t;
+    
+    if (dt > 0.50) {
+        console.log(name, dt.toFixed(2));
+    }
+    if (dt > 0.25) {
+        console.log(`${name}: ${dt.toFixed(2)} ms`);
     }
 }
 
@@ -1850,23 +2164,39 @@ function updateAnimation() {
     
         gridAnimationTime += dt * 0.0007;
         if (window.currentPlayer && players[String(window.currentPlayer)]) {
-            
-            if (particles.length > 0) {
-                measure("UPD | Particles", () => updateParticles(dt), DEBUG_PROFILER_UPDATE);
-            }                      
-            if (explosions.length > 0) {
-                measure("UPD | Explosions", () => updateExplosions(dt), DEBUG_PROFILER_UPDATE); 
-            }             
-            if (gridEvents.length > 0) {
-                measure("UPD | Grid Events", () => updateGridEvents(dt), DEBUG_PROFILER_UPDATE);
-            }          
-            if (gridSweeps.length > 0) {
-                measure("UPD | Grid Sweep", () => updateGridSweep(dt), DEBUG_PROFILER_UPDATE);
+            if (DEBUG_PROFILER_UPDATE) {
+                if (particles.length > 0) {
+                measure("UPD | Particles", () => updateParticles(dt));
+                }                      
+                if (explosions.length > 0) {
+                    measure("UPD | Explosions", () => updateExplosions(dt)); 
+                }             
+                if (gridEvents.length > 0) {
+                    measure("UPD | Grid Events", () => updateGridEvents(dt));
+                }          
+                if (gridSweeps.length > 0) {
+                    measure("UPD | Grid Sweep", () => updateGridSweep(dt));
+                }
+                if (minimapHighlights.length > 0) {
+                    measure("UPD | Highlights", () => updateHighlights(dt));
+                }
+            } else {
+                if (particles.length > 0) {
+                    updateParticles(dt);
+                }                      
+                if (explosions.length > 0) {
+                    updateExplosions(dt); 
+                }             
+                if (gridEvents.length > 0) {
+                    updateGridEvents(dt);
+                }          
+                if (gridSweeps.length > 0) {
+                    updateGridSweep(dt);
+                }
+                if (minimapHighlights.length > 0) {
+                    updateHighlights(dt);
+                }
             }
-            if (minimapHighlights.length > 0) {
-                measure("UPD | Highlights", () => updateHighlights(dt), DEBUG_PROFILER_UPDATE);
-            }
-
             // unused
             // if (floatingTexts.length > 0) {
             //     measure("UPD | Floating Texts", () => updateFloatingTexts(dt), DEBUG_PROFILER_UPDATE); 
@@ -1928,7 +2258,6 @@ function setText(btn, normalText, endsAt) {
     }
 }
 
-
 function startCooldown(btn, totalSec, startSec = 0) {
     btn.classList.remove('on-cooldown');
     void btn.offsetWidth; 
@@ -1942,6 +2271,7 @@ function startCooldown(btn, totalSec, startSec = 0) {
 
     setTimeout(() => {
         btn.classList.remove('on-cooldown');
+        updateCooldownUI()
     }, (totalSec - startSec) * 1000);
 }
 
@@ -2016,18 +2346,28 @@ function startFXLoop() {
     requestAnimationFrame(loop);
 }
 
-function changeZoom(multiplier) {
+function changeZoom(zoomIn) {
+    const scaleFactor = 1.2;
+    const multiplier = zoomIn ? scaleFactor : 1 / scaleFactor;
+    const targetZoom = Number((zoom * multiplier).toFixed(2));    
+    const nextZoom = Math.min(Math.max(targetZoom, maxZoom), minZoom);
+
+    if (nextZoom === zoom) {
+        return;
+    }
+
     const centerX = window.innerWidth / 2;
     const centerY = window.innerHeight / 2;
     
     const worldX = (centerX - offsetX) / zoom;
     const worldY = (centerY - offsetY) / zoom;
     
-    zoom = Math.min(Math.max(zoom * multiplier, maxZoom), minZoom);
+    zoom = nextZoom;
     
     offsetX = centerX - worldX * zoom;
     offsetY = centerY - worldY * zoom;
 
+    debouncedSave();
     worldDirty = true;
     requestRender();
 }
@@ -2047,39 +2387,40 @@ canvas.addEventListener("mousedown", (e) => {
 });
 
 canvas.addEventListener("mousemove", (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.clientX - rect.left;
+    const clientY = e.clientY - rect.top;
+
     if (isDragging) {
-        const totalDx = e.clientX - mouseStartX;
-        const totalDy = e.clientY - mouseStartY;
-        if (Math.hypot(totalDx, totalDy) > 5) {
+        const deltaX = clientX - lastMouseX;
+        const deltaY = clientY - lastMouseY;
+
+        offsetX += deltaX;
+        offsetY += deltaY;
+
+        if (!hasMoved && Math.hypot(clientX - mouseStartX, clientY - mouseStartY) > 5) {
             hasMoved = true;
         }
 
-        const deltaX = e.clientX - lastMouseX;
-        const deltaY = e.clientY - lastMouseY;
-        const speed = Math.hypot(deltaX, deltaY);
-                
-        lastMouseX = e.clientX;
-        lastMouseY = e.clientY;
-        
-        offsetX = startX + totalDx;
-        offsetY = startY + totalDy;
-        
-        hoveredCellX = -1;
-        hoveredCellY = -1;
+        lastMouseX = clientX;
+        lastMouseY = clientY;
 
         worldDirty = true;
         requestRender();
     } else {
-        const x = Math.floor(((e.clientX - offsetX) / zoom) / CELL);
-        const y = Math.floor(((e.clientY - offsetY) / zoom) / CELL);
-        hoveredCellX = inBounds(x, y) ? x : -1;
-        hoveredCellY = inBounds(x, y) ? y : -1;
+        const x = Math.floor(((clientX - offsetX) / zoom) / CELL);
+        const y = Math.floor(((clientY - offsetY) / zoom) / CELL);
+        
+        const inWorld = inBounds(x, y);
+        hoveredCellX = inWorld ? x : -1;
+        hoveredCellY = inWorld ? y : -1;
     }
 });
 
 window.addEventListener("mouseup", (e) => {
     if (isDragging) {
         isDragging = false;
+        debouncedSave();
         if (!hasMoved) {
             processClick(e);
             requestRender();
@@ -2090,47 +2431,70 @@ canvas.addEventListener("mouseleave", () => { hoveredCellX = -1; hoveredCellY = 
 
 canvas.addEventListener("wheel", (e) => {
     e.preventDefault();
-    const mouseX = e.clientX; const mouseY = e.clientY;
-    const worldX = (mouseX - offsetX) / zoom; const worldY = (mouseY - offsetY) / zoom;
-    zoom = e.deltaY < 0 ? Math.min(zoom * 1.1, minZoom) : Math.max(zoom / 1.1, maxZoom);
-    offsetX = mouseX - worldX * zoom; offsetY = mouseY - worldY * zoom;
+
+    const scaleFactor = 1.2;
+    const multiplier = e.deltaY < 0 ? scaleFactor : 1 / scaleFactor;
+
+    const targetZoom = Number((zoom * multiplier).toFixed(2));
+    const nextZoom = Math.min(Math.max(targetZoom, maxZoom), minZoom);
+
+    if (nextZoom === zoom) return;
+
+    const mouseX = e.clientX;
+    const mouseY = e.clientY;
+    
+    const worldX = (mouseX - offsetX) / zoom;
+    const worldY = (mouseY - offsetY) / zoom;
+    
+    zoom = nextZoom;
+    
+    offsetX = mouseX - worldX * zoom;
+    offsetY = mouseY - worldY * zoom;
+
+    debouncedSave();
     worldDirty = true;
     requestRender();
 }, { passive: false });
 
 window.addEventListener("keydown", (e) => {
-    const key = e.key.toLowerCase();
-    if        (key === "w" || key === "ц") {
-        setTool("draw");
-    } else if (key === "e" || key === "у") {
-        setTool("erase");
-    } else if (key === "a" || key === "ф") {
-        setTool("tier2draw");
-    } else if (key === "s" || key === "ы") {
-        setTool("tier2erase");
-    } else if (key === "d" || key === "в") {
-        setTool("structure");
-    } else if (key === "f" || key === "а") {
-        setTool("sign");
-    } else if (key === "g" || key === "п") {
-        setTool("blast");
-    } else if (key === "h" || key === "р") {
-        setTool("tier2blast");
-    } else if (key === "pagedown" || key === "=") {
-        changeZoom(1.2);
-    } else if (key === "pageup" || key === "-" ){
-        changeZoom(0.8);    
-    } else if (key === "p" || key === "з") {        
-        toggleAnimations(); 
-    } else if (key === "o" || key === "щ") {
-        openSettings();
-    } else if (key === "escape" || key === "esc") {
+    const key = e.key.toLowerCase();    
+
+    if (key === "escape" || key === "esc") {
         closeSign();
-        closeSettings();
+        closeAudioSettings();
+        closePersonalSettings();
     } 
-    // else  {
-    //    console.log(key)
-    // }
+
+    if (!signActive) { 
+        if        (key === "w" || key === "ц") {
+            setTool("draw");
+        } else if (key === "e" || key === "у") {
+            setTool("erase");
+        } else if (key === "a" || key === "ф") {
+            setTool("tier2draw");
+        } else if (key === "s" || key === "ы") {
+            setTool("tier2erase");
+        } else if (key === "d" || key === "в") {
+            setTool("structure");
+        } else if (key === "f" || key === "а") {
+            setTool("sign");
+        } else if (key === "g" || key === "п") {
+            setTool("blast");
+        } else if (key === "h" || key === "р") {
+            setTool("tier2blast");
+        } else if (key === "pagedown" || key === "=") {
+            changeZoom(false);
+        } else if (key === "pageup" || key === "-" ){
+            changeZoom(true);
+        // } else if (key === "p" || key === "з") {        
+        //     toggleAnimations(); 
+        // } else if (key === "o" || key === "щ") {
+        //     openAudioSettings();
+        }
+        // else  {
+        //    console.log(key)
+        // }
+    }
 });
 
 canvas.addEventListener("touchstart", (e) => {
@@ -2186,6 +2550,7 @@ canvas.addEventListener("touchend", (e) => {
         
         if (!hasMoved) {            
             const touch = e.changedTouches[0];
+            debouncedSave();
             processClick({ clientX: touch.clientX, clientY: touch.clientY });
             requestRender();
         }
@@ -2202,7 +2567,8 @@ function processClick(e) {
     const y = Math.floor(((e.clientY - offsetY) / zoom) / CELL);
     if (!inBounds(x, y)) return;
 
-    const cell = grid[y][x];
+    const index = y * SIZE + x;
+    const cell = grid[index];
     const now = Date.now();
 
     if (!canUseTool(currentTool, pData, cell, now, x, y)) {
@@ -2210,6 +2576,7 @@ function processClick(e) {
     }
 
     if (currentTool === 'sign') {
+        signActive = true;
         pendingSignCoords = { x, y };
         document.getElementById('sign-modal').style.display = 'flex';
         return;
@@ -2221,15 +2588,13 @@ function processClick(e) {
     createExplosion(worldX, worldY, window.currentPlayer);
 
     if (socket.readyState === WebSocket.OPEN) {
-        socket.send(MessagePack.encode({
-            type: "action",
-            payload: {
-                player_id: window.currentPlayer,
-                tool: currentTool,
-                x,
-                y
-            }
-        }));
+        sendProto("action", {
+            tool: currentTool,
+            x: x,
+            y: y            
+        });
+    } else {
+        alert("Нет интернета или сервер оффлайн");
     }
 }
 
@@ -2247,7 +2612,7 @@ function canUseTool(toolName, pData, cell, now, x, y, grid) {
     
     switch (toolName) {
         case "sign":
-            if (cell.type != null) {
+            if (cell.type != null && cell.type.id !== "") {
                 messageWithFlash('Здесь чем-то занято');
                 return false;
             }
@@ -2255,14 +2620,14 @@ function canUseTool(toolName, pData, cell, now, x, y, grid) {
 
         case "draw":
         case "tier2draw":
-            if (cell.contour_id !== 0) {
+            if (cell.contourId !== 0) {
                 messageWithFlash('Здесь уже занято');
                 return false;
             }
             break;
 
         case "structure":
-            if (cell.contour_id !== 0) {
+            if (cell.contourId !== 0) {
                 messageWithFlash('Можно строить только на пустом');
                 return false;
             }
@@ -2270,7 +2635,7 @@ function canUseTool(toolName, pData, cell, now, x, y, grid) {
 
         case "erase":
         case "tier2erase":
-            if (cell.contour_id === 0 || (cell.type?.id === "Stone")) {
+            if (cell.contourId === 0 || (cell.type?.id === "Stone")) {
                 messageWithFlash('Здесь ничего нет');
                 return false;
             }
@@ -2282,7 +2647,7 @@ function canUseTool(toolName, pData, cell, now, x, y, grid) {
 
         case "blast":
         case "tier2blast":
-            if (cell.contour_id === 0) {
+            if (cell.contourId === 0) {
                 messageWithFlash('Не может начинаться с пустого места');
                 return false;
             }
@@ -2304,16 +2669,14 @@ function submitSign() {
 
     if (x !== null && y !== null && text.trim() !== "") {
         if (socket.readyState === WebSocket.OPEN) {
-            socket.send(MessagePack.encode({
-                type: "action",
-                payload: {
-                    player_id: window.currentPlayer,
-                    tool: "sign",
-                    x: x,
-                    y: y,
-                    text: text
-                }
-            }));
+            sendProto("action", {
+                data: text,
+                tool: currentTool,
+                x: x,
+                y: y            
+            });
+        } else {
+            alert("Нет интернета или сервер оффлайн");
         }
         
         createExplosion(x * CELL + CELL / 2, y * CELL + CELL / 2, window.currentPlayer);
@@ -2325,6 +2688,7 @@ function submitSign() {
 }
 
 function closeSign() {
+    signActive = false
     document.getElementById('sign-modal').style.display = 'none';
     document.getElementById('sign-input').value = "";
     pendingSignCoords = { x: null, y: null };
@@ -2345,9 +2709,8 @@ const TOOL_TIP_MAP = {
 function setTool(tool) {
     document.querySelectorAll('.action-button').forEach(b => b.classList.remove('active'));
     document.getElementById(`tool-${tool}`).classList.add('active');
-
     currentTool = tool;
-    
+    saveToolState()    
     // if (!shownTooltips.has(tool)) {
     //     addChatMessage(TOOL_TIP_MAP[tool]);
     //     shownTooltips.add(tool);
@@ -2367,6 +2730,7 @@ function handleMinimapClick(e) {
     offsetX = window.innerWidth / 2 - targetWorldX * zoom;
     offsetY = window.innerHeight / 2 - targetWorldY * zoom;
 
+    debouncedSave();
     worldDirty = true;
     requestRender();
 }
@@ -2444,8 +2808,7 @@ function addChatMessage(text, type = 'info', timeout = 2000, force = false) {
 }
 
 resizeCanvas();
-centerMap();
 updateAnimation();
 startFXLoop();
-setInterval(updateCooldownUI, 300);
+setTimeout(updateCooldownUI(), 300)
 connect();

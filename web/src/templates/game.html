@@ -9,7 +9,8 @@
     <title>MiniApp</title>
     <link rel="stylesheet" href="/static/css/game.css">
     <script src="https://telegram.org/js/telegram-web-app.js" defer></script>
-    <script src="/static/js/msgpack.js" defer></script>    
+    <script src="/static/js/msgpack.js" defer></script>
+    <script src="/static/js/protobuf.js" defer></script>
     <script src="/static/js/game-main.js" defer></script>
 </head>
 <body>
@@ -67,7 +68,7 @@
     <div class="message-box">
         <h3>Аккаунт используется где-то еще</h3>
         <div style="display: flex; align-items: center; justify-content: center; margin-top: 15px;">
-            <div class="hover-spinner"></div>
+            <div class="hover-spinner-reverse"></div>
             <p style="margin: 0;">Страница должна быть перезагружена</p>
         </div>
     </div>
@@ -80,7 +81,7 @@
         <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">            
             <h3 style="margin:0;">Авторизация не из MiniApp</h3>
             <div style="display:flex; align-items:center; justify-content:center; gap:10px; opacity:0.6;">
-                <div class="hover-spinner"></div>
+                <div class="hover-spinner-reverse"></div>
                 <span style="font-size:12px;">
                     <a href="https://t.me/weakobot" style="color: #fff; text-decoration: underline;">https://t.me/weakobot</a>
                 </span>
@@ -97,8 +98,8 @@
 </div>
 <div class="zoom-panel">     
     <div class="hotkey-hint-on-top">[PgUp]</div>
-    <button class="zoom-btn" onclick="changeZoom(1.2)">+</button>
-    <button class="zoom-btn" onclick="changeZoom(0.8)">-</button>    
+    <button class="zoom-btn" onclick="changeZoom(true)">+</button>
+    <button class="zoom-btn" onclick="changeZoom(false)">-</button>    
     <div class="hotkey-hint">[PgDn]</div>
 </div>
 <div id="error-overlay" style="
@@ -111,13 +112,42 @@
     <h2>JavaScript Error Log</h2>
     <div id="error-content"></div>
 </div>
-<div class="settings-panel"> 
-    <div class="hotkey-hint-on-top">[O]</div>   
-    <button class="zoom-btn" onclick="openSettings()">⚙</button>
+<div class="settings-panel">
+    <button class="zoom-btn" onclick="openPersonalSettings()">👤</button>
+    <button class="zoom-btn" onclick="openAudioSettings()">🔊</button>
     <button class="zoom-btn fx-btn" onclick="toggleAnimations()">FX</button>
-    <div class="hotkey-hint">[P]</div>   
 </div>
-<div id="settings-overlay" class="overlay" style="display:none; z-index: 300;">
+<div id="settings-personal-overlay" class="overlay" style="display:none; z-index: 300;">
+    <div class="message-box" style="min-width: 320px; text-align: left;">
+        <h3 style="margin-top:0;">Настройки профиля</h3>        
+        <div class="personal-row">
+            <label class="label-box">
+                Никнейм <br> 
+                <span class="sub-text">(до 20 символов)</span>
+            </label>
+            <div id="color-preview" style="width: 30px; height: 30px; border-radius: 100%; background-color: hsl(0, 100%, 50%); border: 1px solid #ccc;"></div>
+            <input class="personal-input" id="personal-nickname" maxlength="20" placeholder="никнейм">
+        </div>
+        <div class="personal-row">
+            <label class="label-box">
+                Цвет <br>
+                <span class="sub-text">(сброс = дефолт)</span>                
+            </label>
+            <input type="range" id="hue-slider" min="0" max="360" value="0" 
+                style="width: 100%; cursor: pointer; height: 10px; appearance: none; background: linear-gradient(to right, red, yellow, lime, cyan, blue, magenta, red); border-radius: 5px;">
+        </div>
+        <button onclick="savePersonal()" class="action-button" style="width:100%; margin-top:10px;" id="save-sounds-btn" >
+            Сохранить
+        </button>
+        <button onclick="resetPersonal()" class="action-button" style="width:100%; margin-top:10px;">
+            Сбросить
+        </button>
+    </div>
+    <div class="hint">
+        Для выхода [Esc] или Сохранить
+    </div>
+</div>
+<div id="settings-audio-overlay" class="overlay" style="display:none; z-index: 300;">
     <div class="message-box" style="min-width: 320px; text-align: left;">
         <h3 style="margin-top:0;">Настройки звуков</h3>
         <div class="volume-bar">

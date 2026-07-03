@@ -1,0 +1,151 @@
+syntax = "proto3";
+
+message Cooldown {
+  int32 charges = 1;
+  int32 duration = 2;
+  int64 ends_at = 3;
+  int32 max_charges = 4;
+}
+
+message PlayerCooldowns {
+  Cooldown blast = 1;
+  Cooldown draw = 2;
+  Cooldown erase = 3;
+  Cooldown sign = 4;
+  Cooldown structure = 5;
+  Cooldown tier2blast = 6;
+  Cooldown tier2draw = 7;
+  Cooldown tier2erase = 8;
+}
+
+message Player {
+  PlayerCooldowns cooldowns = 1;
+}
+
+message Point {
+  int32 x = 1;
+  int32 y = 2;
+}
+
+message Contour {
+  int32 id = 1;
+  repeated Point path = 2;
+  int64 player_id = 3;
+}
+
+message TypeInfo {
+  string id = 1;
+  string data = 2;
+}
+
+message GridCell {
+  int32 contour_id = 1;
+  int64 player_id = 2;
+  TypeInfo type = 3;
+}
+
+message LeaderboardEntry {
+  string name = 1;
+  int64 player_id = 2;
+  string nickname = 3;
+  int32 hue = 4;
+  float total_area = 5;
+}
+
+message Config {
+  int32 cell = 1;
+  int32 size = 2;
+}
+
+message InitResponse {
+  Config config = 1;
+  repeated GridCell grid = 2;
+  repeated Contour contours = 3;
+  repeated LeaderboardEntry leaderboard = 4;
+  map<string, Player> players = 5;
+  repeated Event events = 6;
+}
+
+message ActionRequest {
+  string tool = 1;
+  int32 x = 2;
+  int32 y = 3;
+  string data = 4;
+}
+
+message UpdatedColorsEvent { bool updated = 1; }
+message ToolEvent { string tool = 1; }
+message SfxEvent { string sfx = 1; }
+message MsgEvent { 
+  string text = 1;
+  string to_id = 2; 
+  string level = 3;
+}
+message CordsEvent {
+  int32 x = 1;
+  int32 y = 2;
+  int32 contour_id = 3;
+  int32 radius = 4;
+  int64 player_id = 5;
+  int32 structure_radius = 6;
+  int32 blast_radius = 7;
+  string data = 8;
+}
+
+message Event {
+  oneof payload {
+    ToolEvent tool = 1;
+    SfxEvent sfx = 2;
+    MsgEvent msg = 3;
+    CordsEvent cords = 4;
+    UpdatedColorsEvent updated_colors = 5;
+  }
+}
+
+message ContourUpdate {
+  int64 player_id = 1;
+  repeated Point path = 2;
+  bool is_deleted = 3;
+}
+
+message UpdateMessage {
+  repeated Event events = 1;
+  repeated LeaderboardEntry leaderboard = 2;
+  map<string, Player> players = 3;
+  map<int32, ContourUpdate> updated_contours = 4;
+}
+
+message PersonalChangeRequest { 
+  string nickname = 1;
+  int32 hue = 2;
+}
+
+message AuthRequest { string init_data = 1; }
+message InitRequest { }
+message ExternalAuthRequest { string token = 1; }
+message SessionReplaced { }
+message AuthSuccess { int64 player_id = 1; }
+message ErrorResponse { string message = 1; }
+message Ping { }
+message Pong { }
+
+message ServerMessage {
+  oneof payload {
+    SessionReplaced session_replaced = 1;
+    AuthSuccess auth_success = 2;
+    ErrorResponse error = 3;
+    Pong pong = 4;
+    InitResponse init_response = 5;
+    UpdateMessage update = 6; 
+  }
+}
+message ClientMessage {
+  oneof payload {
+    AuthRequest auth = 1;
+    ExternalAuthRequest externalAuth = 2;
+    Ping ping = 3;
+    InitRequest init = 4;
+    ActionRequest action = 5;
+    PersonalChangeRequest personal = 6;
+  }
+}

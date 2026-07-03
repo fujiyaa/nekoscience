@@ -20,11 +20,11 @@ from pydantic import BaseModel, Field
 from collections import defaultdict, deque
 import logging
 from dataclasses import dataclass
-import msgpack
 from logging.handlers import RotatingFileHandler
 from abc import ABC, abstractmethod
 from typing import Tuple, List, Optional, Dict, Any
 from starlette.websockets import WebSocketState, WebSocketDisconnect
+from utils import game_pb2
 
 templates = Jinja2Templates(directory="templates")
 router = APIRouter()
@@ -34,11 +34,13 @@ BOT_TOKEN = os.getenv("TOKEN")
 
 SIZE = 250
 CELL = 50
+MAX_DOTS_PER_CONTOUR = 250
 
 GAME_GRID_CACHE = []
 last_action_times = {}
 GAME_STATE_CACHE = {}
 CONTOUR_PATHS_CACHE = {}
+CONTOUR_COUNT_CACHE = {}
 
 DIRS = [(1,0), (1,1), (0,1), (-1,1), (-1,0), (-1,-1), (0,-1), (1,-1)]
 
@@ -61,17 +63,17 @@ class ToolConfig:
 class BaseToolHandler(ABC):
     @abstractmethod
     def validate(self, player_id: int, x: int, y: int, grid: list, 
-                 state: Dict, payload: Dict) -> Tuple[bool, Optional[str]]:
+            tool: str, state: Dict, p_data: str) -> Tuple[bool, Optional[str]]:
         pass
 
     @abstractmethod
     def execute(self, player_id: int, x: int, y: int, grid: list, 
-                payload: Dict, now: int) -> Tuple[List[Dict], List[Any]]:
+            tool: str, p_data: str) -> Tuple[List[Dict], List[Any]]:
         pass
 
 class SignHandler(BaseToolHandler):
-    def validate(self, player_id, x, y, grid, state, payload):
-        text = sanitize_sign_text(payload.get("text", ""))
+    def validate(self, player_id, x, y, grid, tool, state, p_data):
+        text = sanitize_sign_text(p_data)
         if not text or len(text) > 30:
             return False, 'Текст слишком длинный'
         if not (0 <= y < len(grid) and 0 <= x < len(grid[0])):
@@ -80,41 +82,56 @@ class SignHandler(BaseToolHandler):
             return False, 'Здесь чем-то занято'
         return True, None
 
-    def execute(self, player_id, x, y, grid, payload, now):
-        tool = payload["tool"]
-        text = sanitize_sign_text(payload.get("text", ""))
+    def execute(self, player_id, x, y, grid, tool, p_data):
+        text = sanitize_sign_text(p_data)
         grid[y][x].update({
             "player_id": 0, "contour_id": -1,
             "type": {"id": "Sign", "data": text}
         })
+
         events = [
-            {"tool": tool},
-            {"msg": f"Появилась новая табличка", "msg_to": "all"},
-            {"sfx": "sign"},
-            {"cords": {
-                "x": x,
-                "y": y,
-                "contour_id": grid[y][x]["contour_id"],
-                "data": text,
-                "radius": (SIZE/10),
-                "player_id": player_id
-            }}
-        ]
+            create_event("tool", tool=tool),
+            create_event("sfx", sfx="sign"),
+            create_event("msg", 
+                text=f"Появилась новая табличка ({x}, {y})", 
+                to_id='all',
+                level='info'
+            ),
+            create_event("cords", 
+                x=x, 
+                y=y, 
+                contour_id=grid[y][x]["contour_id"], 
+                radius=SIZE/10 *2, 
+                data=text,
+                player_id=player_id
+            )
+        ] 
         return events, [(x, y)]
     
 class DrawHandler(BaseToolHandler):
-    def __init__(self, size, get_neighbours_func, get_free_id_func):
+    def __init__(self, size, max_dots, get_neighbours_func, get_free_id_func):
         self.size = size
         self.get_neighbours = get_neighbours_func
         self.get_free_id = get_free_id_func
+        self.max_dots = max_dots
 
-    def validate(self, player_id, x, y, grid, state, payload):
+    def validate(self, player_id, x, y, grid, tool, state, p_data):
         if grid[y][x]["contour_id"] != 0:
             return False, 'Здесь уже занято'
+        neighbours = self.get_neighbours(x, y, player_id, grid)
+        if neighbours:
+            if len(neighbours) > 1:
+                total_count = sum(get_contour_count(c_id) for c_id in neighbours)
+                if total_count + 1 > self.max_dots:
+                    return False, f'Слияние бы превысило {MAX_DOTS_PER_CONTOUR} (лимит)'  
+                
+            for c_id in neighbours:
+                current_count = get_contour_count(c_id)
+                if current_count + 1 > self.max_dots:
+                    return False, f'Лимит в одном контуре ({MAX_DOTS_PER_CONTOUR} точек)'            
         return True, None
 
-    def execute(self, player_id, x, y, grid, payload, now):
-        tool = payload["tool"]
+    def execute(self, player_id, x, y, grid, tool, p_data):
         cell_type_id = "Dot" if tool == "draw" else "T2Dot"
         
         ids_to_refresh = set()
@@ -140,17 +157,16 @@ class DrawHandler(BaseToolHandler):
         grid[y][x]["type"] = {"id": cell_type_id, "data": None}
 
         events = [
-            {"tool": tool},
-            {"sfx": "draw"},
-            {"cords": {
-                "x": x,
-                "y": y,
-                "contour_id": grid[y][x]["contour_id"],
-                "radius": (SIZE/10),
-                "player_id": player_id
-            }}
-        ]
-
+            create_event("tool", tool=tool),
+            create_event("sfx", sfx="draw"),
+            create_event("cords", 
+                x=x, 
+                y=y, 
+                contour_id=grid[y][x]["contour_id"], 
+                radius=SIZE/10 *0.5, 
+                player_id=player_id
+            )
+        ]        
         return events, ids_to_refresh
 
 class StructureHandler(BaseToolHandler):
@@ -160,7 +176,7 @@ class StructureHandler(BaseToolHandler):
         self.get_cells_in_radius = get_cells_func
         self.get_free_id = get_free_id_func
 
-    def validate(self, player_id, x, y, grid, state, payload):
+    def validate(self, player_id, x, y, grid, tool, state, p_data):
         if grid[y][x]["contour_id"] != 0:
             return False, 'Можно строить только на пустом'
 
@@ -174,8 +190,7 @@ class StructureHandler(BaseToolHandler):
         
         return True, None
 
-    def execute(self, player_id, x, y, grid, payload, now):
-        tool = payload["tool"]
+    def execute(self, player_id, x, y, grid, tool, p_data):
         cfg = self.tools_cfg["structure"]
         radius = cfg.radius
         radius_expand = cfg.radius
@@ -191,29 +206,30 @@ class StructureHandler(BaseToolHandler):
                             "player_id": player_id,
                             "type": {"id": "T2Dot", "data": None}
                         })
-        
         events = [
-            {"tool": tool},
-            {"sfx": "structure"},
-            {"msg": f"Новый замок был построен ({x}, {y})", "msg_to": "all"},
-            {"cords": {
-                "x": x,
-                "y": y,
-                "structure_radius": radius,
-                "radius": (SIZE/10),
-                "player_id": player_id
-            }}
-        ]
-        
+            create_event("tool", tool=tool),
+            create_event("sfx", sfx="structure"),
+            create_event("msg", 
+                text=f"Новый замок был построен ({x}, {y})", 
+                to_id='all',
+                level='info'
+            ),
+            create_event("cords", 
+                x=x, 
+                y=y, 
+                contour_id=new_id, 
+                radius=SIZE/10 *1, 
+                player_id=player_id,
+                structure_radius=radius,
+            )
+        ]        
         return events, {new_id}
 
 class EraseHandler(BaseToolHandler):
     def __init__(self, recalculate_func):
         self.recalculate_func = recalculate_func
 
-    def validate(self, player_id, x, y, grid, state, payload):
-        tool = payload.get("tool")
-               
+    def validate(self, player_id, x, y, grid, tool, state, p_data):               
         if grid[y][x]["contour_id"] == 0:
             return False, 'Не может начинаться с пустого места'
         
@@ -228,8 +244,7 @@ class EraseHandler(BaseToolHandler):
             
         return True, None
 
-    def execute(self, player_id, x, y, grid, payload, now):
-        tool = payload["tool"]
+    def execute(self, player_id, x, y, grid, tool, p_data):
         target_contour_id = grid[y][x]["contour_id"]
         target_pid = grid[y][x]["player_id"]
         
@@ -244,19 +259,18 @@ class EraseHandler(BaseToolHandler):
         if target_pid:
             new_ids = self.recalculate_func(target_contour_id, target_pid, grid)
             ids_to_refresh.update(new_ids)
-            
-        events = [
-            {"tool": tool},
-            {"sfx": "erase"},
-            {"cords": {
-                "x": x,
-                "y": y,                
-                "contour_id": grid[y][x]["contour_id"],
-                "radius": (SIZE/10),
-                "player_id": player_id
-            }}
-        ]
         
+        events = [
+            create_event("tool", tool=tool),
+            create_event("sfx", sfx="erase"),
+            create_event("cords", 
+                x=x, 
+                y=y, 
+                contour_id=grid[y][x]["contour_id"], 
+                radius=SIZE/10 *0.5, 
+                player_id=player_id,
+            )
+        ]
         return events, ids_to_refresh
 
 class BlastHandler(BaseToolHandler):
@@ -265,13 +279,12 @@ class BlastHandler(BaseToolHandler):
         self.get_cells_in_radius = get_cells_func
         self.recalculate_player_contours_nearby = recalculate_func
 
-    def validate(self, player_id, x, y, grid, state, payload):
+    def validate(self, player_id, x, y, grid, tool, state, p_data):
         if grid[y][x]["contour_id"] == 0:
             return False, 'Не может начинаться с пустого места'
         return True, None
 
-    def execute(self, player_id, x, y, grid, payload, now):
-        tool = payload["tool"]
+    def execute(self, player_id, x, y, grid, tool, p_data):
         cfg = self.tools_cfg[tool]
         radius = cfg.radius
 
@@ -304,24 +317,26 @@ class BlastHandler(BaseToolHandler):
                 all_new_contour_ids.update(new_ids)
 
         return_ids = all_new_contour_ids.union(initial_contour_ids)
-
-        events = [
-            {"tool": tool},
-            {"msg": f"Что-то было взорвано ({x}, {y})", "msg_to": "all"},
-            {"sfx": "blast"},
-            {"cords": {
-                "x": x,
-                "y": y,
-                "blast_radius": radius,
-                "radius": (SIZE/10),
-                "player_id": player_id
-            }}
-        ]
         
+        events = [
+            create_event("tool", tool=tool),
+            create_event("sfx", sfx="blast"),
+            create_event("msg", 
+                text=f"Что-то было взорвано ({x}, {y})", 
+                to_id='all',
+                level='info'
+            ),
+            create_event("cords", 
+                x=x, 
+                y=y,
+                radius=SIZE/10 *3, 
+                player_id=player_id,
+                blast_radius=radius,
+            )
+        ]
         return events, return_ids
 
 def get_size_analysis(data):
-    # Общий вес
     full_json = json.dumps(data)
     total_size = len(full_json.encode('utf-8'))
     
@@ -342,15 +357,7 @@ def get_size_analysis(data):
             output.append(f".... list: {len(value)} | {type(value[0]) if value else 'empty'}")
 
     return "\n".join(output)
-
     
-class ActionPayload(BaseModel):
-    player_id: int
-    tool: str = Field(..., pattern="^(draw|erase|blast|sign|structure|tier2draw|tier2erase|tier2blast)$")
-    x: int = Field(..., ge=0, lt=SIZE)
-    y: int = Field(..., ge=0, lt=SIZE)
-    text: Optional[str] = None
-
 class ConnectionManager:
     def __init__(self):
         self.active_connections: Set[WebSocket] = set()
@@ -365,7 +372,7 @@ class ConnectionManager:
     def disconnect(self, websocket: WebSocket):
         self.active_connections.discard(websocket) 
 
-    async def broadcast(self, message: dict):
+    async def broadcast(self, message):
         if not self.active_connections:
             return
         
@@ -378,20 +385,15 @@ class ConnectionManager:
         for d in dead:
             self.active_connections.discard(d)
         
-        player_ids = [
-            getattr(conn, "player_id", "Unknown")
-            for conn in self.active_connections
-        ]
+        # player_ids = [
+        #     getattr(conn, "player_id", "Unknown")
+        #     for conn in self.active_connections
+        # ]
+        # logger.info(
+        #     f"WS | sockets={len(self.active_connections)} | players={player_ids}"
+        # )
 
-        logger.info(
-            f"WS BROADCAST START | sockets={len(self.active_connections)} | players={player_ids}"
-        )
-        
-        # json_data = json.dumps(message)
-        logger.info(get_size_analysis(message))
-
-        packed_data = msgpack.packb(message, use_bin_type=True)
-
+        packed_data = message.SerializeToString()
         connections = list(self.active_connections)
         
         for connection in connections:
@@ -408,10 +410,10 @@ class ConnectionManager:
         player_id = getattr(connection, "player_id", "Unknown")
         
         try:
-            await asyncio.wait_for(connection.send_bytes(data), timeout=1.0)
+            await asyncio.wait_for(connection.send_bytes(data), timeout=2.0)
             
             duration = time.perf_counter() - start_time
-            logger.info(f"Send to {player_id} занял {duration:.4f} сек")
+            logger.info(f"Send to {player_id} took {duration:.4f} secs")
             
         except asyncio.TimeoutError:
             logger.error(f"Таймаут отправки для {player_id}")
@@ -422,19 +424,22 @@ class ConnectionManager:
         for connection in self.active_connections:
             if getattr(connection, "player_id", None) == player_id:
                 try:
-                    message = {
-                        "type": "update",
-                        "data": None,
-                        "events": [
-                            {
-                                "msg": msg_text,
-                                "msg_to": player_id,
-                                "msg_level": msg_level
-                            }
-                        ]
-                    }
-                    logger.info(f"WS: {player_id}: early exit (personal event)")                    
-                    await connection.send_bytes(msgpack.packb(message, use_bin_type=True))                    
+                    events = [
+                        create_event("sfx", sfx="error"),
+                        create_event("msg", 
+                            text=msg_text, 
+                            to_id=player_id,
+                            level=msg_level
+                        )
+                    ]
+                    update_msg = game_pb2.UpdateMessage()
+                    update_msg.events.extend(events)
+                    server_msg = game_pb2.ServerMessage()
+                    server_msg.update.CopyFrom(update_msg) 
+                    packed_data = server_msg.SerializeToString()                                       
+                                       
+                    asyncio.create_task(self._send_to_one(connection, packed_data))
+                    logger.info(f"WS: {player_id}: early exit (personal event)") 
                 except Exception as e:
                     logger.error(f"ConnectionManager | {player_id}: {e}")
                 break
@@ -472,8 +477,8 @@ TOOLS = {
 
     "tier2draw": ToolConfig(
         name="tier2draw",
-        base_cooldown_sec=5,
-        max_charges=30,
+        base_cooldown_sec=1,
+        max_charges=2,
     ),
     "tier2erase": ToolConfig(
         name="tier2erase",
@@ -599,7 +604,8 @@ def init_db():
             CREATE TABLE IF NOT EXISTS players (
                 player_id INTEGER PRIMARY KEY,
                 username TEXT,
-
+                custom_name TEXT,
+                custom_hue INTEGER,
                 {tool_columns_sql}
             )
         """)
@@ -1043,9 +1049,12 @@ def build_query(player_id=None, tools=None):
     
     return query
 
+def get_contour_count(c_id: int, default: int = 0) -> int:
+    return CONTOUR_COUNT_CACHE.get(c_id, default)
+
 @log_execution_time
 def refresh_contour_cache(grid: List[List[dict]], ids_to_update: Optional[Set[int]] = None):
-    global CONTOUR_PATHS_CACHE  
+    global CONTOUR_PATHS_CACHE, CONTOUR_COUNT_CACHE
     updated_ids = {}
 
     existing_ids = {cell["contour_id"] for row in grid for cell in row if cell["contour_id"] != 0}
@@ -1054,15 +1063,19 @@ def refresh_contour_cache(grid: List[List[dict]], ids_to_update: Optional[Set[in
         for c_id in ids_to_update:
             if c_id in existing_ids:
                 mask, count = build_mask_and_count(grid, c_id)
-                logger.info(f'{c_id}, {count}')
+                CONTOUR_COUNT_CACHE[c_id] = count
                 updated_ids[c_id] = CONTOUR_PATHS_CACHE[c_id] = trace_contour(mask)
             elif c_id in CONTOUR_PATHS_CACHE:
                 del CONTOUR_PATHS_CACHE[c_id]
+                if c_id in CONTOUR_COUNT_CACHE:
+                    del CONTOUR_COUNT_CACHE[c_id]
                 updated_ids[c_id] = None                
     else:
         CONTOUR_PATHS_CACHE.clear()
+        CONTOUR_COUNT_CACHE.clear()
         for c_id in existing_ids:
             mask, count = build_mask_and_count(grid, c_id)
+            CONTOUR_COUNT_CACHE[c_id] = count
             updated_ids[c_id] = CONTOUR_PATHS_CACHE[c_id] = trace_contour(mask)
 
     return updated_ids    
@@ -1121,14 +1134,16 @@ def refresh_game_state_cache(updated_contour_ids: Optional[Set[int]] = None):
             for c_id, path in CONTOUR_PATHS_CACHE.items()
         ]
         
-        cursor.execute("SELECT player_id, username FROM players")
+        cursor.execute("SELECT player_id, username, custom_name, custom_hue FROM players")
         leaderboard = [
             {
                 "player_id": p_id, 
-                "name": name, 
+                "name": name,
+                "custom_name": custom_name,
+                "custom_hue": custom_hue,
                 "totalArea": player_areas.get(p_id, 0.0)
             }
-            for p_id, name in cursor.fetchall()
+            for p_id, name, custom_name, custom_hue in cursor.fetchall()
         ]
         leaderboard.sort(key=lambda x: x["totalArea"], reverse=True)
 
@@ -1144,6 +1159,26 @@ def refresh_game_state_cache(updated_contour_ids: Optional[Set[int]] = None):
 
     return updated_ids
 
+@log_execution_time
+def refresh_game_state_cache_only_leaderboard():
+    global GAME_STATE_CACHE
+
+    with sqlite3.connect(DB_NAME) as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT player_id, custom_name, custom_hue
+            FROM players
+        """)
+
+        updates = {
+            p_id: (custom_name, custom_hue)
+            for p_id, custom_name, custom_hue in cursor.fetchall()
+        }    
+
+    for player in GAME_STATE_CACHE["leaderboard"]:
+        if player["player_id"] in updates:
+            player["custom_name"], player["custom_hue"] = updates[player["player_id"]]
+
 def get_player_total_area_from_cache(player_id: int) -> float:
     if GAME_STATE_CACHE:
         for entry in GAME_STATE_CACHE.get("leaderboard", []):
@@ -1153,8 +1188,8 @@ def get_player_total_area_from_cache(player_id: int) -> float:
 
 HANDLERS = {
     "sign": SignHandler(),
-    "draw": DrawHandler(SIZE, get_neighbour_contours, get_free_contour_id),
-    "tier2draw": DrawHandler(SIZE, get_neighbour_contours, get_free_contour_id),
+    "draw": DrawHandler(SIZE, MAX_DOTS_PER_CONTOUR, get_neighbour_contours, get_free_contour_id),
+    "tier2draw": DrawHandler(SIZE, MAX_DOTS_PER_CONTOUR, get_neighbour_contours, get_free_contour_id),
     "structure": StructureHandler(SIZE, TOOLS, get_cells_in_radius, get_free_contour_id),
     "erase": EraseHandler(recalculate_player_contours_nearby),
     "tier2erase": EraseHandler(recalculate_player_contours_nearby),
@@ -1188,24 +1223,30 @@ async def websocket_endpoint(websocket: WebSocket):
                 continue
 
             try:
-                data = msgpack.unpackb(data_bytes, raw=False) # raw=False для корректного декодирования строк
+                client_msg = game_pb2.ClientMessage()
+                client_msg.ParseFromString(data_bytes)
+                
+                msg_type = client_msg.WhichOneof("payload")
             except Exception as e:
-                logger.error(f"Ошибка декодирования MessagePack: {e}")
+                logger.error(f"Protobuf parsing error: {e}")
                 continue
-
-            msg_type = data.get("type")
+            
             start_time = time.perf_counter()
 
             if msg_type == "ping":
-                await websocket.send_bytes(msgpack.packb({"type": "pong"}, use_bin_type=True))
+                resp = game_pb2.ServerMessage()
+                resp.pong.SetInParent()
+                await websocket.send_bytes(resp.SerializeToString())
                 continue
             else:
                 logger.info(f"WS: {msg_type} (start)")
 
             if msg_type == "auth":
-                init_data = data.get("initData")
+                init_data = client_msg.auth.init_data
                 if not init_data or not validate_telegram_data(init_data):
-                    await websocket.send_bytes(msgpack.packb({"type": "error", "message": "Invalid Authorization"}, use_bin_type=True))
+                    resp = game_pb2.ServerMessage()
+                    resp.error.message = "Invalid Authorization"
+                    await websocket.send_bytes(resp.SerializeToString())
                     await websocket.close(code=1008)
                     return
 
@@ -1213,23 +1254,78 @@ async def websocket_endpoint(websocket: WebSocket):
                 await perform_player_auth(websocket, user_info['id'], user_info.get('first_name', 'Player'))
                 continue
 
-            if msg_type == "external_auth":
-                token = data.get("token")
+            if msg_type == "externalAuth":
+                token = client_msg.externalAuth.token
                 passwords = load_external_passwords()
                 
                 match = next(((int(tid), info) for tid, info in passwords.items() if info.get("code") == token), None)
                 
                 if not match:
-                    await websocket.send_bytes(msgpack.packb({"type": "error", "message": "Invalid Authorization"}, use_bin_type=True))
+                    resp = game_pb2.ServerMessage()
+                    resp.error.message = "Invalid Authorization"
+                    await websocket.send_bytes(resp.SerializeToString())
                     continue
                     
                 await perform_player_auth(websocket, match[0], match[1].get("name", "Player"))
                 continue
 
-            if msg_type == "get_init":
-                state = get_current_state_dict()
-                await websocket.send_bytes(msgpack.packb({"type": "init", "data": state}, use_bin_type=True))
+            if msg_type == "init":
+                _state = get_current_state_dict()                
+                refresh_game_state_cache_only_leaderboard()
+                # full_structure = analyze_structure(state)                
+                # import pprint
+                # logger.info("DEBUG FULL STRUCTURE MAP:")
+                # logger.info(pprint.pformat(full_structure))                                
+                resp = game_pb2.ServerMessage()
+                populate_init_response(resp.init_response, GAME_STATE_CACHE)
+                await websocket.send_bytes(resp.SerializeToString())
                 continue
+
+            if msg_type == "personal":
+                player_id = getattr(websocket, "player_id", None)
+                if not player_id:
+                    continue
+                try:
+                    payload = client_msg.personal
+                    custom_name, custom_hue = sanitize_sign_text(payload.nickname), payload.hue
+
+                    if custom_name == '':
+                        update_msg = game_pb2.UpdateMessage()
+                        events = [
+                            create_event("msg", 
+                                text=f"Недопустимое имя", 
+                                to_id=player_id,
+                                level='info'
+                            )
+                        ]
+                        update_msg.events.extend(events)
+                        server_msg = game_pb2.ServerMessage()
+                        server_msg.update.MergeFrom(update_msg)
+                        await websocket.send_bytes(server_msg.SerializeToString())
+                        continue
+                    
+                    sync_db_custom_name_and_hue(player_id, custom_name, custom_hue)    
+
+                    update_msg = game_pb2.UpdateMessage()
+                    
+                    events = [
+                        create_event("updated_colors", updated=True),
+                        create_event("msg", 
+                            text=f"Кто-то поменял свой цвет или имя", 
+                            to_id='all',
+                            level='info'
+                        )
+                    ]
+                    update_msg.events.extend(events)
+                    server_msg = game_pb2.ServerMessage()
+                    refresh_game_state_cache_only_leaderboard()
+                    populate_update_response(server_msg.update, GAME_STATE_CACHE)
+                    server_msg.update.MergeFrom(update_msg)
+                                        
+                    await manager.broadcast(server_msg)
+                    continue  
+                except Exception as e:
+                    logger.error(f"WS: {e}\n{traceback.format_exc()}")
 
             if msg_type == "action":
                 player_id = getattr(websocket, "player_id", None)
@@ -1241,8 +1337,8 @@ async def websocket_endpoint(websocket: WebSocket):
                 last_action_times[player_id] = time.time()
 
                 try:
-                    payload = ActionPayload(**data["payload"]).model_dump()
-                    tool, x, y = payload["tool"], int(payload["x"]), int(payload["y"])
+                    payload = client_msg.action
+                    tool, x, y, p_data = payload.tool, payload.x, payload.y, payload.data
                     
                     if not in_bounds(x, y): continue
                     
@@ -1282,30 +1378,44 @@ async def websocket_endpoint(websocket: WebSocket):
                             await manager.send_personal_event(player_id, 'На перезарядке', 'tip')
                             continue
 
-                        is_valid, error = handler.validate(player_id, x, y, grid, tool_state[tool], data["payload"])
+                        is_valid, error = handler.validate(player_id, x, y, grid, tool, tool_state[tool], p_data)
                         if not is_valid:
                             await manager.send_personal_event(player_id, error, 'warn')
                             continue
 
                         consume_tool_charge(cursor, player_id, tool, TOOLS[tool], tool_state[tool], now)
 
-                        events, ids_to_refresh = handler.execute(player_id, x, y, grid, data["payload"], now)                       
+                        events, ids_to_refresh = handler.execute(player_id, x, y, grid, tool, p_data)                       
                         
                         # is_valid
                         sync_grid_to_db(cursor, grid)
                         conn.commit()
 
                     updated_ids = refresh_game_state_cache(updated_contour_ids=ids_to_refresh)
-                    
-                    message = {
-                        "type": "update",
-                        "events": events,
-                        "updated_contours": updated_ids or {}
-                    }
-                    
+
+                    update_msg = game_pb2.UpdateMessage()
+
+                    for c_id, data in updated_ids.items():
+                        contour_entry = update_msg.updated_contours[c_id]    
+                        if data is None:
+                            contour_entry.is_deleted = True
+                            continue                        
+                        contour_entry.is_deleted = False
+                        contour_entry.player_id = data["playerId"]                        
+                        if "path" in data and data["path"]:
+                            for p in data["path"]:
+                                point = contour_entry.path.add()
+                                point.x = p["x"] 
+                                point.y = p["y"]
+
+                    update_msg.events.extend(events)
+                    server_msg = game_pb2.ServerMessage()
+                    populate_update_response(server_msg.update, GAME_STATE_CACHE)
+                    server_msg.update.MergeFrom(update_msg)
+                                        
                     duration = time.perf_counter() - start_time
                     logger.info(f"{duration:.4f} - in total | WS sending")
-                    await manager.broadcast(message)
+                    await manager.broadcast(server_msg)
                         
                 except Exception as e:
                     logger.error(f"WS: {e}\n{traceback.format_exc()}")
@@ -1322,13 +1432,17 @@ async def websocket_endpoint(websocket: WebSocket):
     finally:
         manager.disconnect(websocket)
             
+
 async def perform_player_auth(websocket, p_id: int, username: str):
     old_conns = [conn for conn in manager.active_connections 
                  if getattr(conn, "player_id", None) == p_id and conn != websocket]
     
     for conn in old_conns:
         try:
-            await conn.send_bytes(msgpack.packb({"type": "session_replaced"}, use_bin_type=True))
+            msg = game_pb2.ServerMessage()
+            msg.session_replaced.SetInParent()
+            
+            await conn.send_bytes(msg.SerializeToString())
             await asyncio.sleep(0.1) 
             await conn.close()
         except Exception:
@@ -1341,8 +1455,11 @@ async def perform_player_auth(websocket, p_id: int, username: str):
     loop = asyncio.get_running_loop()
     await loop.run_in_executor(None, _sync_db_auth, p_id, username)
     
-    await websocket.send_bytes(msgpack.packb({"type": "auth_success", "player_id": p_id}, use_bin_type=True))
-       
+    resp = game_pb2.ServerMessage()
+    resp.auth_success.player_id = p_id
+    
+    await websocket.send_bytes(resp.SerializeToString())
+        
     logger.info(f"WS: {p_id} авторизован")
 
 def _sync_db_auth(p_id, username):
@@ -1352,6 +1469,17 @@ def _sync_db_auth(p_id, username):
             INSERT INTO players (player_id, username) VALUES (?, ?)
             ON CONFLICT(player_id) DO UPDATE SET username=excluded.username
         """, (p_id, username))
+
+def sync_db_custom_name_and_hue(p_id, custom_name, custom_hue):
+    with sqlite3.connect(DB_NAME) as conn:
+        conn.execute("PRAGMA journal_mode=WAL;")
+        conn.execute("""
+            INSERT INTO players (player_id, custom_name, custom_hue)
+            VALUES (?, ?, ?)
+            ON CONFLICT(player_id) DO UPDATE SET
+                custom_name = excluded.custom_name,
+                custom_hue = excluded.custom_hue
+        """, (p_id, custom_name, custom_hue))
 
 def can_use_tool(tool_state, now) -> bool:
     cooldown_end = tool_state["endsAt"]
@@ -1386,3 +1514,126 @@ def sanitize_sign_text(text: str) -> str:
     text = text.strip()
 
     return text[:30]
+
+def populate_init_response(resp, state):
+    # 1. Config
+    resp.config.cell = state['config'].get('cell', 0)
+    resp.config.size = state['config'].get('size', 0)
+
+    # 2. Grid
+    for row in state.get('grid', []):
+        for cell_data in row:
+            cell = resp.grid.add()
+            cell.contour_id = cell_data.get('contour_id', 0)
+            
+            cell.player_id = cell_data.get('player_id') or 0
+            
+            type_info = cell_data.get('type')
+            if type_info:
+                cell.type.id = type_info.get('id', "")
+                cell.type.data = str(type_info.get('data', ""))
+            else:
+                cell.type.id = ""
+                cell.type.data = ""
+
+    # 3. Contours
+    for c_data in state.get('contours', []):
+        contour = resp.contours.add()
+        contour.id = c_data.get('id', 0)
+        contour.player_id = c_data.get('playerId', 0)
+        for p_data in c_data.get('path', []):
+            point = contour.path.add()
+            point.x = p_data.get('x', 0)
+            point.y = p_data.get('y', 0)
+
+    # 4. Leaderboard
+    for l_data in state.get('leaderboard', []):
+        entry = resp.leaderboard.add()
+        entry.name = str(l_data.get('name', ""))
+        entry.player_id = int(l_data.get('player_id', 0))
+        entry.nickname = str(l_data.get('custom_name') or "")
+        entry.hue = int(l_data.get("custom_hue") or -1)
+        entry.total_area = float(l_data.get('totalArea', 0.0))
+
+    # 5. Players (map)
+    for pid, p_data in state.get('players', {}).items():
+        player = resp.players[str(pid)]
+        cooldowns = p_data.get('cooldowns', {})
+        
+        def fill_cd(cd_msg, data):
+            cd_msg.charges = data.get('charges', 0)
+            cd_msg.duration = data.get('duration', 0)
+            cd_msg.ends_at = data.get('endsAt', 0)
+            cd_msg.max_charges = data.get('maxCharges', 0)
+
+        for cd_name, cd_data in cooldowns.items():
+            target_cd = getattr(player.cooldowns, cd_name)
+            fill_cd(target_cd, cd_data)
+
+def populate_update_response(resp, state):
+
+    # leaderboard
+    for l_data in state.get('leaderboard', []):
+        entry = resp.leaderboard.add()
+        entry.name = str(l_data.get('name', ""))
+        entry.player_id = int(l_data.get('player_id', 0))
+        entry.nickname = str(l_data.get('custom_name') or "")
+        entry.hue = int(l_data.get("custom_hue") or -1)
+        entry.total_area = float(l_data.get('totalArea', 0.0))
+
+    # cooldowns
+    for pid, p_data in state.get('players', {}).items():
+        player = resp.players[str(pid)]
+        cooldowns = p_data.get('cooldowns', {})
+        
+        def fill_cd(cd_msg, data):
+            cd_msg.charges = data.get('charges', 0)
+            cd_msg.duration = data.get('duration', 0)
+            cd_msg.ends_at = data.get('endsAt', 0)
+            cd_msg.max_charges = data.get('maxCharges', 0)
+
+        for cd_name, cd_data in cooldowns.items():
+            target_cd = getattr(player.cooldowns, cd_name)
+            fill_cd(target_cd, cd_data)
+
+def analyze_structure(data, path=""):
+    structure = {}
+    
+    if isinstance(data, dict):
+        for k, v in data.items():
+            current_path = f"{path}.{k}" if path else k
+            structure[current_path] = type(v).__name__
+            structure.update(analyze_structure(v, current_path))
+            
+    elif isinstance(data, list):
+        if data:
+            structure.update(analyze_structure(data[0], f"{path}[0]"))
+            
+    return structure
+
+def create_event(event_type, **kwargs):
+    event = game_pb2.Event()
+    if event_type == "tool":
+        event.tool.tool = str(kwargs['tool'])
+    elif event_type == "sfx":
+        event.sfx.sfx = str(kwargs['sfx'])
+    elif event_type == "msg":
+        m = event.msg
+        m.text = str(kwargs['text'])
+        m.to_id = str(kwargs['to_id'])
+        m.level = str(kwargs['level'])
+    elif event_type == "cords":
+        c = event.cords
+        c.x = int(kwargs['x'])
+        c.y = int(kwargs['y'])
+        c.contour_id = int(kwargs.get('contour_id', 0)) # blast
+        c.radius = int(kwargs['radius'])
+        c.player_id = int(kwargs['player_id'])
+        c.structure_radius = kwargs.get('structure_radius', 0)
+        c.blast_radius = kwargs.get('blast_radius', 0)
+        c.data = kwargs.get('data', 'text')
+    elif event_type == "updated_colors":
+        event.updated_colors.updated = bool(kwargs['updated'])
+    return event
+
+logger.info(f"---------------------------------")
